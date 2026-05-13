@@ -144,6 +144,11 @@ namespace PrismFanlight.Editor
             {
                 _enablePreview = EditorGUILayout.Toggle("Enable Preview", _enablePreview);
 
+                if (_enablePreview)
+                {
+                    EditorGUILayout.HelpBox("The preview feature can be resource-intensive, so we recommend disabling it when not needed.", MessageType.Warning);
+                }
+
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawStat("Total Seats", audience.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Seats Per Block", audience.BlockSeatCount.ToString("N0"));
