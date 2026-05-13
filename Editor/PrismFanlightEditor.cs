@@ -90,22 +90,13 @@ namespace PrismFanlight.Editor
         private void DrawRenderingSection()
         {
             EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
-            EditorGUILayout.PropertyField(_material, new GUIContent("Indirect Material"));
-            EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
 
             if (_mesh.objectReferenceValue == null)
             {
                 EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
             }
 
-            if (_material.objectReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("Assign a material that uses 'Prism Fanlight/Indirect Unlit'.", MessageType.Warning);
-            }
-            else if (_material.objectReferenceValue is Material material && material.shader != null && material.shader.name != "Prism Fanlight/Indirect Unlit")
-            {
-                EditorGUILayout.HelpBox("The assigned material should use 'Prism Fanlight/Indirect Unlit' for GPU indirect rendering.", MessageType.Warning);
-            }
+            EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
 
             if (_computeShader.objectReferenceValue == null)
             {

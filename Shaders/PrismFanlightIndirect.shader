@@ -1,4 +1,4 @@
-Shader "Prism Fanlight/Indirect Unlit"
+Shader "Hidden/Prism Fanlight Indirect"
 {
     Properties
     {
