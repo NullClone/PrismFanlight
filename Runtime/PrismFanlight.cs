@@ -44,6 +44,11 @@ namespace PrismFanlight
             _renderer.Dispose();
         }
 
+        private void OnDisable()
+        {
+            _renderer.Dispose();
+        }
+
         private void Update()
         {
             var audience = GetAudience();
