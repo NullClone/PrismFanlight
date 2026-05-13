@@ -5,7 +5,7 @@ using UnityEngine.Profiling;
 
 namespace PrismFanlight
 {
-    public sealed class StickShow : MonoBehaviour
+    public sealed class PrismFanlight : MonoBehaviour
     {
         private const int RenderBatchSize = 64;
 

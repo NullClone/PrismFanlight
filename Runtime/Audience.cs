@@ -16,14 +16,13 @@ namespace PrismFanlight
 
         // Properties
 
-        public static Audience Default()
-            => new()
-            {
-                seatPerBlock = math.int2(8, 12),
-                seatPitch = math.float2(0.4f, 0.8f),
-                blockCount = math.int2(7, 3),
-                aisleWidth = math.float2(0.7f, 1.2f)
-            };
+        public static Audience Default() => new()
+        {
+            seatPerBlock = math.int2(8, 12),
+            seatPitch = math.float2(0.4f, 0.8f),
+            blockCount = math.int2(7, 3),
+            aisleWidth = math.float2(0.7f, 1.2f)
+        };
 
         public int BlockSeatCount => seatPerBlock.x * seatPerBlock.y;
 
