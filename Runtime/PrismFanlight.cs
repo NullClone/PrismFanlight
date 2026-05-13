@@ -17,9 +17,6 @@ namespace PrismFanlight
         private ComputeShader _computeShader = null;
 
         [SerializeField]
-        private AudienceLayoutPreset _layoutPreset = null;
-
-        [SerializeField]
         private Audience _audience = Audience.Default();
 
         [SerializeField]
@@ -37,6 +34,13 @@ namespace PrismFanlight
         private readonly FanlightGpuRenderer _renderer = new();
 
 
+        // Properties
+
+        public bool IsGpuReady => _renderer.IsReady;
+
+        public int GpuSeatCount => _renderer.SeatCount;
+
+
         // Methods
 
         private void OnDestroy()
@@ -51,27 +55,22 @@ namespace PrismFanlight
 
         private void Update()
         {
-            var audience = GetAudience();
-
             _renderer.Render(
                 _mesh,
                 _material,
                 _computeShader,
-                audience,
+                _audience,
                 GetMotion(),
                 GetColorSettings(),
                 transform.localToWorldMatrix,
                 Time.time);
         }
 
-        public Audience GetAudience() => (_layoutPreset != null ? _layoutPreset.Audience : _audience).Validated();
+
+        public Audience GetAudience() => _audience;
 
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
-
-        public bool IsGpuReady => _renderer.IsReady;
-
-        public int GpuSeatCount => _renderer.SeatCount;
     }
 }

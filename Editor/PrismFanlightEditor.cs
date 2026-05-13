@@ -14,12 +14,13 @@ namespace PrismFanlight.Editor
         private SerializedProperty _mesh;
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
-        private SerializedProperty _layoutPreset;
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
         private SerializedProperty _motion;
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
+
+        private bool _enablePreview = true;
 
 
         // Methods
@@ -29,7 +30,6 @@ namespace PrismFanlight.Editor
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
-            _layoutPreset = serializedObject.FindProperty(nameof(_layoutPreset));
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
@@ -39,6 +39,8 @@ namespace PrismFanlight.Editor
 
         private void OnSceneGUI()
         {
+            if (!_enablePreview) return;
+
             _scenePreview.Draw((PrismFanlight)target);
         }
 
@@ -57,26 +59,28 @@ namespace PrismFanlight.Editor
 
             DrawRenderingSection();
 
-            DrawAudienceSection(instance);
+            DrawLayoutSection();
             DrawMotionSection(instance);
             DrawColorSection(instance);
 
             serializedObject.ApplyModifiedProperties();
 
-            DrawDiagnosticsSection(instance);
+            DrawDebugSection(instance);
         }
 
-        private void DrawAudienceSection(PrismFanlight fanlight)
+        private void DrawLayoutSection()
         {
-            DrawPresetSection(
-                "Layout",
-                _layoutPreset,
-                () => DrawAudienceFields(_audience),
-                () =>
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    PrismFanlightPresetUtility.CreateLayoutPreset(fanlight, fanlight.GetAudience());
-                });
+            PrismFanlightEditorStyles.DrawSection("Layout", () =>
+            {
+                EditorGUILayout.LabelField("Blocks", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
+                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Seats", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
+                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
+            });
         }
 
         private void DrawRenderingSection()
@@ -130,14 +134,17 @@ namespace PrismFanlight.Editor
                 });
         }
 
-        private void DrawDiagnosticsSection(PrismFanlight fanlight)
+        private void DrawDebugSection(PrismFanlight fanlight)
         {
             var audience = fanlight.GetAudience();
             var motion = fanlight.GetMotion();
             var color = fanlight.GetColorSettings();
 
-            PrismFanlightEditorStyles.DrawSection("Diagnostics", () =>
+            PrismFanlightEditorStyles.DrawSection("Debug", () =>
             {
+                _enablePreview = EditorGUILayout.Toggle("Enable Preview", _enablePreview);
+
+                EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawStat("Total Seats", audience.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Seats Per Block", audience.BlockSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
@@ -155,18 +162,6 @@ namespace PrismFanlight.Editor
             });
         }
 
-
-        private static void DrawAudienceFields(SerializedProperty audience)
-        {
-            EditorGUILayout.LabelField("Blocks", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(audience.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
-            EditorGUILayout.PropertyField(audience.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
-
-            EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Seats", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(audience.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
-            EditorGUILayout.PropertyField(audience.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
-        }
 
         private static void DrawMotionFields(SerializedProperty motion)
         {

@@ -5,19 +5,6 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightPresetUtility
     {
-        public static void CreateLayoutPreset(PrismFanlight fanlight, Audience audience)
-        {
-            var preset = CreatePresetAsset<AudienceLayoutPreset>(
-                "Create Audience Layout Preset",
-                $"{fanlight.name} Layout Preset",
-                "Choose where to save the audience layout preset.");
-
-            if (preset == null) return;
-
-            preset.SetAudience(audience);
-            AssignPreset(fanlight, "_layoutPreset", preset, "Assign Audience Layout Preset");
-        }
-
         public static void CreateMotionPreset(PrismFanlight fanlight, FanlightMotionSettings settings)
         {
             var preset = CreatePresetAsset<FanlightMotionPreset>(
