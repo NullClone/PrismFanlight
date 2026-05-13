@@ -72,7 +72,7 @@ namespace PrismFanlight.Editor
         private void DrawAudienceSection(PrismFanlight fanlight)
         {
             DrawPresetSection(
-                "Audience Layout",
+                "Layout",
                 _layoutPreset,
                 () => DrawAudienceFields(_audience),
                 () =>
@@ -215,10 +215,14 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.PropertyField(preset, new GUIContent("Preset"));
                 }
 
+                EditorGUILayout.Space();
+
                 using (new EditorGUI.DisabledScope(preset.objectReferenceValue != null))
                 {
                     drawLocalSettings();
                 }
+
+                EditorGUILayout.Space();
 
                 using (new EditorGUILayout.HorizontalScope())
                 {

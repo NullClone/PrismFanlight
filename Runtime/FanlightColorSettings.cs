@@ -18,7 +18,6 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightColorSettings
     {
-        [Header("Mode")]
         public FanlightColorMode mode;
 
         [ColorUsage(false, true)]
@@ -27,7 +26,6 @@ namespace PrismFanlight
         [ColorUsage(false, true)]
         public Color secondaryColor;
 
-        [Header("Brightness")]
         [Min(0.0f)]
         public float baseIntensity;
 
@@ -37,7 +35,6 @@ namespace PrismFanlight
         [Range(0.0f, 1.0f)]
         public float randomIntensity;
 
-        [Header("Hue")]
         [Range(0.0f, 1.0f)]
         public float saturation;
 
@@ -46,7 +43,6 @@ namespace PrismFanlight
         [Range(0.0f, 1.0f)]
         public float randomHueAmount;
 
-        [Header("Wave")]
         public float2 waveOrigin;
 
         [Min(0.0f)]

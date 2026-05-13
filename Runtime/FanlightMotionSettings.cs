@@ -8,7 +8,6 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightMotionSettings
     {
-        [Header("Timing")]
         [Min(0.0f)]
         public float frequency;
 
@@ -21,7 +20,6 @@ namespace PrismFanlight
         [Min(0.0f)]
         public float phaseNoiseSpeed;
 
-        [Header("Swing")]
         [Min(0.0f)]
         public float armLength;
 
@@ -34,7 +32,6 @@ namespace PrismFanlight
         [Range(0.0f, 1.0f)]
         public float snapAmount;
 
-        [Header("Variation")]
         [Range(0.0f, 1.0f)]
         public float seatJitter;
 
