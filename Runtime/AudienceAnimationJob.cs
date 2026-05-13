@@ -9,6 +9,8 @@ namespace PrismFanlight
     public struct AudienceAnimationJob : IJobParallelFor
     {
         public Audience config;
+        public FanlightMotionSettings motion;
+        public FanlightColorSettings color;
         public Matrix4x4 xform;
         public float time;
 
@@ -20,8 +22,8 @@ namespace PrismFanlight
             var (block, seat) = config.GetCoordinatesFromIndex(i);
             var pos = config.GetPositionOnPlane(block, seat);
             var seed = (uint)i * 2u + 123u;
-            matrices[i] = config.GetStickMatrix(pos, xform, time, seed++);
-            colors[i] = config.GetStickColor(pos, time, seed++);
+            matrices[i] = motion.GetMatrix(config, pos, xform, time, seed++);
+            colors[i] = color.GetColor(config, block, pos, time, seed++);
         }
     }
 }

@@ -23,6 +23,18 @@ namespace PrismFanlight
         [SerializeField]
         private Audience _audience = Audience.Default();
 
+        [SerializeField]
+        private FanlightMotionPreset _motionPreset = null;
+
+        [SerializeField]
+        private FanlightMotionSettings _motion = FanlightMotionSettings.Default();
+
+        [SerializeField]
+        private FanlightColorPreset _colorPreset = null;
+
+        [SerializeField]
+        private FanlightColorSettings _color = FanlightColorSettings.Default();
+
         private NativeArray<Matrix4x4> _matrices;
         private NativeArray<Color> _colors;
         private GraphicsBuffer _colorBuffer;
@@ -52,8 +64,12 @@ namespace PrismFanlight
             Render(audience);
         }
 
-        public Audience GetAudience()
-            => (_layoutPreset != null ? _layoutPreset.Audience : _audience).Validated();
+        public Audience GetAudience() => (_layoutPreset != null ? _layoutPreset.Audience : _audience).Validated();
+
+        public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
+
+        public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
+
 
         private void AllocateBuffers(Audience audience)
         {
@@ -94,7 +110,10 @@ namespace PrismFanlight
 
             var job = new AudienceAnimationJob()
             {
-                config = audience, xform = transform.localToWorldMatrix,
+                config = audience,
+                motion = GetMotion(),
+                color = GetColorSettings(),
+                xform = transform.localToWorldMatrix,
                 time = Time.time, matrices = _matrices, colors = _colors
             };
 
