@@ -14,6 +14,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _mesh;
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
+        private SerializedProperty _enableCulling;
         private SerializedProperty _cullingCamera;
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
@@ -31,6 +32,7 @@ namespace PrismFanlight.Editor
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
+            _enableCulling = serializedObject.FindProperty("_enableCulling");
             _cullingCamera = serializedObject.FindProperty("_cullingCamera");
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
@@ -59,8 +61,6 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.PropertyField(_computeShader, new GUIContent("Compute Shader"));
             }
 
-            EditorGUILayout.Space();
-
             DrawRenderingSection();
 
             DrawLayoutSection();
@@ -72,9 +72,36 @@ namespace PrismFanlight.Editor
             DrawDebugSection(instance);
         }
 
+        private void DrawRenderingSection()
+        {
+            if (_computeShader.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Warning);
+            }
+
+            PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
+            {
+                EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+
+                if (_mesh.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
+                }
+
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
+                EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+
+                if (_enableCulling.boolValue && _cullingCamera.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Culling is enabled but no camera is assigned. The component will try Camera.main at runtime.", MessageType.Info);
+                }
+            });
+        }
+
         private void DrawLayoutSection()
         {
-            PrismFanlightEditorStyles.DrawSection("Layout", () =>
+            PrismFanlightEditorStyles.DrawSection("| Layout", () =>
             {
                 EditorGUILayout.LabelField("Blocks", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_audience.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
@@ -87,27 +114,10 @@ namespace PrismFanlight.Editor
             });
         }
 
-        private void DrawRenderingSection()
-        {
-            EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
-
-            if (_mesh.objectReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
-            }
-
-            EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
-
-            if (_computeShader.objectReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Warning);
-            }
-        }
-
         private void DrawMotionSection(PrismFanlight fanlight)
         {
             DrawPresetSection(
-                "Motion",
+                "| Motion",
                 _motionPreset,
                 () => DrawMotionFields(_motion),
                 () =>
@@ -120,7 +130,7 @@ namespace PrismFanlight.Editor
         private void DrawColorSection(PrismFanlight fanlight)
         {
             DrawPresetSection(
-                "Color",
+                "| Color",
                 _colorPreset,
                 () => DrawColorFields(_color),
                 () =>
@@ -136,7 +146,7 @@ namespace PrismFanlight.Editor
             var motion = fanlight.GetMotion();
             var color = fanlight.GetColorSettings();
 
-            PrismFanlightEditorStyles.DrawSection("Debug", () =>
+            PrismFanlightEditorStyles.DrawSection("| Debug", () =>
             {
                 _enablePreview = EditorGUILayout.Toggle("Enable Preview", _enablePreview);
 
@@ -151,6 +161,7 @@ namespace PrismFanlight.Editor
                 PrismFanlightEditorStyles.DrawStat("Blocks", fanlight.GpuBlockCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
                 PrismFanlightEditorStyles.DrawStat("Backend", "GPU Indirect");
+                PrismFanlightEditorStyles.DrawStat("GPU Culling", fanlight.IsCullingEnabled ? "On" : "Off");
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", fanlight.IsGpuReady ? "Yes" : "No");
                 PrismFanlightEditorStyles.DrawStat("GPU Instances", fanlight.GpuSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Visible Seats", fanlight.GpuVisibleSeatCount.ToString("N0"));

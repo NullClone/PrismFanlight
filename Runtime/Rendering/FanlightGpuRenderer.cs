@@ -23,6 +23,7 @@ namespace PrismFanlight.Rendering
         private static readonly int TimeId = Shader.PropertyToID("_FanlightTime");
         private static readonly int FrustumPlanesId = Shader.PropertyToID("_FrustumPlanes");
         private static readonly int CullingScaleId = Shader.PropertyToID("_CullingScale");
+        private static readonly int EnableCullingId = Shader.PropertyToID("_EnableCulling");
         private static readonly int SeatPitchId = Shader.PropertyToID("_SeatPitch");
         private static readonly int BlockCountId = Shader.PropertyToID("_BlockCount");
         private static readonly int MotionTimingId = Shader.PropertyToID("_MotionTiming");
@@ -86,13 +87,14 @@ namespace PrismFanlight.Rendering
             Material material,
             ComputeShader computeShader,
             Camera cullingCamera,
+            bool enableCulling,
             Audience audience,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
             Matrix4x4 localToWorld,
             float time)
         {
-            if (!CanRender(mesh, material, cullingCamera, computeShader, audience)) return;
+            if (!CanRender(mesh, material, computeShader, audience)) return;
 
             EnsureInitialized(mesh, computeShader, audience);
 
@@ -100,7 +102,7 @@ namespace PrismFanlight.Rendering
 
             Profiler.BeginSample("Prism Fanlight GPU Cull/Generate");
 
-            Dispatch(computeShader, cullingCamera, audience, motion, color, localToWorld, time, worldBounds);
+            Dispatch(computeShader, cullingCamera, enableCulling, audience, motion, color, localToWorld, time, worldBounds);
             RequestVisibleCountReadback();
 
             Profiler.EndSample();
@@ -144,12 +146,11 @@ namespace PrismFanlight.Rendering
             _readbackPending = false;
         }
 
-        private static bool CanRender(Mesh mesh, Material material, Camera cullingCamera, ComputeShader computeShader, Audience audience)
+        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, Audience audience)
         {
             return mesh != null
                    && material != null
                    && computeShader != null
-                   && cullingCamera != null
                    && audience.TotalSeatCount > 0
                    && audience.BlockSeatCount > 0;
         }
@@ -268,6 +269,7 @@ namespace PrismFanlight.Rendering
         private void Dispatch(
             ComputeShader computeShader,
             Camera cullingCamera,
+            bool enableCulling,
             Audience audience,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
@@ -275,7 +277,7 @@ namespace PrismFanlight.Rendering
             float time,
             Bounds worldBounds)
         {
-            SetCommonParams(computeShader, cullingCamera, audience, motion, color, localToWorld, time, worldBounds);
+            SetCommonParams(computeShader, cullingCamera, enableCulling, audience, motion, color, localToWorld, time, worldBounds);
 
             computeShader.SetBuffer(_clearKernel, DrawArgsId, _argsBuffer);
             computeShader.Dispatch(_clearKernel, 1, 1, 1);
@@ -298,6 +300,7 @@ namespace PrismFanlight.Rendering
         private void SetCommonParams(
             ComputeShader computeShader,
             Camera cullingCamera,
+            bool enableCulling,
             Audience audience,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
@@ -310,7 +313,8 @@ namespace PrismFanlight.Rendering
             computeShader.SetMatrix(LocalToWorldId, localToWorld);
             computeShader.SetFloat(TimeId, time);
             computeShader.SetFloat(CullingScaleId, GetMaxScale(localToWorld));
-            SetFrustumPlanes(computeShader, cullingCamera, worldBounds);
+            computeShader.SetInt(EnableCullingId, enableCulling ? 1 : 0);
+            SetFrustumPlanes(computeShader, enableCulling ? cullingCamera : null, worldBounds);
             computeShader.SetVector(SeatPitchId, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0.0f, 0.0f));
             computeShader.SetVector(BlockCountId, new Vector4(audience.blockCount.x, audience.blockCount.y, 0.0f, 0.0f));
             computeShader.SetVector(MotionTimingId, new Vector4(motion.frequency, motion.randomPhase, motion.phaseNoiseAmount, motion.phaseNoiseSpeed));

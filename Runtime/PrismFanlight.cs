@@ -17,6 +17,9 @@ namespace PrismFanlight
         private ComputeShader _computeShader = null;
 
         [SerializeField]
+        private bool _enableCulling = true;
+
+        [SerializeField]
         private Camera _cullingCamera = null;
 
         [SerializeField]
@@ -55,6 +58,8 @@ namespace PrismFanlight
 
         public long GpuBufferMemoryBytes => _renderer.BufferMemoryBytes;
 
+        public bool IsCullingEnabled => _enableCulling;
+
 
         // Methods
 
@@ -80,6 +85,7 @@ namespace PrismFanlight
                 _material,
                 _computeShader,
                 _cullingCamera,
+                _enableCulling,
                 _audience,
                 GetMotion(),
                 GetColorSettings(),
