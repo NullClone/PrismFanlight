@@ -1,0 +1,19 @@
+{
+    "name": "PrismFanlight.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8260bd9a2faf18c43b7cac67d5f1836a",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
