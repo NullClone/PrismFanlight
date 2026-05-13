@@ -44,15 +44,17 @@ namespace PrismFanlight.Editor
             AssignPreset(fanlight, "_colorPreset", preset, "Assign Fanlight Color Preset");
         }
 
-        private static T CreatePresetAsset<T>(string title, string defaultName, string message)
-            where T : ScriptableObject
+        private static T CreatePresetAsset<T>(string title, string defaultName, string message) where T : ScriptableObject
         {
             var path = EditorUtility.SaveFilePanelInProject(title, defaultName, "asset", message);
+
             if (string.IsNullOrEmpty(path)) return null;
 
             var preset = ScriptableObject.CreateInstance<T>();
+
             AssetDatabase.CreateAsset(preset, path);
             AssetDatabase.SaveAssets();
+
             return preset;
         }
 

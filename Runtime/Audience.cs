@@ -4,7 +4,7 @@ using Unity.Mathematics;
 namespace PrismFanlight
 {
     [Serializable]
-    public struct Audience
+    public class Audience
     {
         // Fields
 

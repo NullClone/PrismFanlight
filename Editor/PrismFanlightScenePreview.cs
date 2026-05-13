@@ -14,6 +14,9 @@ namespace PrismFanlight.Editor
 
         public int PreviewSeatLimit => MaxPreviewSeats;
 
+
+        // Methods
+
         public void Draw(PrismFanlight fanlight)
         {
             if (fanlight == null) return;
@@ -26,6 +29,7 @@ namespace PrismFanlight.Editor
             DrawSeats(targetTransform, audience);
             DrawOrigin(targetTransform);
         }
+
 
         private static void DrawBlocks(Transform transform, Audience audience)
         {

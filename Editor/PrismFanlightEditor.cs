@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace PrismFanlight.Editor
 
         private SerializedProperty _mesh;
         private SerializedProperty _material;
+        private SerializedProperty _computeShader;
         private SerializedProperty _layoutPreset;
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
@@ -26,6 +28,7 @@ namespace PrismFanlight.Editor
         {
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
+            _computeShader = serializedObject.FindProperty(nameof(_computeShader));
             _layoutPreset = serializedObject.FindProperty(nameof(_layoutPreset));
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
@@ -47,9 +50,12 @@ namespace PrismFanlight.Editor
 
             using (new EditorGUI.DisabledScope(true))
             {
-                EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
-                EditorGUILayout.PropertyField(_material, new GUIContent("Stick Material"));
+                EditorGUILayout.PropertyField(_computeShader, new GUIContent("Compute Shader"));
             }
+
+            EditorGUILayout.Space();
+
+            DrawRenderingSection();
 
             DrawAudienceSection(instance);
             DrawMotionSection(instance);
@@ -71,6 +77,31 @@ namespace PrismFanlight.Editor
                     serializedObject.ApplyModifiedProperties();
                     PrismFanlightPresetUtility.CreateLayoutPreset(fanlight, fanlight.GetAudience());
                 });
+        }
+
+        private void DrawRenderingSection()
+        {
+            EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
+            EditorGUILayout.PropertyField(_material, new GUIContent("Indirect Material"));
+
+            if (_mesh.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
+            }
+
+            if (_material.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign a material that uses 'Prism Fanlight/Indirect Unlit'.", MessageType.Warning);
+            }
+            else if (_material.objectReferenceValue is Material material && material.shader != null && material.shader.name != "Prism Fanlight/Indirect Unlit")
+            {
+                EditorGUILayout.HelpBox("The assigned material should use 'Prism Fanlight/Indirect Unlit' for GPU indirect rendering.", MessageType.Warning);
+            }
+
+            if (_computeShader.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Warning);
+            }
         }
 
         private void DrawMotionSection(PrismFanlight fanlight)
@@ -109,7 +140,10 @@ namespace PrismFanlight.Editor
             {
                 PrismFanlightEditorStyles.DrawStat("Total Seats", audience.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Seats Per Block", audience.BlockSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Render Batches", (audience.blockCount.x * audience.blockCount.y).ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
+                PrismFanlightEditorStyles.DrawStat("Backend", "GPU Indirect");
+                PrismFanlightEditorStyles.DrawStat("GPU Ready", fanlight.IsGpuReady ? "Yes" : "No");
+                PrismFanlightEditorStyles.DrawStat("GPU Instances", fanlight.GpuSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Motion Frequency", motion.frequency.ToString("0.###"));
                 PrismFanlightEditorStyles.DrawStat("Color Mode", color.mode.ToString());
                 PrismFanlightEditorStyles.DrawStat("Preview Limit", _scenePreview.PreviewSeatLimit.ToString("N0"));
@@ -197,7 +231,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawPresetSection(string title, SerializedProperty preset, System.Action drawLocalSettings, System.Action createPreset)
+        private static void DrawPresetSection(string title, SerializedProperty preset, Action drawLocalSettings, Action createPreset)
         {
             PrismFanlightEditorStyles.DrawSection(title, () =>
             {

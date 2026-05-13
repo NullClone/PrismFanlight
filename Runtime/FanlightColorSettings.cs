@@ -5,16 +5,6 @@ using Random = Unity.Mathematics.Random;
 
 namespace PrismFanlight
 {
-    public enum FanlightColorMode
-    {
-        Solid,
-        RandomHue,
-        Rainbow,
-        Wave,
-        RadialWave,
-        BlockGradient
-    }
-
     [Serializable]
     public struct FanlightColorSettings
     {
@@ -56,11 +46,11 @@ namespace PrismFanlight
 
         public static FanlightColorSettings Default() => new()
         {
-            mode = FanlightColorMode.RadialWave,
+            mode = FanlightColorMode.Solid,
             primaryColor = Color.white,
             secondaryColor = Color.cyan,
             baseIntensity = 0.1f,
-            effectIntensity = 50.0f,
+            effectIntensity = 20.0f,
             randomIntensity = 0.0f,
             saturation = 1.0f,
             hueSpeed = 0.83f,

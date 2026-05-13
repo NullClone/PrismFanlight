@@ -2,8 +2,7 @@
     "name": "PrismFanlight.Runtime",
     "rootNamespace": "",
     "references": [
-        "Unity.Mathematics",
-        "Unity.Burst"
+        "Unity.Mathematics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
