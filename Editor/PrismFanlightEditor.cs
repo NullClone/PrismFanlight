@@ -43,30 +43,21 @@ namespace PrismFanlight.Editor
         {
             serializedObject.Update();
 
-            var fanlight = (PrismFanlight)target;
+            var instance = target as PrismFanlight;
 
-            DrawRenderingSection();
-            DrawAudienceSection(fanlight);
-            DrawMotionSection(fanlight);
-            DrawColorSection(fanlight);
-
-            serializedObject.ApplyModifiedProperties();
-
-            DrawDiagnosticsSection(fanlight);
-        }
-
-        private void DrawRenderingSection()
-        {
-            PrismFanlightEditorStyles.DrawSection("Rendering", () =>
+            using (new EditorGUI.DisabledScope(true))
             {
                 EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
                 EditorGUILayout.PropertyField(_material, new GUIContent("Stick Material"));
+            }
 
-                if (_mesh.objectReferenceValue == null || _material.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Assign both mesh and material before entering Play Mode.", MessageType.Warning);
-                }
-            });
+            DrawAudienceSection(instance);
+            DrawMotionSection(instance);
+            DrawColorSection(instance);
+
+            serializedObject.ApplyModifiedProperties();
+
+            DrawDiagnosticsSection(instance);
         }
 
         private void DrawAudienceSection(PrismFanlight fanlight)
