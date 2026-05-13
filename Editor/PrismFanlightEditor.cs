@@ -14,6 +14,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _mesh;
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
+        private SerializedProperty _cullingCamera;
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
         private SerializedProperty _motion;
@@ -30,6 +31,7 @@ namespace PrismFanlight.Editor
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
+            _cullingCamera = serializedObject.FindProperty("_cullingCamera");
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
@@ -39,9 +41,11 @@ namespace PrismFanlight.Editor
 
         private void OnSceneGUI()
         {
-            if (!_enablePreview) return;
+            if (!_enablePreview || Application.isPlaying) return;
 
-            _scenePreview.Draw((PrismFanlight)target);
+            var instance = target as PrismFanlight;
+
+            _scenePreview.Draw(instance);
         }
 
         public override void OnInspectorGUI()
@@ -87,6 +91,7 @@ namespace PrismFanlight.Editor
         {
             EditorGUILayout.PropertyField(_mesh, new GUIContent("Stick Mesh"));
             EditorGUILayout.PropertyField(_material, new GUIContent("Indirect Material"));
+            EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
 
             if (_mesh.objectReferenceValue == null)
             {
@@ -152,10 +157,17 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawStat("Total Seats", audience.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Seats Per Block", audience.BlockSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Blocks", fanlight.GpuBlockCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
                 PrismFanlightEditorStyles.DrawStat("Backend", "GPU Indirect");
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", fanlight.IsGpuReady ? "Yes" : "No");
                 PrismFanlightEditorStyles.DrawStat("GPU Instances", fanlight.GpuSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Visible Seats", fanlight.GpuVisibleSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Culled Seats", fanlight.GpuCulledSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Culling Ratio", FormatRatio(fanlight.GpuCulledSeatCount, Mathf.Max(1, fanlight.GpuSeatCount)));
+                PrismFanlightEditorStyles.DrawStat("Instance Groups", fanlight.GpuInstanceThreadGroups.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Block Groups", fanlight.GpuBlockThreadGroups.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("GPU Buffers", FormatBytes(fanlight.GpuBufferMemoryBytes));
                 PrismFanlightEditorStyles.DrawStat("Motion Frequency", motion.frequency.ToString("0.###"));
                 PrismFanlightEditorStyles.DrawStat("Color Mode", color.mode.ToString());
                 PrismFanlightEditorStyles.DrawStat("Preview Limit", _scenePreview.PreviewSeatLimit.ToString("N0"));
@@ -275,5 +287,20 @@ namespace PrismFanlight.Editor
         private static bool UsesHue(FanlightColorMode mode) => mode is FanlightColorMode.RandomHue or FanlightColorMode.Rainbow or FanlightColorMode.Wave or FanlightColorMode.RadialWave;
 
         private static bool UsesWave(FanlightColorMode mode) => mode is FanlightColorMode.Wave or FanlightColorMode.RadialWave;
+
+        private static string FormatRatio(int value, int total)
+        {
+            return $"{(float)value / total * 100.0f:0.0}%";
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            const float kb = 1024.0f;
+            const float mb = kb * 1024.0f;
+
+            if (bytes >= mb) return $"{bytes / mb:0.00} MB";
+            if (bytes >= kb) return $"{bytes / kb:0.0} KB";
+            return $"{bytes} B";
+        }
     }
 }

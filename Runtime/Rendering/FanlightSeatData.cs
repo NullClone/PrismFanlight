@@ -17,4 +17,19 @@ namespace PrismFanlight.Rendering
             planePositionBlock = new Vector4(planePosition.x, planePosition.y, block.x, block.y);
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FanlightBlockData
+    {
+        public Vector4 localCenterRadius;
+        public Vector4 indexRange;
+
+        public const int Stride = sizeof(float) * 8;
+
+        public FanlightBlockData(Vector3 localCenter, float radius, int startIndex, int count)
+        {
+            localCenterRadius = new Vector4(localCenter.x, localCenter.y, localCenter.z, radius);
+            indexRange = new Vector4(startIndex, count, 0.0f, 0.0f);
+        }
+    }
 }

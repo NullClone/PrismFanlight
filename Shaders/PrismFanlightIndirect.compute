@@ -1,4 +1,6 @@
-#pragma kernel GenerateInstances
+#pragma kernel ClearIndirectArgs
+#pragma kernel CullBlocks
+#pragma kernel GenerateVisibleInstances
 
 struct FanlightSeatData
 {
@@ -6,13 +8,26 @@ struct FanlightSeatData
     float4 planePositionBlock;
 };
 
+struct FanlightBlockData
+{
+    float4 localCenterRadius;
+    float4 indexRange;
+};
+
 StructuredBuffer<FanlightSeatData> _Seats;
+StructuredBuffer<FanlightBlockData> _Blocks;
+RWStructuredBuffer<uint> _BlockVisibility;
+RWStructuredBuffer<uint> _VisibleIndices;
+RWStructuredBuffer<uint> _DrawArgs;
 RWStructuredBuffer<float4x4> _FanlightMatrices;
 RWStructuredBuffer<float4> _FanlightColors;
 
 int _InstanceCount;
+int _BlockCountValue;
 float4x4 _LocalToWorld;
 float _FanlightTime;
+float4 _FrustumPlanes[6];
+float _CullingScale;
 
 float4 _SeatPitch;
 float4 _BlockCount;
@@ -80,6 +95,19 @@ float4x4 AxisAngle(float3 axis, float angle)
         oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0,
         oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0,
         0, 0, 0, 1);
+}
+
+bool SphereInFrustum(float3 center, float radius)
+{
+    [unroll]
+    for (uint i = 0; i < 6; i++)
+    {
+        float4 plane = _FrustumPlanes[i];
+        if (dot(plane.xyz, center) + plane.w < -radius)
+            return false;
+    }
+
+    return true;
 }
 
 float4x4 ComputeMatrix(FanlightSeatData seat)
@@ -169,12 +197,38 @@ float4 ComputeColor(FanlightSeatData seat)
     return float4(rgb * brightness * randomIntensityFactor, _PrimaryColor.a);
 }
 
-[numthreads(128, 1, 1)]
-void GenerateInstances(uint id : SV_DispatchThreadID)
+[numthreads(1, 1, 1)]
+void ClearIndirectArgs(uint3 id : SV_DispatchThreadID)
 {
+    _DrawArgs[1] = 0;
+}
+
+[numthreads(64, 1, 1)]
+void CullBlocks(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
+    if (id >= (uint)_BlockCountValue) return;
+
+    FanlightBlockData block = _Blocks[id];
+    float4 worldCenter = mul(_LocalToWorld, float4(block.localCenterRadius.xyz, 1.0));
+    _BlockVisibility[id] = SphereInFrustum(worldCenter.xyz, block.localCenterRadius.w * _CullingScale) ? 1 : 0;
+}
+
+[numthreads(128, 1, 1)]
+void GenerateVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
     if (id >= (uint)_InstanceCount) return;
 
     FanlightSeatData seat = _Seats[id];
+    uint blockIndex = (uint)(seat.planePositionBlock.z + seat.planePositionBlock.w * _BlockCount.x);
+
+    if (_BlockVisibility[blockIndex] == 0)
+        return;
+
+    uint visibleIndex;
+    InterlockedAdd(_DrawArgs[1], 1, visibleIndex);
+    _VisibleIndices[visibleIndex] = id;
     _FanlightMatrices[id] = ComputeMatrix(seat);
     _FanlightColors[id] = ComputeColor(seat);
 }

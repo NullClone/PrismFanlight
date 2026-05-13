@@ -29,6 +29,7 @@ Shader "Prism Fanlight/Indirect Unlit"
 
             StructuredBuffer<float4x4> _FanlightMatrices;
             StructuredBuffer<float4> _FanlightColors;
+            StructuredBuffer<uint> _VisibleIndices;
             float4 _BaseColor;
 
             struct appdata
@@ -47,9 +48,10 @@ Shader "Prism Fanlight/Indirect Unlit"
             v2f vert(appdata v)
             {
                 v2f o;
-                float4 world = mul(_FanlightMatrices[v.instanceID], float4(v.vertex.xyz, 1.0));
+                uint seatIndex = _VisibleIndices[v.instanceID];
+                float4 world = mul(_FanlightMatrices[seatIndex], float4(v.vertex.xyz, 1.0));
                 o.positionCS = mul(UNITY_MATRIX_VP, world);
-                o.color = _FanlightColors[v.instanceID] * _BaseColor;
+                o.color = _FanlightColors[seatIndex] * _BaseColor;
                 return o;
             }
 
