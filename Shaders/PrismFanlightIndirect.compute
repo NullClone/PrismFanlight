@@ -2,17 +2,7 @@
 #pragma kernel CullBlocks
 #pragma kernel GenerateVisibleInstances
 
-struct FanlightSeatData
-{
-    float4 localPositionSeed;
-    float4 planePositionBlock;
-};
-
-struct FanlightBlockData
-{
-    float4 localCenterRadius;
-    float4 indexRange;
-};
+#include "PrismFanlightTypes.hlsl"
 
 StructuredBuffer<FanlightSeatData> _Seats;
 StructuredBuffer<FanlightBlockData> _Blocks;
@@ -44,159 +34,9 @@ float4 _Hue;
 float4 _Wave;
 float4 _WaveShape;
 
-static const float PI = 3.14159265359;
-
-float Hash11(float n)
-{
-    return frac(sin(n) * 43758.5453123);
-}
-
-float Hash21(float2 p)
-{
-    return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453123);
-}
-
-float Noise21(float2 p)
-{
-    float2 i = floor(p);
-    float2 f = frac(p);
-    float a = Hash21(i);
-    float b = Hash21(i + float2(1, 0));
-    float c = Hash21(i + float2(0, 1));
-    float d = Hash21(i + float2(1, 1));
-    float2 u = f * f * (3.0 - 2.0 * f);
-    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y) * 2.0 - 1.0;
-}
-
-float3 HsvToRgb(float h, float s, float v)
-{
-    float3 k = float3(1.0, 2.0 / 3.0, 1.0 / 3.0);
-    float3 p = abs(frac(h.xxx + k) * 6.0 - 3.0);
-    return v * lerp(float3(1.0, 1.0, 1.0), saturate(p - 1.0), s);
-}
-
-float4x4 Translate(float3 t)
-{
-    return float4x4(
-        1, 0, 0, t.x,
-        0, 1, 0, t.y,
-        0, 0, 1, t.z,
-        0, 0, 0, 1);
-}
-
-float4x4 AxisAngle(float3 axis, float angle)
-{
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-
-    return float4x4(
-        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0,
-        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0,
-        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0,
-        0, 0, 0, 1);
-}
-
-bool SphereInFrustum(float3 center, float radius)
-{
-    [unroll]
-    for (uint i = 0; i < 6; i++)
-    {
-        float4 plane = _FrustumPlanes[i];
-        if (dot(plane.xyz, center) + plane.w < -radius)
-            return false;
-    }
-
-    return true;
-}
-
-float4x4 ComputeMatrix(FanlightSeatData seat)
-{
-    float seed = seat.localPositionSeed.w;
-    float3 localPosition = seat.localPositionSeed.xyz;
-
-    float frequency = _MotionTiming.x;
-    float randomPhase = _MotionTiming.y;
-    float phaseNoiseAmount = _MotionTiming.z;
-    float phaseNoiseSpeed = _MotionTiming.w;
-
-    float armLength = _MotionSwing.x;
-    float minAngle = _MotionSwing.y;
-    float maxAngle = _MotionSwing.z;
-    float snapAmount = _MotionSwing.w;
-
-    float seatJitter = _MotionVariation.x;
-    float heightJitter = _MotionVariation.y;
-    float armLengthJitter = _MotionVariation.z;
-    float axisNoiseAmount = _MotionNoise.x;
-    float axisNoiseSpeed = _MotionNoise.y;
-
-    float phase = 2.0 * PI * frequency * _FanlightTime;
-    phase += Hash11(seed + 11.0) * 2.0 * PI * randomPhase;
-    phase += Noise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * phaseNoiseSpeed)) * phaseNoiseAmount;
-
-    float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
-    localPosition.xz += jitter * seatJitter * _SeatPitch.xy;
-    localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * heightJitter;
-
-    float angle = cos(phase);
-    float snappedAngle = smoothstep(-1.0, 1.0, angle) * 2.0 - 1.0;
-    angle = lerp(angle, snappedAngle, snapAmount * Hash11(seed + 43.0));
-    angle *= lerp(minAngle, maxAngle, Hash11(seed + 47.0));
-
-    float axisNoise = Noise21(float2(Hash11(seed + 53.0) * 2000.0 - 1000.0, _FanlightTime * axisNoiseSpeed + 100.0));
-    float3 axis = normalize(float3(axisNoise * axisNoiseAmount, 0.0, 1.0));
-    float armJitter = 1.0 + (Hash11(seed + 59.0) * 2.0 - 1.0) * armLengthJitter;
-
-    float4x4 m1 = Translate(localPosition);
-    float4x4 m2 = AxisAngle(axis, angle);
-    float4x4 m3 = Translate(float3(0.0, armLength * armJitter, 0.0));
-    return mul(_LocalToWorld, mul(m1, mul(m2, m3)));
-}
-
-float4 ComputeColor(FanlightSeatData seat)
-{
-    float seed = seat.localPositionSeed.w;
-    float2 pos = seat.planePositionBlock.xy;
-    float2 block = seat.planePositionBlock.zw;
-
-    float randomIntensity = _Brightness.z;
-    float saturation = _Brightness.w;
-    float randomIntensityFactor = lerp(1.0, lerp(0.65, 1.35, Hash11(seed + 101.0)), randomIntensity);
-    float brightness = _Brightness.x;
-    float3 rgb = _PrimaryColor.rgb;
-
-    if (_ColorMode == 0)
-    {
-        brightness += _Brightness.y;
-    }
-    else if (_ColorMode == 1)
-    {
-        rgb = HsvToRgb(frac(Hash11(seed + 107.0) * _Hue.y + _FanlightTime * _Hue.x), saturation, 1.0);
-        brightness += _Brightness.y;
-    }
-    else if (_ColorMode == 2)
-    {
-        rgb = HsvToRgb(frac(pos.x * 0.035 + pos.y * 0.02 + _FanlightTime * _Hue.x + Hash11(seed + 109.0) * _Hue.y), saturation, 1.0);
-        brightness += _Brightness.y;
-    }
-    else if (_ColorMode == 3 || _ColorMode == 4)
-    {
-        float distanceValue = _ColorMode == 4 ? distance(pos, _Wave.xy) : pos.y - _Wave.y;
-        float wave = sin(distanceValue * _Wave.z - _FanlightTime * _Wave.w) * 0.5 + 0.5;
-        rgb = HsvToRgb(frac(Hash11(seed + 113.0) * _Hue.y + _FanlightTime * _Hue.x), saturation, 1.0);
-        brightness += pow(wave, max(0.001, _WaveShape.x)) * _Brightness.y;
-    }
-    else if (_ColorMode == 5)
-    {
-        float denom = max(_BlockCount.x - 1.0, 1.0);
-        rgb = lerp(_PrimaryColor.rgb, _SecondaryColor.rgb, block.x / denom);
-        brightness += _Brightness.y;
-    }
-
-    return float4(rgb * brightness * randomIntensityFactor, _PrimaryColor.a);
-}
+#include "PrismFanlightMath.hlsl"
+#include "PrismFanlightCulling.hlsl"
+#include "PrismFanlightAnimation.hlsl"
 
 [numthreads(1, 1, 1)]
 void ClearIndirectArgs(uint3 id : SV_DispatchThreadID)
@@ -212,7 +52,7 @@ void CullBlocks(uint3 dispatchId : SV_DispatchThreadID)
 
     FanlightBlockData block = _Blocks[id];
     float4 worldCenter = mul(_LocalToWorld, float4(block.localCenterRadius.xyz, 1.0));
-    _BlockVisibility[id] = (_EnableCulling == 0 || SphereInFrustum(worldCenter.xyz, block.localCenterRadius.w * _CullingScale)) ? 1 : 0;
+    _BlockVisibility[id] = (_EnableCulling == 0 || PrismSphereInFrustum(worldCenter.xyz, block.localCenterRadius.w * _CullingScale)) ? 1 : 0;
 }
 
 [numthreads(128, 1, 1)]
@@ -230,6 +70,6 @@ void GenerateVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
     uint visibleIndex;
     InterlockedAdd(_DrawArgs[1], 1, visibleIndex);
     _VisibleIndices[visibleIndex] = id;
-    _FanlightMatrices[id] = ComputeMatrix(seat);
-    _FanlightColors[id] = ComputeColor(seat);
+    _FanlightMatrices[id] = PrismComputeMatrix(seat);
+    _FanlightColors[id] = PrismComputeColor(seat);
 }
