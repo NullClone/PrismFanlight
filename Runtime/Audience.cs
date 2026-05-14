@@ -4,7 +4,7 @@ using Unity.Mathematics;
 namespace PrismFanlight
 {
     [Serializable]
-    public class Audience
+    public class Audience : IEquatable<Audience>
     {
         // Fields
 
@@ -38,6 +38,33 @@ namespace PrismFanlight
             blockCount = math.max(blockCount, math.int2(1, 1)),
             aisleWidth = math.max(aisleWidth, math.float2(0.0f, 0.0f))
         };
+
+        public bool Equals(Audience other)
+        {
+            return other != null
+                   && seatPerBlock.Equals(other.seatPerBlock)
+                   && seatPitch.Equals(other.seatPitch)
+                   && blockCount.Equals(other.blockCount)
+                   && aisleWidth.Equals(other.aisleWidth);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Audience other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 31 + seatPerBlock.GetHashCode();
+                hash = hash * 31 + seatPitch.GetHashCode();
+                hash = hash * 31 + blockCount.GetHashCode();
+                hash = hash * 31 + aisleWidth.GetHashCode();
+                return hash;
+            }
+        }
 
         public (int2 block, int2 seat) GetCoordinatesFromIndex(int i)
         {

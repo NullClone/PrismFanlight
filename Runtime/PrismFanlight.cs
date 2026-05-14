@@ -98,7 +98,7 @@ namespace PrismFanlight
                 _enableCulling,
                 VisibilityUpdate,
                 AnimationUpdate,
-                _audience,
+                GetAudience(),
                 GetMotion(),
                 GetColorSettings(),
                 transform.localToWorldMatrix,
@@ -107,7 +107,7 @@ namespace PrismFanlight
         }
 
 
-        public Audience GetAudience() => _audience.Validated();
+        public Audience GetAudience() => (_audience ?? Audience.Default()).Validated();
 
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 

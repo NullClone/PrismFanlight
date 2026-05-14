@@ -16,6 +16,7 @@ namespace PrismFanlight.Rendering
         private FanlightGpuKernels _kernels;
         private Audience _audience;
         private Mesh _mesh;
+        private ComputeShader _computeShader;
         private bool _isInitialized;
         private bool _animationInitialized;
         private Matrix4x4 _lastAnimationLocalToWorld;
@@ -57,16 +58,18 @@ namespace PrismFanlight.Rendering
             float time,
             float updateClock)
         {
-            if (!CanRender(mesh, material, computeShader, audience)) return;
+            var validatedAudience = (audience ?? Audience.Default()).Validated();
 
-            EnsureInitialized(mesh, computeShader, audience);
+            if (!CanRender(mesh, material, computeShader, validatedAudience)) return;
+
+            EnsureInitialized(mesh, computeShader, validatedAudience);
 
             var worldBounds = FanlightGeometryBuilder.TransformBounds(localToWorld, _buffers.LocalBounds);
 
             var context = new FanlightGpuDispatchContext(
                 cullingCamera,
                 enableCulling,
-                audience,
+                validatedAudience,
                 motion,
                 color,
                 localToWorld,
@@ -106,6 +109,7 @@ namespace PrismFanlight.Rendering
             _debugReadback.Reset();
             _properties = null;
             _mesh = null;
+            _computeShader = null;
             _isInitialized = false;
             _animationInitialized = false;
             _lastAnimationLocalToWorld = Matrix4x4.identity;
@@ -123,11 +127,19 @@ namespace PrismFanlight.Rendering
 
         private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, Audience audience)
         {
-            if (_isInitialized && _mesh == mesh && _buffers.SeatCount == audience.TotalSeatCount && audience.Equals(_audience)) return;
+            if (_isInitialized
+                && _mesh == mesh
+                && _computeShader == computeShader
+                && _buffers.SeatCount == audience.TotalSeatCount
+                && audience.Equals(_audience))
+            {
+                return;
+            }
 
             Dispose();
 
             _mesh = mesh;
+            _computeShader = computeShader;
             _audience = audience;
             _kernels = new FanlightGpuKernels(computeShader);
             _properties = new MaterialPropertyBlock();
