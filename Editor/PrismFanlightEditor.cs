@@ -47,7 +47,7 @@ namespace PrismFanlight.Editor
 
         private void OnSceneGUI()
         {
-            if (!_enablePreview || Application.isPlaying) return;
+            if (!_enablePreview) return;
 
             var instance = target as PrismFanlight;
 
@@ -207,11 +207,10 @@ namespace PrismFanlight.Editor
                 PrismFanlightEditorStyles.DrawStat("GPU Buffers", FormatBytes(fanlight.GpuBufferMemoryBytes));
                 PrismFanlightEditorStyles.DrawStat("Motion Frequency", motion.frequency.ToString("0.###"));
                 PrismFanlightEditorStyles.DrawStat("Color Mode", color.mode.ToString());
-                PrismFanlightEditorStyles.DrawStat("Preview Limit", _scenePreview.PreviewSeatLimit.ToString("N0"));
 
-                if (audience.TotalSeatCount > _scenePreview.PreviewSeatLimit)
+                if (audience.blockCount.x * audience.blockCount.y > 1)
                 {
-                    EditorGUILayout.HelpBox("SceneView preview is capped to keep editing responsive. Runtime rendering still uses the full seat count.", MessageType.Info);
+                    EditorGUILayout.HelpBox("SceneView seat preview is limited to one representative block to keep editing responsive. Runtime rendering still uses the full audience.", MessageType.Info);
                 }
             });
         }

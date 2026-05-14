@@ -66,6 +66,8 @@ namespace PrismFanlight
 
         public bool IsCullingEnabled => _enableCulling;
 
+        public Camera CullingCamera => _cullingCamera;
+
         public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
 
         public FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
