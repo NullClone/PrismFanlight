@@ -15,6 +15,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
         private SerializedProperty _enableCulling;
+        private SerializedProperty _visibilityUpdate;
+        private SerializedProperty _animationUpdate;
         private SerializedProperty _cullingCamera;
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
@@ -32,8 +34,10 @@ namespace PrismFanlight.Editor
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
-            _enableCulling = serializedObject.FindProperty("_enableCulling");
-            _cullingCamera = serializedObject.FindProperty("_cullingCamera");
+            _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
+            _visibilityUpdate = serializedObject.FindProperty(nameof(_visibilityUpdate));
+            _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
+            _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
@@ -82,13 +86,42 @@ namespace PrismFanlight.Editor
             PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
             {
                 EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+                EditorGUILayout.PropertyField(_material, new GUIContent("Material"));
 
                 if (_mesh.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
                 }
 
+                if (_material.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Indirect rendering material is required.", MessageType.Warning);
+                }
+
                 EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Update Mode", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_animationUpdate.FindPropertyRelative("_mode"), new GUIContent("Animation / Color"));
+
+                if (IsFixedRate(_animationUpdate))
+                {
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.PropertyField(_animationUpdate.FindPropertyRelative("_targetFrameRate"), new GUIContent("Frame Rate"));
+                    }
+                }
+
+                EditorGUILayout.PropertyField(_visibilityUpdate.FindPropertyRelative("_mode"), new GUIContent("Visibility"));
+
+                if (IsFixedRate(_visibilityUpdate))
+                {
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.PropertyField(_visibilityUpdate.FindPropertyRelative("_targetFrameRate"), new GUIContent("Frame Rate"));
+                    }
+                }
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Culling", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
                 EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
 
@@ -162,6 +195,8 @@ namespace PrismFanlight.Editor
                 PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
                 PrismFanlightEditorStyles.DrawStat("Backend", "GPU Indirect");
                 PrismFanlightEditorStyles.DrawStat("GPU Culling", fanlight.IsCullingEnabled ? "On" : "Off");
+                PrismFanlightEditorStyles.DrawStat("Visibility Update", fanlight.VisibilityUpdate.ToDisplayString());
+                PrismFanlightEditorStyles.DrawStat("Animation Update", fanlight.AnimationUpdate.ToDisplayString());
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", fanlight.IsGpuReady ? "Yes" : "No");
                 PrismFanlightEditorStyles.DrawStat("GPU Instances", fanlight.GpuSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Visible Seats", fanlight.GpuVisibleSeatCount.ToString("N0"));
@@ -289,6 +324,12 @@ namespace PrismFanlight.Editor
         private static bool UsesHue(FanlightColorMode mode) => mode is FanlightColorMode.RandomHue or FanlightColorMode.Rainbow or FanlightColorMode.Wave or FanlightColorMode.RadialWave;
 
         private static bool UsesWave(FanlightColorMode mode) => mode is FanlightColorMode.Wave or FanlightColorMode.RadialWave;
+
+        private static bool IsFixedRate(SerializedProperty property)
+        {
+            var mode = property.FindPropertyRelative("_mode");
+            return mode.enumValueIndex == (int)FanlightGpuUpdateMode.FixedRate;
+        }
 
         private static string FormatRatio(int value, int total)
         {

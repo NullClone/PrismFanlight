@@ -20,6 +20,12 @@ namespace PrismFanlight
         private bool _enableCulling = true;
 
         [SerializeField]
+        private FanlightGpuUpdateTiming _visibilityUpdate = FanlightGpuUpdateTiming.EveryFrame();
+
+        [SerializeField]
+        private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.EveryFrame();
+
+        [SerializeField]
         private Camera _cullingCamera = null;
 
         [SerializeField]
@@ -60,6 +66,10 @@ namespace PrismFanlight
 
         public bool IsCullingEnabled => _enableCulling;
 
+        public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
+
+        public FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
+
 
         // Methods
 
@@ -86,11 +96,14 @@ namespace PrismFanlight
                 _computeShader,
                 _cullingCamera,
                 _enableCulling,
+                VisibilityUpdate,
+                AnimationUpdate,
                 _audience,
                 GetMotion(),
                 GetColorSettings(),
                 transform.localToWorldMatrix,
-                Time.time);
+                Time.time,
+                Time.unscaledTime);
         }
 
 

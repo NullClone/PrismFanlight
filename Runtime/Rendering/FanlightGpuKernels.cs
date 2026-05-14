@@ -6,13 +6,17 @@ namespace PrismFanlight.Rendering
     {
         public readonly int ClearIndirectArgs;
         public readonly int CullBlocks;
-        public readonly int GenerateVisibleInstances;
+        public readonly int BuildVisibleInstances;
+        public readonly int GenerateVisibleAnimation;
+        public readonly int GenerateAllAnimation;
 
         public FanlightGpuKernels(ComputeShader shader)
         {
             ClearIndirectArgs = shader.FindKernel("ClearIndirectArgs");
             CullBlocks = shader.FindKernel("CullBlocks");
-            GenerateVisibleInstances = shader.FindKernel("GenerateVisibleInstances");
+            BuildVisibleInstances = shader.FindKernel("BuildVisibleInstances");
+            GenerateVisibleAnimation = shader.FindKernel("GenerateVisibleAnimation");
+            GenerateAllAnimation = shader.FindKernel("GenerateAllAnimation");
         }
     }
 }

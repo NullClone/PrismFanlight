@@ -10,12 +10,15 @@ namespace PrismFanlight.Rendering
         private readonly FanlightGpuBuffers _buffers = new();
         private readonly FanlightGpuDispatcher _dispatcher = new();
         private readonly FanlightGpuDebugReadback _debugReadback = new();
+        private readonly FanlightGpuUpdateScheduler _scheduler = new();
 
         private MaterialPropertyBlock _properties;
         private FanlightGpuKernels _kernels;
         private Audience _audience;
         private Mesh _mesh;
         private bool _isInitialized;
+        private bool _animationInitialized;
+        private Matrix4x4 _lastAnimationLocalToWorld;
 
 
         // Properties
@@ -45,17 +48,21 @@ namespace PrismFanlight.Rendering
             ComputeShader computeShader,
             Camera cullingCamera,
             bool enableCulling,
+            FanlightGpuUpdateTiming visibilityUpdate,
+            FanlightGpuUpdateTiming animationUpdate,
             Audience audience,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
             Matrix4x4 localToWorld,
-            float time)
+            float time,
+            float updateClock)
         {
             if (!CanRender(mesh, material, computeShader, audience)) return;
 
             EnsureInitialized(mesh, computeShader, audience);
 
             var worldBounds = FanlightGeometryBuilder.TransformBounds(localToWorld, _buffers.LocalBounds);
+
             var context = new FanlightGpuDispatchContext(
                 cullingCamera,
                 enableCulling,
@@ -66,10 +73,24 @@ namespace PrismFanlight.Rendering
                 time,
                 worldBounds);
 
-            Profiler.BeginSample("Prism Fanlight GPU Cull/Generate");
-            _dispatcher.Dispatch(computeShader, _kernels, _buffers, context);
-            _debugReadback.Request(_buffers.ArgsBuffer, _buffers.SeatCount);
-            Profiler.EndSample();
+            if (_scheduler.ShouldUpdateVisibility(visibilityUpdate, updateClock))
+            {
+                Profiler.BeginSample("Prism Fanlight GPU Visibility");
+                _dispatcher.DispatchVisibility(computeShader, _kernels, _buffers, context);
+                _debugReadback.Request(_buffers.ArgsBuffer, _buffers.SeatCount);
+                Profiler.EndSample();
+            }
+
+            var refreshAllAnimation = !_animationInitialized || localToWorld != _lastAnimationLocalToWorld;
+
+            if (_scheduler.ShouldUpdateAnimation(animationUpdate, updateClock, refreshAllAnimation))
+            {
+                Profiler.BeginSample("Prism Fanlight GPU Animation");
+                _dispatcher.DispatchAnimation(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
+                _animationInitialized = true;
+                _lastAnimationLocalToWorld = localToWorld;
+                Profiler.EndSample();
+            }
 
             Profiler.BeginSample("Prism Fanlight GPU Draw");
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
@@ -86,6 +107,9 @@ namespace PrismFanlight.Rendering
             _properties = null;
             _mesh = null;
             _isInitialized = false;
+            _animationInitialized = false;
+            _lastAnimationLocalToWorld = Matrix4x4.identity;
+            _scheduler.Reset();
         }
 
         private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, Audience audience)

@@ -1,6 +1,8 @@
 #pragma kernel ClearIndirectArgs
 #pragma kernel CullBlocks
-#pragma kernel GenerateVisibleInstances
+#pragma kernel BuildVisibleInstances
+#pragma kernel GenerateVisibleAnimation
+#pragma kernel GenerateAllAnimation
 
 #include "PrismFanlightTypes.hlsl"
 
@@ -52,11 +54,14 @@ void CullBlocks(uint3 dispatchId : SV_DispatchThreadID)
 
     FanlightBlockData block = _Blocks[id];
     float4 worldCenter = mul(_LocalToWorld, float4(block.localCenterRadius.xyz, 1.0));
-    _BlockVisibility[id] = (_EnableCulling == 0 || PrismSphereInFrustum(worldCenter.xyz, block.localCenterRadius.w * _CullingScale)) ? 1 : 0;
+    _BlockVisibility[id] = (_EnableCulling == 0 || PrismSphereInFrustum(worldCenter.xyz,
+                                                                        block.localCenterRadius.w * _CullingScale))
+                               ? 1
+                               : 0;
 }
 
 [numthreads(128, 1, 1)]
-void GenerateVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
+void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
 {
     uint id = dispatchId.x;
     if (id >= (uint)_InstanceCount) return;
@@ -70,6 +75,27 @@ void GenerateVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
     uint visibleIndex;
     InterlockedAdd(_DrawArgs[1], 1, visibleIndex);
     _VisibleIndices[visibleIndex] = id;
+}
+
+[numthreads(128, 1, 1)]
+void GenerateVisibleAnimation(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint visibleSlot = dispatchId.x;
+    if (visibleSlot >= _DrawArgs[1]) return;
+
+    uint id = _VisibleIndices[visibleSlot];
+    FanlightSeatData seat = _Seats[id];
+    _FanlightMatrices[id] = PrismComputeMatrix(seat);
+    _FanlightColors[id] = PrismComputeColor(seat);
+}
+
+[numthreads(128, 1, 1)]
+void GenerateAllAnimation(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
+    if (id >= (uint)_InstanceCount) return;
+
+    FanlightSeatData seat = _Seats[id];
     _FanlightMatrices[id] = PrismComputeMatrix(seat);
     _FanlightColors[id] = PrismComputeColor(seat);
 }

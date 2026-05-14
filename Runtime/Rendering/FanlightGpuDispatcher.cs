@@ -11,9 +11,9 @@ namespace PrismFanlight.Rendering
         private readonly Vector4[] _frustumPlanes = new Vector4[6];
 
 
-        public void Dispatch(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
+        public void DispatchVisibility(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
         {
-            SetCommonParams(shader, context, buffers);
+            SetCommonParams(shader, context, buffers, true);
 
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
             shader.Dispatch(kernels.ClearIndirectArgs, 1, 1, 1);
@@ -22,16 +22,27 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernels.CullBlocks, FanlightShaderIds.BlockVisibility, buffers.BlockVisibilityBuffer);
             shader.Dispatch(kernels.CullBlocks, Mathf.CeilToInt((float)buffers.BlockCount / BlockThreadGroupSize), 1, 1);
 
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.Seats, buffers.SeatBuffer);
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.BlockVisibility, buffers.BlockVisibilityBuffer);
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.Matrices, buffers.MatrixBuffer);
-            shader.SetBuffer(kernels.GenerateVisibleInstances, FanlightShaderIds.Colors, buffers.ColorBuffer);
-            shader.Dispatch(kernels.GenerateVisibleInstances, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.BlockVisibility, buffers.BlockVisibilityBuffer);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
+            shader.Dispatch(kernels.BuildVisibleInstances, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
-        private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers)
+        public void DispatchAnimation(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context, bool visibleOnly)
+        {
+            SetCommonParams(shader, context, buffers, false);
+
+            var kernel = visibleOnly ? kernels.GenerateVisibleAnimation : kernels.GenerateAllAnimation;
+            shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.Matrices, buffers.MatrixBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.Colors, buffers.ColorBuffer);
+            shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
+        }
+
+        private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers, bool includeVisibilityParams)
         {
             var audience = context.Audience;
             var motion = context.Motion;
@@ -41,12 +52,17 @@ namespace PrismFanlight.Rendering
             shader.SetInt(FanlightShaderIds.BlockCountValue, buffers.BlockCount);
             shader.SetMatrix(FanlightShaderIds.LocalToWorld, context.LocalToWorld);
             shader.SetFloat(FanlightShaderIds.Time, context.Time);
-            shader.SetFloat(FanlightShaderIds.CullingScale, FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld));
-            shader.SetInt(FanlightShaderIds.EnableCulling, context.EnableCulling ? 1 : 0);
-            SetFrustumPlanes(shader, context.EnableCulling ? context.CullingCamera : null, context.WorldBounds);
 
             shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0.0f, 0.0f));
             shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(audience.blockCount.x, audience.blockCount.y, 0.0f, 0.0f));
+
+            if (includeVisibilityParams)
+            {
+                shader.SetFloat(FanlightShaderIds.CullingScale, FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld));
+                shader.SetInt(FanlightShaderIds.EnableCulling, context.EnableCulling ? 1 : 0);
+                SetFrustumPlanes(shader, context.EnableCulling ? context.CullingCamera : null, context.WorldBounds);
+            }
+
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.frequency, motion.randomPhase, motion.phaseNoiseAmount, motion.phaseNoiseSpeed));
             shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.armLength, motion.minAngle, motion.maxAngle, motion.snapAmount));
             shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.seatJitter, motion.heightJitter, motion.armLengthJitter, 0.0f));
