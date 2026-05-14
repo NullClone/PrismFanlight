@@ -17,10 +17,7 @@ namespace PrismFanlight
         public Color secondaryColor;
 
         [Min(0.0f)]
-        public float baseIntensity;
-
-        [Min(0.0f)]
-        public float effectIntensity;
+        public float intensity;
 
         [Range(0.0f, 1.0f)]
         public float randomIntensity;
@@ -49,8 +46,7 @@ namespace PrismFanlight
             mode = FanlightColorMode.Solid,
             primaryColor = Color.white,
             secondaryColor = Color.cyan,
-            baseIntensity = 0.1f,
-            effectIntensity = 20.0f,
+            intensity = 20.0f,
             randomIntensity = 0.0f,
             saturation = 1.0f,
             hueSpeed = 0.83f,
@@ -66,8 +62,7 @@ namespace PrismFanlight
             mode = mode,
             primaryColor = primaryColor,
             secondaryColor = secondaryColor,
-            baseIntensity = math.max(baseIntensity, 0.0f),
-            effectIntensity = math.max(effectIntensity, 0.0f),
+            intensity = math.max(intensity, 0.0f),
             randomIntensity = math.saturate(randomIntensity),
             saturation = math.saturate(saturation),
             hueSpeed = hueSpeed,
@@ -83,42 +78,37 @@ namespace PrismFanlight
             var rand = new Random(seed);
             rand.NextUInt4();
 
-            var randomIntensityFactor = math.lerp(1.0f, rand.NextFloat(0.65f, 1.35f), randomIntensity);
-            var brightness = baseIntensity;
             var rgb = ToFloat3(primaryColor);
 
             switch (mode)
             {
                 case FanlightColorMode.Solid:
-                    brightness += effectIntensity;
                     break;
 
                 case FanlightColorMode.RandomHue:
                     rgb = HsvToRgb(math.frac(rand.NextFloat() * randomHueAmount + time * hueSpeed), saturation, 1.0f);
-                    brightness += effectIntensity;
                     break;
 
                 case FanlightColorMode.Rainbow:
                     rgb = HsvToRgb(math.frac(pos.x * 0.035f + pos.y * 0.02f + time * hueSpeed + rand.NextFloat() * randomHueAmount), saturation, 1.0f);
-                    brightness += effectIntensity;
                     break;
 
                 case FanlightColorMode.RadialWave:
                 case FanlightColorMode.Wave:
                     var wave = EvaluateWave(pos, time);
                     rgb = HsvToRgb(math.frac(rand.NextFloat() * randomHueAmount + time * hueSpeed), saturation, 1.0f);
-                    brightness += math.pow(wave, waveSharpness) * effectIntensity;
+                    rgb *= math.pow(wave, waveSharpness);
                     break;
 
                 case FanlightColorMode.BlockGradient:
                     var denom = math.max(audience.blockCount.x - 1, 1);
                     var t = (float)block.x / denom;
                     rgb = math.lerp(ToFloat3(primaryColor), ToFloat3(secondaryColor), t);
-                    brightness += effectIntensity;
                     break;
             }
 
-            var finalRgb = rgb * brightness * randomIntensityFactor;
+            var randomIntensityFactor = math.max(0.0f, 1.0f + rand.NextFloat(-1.0f, 1.0f) * randomIntensity);
+            var finalRgb = rgb * intensity * randomIntensityFactor;
 
             return new Color(finalRgb.x, finalRgb.y, finalRgb.z, primaryColor.a);
         }

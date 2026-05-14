@@ -75,7 +75,7 @@ namespace PrismFanlight.Rendering
             shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
             shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
             shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);
-            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.baseIntensity, color.effectIntensity, color.randomIntensity, color.saturation));
+            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, color.saturation, 0.0f));
             shader.SetVector(FanlightShaderIds.Hue, new Vector4(color.hueSpeed, color.randomHueAmount, 0.0f, 0.0f));
             shader.SetVector(FanlightShaderIds.Wave, new Vector4(color.waveOrigin.x, color.waveOrigin.y, color.waveFrequency, color.waveSpeed));
             shader.SetVector(FanlightShaderIds.WaveShape, new Vector4(color.waveSharpness, 0.0f, 0.0f, 0.0f));

@@ -275,9 +275,8 @@ namespace PrismFanlight.Editor
 
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Brightness", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(color.FindPropertyRelative("baseIntensity"));
-            EditorGUILayout.PropertyField(color.FindPropertyRelative("effectIntensity"));
-            EditorGUILayout.PropertyField(color.FindPropertyRelative("randomIntensity"));
+            EditorGUILayout.PropertyField(color.FindPropertyRelative("intensity"), new GUIContent("Intensity"));
+            EditorGUILayout.PropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
 
             if (UsesHue(colorMode))
             {
