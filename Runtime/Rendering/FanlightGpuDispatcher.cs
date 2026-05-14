@@ -65,8 +65,13 @@ namespace PrismFanlight.Rendering
 
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.frequency, motion.randomPhase, motion.phaseNoiseAmount, motion.phaseNoiseSpeed));
             shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.armLength, motion.minAngle, motion.maxAngle, motion.snapAmount));
+            shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.holdAmount, motion.flickAmount, motion.returnBias, 0.0f));
+            shader.SetVector(FanlightShaderIds.MotionDirection, new Vector4(motion.baseAxis.x, motion.baseAxis.y, motion.baseAxis.z, motion.axisRandomness));
+            shader.SetVector(FanlightShaderIds.MotionDirectionBlend, new Vector4(motion.forwardBackAmount, motion.verticalAmount, 0.0f, 0.0f));
             shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.seatJitter, motion.heightJitter, motion.armLengthJitter, 0.0f));
             shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(motion.axisNoiseAmount, motion.axisNoiseSpeed, 0.0f, 0.0f));
+            shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.enthusiasm, motion.enthusiasmVariation, motion.reactionDelay, motion.tempoDrift));
+            shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.restAmount, motion.restIntensity, motion.smallMotionRatio, 0.0f));
             shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
             shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
             shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);

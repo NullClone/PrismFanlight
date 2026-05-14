@@ -3,7 +3,10 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     float seed = seat.localPositionSeed.w;
     float3 localPosition = seat.localPositionSeed.xyz;
 
-    float phase = 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.x * _FanlightTime;
+    float reactionDelay = Hash11(seed + 17.0) * _MotionHuman.z;
+    float tempoDrift = (Hash11(seed + 19.0) * 2.0 - 1.0) * _MotionHuman.w;
+    float phaseTime = max(0.0, _FanlightTime - reactionDelay);
+    float phase = 2.0 * PRISM_FANLIGHT_PI * max(0.0, _MotionTiming.x + tempoDrift) * phaseTime;
     phase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
     phase += Noise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w)) * _MotionTiming.z;
 
@@ -14,15 +17,28 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     float angle = cos(phase);
     float snappedAngle = smoothstep(-1.0, 1.0, angle) * 2.0 - 1.0;
     angle = lerp(angle, snappedAngle, _MotionSwing.w * Hash11(seed + 43.0));
+    float heldAngle = sign(angle) * pow(abs(angle), lerp(1.0, 0.25, _MotionShape.x));
+    angle = lerp(angle, heldAngle, _MotionShape.x);
+    float flickWave = sin(phase * 2.0) * (1.0 - abs(angle));
+    angle = clamp(angle + flickWave * _MotionShape.y * 0.35, -1.0, 1.0);
+    angle = clamp(angle + _MotionShape.z * 0.35, -1.0, 1.0);
     angle *= lerp(_MotionSwing.y, _MotionSwing.z, Hash11(seed + 47.0));
 
     float axisNoise = Noise21(float2(Hash11(seed + 53.0) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 100.0));
-    float3 axis = normalize(float3(axisNoise * _MotionNoise.x, 0.0, 1.0));
+    float3 baseAxis = SafeNormalize(_MotionDirection.xyz, float3(0.0, 0.0, 1.0));
+    float3 expressiveAxis = SafeNormalize(float3(axisNoise * _MotionNoise.x, _MotionDirectionBlend.y, _MotionDirectionBlend.x), baseAxis);
+    float3 axis = SafeNormalize(lerp(baseAxis, expressiveAxis, _MotionDirection.w), baseAxis);
     float armJitter = 1.0 + (Hash11(seed + 59.0) * 2.0 - 1.0) * _MotionVariation.z;
+
+    float enthusiasm = _MotionHuman.x * lerp(1.0, lerp(0.65, 1.35, Hash11(seed + 61.0)), _MotionHuman.y);
+    float restFactor = Hash11(seed + 67.0) < _MotionRest.x ? _MotionRest.y : 1.0;
+    float smallMotionFactor = Hash11(seed + 71.0) < _MotionRest.z ? 0.35 : 1.0;
+    float motionScale = enthusiasm * restFactor * smallMotionFactor;
+    angle *= motionScale;
 
     float4x4 m1 = Translate(localPosition);
     float4x4 m2 = AxisAngle(axis, angle);
-    float4x4 m3 = Translate(float3(0.0, _MotionSwing.x * armJitter, 0.0));
+    float4x4 m3 = Translate(float3(0.0, _MotionSwing.x * armJitter * max(0.0, enthusiasm), 0.0));
     return mul(_LocalToWorld, mul(m1, mul(m2, m3)));
 }
 

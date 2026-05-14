@@ -220,25 +220,45 @@ namespace PrismFanlight.Editor
         private static void DrawMotionFields(SerializedProperty motion)
         {
             EditorGUILayout.LabelField("Timing", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("frequency"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("randomPhase"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("phaseNoiseAmount"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("phaseNoiseSpeed"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("frequency"), new GUIContent("Frequency"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("randomPhase"), new GUIContent("Random Phase"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("phaseNoiseAmount"), new GUIContent("Phase Noise"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("phaseNoiseSpeed"), new GUIContent("Phase Noise Speed"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("reactionDelay"), new GUIContent("Reaction Delay"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("tempoDrift"), new GUIContent("Tempo Drift"));
 
             EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Swing", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("armLength"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("minAngle"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("maxAngle"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("snapAmount"));
+            EditorGUILayout.LabelField("Swing Shape", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("armLength"), new GUIContent("Arm Length"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("minAngle"), new GUIContent("Min Angle"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("maxAngle"), new GUIContent("Max Angle"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("snapAmount"), new GUIContent("Snap"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("holdAmount"), new GUIContent("Hold"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("flickAmount"), new GUIContent("Flick"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("returnBias"), new GUIContent("Return Bias"));
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Direction / Axis", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("baseAxis"), new GUIContent("Base Axis"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("forwardBackAmount"), new GUIContent("Forward / Back"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("verticalAmount"), new GUIContent("Vertical"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisRandomness"), new GUIContent("Axis Randomness"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseAmount"), new GUIContent("Axis Noise"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseSpeed"), new GUIContent("Axis Noise Speed"));
 
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Variation", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("seatJitter"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("heightJitter"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("armLengthJitter"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseAmount"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseSpeed"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("seatJitter"), new GUIContent("Seat Jitter"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("heightJitter"), new GUIContent("Height Jitter"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("armLengthJitter"), new GUIContent("Arm Length Jitter"));
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Humanization", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("enthusiasm"), new GUIContent("Enthusiasm"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("enthusiasmVariation"), new GUIContent("Enthusiasm Variation"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("restAmount"), new GUIContent("Rest Amount"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("restIntensity"), new GUIContent("Rest Intensity"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("smallMotionRatio"), new GUIContent("Small Motion Ratio"));
         }
 
         private static void DrawColorFields(SerializedProperty color)

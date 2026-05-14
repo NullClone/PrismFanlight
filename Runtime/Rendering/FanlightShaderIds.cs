@@ -24,8 +24,13 @@ namespace PrismFanlight.Rendering
         public static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
         public static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
         public static readonly int MotionSwing = Shader.PropertyToID("_MotionSwing");
+        public static readonly int MotionShape = Shader.PropertyToID("_MotionShape");
+        public static readonly int MotionDirection = Shader.PropertyToID("_MotionDirection");
+        public static readonly int MotionDirectionBlend = Shader.PropertyToID("_MotionDirectionBlend");
         public static readonly int MotionVariation = Shader.PropertyToID("_MotionVariation");
         public static readonly int MotionNoise = Shader.PropertyToID("_MotionNoise");
+        public static readonly int MotionHuman = Shader.PropertyToID("_MotionHuman");
+        public static readonly int MotionRest = Shader.PropertyToID("_MotionRest");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
         public static readonly int PrimaryColor = Shader.PropertyToID("_PrimaryColor");

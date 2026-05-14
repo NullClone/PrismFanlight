@@ -29,6 +29,12 @@ float3 HsvToRgb(float h, float s, float v)
     return v * lerp(float3(1.0, 1.0, 1.0), saturate(p - 1.0), s);
 }
 
+float3 SafeNormalize(float3 value, float3 fallback)
+{
+    float lengthSq = dot(value, value);
+    return lengthSq > 0.000001 ? value * rsqrt(lengthSq) : fallback;
+}
+
 float4x4 Translate(float3 t)
 {
     return float4x4(
