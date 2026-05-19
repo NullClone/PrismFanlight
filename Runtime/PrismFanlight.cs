@@ -17,6 +17,9 @@ namespace PrismFanlight
         private ComputeShader _computeShader = null;
 
         [SerializeField]
+        private uint _renderingLayerMask = 1u;
+
+        [SerializeField]
         private bool _enableCulling = true;
 
         [SerializeField]
@@ -66,6 +69,8 @@ namespace PrismFanlight
 
         public bool IsCullingEnabled => _enableCulling;
 
+        public uint RenderingLayerMask => _renderingLayerMask;
+
         public Camera CullingCamera => _cullingCamera;
 
         public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
@@ -96,6 +101,7 @@ namespace PrismFanlight
                 _mesh,
                 _material,
                 _computeShader,
+                _renderingLayerMask,
                 _cullingCamera,
                 _enableCulling,
                 VisibilityUpdate,

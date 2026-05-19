@@ -18,7 +18,7 @@ namespace PrismFanlight.Rendering
 
         public ComputeBuffer ColorBuffer { get; private set; }
 
-        public ComputeBuffer ArgsBuffer { get; private set; }
+        public GraphicsBuffer ArgsBuffer { get; private set; }
 
 
         public int SeatCount { get; private set; }
@@ -44,7 +44,7 @@ namespace PrismFanlight.Rendering
             VisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
             ColorBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
-            ArgsBuffer = new ComputeBuffer(1, sizeof(uint) * 5, ComputeBufferType.IndirectArguments);
+            ArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
 
             SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(audience));
             BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(audience, mesh));

@@ -14,6 +14,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _mesh;
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
+        private SerializedProperty _renderingLayerMask;
         private SerializedProperty _enableCulling;
         private SerializedProperty _visibilityUpdate;
         private SerializedProperty _animationUpdate;
@@ -34,6 +35,7 @@ namespace PrismFanlight.Editor
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
+            _renderingLayerMask = serializedObject.FindProperty(nameof(_renderingLayerMask));
             _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
             _visibilityUpdate = serializedObject.FindProperty(nameof(_visibilityUpdate));
             _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
@@ -85,6 +87,16 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
             {
+                EditorGUI.BeginChangeCheck();
+
+                var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _renderingLayerMask.longValue = mask;
+                }
+
+                EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
                 EditorGUILayout.PropertyField(_material, new GUIContent("Material"));
 

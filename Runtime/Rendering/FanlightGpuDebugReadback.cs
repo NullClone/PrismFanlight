@@ -20,7 +20,7 @@ namespace PrismFanlight.Rendering
             LastVisibleSeatCount = 0;
         }
 
-        public void Request(ComputeBuffer argsBuffer, int seatCount)
+        public void Request(GraphicsBuffer argsBuffer, int seatCount)
         {
             if (argsBuffer == null || _readbackPending) return;
             if (Time.frameCount == _lastReadbackFrame) return;

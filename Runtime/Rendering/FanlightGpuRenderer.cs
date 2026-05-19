@@ -47,6 +47,7 @@ namespace PrismFanlight.Rendering
             Mesh mesh,
             Material material,
             ComputeShader computeShader,
+            uint renderingLayerMask,
             Camera cullingCamera,
             bool enableCulling,
             FanlightGpuUpdateTiming visibilityUpdate,
@@ -99,7 +100,15 @@ namespace PrismFanlight.Rendering
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
             _properties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
             _properties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.VisibleIndexBuffer);
-            Graphics.DrawMeshInstancedIndirect(mesh, 0, material, worldBounds, _buffers.ArgsBuffer, 0, _properties);
+
+            var renderParams = new RenderParams(material)
+            {
+                worldBounds = worldBounds,
+                matProps = _properties,
+                renderingLayerMask = renderingLayerMask
+            };
+
+            Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.ArgsBuffer);
             Profiler.EndSample();
         }
 
