@@ -29,6 +29,9 @@ namespace PrismFanlight
         private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.EveryFrame();
 
         [SerializeField]
+        private FanlightTempoSettings _tempo = FanlightTempoSettings.Default();
+
+        [SerializeField]
         private Camera _cullingCamera = null;
 
         [SerializeField]
@@ -61,6 +64,8 @@ namespace PrismFanlight
 
         public FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
 
+        public FanlightTempoSettings Tempo => _tempo.Validated();
+
 
         // Methods
 
@@ -90,6 +95,7 @@ namespace PrismFanlight
                 _enableCulling,
                 VisibilityUpdate,
                 AnimationUpdate,
+                GetTempoState(),
                 GetAudience(),
                 GetMotion(),
                 GetColorSettings(),
@@ -100,6 +106,8 @@ namespace PrismFanlight
 
 
         public Audience GetAudience() => (_audience ?? Audience.Default()).Validated();
+
+        public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
@@ -114,18 +122,20 @@ namespace PrismFanlight
                 _renderer.IsReady,
                 audience.TotalSeatCount,
                 _renderer.VisibleSeatCount,
-                blockCount);
+                blockCount,
+                GetTempoState());
         }
     }
 
     public readonly struct FanlightDiagnostics
     {
-        public FanlightDiagnostics(bool isGpuReady, int totalSeatCount, int visibleSeatCount, int blockCount)
+        public FanlightDiagnostics(bool isGpuReady, int totalSeatCount, int visibleSeatCount, int blockCount, FanlightTempoState tempo)
         {
             IsGpuReady = isGpuReady;
             TotalSeatCount = totalSeatCount;
             VisibleSeatCount = visibleSeatCount;
             BlockCount = blockCount;
+            Tempo = tempo;
         }
 
         public bool IsGpuReady { get; }
@@ -135,5 +145,7 @@ namespace PrismFanlight
         public int VisibleSeatCount { get; }
 
         public int BlockCount { get; }
+
+        public FanlightTempoState Tempo { get; }
     }
 }

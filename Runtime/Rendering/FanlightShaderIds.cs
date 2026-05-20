@@ -16,6 +16,8 @@ namespace PrismFanlight.Rendering
         public static readonly int BlockCountValue = Shader.PropertyToID("_BlockCountValue");
         public static readonly int LocalToWorld = Shader.PropertyToID("_LocalToWorld");
         public static readonly int Time = Shader.PropertyToID("_FanlightTime");
+        public static readonly int Beat = Shader.PropertyToID("_FanlightBeat");
+        public static readonly int Tempo = Shader.PropertyToID("_FanlightTempo");
         public static readonly int FrustumPlanes = Shader.PropertyToID("_FrustumPlanes");
         public static readonly int CullingScale = Shader.PropertyToID("_CullingScale");
         public static readonly int EnableCulling = Shader.PropertyToID("_EnableCulling");
@@ -31,6 +33,9 @@ namespace PrismFanlight.Rendering
         public static readonly int MotionNoise = Shader.PropertyToID("_MotionNoise");
         public static readonly int MotionHuman = Shader.PropertyToID("_MotionHuman");
         public static readonly int MotionRest = Shader.PropertyToID("_MotionRest");
+        public static readonly int MotionRestTiming = Shader.PropertyToID("_MotionRestTiming");
+        public static readonly int MotionBeat = Shader.PropertyToID("_MotionBeat");
+        public static readonly int MotionBeatSpread = Shader.PropertyToID("_MotionBeatSpread");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
         public static readonly int PrimaryColor = Shader.PropertyToID("_PrimaryColor");

@@ -10,6 +10,7 @@ Prism Fanlight is a Unity tool for rendering a large 3D live-event audience hold
 - GPU-driven rendering
 - SceneView placement preview
 - fine runtime control for motion and color
+- BPM-synchronized motion for music-driven staging
 - reusable presets
 - future Timeline/show cue workflows
 
@@ -42,6 +43,7 @@ Current GPU features:
 - Visible seat indices are generated on GPU.
 - Indirect draw args are updated on GPU.
 - Matrix and color are generated on GPU with a separate update cadence from visibility.
+- Optional BPM beat data is generated on CPU and passed to the GPU for motion synchronization.
 - Debug readback samples visible instance count every 10 frames.
 - GPU culling can be toggled on/off from the Inspector.
 
@@ -57,6 +59,7 @@ Responsibilities:
 - owns the `FanlightGpuRenderer`
 - resolves motion/color settings from local values or presets
 - passes mesh/material/compute/camera/settings to the renderer
+- evaluates tempo/song time and passes beat data to the renderer
 
 Important serialized fields:
 
@@ -66,6 +69,7 @@ Important serialized fields:
 - `_enableCulling`
 - `_visibilityUpdate`
 - `_animationUpdate`
+- `_tempo`
 - `_cullingCamera`
 - `_audience`
 - `_motionPreset`
@@ -96,11 +100,38 @@ Current groups:
 - Swing Shape: arm length, angle range, snap, hold, flick, return bias
 - Direction / Axis: base axis, forward/back amount, vertical amount, axis randomness/noise
 - Variation: seat, height, and arm length jitter
-- Humanization: enthusiasm, rest amount, rest intensity, small-motion ratio
+- Humanization: enthusiasm, rest amount/intensity, cyclic rest timing, rest fade, small-motion ratio
+- BPM Sync: beat sync amount, beats per swing, beat phase offset, downbeat accent, beat reaction delay, seat jitter, block delay
 
 The CPU method remains useful as a reference, but runtime rendering now uses GPU-side equivalents in HLSL.
 
 Motion presets should be built by combining these parameters rather than adding fixed motion-pattern enums. This keeps the shader path flexible and avoids hard-coded pattern branches.
+
+Rest behavior has two modes:
+
+- With rest cycle duration or rest duration at zero, rest candidates stay at `restIntensity`.
+- With both set, rest candidates periodically enter a reduced-motion state and fade back in. `restPhaseRandomness` offsets rest timing per seat so the audience does not rest in unison.
+
+### `FanlightTempoSettings`
+
+Tempo and song-position settings used by BPM-synchronized motion.
+
+Current clock sources:
+
+- Unity time
+- AudioSource time, using `timeSamples` when possible
+- Manual time
+
+Responsibilities:
+
+- calculate song time after offset and latency compensation
+- calculate beat, beat phase, and bar phase from BPM
+- expose clock readiness so AudioSource-based sync fails visibly instead of silently falling back
+- keep BPM sync optional so legacy frequency-based motion remains unchanged
+
+Tempo currently drives motion only. Color/effect synchronization should be added separately when color and motion update lanes are split.
+
+BPM motion supports per-seat beat reaction delay, random beat jitter, and signed block delay. These controls keep motion musically locked while preventing the audience from looking mechanically identical.
 
 ### `FanlightColorSettings`
 
@@ -174,6 +205,7 @@ Compute dispatch and parameter binding.
 Responsibilities:
 
 - bind common params
+- bind beat/tempo params
 - bind culling planes
 - dispatch `ClearIndirectArgs`
 - dispatch `CullBlocks`
@@ -272,6 +304,8 @@ Current functions:
 - `PrismComputeMatrix`
 - `PrismComputeColor`
 
+`PrismComputeMatrix` can blend between legacy Hz-based phase and BPM beat phase. It also evaluates per-seat cyclic rest on the GPU. `PrismComputeColor` still uses normal time-based color animation and does not consume tempo data yet.
+
 ### `PrismFanlightIndirect.shader`
 
 Indirect draw shader.
@@ -294,6 +328,7 @@ Current sections:
 
 - Rendering
 - Layout
+- Tempo
 - Motion
 - Color
 - Debug
@@ -303,6 +338,11 @@ Debug displays:
 - total seats
 - blocks
 - visible seats
+- BPM sync on/off
+- tempo clock readiness
+- song time
+- beat position
+- bar/beat index
 - culled seats
 - culling ratio
 - thread groups

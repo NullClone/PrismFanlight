@@ -80,10 +80,41 @@ namespace PrismFanlight
         public float tempoDrift;
 
         [Range(0.0f, 1.0f)]
+        public float beatSyncAmount;
+
+        [Min(0.001f)]
+        public float beatsPerSwing;
+
+        public float beatPhaseOffset;
+
+        [Min(0.0f)]
+        public float downbeatAccent;
+
+        [Min(0.0f)]
+        public float beatReactionDelay;
+
+        [Min(0.0f)]
+        public float beatSeatJitter;
+
+        public Vector2 beatBlockDelay;
+
+        [Range(0.0f, 1.0f)]
         public float restAmount;
 
         [Range(0.0f, 1.0f)]
         public float restIntensity;
+
+        [Min(0.0f)]
+        public float restCycleDuration;
+
+        [Min(0.0f)]
+        public float restDuration;
+
+        [Min(0.0f)]
+        public float restFadeDuration;
+
+        [Range(0.0f, 1.0f)]
+        public float restPhaseRandomness;
 
         [Range(0.0f, 1.0f)]
         public float smallMotionRatio;
@@ -115,8 +146,19 @@ namespace PrismFanlight
             enthusiasmVariation = 0.15f,
             reactionDelay = 0.0f,
             tempoDrift = 0.0f,
+            beatSyncAmount = 0.0f,
+            beatsPerSwing = 1.0f,
+            beatPhaseOffset = 0.0f,
+            downbeatAccent = 0.0f,
+            beatReactionDelay = 0.0f,
+            beatSeatJitter = 0.0f,
+            beatBlockDelay = Vector2.zero,
             restAmount = 0.0f,
             restIntensity = 0.1f,
+            restCycleDuration = 0.0f,
+            restDuration = 0.0f,
+            restFadeDuration = 0.5f,
+            restPhaseRandomness = 1.0f,
             smallMotionRatio = 0.0f
         };
 
@@ -158,20 +200,45 @@ namespace PrismFanlight
                 enthusiasmVariation = legacyHumanDefaults ? 0.15f : math.saturate(enthusiasmVariation),
                 reactionDelay = math.max(reactionDelay, 0.0f),
                 tempoDrift = math.max(tempoDrift, 0.0f),
+                beatSyncAmount = math.saturate(beatSyncAmount),
+                beatsPerSwing = math.max(beatsPerSwing, 0.001f),
+                beatPhaseOffset = beatPhaseOffset,
+                downbeatAccent = math.max(downbeatAccent, 0.0f),
+                beatReactionDelay = math.max(beatReactionDelay, 0.0f),
+                beatSeatJitter = math.max(beatSeatJitter, 0.0f),
+                beatBlockDelay = beatBlockDelay,
                 restAmount = math.saturate(restAmount),
                 restIntensity = legacyHumanDefaults ? 0.1f : math.saturate(restIntensity),
+                restCycleDuration = math.max(restCycleDuration, 0.0f),
+                restDuration = math.max(restDuration, 0.0f),
+                restFadeDuration = math.max(restFadeDuration, 0.0f),
+                restPhaseRandomness = math.saturate(restPhaseRandomness),
                 smallMotionRatio = math.saturate(smallMotionRatio)
             };
         }
 
         public float4x4 GetMatrix(Audience audience, float2 pos, float4x4 xform, float time, uint seed)
         {
+            return GetMatrix(audience, pos, xform, time, FanlightTempoState.Disabled(time), seed);
+        }
+
+        public float4x4 GetMatrix(Audience audience, float2 pos, float4x4 xform, float time, FanlightTempoState tempo, uint seed)
+        {
+            return GetMatrix(audience, pos, float2.zero, xform, time, tempo, seed);
+        }
+
+        public float4x4 GetMatrix(Audience audience, float2 pos, float2 block, float4x4 xform, float time, FanlightTempoState tempo, uint seed)
+        {
             var rand = new Random(seed);
             rand.NextUInt4();
 
             var reaction = rand.NextFloat(0.0f, reactionDelay);
             var drift = rand.NextFloat(-tempoDrift, tempoDrift);
-            var phase = 2 * math.PI * math.max(0.0f, frequency + drift) * math.max(0.0f, time - reaction);
+            var phaseTime = math.max(0.0f, time - reaction);
+            var legacyPhase = 2 * math.PI * math.max(0.0f, frequency + drift) * phaseTime;
+            var delayedBeat = GetDelayedBeat(audience, block, tempo, reaction, ref rand);
+            var beatPhase = 2 * math.PI * ((delayedBeat / math.max(0.001f, beatsPerSwing)) + beatPhaseOffset);
+            var phase = math.lerp(legacyPhase, beatPhase, tempo.Enabled ? math.saturate(beatSyncAmount) : 0.0f);
             phase += rand.NextFloat(0.0f, 2 * math.PI) * randomPhase;
             phase += noise.snoise(math.float2(rand.NextFloat(-1000, 1000), time * phaseNoiseSpeed)) * phaseNoiseAmount;
 
@@ -196,9 +263,11 @@ namespace PrismFanlight
 
             var armJitter = 1.0f + rand.NextFloat(-armLengthJitter, armLengthJitter);
             var enthusiasmFactor = enthusiasm * math.lerp(1.0f, rand.NextFloat(0.65f, 1.35f), enthusiasmVariation);
-            var restFactor = rand.NextFloat() < restAmount ? restIntensity : 1.0f;
+            var restFactor = GetRestFactor(time, ref rand);
             var smallMotionFactor = rand.NextFloat() < smallMotionRatio ? 0.35f : 1.0f;
-            angle *= enthusiasmFactor * restFactor * smallMotionFactor;
+            var downbeatPulse = tempo.Enabled ? math.pow(1.0f - math.saturate(tempo.BarPhase), 8.0f) : 0.0f;
+            var downbeatFactor = 1.0f + downbeatPulse * downbeatAccent;
+            angle *= enthusiasmFactor * restFactor * smallMotionFactor * downbeatFactor;
             var offset = armLength * armJitter * math.max(0.0f, enthusiasmFactor);
 
             var m1 = float4x4.Translate(origin);
@@ -215,6 +284,50 @@ namespace PrismFanlight
         private static float3 SafeNormalize(float3 value, float3 fallback)
         {
             return math.lengthsq(value) > 0.000001f ? math.normalize(value) : fallback;
+        }
+
+        private float GetDelayedBeat(Audience audience, float2 block, FanlightTempoState tempo, float reactionSeconds, ref Random rand)
+        {
+            var beatReaction = reactionSeconds * tempo.Bpm / 60.0f;
+            var randomBeatReaction = rand.NextFloat(0.0f, math.max(0.0f, beatReactionDelay));
+            var seatBeatJitter = rand.NextFloat(-math.max(0.0f, beatSeatJitter), math.max(0.0f, beatSeatJitter));
+            var block01 = math.float2(
+                audience.blockCount.x > 1 ? block.x / (audience.blockCount.x - 1.0f) : 0.5f,
+                audience.blockCount.y > 1 ? block.y / (audience.blockCount.y - 1.0f) : 0.5f);
+            var blockBeatDelay = math.dot(block01 - 0.5f, math.float2(beatBlockDelay.x, beatBlockDelay.y));
+            return math.max(0.0f, tempo.Beat - beatReaction - randomBeatReaction - seatBeatJitter - blockBeatDelay);
+        }
+
+        private float GetRestFactor(float time, ref Random rand)
+        {
+            if (rand.NextFloat() >= restAmount)
+            {
+                return 1.0f;
+            }
+
+            var cycleDuration = math.max(restCycleDuration, 0.0f);
+            var duration = math.max(restDuration, 0.0f);
+
+            if (cycleDuration <= 0.0001f || duration <= 0.0001f)
+            {
+                return restIntensity;
+            }
+
+            var clampedDuration = math.min(duration, cycleDuration);
+            var phaseOffset = rand.NextFloat(0.0f, cycleDuration) * restPhaseRandomness;
+            var cycleTime = math.fmod(math.max(0.0f, time + phaseOffset), cycleDuration);
+
+            if (cycleTime >= clampedDuration)
+            {
+                return 1.0f;
+            }
+
+            var fade = math.min(restFadeDuration, clampedDuration * 0.5f);
+            var restWeight = fade > 0.0001f
+                ? math.saturate(cycleTime / fade) * math.saturate((clampedDuration - cycleTime) / fade)
+                : 1.0f;
+
+            return math.lerp(1.0f, restIntensity, restWeight);
         }
     }
 }

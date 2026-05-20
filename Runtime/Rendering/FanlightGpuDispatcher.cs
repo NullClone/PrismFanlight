@@ -45,6 +45,7 @@ namespace PrismFanlight.Rendering
         private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers, bool includeVisibilityParams)
         {
             var audience = context.Audience;
+            var tempo = context.Tempo;
             var motion = context.Motion;
             var color = context.Color;
 
@@ -52,6 +53,8 @@ namespace PrismFanlight.Rendering
             shader.SetInt(FanlightShaderIds.BlockCountValue, buffers.BlockCount);
             shader.SetMatrix(FanlightShaderIds.LocalToWorld, context.LocalToWorld);
             shader.SetFloat(FanlightShaderIds.Time, context.Time);
+            shader.SetVector(FanlightShaderIds.Beat, new Vector4(tempo.SongTime, tempo.Beat, tempo.BeatPhase, tempo.BarPhase));
+            shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enabled ? 1.0f : 0.0f, tempo.Bpm, tempo.BeatsPerBar, 0.0f));
 
             shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0.0f, 0.0f));
             shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(audience.blockCount.x, audience.blockCount.y, 0.0f, 0.0f));
@@ -72,6 +75,9 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(motion.axisNoiseAmount, motion.axisNoiseSpeed, 0.0f, 0.0f));
             shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.enthusiasm, motion.enthusiasmVariation, motion.reactionDelay, motion.tempoDrift));
             shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.restAmount, motion.restIntensity, motion.smallMotionRatio, 0.0f));
+            shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.restCycleDuration, motion.restDuration, motion.restFadeDuration, motion.restPhaseRandomness));
+            shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSyncAmount, motion.beatsPerSwing, motion.beatPhaseOffset, motion.downbeatAccent));
+            shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatReactionDelay, motion.beatSeatJitter, motion.beatBlockDelay.x, motion.beatBlockDelay.y));
             shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
             shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
             shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);

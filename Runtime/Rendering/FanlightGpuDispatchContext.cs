@@ -7,6 +7,7 @@ namespace PrismFanlight.Rendering
         public readonly Camera CullingCamera;
         public readonly bool EnableCulling;
         public readonly Audience Audience;
+        public readonly FanlightTempoState Tempo;
         public readonly FanlightMotionSettings Motion;
         public readonly FanlightColorSettings Color;
         public readonly Matrix4x4 LocalToWorld;
@@ -17,6 +18,7 @@ namespace PrismFanlight.Rendering
             Camera cullingCamera,
             bool enableCulling,
             Audience audience,
+            FanlightTempoState tempo,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
             Matrix4x4 localToWorld,
@@ -26,6 +28,7 @@ namespace PrismFanlight.Rendering
             CullingCamera = cullingCamera;
             EnableCulling = enableCulling;
             Audience = audience;
+            Tempo = tempo;
             Motion = motion;
             Color = color;
             LocalToWorld = localToWorld;
