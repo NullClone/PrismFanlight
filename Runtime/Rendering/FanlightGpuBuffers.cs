@@ -85,18 +85,5 @@ namespace PrismFanlight.Rendering
             BlockCount = 0;
             LocalBounds = default;
         }
-
-        public long EstimateMemoryBytes()
-        {
-            if (SeatBuffer == null) return 0;
-
-            return (long)SeatCount * FanlightSeatData.Stride
-                   + (long)BlockCount * FanlightBlockData.Stride
-                   + (long)BlockCount * sizeof(uint)
-                   + (long)SeatCount * sizeof(uint)
-                   + (long)SeatCount * sizeof(float) * 16
-                   + (long)SeatCount * sizeof(float) * 4
-                   + sizeof(uint) * 5;
-        }
     }
 }

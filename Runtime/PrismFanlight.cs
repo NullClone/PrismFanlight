@@ -58,7 +58,25 @@ namespace PrismFanlight
 
         public uint RenderingLayerMask => _renderingLayerMask;
 
-        public Camera CullingCamera => _cullingCamera;
+        public Mesh Mesh
+        {
+            get => _mesh;
+            set => _mesh = value;
+        }
+
+        public Material Material
+        {
+            get => _material;
+            set => _material = value;
+        }
+
+        public Camera CullingCamera
+        {
+            get => _cullingCamera;
+            set => _cullingCamera = value;
+        }
+
+        public ComputeShader ComputeShader => _computeShader;
 
         public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
 
@@ -66,22 +84,16 @@ namespace PrismFanlight
 
         public FanlightTempoSettings Tempo => _tempo.Validated();
 
+        public FanlightMotionPreset MotionPreset => _motionPreset;
+
+        public FanlightColorPreset ColorPreset => _colorPreset;
+
 
         // Methods
 
         private void OnEnable()
         {
             _cullingCamera ??= Camera.main;
-        }
-
-        private void OnDestroy()
-        {
-            _renderer.Dispose();
-        }
-
-        private void OnDisable()
-        {
-            _renderer.Dispose();
         }
 
         private void Update()
@@ -104,14 +116,13 @@ namespace PrismFanlight
                 Time.unscaledTime);
         }
 
-
         public Audience GetAudience() => (_audience ?? Audience.Default()).Validated();
-
-        public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
+
+        public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
         public FanlightDiagnostics GetDiagnostics()
         {
@@ -122,30 +133,69 @@ namespace PrismFanlight
                 _renderer.IsReady,
                 audience.TotalSeatCount,
                 _renderer.VisibleSeatCount,
-                blockCount,
-                GetTempoState());
+                blockCount);
         }
-    }
 
-    public readonly struct FanlightDiagnostics
-    {
-        public FanlightDiagnostics(bool isGpuReady, int totalSeatCount, int visibleSeatCount, int blockCount, FanlightTempoState tempo)
+        public void SetVisibilityUpdate(FanlightGpuUpdateTiming timing)
         {
-            IsGpuReady = isGpuReady;
-            TotalSeatCount = totalSeatCount;
-            VisibleSeatCount = visibleSeatCount;
-            BlockCount = blockCount;
-            Tempo = tempo;
+            _visibilityUpdate = timing.Validated();
         }
 
-        public bool IsGpuReady { get; }
+        public void SetAnimationUpdate(FanlightGpuUpdateTiming timing)
+        {
+            _animationUpdate = timing.Validated();
+        }
 
-        public int TotalSeatCount { get; }
+        public void SetAudience(Audience audience)
+        {
+            _audience = (audience ?? Audience.Default()).Validated();
+        }
 
-        public int VisibleSeatCount { get; }
+        public void SetTempo(FanlightTempoSettings tempo)
+        {
+            _tempo = tempo.Validated();
+        }
 
-        public int BlockCount { get; }
+        public void SetBpm(float bpm)
+        {
+            _tempo.bpm = Mathf.Max(1.0f, bpm);
+        }
 
-        public FanlightTempoState Tempo { get; }
+        public void SetMotion(FanlightMotionSettings motion)
+        {
+            _motionPreset = null;
+            _motion = motion.Validated();
+        }
+
+        public void SetMotionPreset(FanlightMotionPreset preset)
+        {
+            _motionPreset = preset;
+        }
+
+        public void SetColorSettings(FanlightColorSettings color)
+        {
+            _colorPreset = null;
+            _color = color.Validated();
+        }
+
+        public void SetColorPreset(FanlightColorPreset preset)
+        {
+            _colorPreset = preset;
+        }
+
+        public void SetRenderingLayerMask(uint renderingLayerMask)
+        {
+            _renderingLayerMask = renderingLayerMask;
+        }
+
+        private void OnDisable()
+        {
+            _renderer.Dispose();
+        }
+
+        private void OnDestroy()
+        {
+            _renderer.Dispose();
+        }
     }
 }

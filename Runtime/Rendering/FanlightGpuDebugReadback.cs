@@ -6,14 +6,20 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightGpuVisibilityReadback
     {
+        // Fields
+
         private const int ReadbackIntervalFrames = 10;
 
         private int _lastReadbackFrame = -1;
         private bool _readbackPending;
 
 
+        // Properties
+
         public int VisibleSeatCount { get; private set; }
 
+
+        // Methods
 
         public void Reset()
         {

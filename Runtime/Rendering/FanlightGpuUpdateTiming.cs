@@ -12,15 +12,23 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightGpuUpdateTiming
     {
+        // Fields
+
         [SerializeField]
         private FanlightGpuUpdateMode _mode;
 
         [SerializeField, Min(1.0f)]
         private float _targetFrameRate;
 
+
+        // Properties
+
         public FanlightGpuUpdateMode Mode => _mode;
 
         public float TargetFrameRate => Mathf.Max(1.0f, _targetFrameRate);
+
+
+        // Methods
 
         public static FanlightGpuUpdateTiming EveryFrame()
         {

@@ -60,6 +60,7 @@ Responsibilities:
 - resolves motion/color settings from local values or presets
 - passes mesh/material/compute/camera/settings to the renderer
 - evaluates tempo/song time and passes beat data to the renderer
+- exposes public runtime APIs for rendering resources, culling, update timing, audience, tempo, motion, color, presets, diagnostics, and GPU resource release
 
 Important serialized fields:
 
@@ -89,6 +90,23 @@ Responsibilities:
 - validation of layout values
 
 This is still a rectangular block layout. Future placement tools should expand beyond this without breaking the GPU renderer.
+
+### Runtime API
+
+External scripts should use `PrismFanlight` methods instead of changing serialized fields directly.
+
+Current public API groups:
+
+- rendering resources: `SetRenderingResources`, `SetRenderingLayerMask`
+- culling: `SetCullingEnabled`, `SetCullingCamera`
+- update cadence: `SetVisibilityUpdate`, `SetAnimationUpdate`
+- layout: `SetAudience`, `GetAudience`
+- tempo: `SetTempo`, `SetTempoEnabled`, `SetBpm`, `SetManualSongTime`, `SetTempoAudioSource`, `GetTempoState`
+- motion: `SetMotion`, `SetMotionPreset`, `ClearMotionPreset`, `GetMotion`
+- color: `SetColorSettings`, `SetColorPreset`, `ClearColorPreset`, `GetColorSettings`
+- diagnostics/resources: `GetDiagnostics`, `ReleaseGpuResources`
+
+`FanlightDiagnostics` is intentionally renderer-focused and does not include transient BPM debug state. Use `GetTempoState()` when song/beat information is needed.
 
 ### `FanlightMotionSettings`
 
@@ -335,19 +353,10 @@ Current sections:
 
 Debug displays:
 
+- GPU ready
 - total seats
 - blocks
 - visible seats
-- BPM sync on/off
-- tempo clock readiness
-- song time
-- beat position
-- bar/beat index
-- culled seats
-- culling ratio
-- thread groups
-- buffer memory
-- culling on/off
 
 ### `PrismFanlightScenePreview`
 

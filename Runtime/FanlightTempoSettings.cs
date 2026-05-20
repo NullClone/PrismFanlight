@@ -14,6 +14,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightTempoSettings
     {
+        // Fields
+
         public bool enabled;
 
         [Min(1.0f)]
@@ -32,6 +34,9 @@ namespace PrismFanlight
 
         [Min(0.0f)]
         public float manualTime;
+
+
+        // Methods
 
         public static FanlightTempoSettings Default() => new()
         {
@@ -89,18 +94,6 @@ namespace PrismFanlight
 
     public readonly struct FanlightTempoState
     {
-        public FanlightTempoState(bool enabled, bool clockReady, float songTime, float bpm, int beatsPerBar, float beat, float beatPhase, float barPhase)
-        {
-            Enabled = enabled;
-            ClockReady = clockReady;
-            SongTime = songTime;
-            Bpm = bpm;
-            BeatsPerBar = beatsPerBar;
-            Beat = beat;
-            BeatPhase = beatPhase;
-            BarPhase = barPhase;
-        }
-
         public bool Enabled { get; }
 
         public bool ClockReady { get; }
@@ -117,11 +110,18 @@ namespace PrismFanlight
 
         public float BarPhase { get; }
 
-        public int BeatIndex => (int)math.floor(Beat);
 
-        public int BeatInBar => BeatIndex % BeatsPerBar;
-
-        public int BarIndex => BeatIndex / BeatsPerBar;
+        public FanlightTempoState(bool enabled, bool clockReady, float songTime, float bpm, int beatsPerBar, float beat, float beatPhase, float barPhase)
+        {
+            Enabled = enabled;
+            ClockReady = clockReady;
+            SongTime = songTime;
+            Bpm = bpm;
+            BeatsPerBar = beatsPerBar;
+            Beat = beat;
+            BeatPhase = beatPhase;
+            BarPhase = barPhase;
+        }
 
         public static FanlightTempoState Disabled(float time)
         {

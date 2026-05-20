@@ -1,10 +1,6 @@
 #ifndef PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 #define PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 
-// Shader Graph Custom Function helpers for Prism Fanlight.
-// Use the Shader Graph Instance ID node and pass it to these functions.
-// Vertex Position is expected to be Object Space.
-
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<float4x4> _FanlightMatrices;
 StructuredBuffer<float4> _FanlightColors;
