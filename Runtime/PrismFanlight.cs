@@ -51,22 +51,6 @@ namespace PrismFanlight
 
         // Properties
 
-        public bool IsGpuReady => _renderer.IsReady;
-
-        public int GpuSeatCount => _renderer.SeatCount;
-
-        public int GpuVisibleSeatCount => _renderer.LastVisibleSeatCount;
-
-        public int GpuCulledSeatCount => _renderer.LastCulledSeatCount;
-
-        public int GpuBlockCount => _renderer.BlockCount;
-
-        public int GpuInstanceThreadGroups => _renderer.InstanceThreadGroups;
-
-        public int GpuBlockThreadGroups => _renderer.BlockThreadGroups;
-
-        public long GpuBufferMemoryBytes => _renderer.BufferMemoryBytes;
-
         public bool IsCullingEnabled => _enableCulling;
 
         public uint RenderingLayerMask => _renderingLayerMask;
@@ -120,5 +104,36 @@ namespace PrismFanlight
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
+
+        public FanlightDiagnostics GetDiagnostics()
+        {
+            var audience = GetAudience();
+            var blockCount = audience.blockCount.x * audience.blockCount.y;
+
+            return new FanlightDiagnostics(
+                _renderer.IsReady,
+                audience.TotalSeatCount,
+                _renderer.VisibleSeatCount,
+                blockCount);
+        }
+    }
+
+    public readonly struct FanlightDiagnostics
+    {
+        public FanlightDiagnostics(bool isGpuReady, int totalSeatCount, int visibleSeatCount, int blockCount)
+        {
+            IsGpuReady = isGpuReady;
+            TotalSeatCount = totalSeatCount;
+            VisibleSeatCount = visibleSeatCount;
+            BlockCount = blockCount;
+        }
+
+        public bool IsGpuReady { get; }
+
+        public int TotalSeatCount { get; }
+
+        public int VisibleSeatCount { get; }
+
+        public int BlockCount { get; }
     }
 }

@@ -87,6 +87,22 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
             {
+                EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+
+                if (_mesh.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
+                }
+
+                EditorGUILayout.PropertyField(_material, new GUIContent("Material"));
+
+                if (_material.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Indirect rendering material is required.", MessageType.Warning);
+                }
+
+                EditorGUILayout.Space();
+
                 EditorGUI.BeginChangeCheck();
 
                 var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
@@ -94,20 +110,6 @@ namespace PrismFanlight.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     _renderingLayerMask.longValue = mask;
-                }
-
-                EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
-                EditorGUILayout.PropertyField(_material, new GUIContent("Material"));
-
-                if (_mesh.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
-                }
-
-                if (_material.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Indirect rendering material is required.", MessageType.Warning);
                 }
 
                 EditorGUILayout.Space();
@@ -187,43 +189,18 @@ namespace PrismFanlight.Editor
 
         private void DrawDebugSection(PrismFanlight fanlight)
         {
-            var audience = fanlight.GetAudience();
-            var motion = fanlight.GetMotion();
-            var color = fanlight.GetColorSettings();
+            var diagnostics = fanlight.GetDiagnostics();
 
             PrismFanlightEditorStyles.DrawSection("| Debug", () =>
             {
                 _enablePreview = EditorGUILayout.Toggle("Enable Preview", _enablePreview);
-
-                if (_enablePreview)
-                {
-                    EditorGUILayout.HelpBox("The preview feature can be resource-intensive, so we recommend disabling it when not needed.", MessageType.Warning);
-                }
-
                 EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawStat("Total Seats", audience.TotalSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Seats Per Block", audience.BlockSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Blocks", fanlight.GpuBlockCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Render Batches", "1 indirect draw");
-                PrismFanlightEditorStyles.DrawStat("Backend", "GPU Indirect");
-                PrismFanlightEditorStyles.DrawStat("GPU Culling", fanlight.IsCullingEnabled ? "On" : "Off");
-                PrismFanlightEditorStyles.DrawStat("Visibility Update", fanlight.VisibilityUpdate.ToDisplayString());
-                PrismFanlightEditorStyles.DrawStat("Animation Update", fanlight.AnimationUpdate.ToDisplayString());
-                PrismFanlightEditorStyles.DrawStat("GPU Ready", fanlight.IsGpuReady ? "Yes" : "No");
-                PrismFanlightEditorStyles.DrawStat("GPU Instances", fanlight.GpuSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Visible Seats", fanlight.GpuVisibleSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Culled Seats", fanlight.GpuCulledSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Culling Ratio", FormatRatio(fanlight.GpuCulledSeatCount, Mathf.Max(1, fanlight.GpuSeatCount)));
-                PrismFanlightEditorStyles.DrawStat("Instance Groups", fanlight.GpuInstanceThreadGroups.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Block Groups", fanlight.GpuBlockThreadGroups.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("GPU Buffers", FormatBytes(fanlight.GpuBufferMemoryBytes));
-                PrismFanlightEditorStyles.DrawStat("Motion Frequency", motion.frequency.ToString("0.###"));
-                PrismFanlightEditorStyles.DrawStat("Color Mode", color.mode.ToString());
 
-                if (audience.blockCount.x * audience.blockCount.y > 1)
-                {
-                    EditorGUILayout.HelpBox("SceneView seat preview is limited to one representative block to keep editing responsive. Runtime rendering still uses the full audience.", MessageType.Info);
-                }
+                EditorGUILayout.LabelField("Diagnostics", EditorStyles.boldLabel);
+                PrismFanlightEditorStyles.DrawStat("GPU Ready", diagnostics.IsGpuReady ? "Yes" : "No");
+                PrismFanlightEditorStyles.DrawStat("Block", diagnostics.BlockCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Seats", diagnostics.TotalSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Visible Seats", diagnostics.VisibleSeatCount.ToString("N0"));
             });
         }
 
@@ -359,21 +336,6 @@ namespace PrismFanlight.Editor
         {
             var mode = property.FindPropertyRelative("_mode");
             return mode.enumValueIndex == (int)FanlightGpuUpdateMode.FixedRate;
-        }
-
-        private static string FormatRatio(int value, int total)
-        {
-            return $"{(float)value / total * 100.0f:0.0}%";
-        }
-
-        private static string FormatBytes(long bytes)
-        {
-            const float kb = 1024.0f;
-            const float mb = kb * 1024.0f;
-
-            if (bytes >= mb) return $"{bytes / mb:0.00} MB";
-            if (bytes >= kb) return $"{bytes / kb:0.0} KB";
-            return $"{bytes} B";
         }
     }
 }

@@ -23,12 +23,12 @@ namespace PrismFanlight.Editor
 
         public static void DrawSection(string title, System.Action draw)
         {
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space();
 
             using (new EditorGUILayout.VerticalScope(Section))
             {
                 EditorGUILayout.LabelField(title, SectionTitle);
-                EditorGUILayout.Space(3);
+                EditorGUILayout.Space();
                 draw();
             }
         }
@@ -57,7 +57,7 @@ namespace PrismFanlight.Editor
         {
             var style = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 12
+                fontSize = 14
             };
             return style;
         }

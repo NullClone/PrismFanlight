@@ -9,7 +9,7 @@ namespace PrismFanlight.Rendering
 
         private readonly FanlightGpuBuffers _buffers = new();
         private readonly FanlightGpuDispatcher _dispatcher = new();
-        private readonly FanlightGpuDebugReadback _debugReadback = new();
+        private readonly FanlightGpuVisibilityReadback _visibilityReadback = new();
         private readonly FanlightGpuUpdateScheduler _scheduler = new();
 
         private MaterialPropertyBlock _properties;
@@ -26,19 +26,7 @@ namespace PrismFanlight.Rendering
 
         public bool IsReady => _isInitialized;
 
-        public int SeatCount => _buffers.SeatCount;
-
-        public int BlockCount => _buffers.BlockCount;
-
-        public int LastVisibleSeatCount => _debugReadback.LastVisibleSeatCount;
-
-        public int LastCulledSeatCount => Mathf.Max(0, SeatCount - LastVisibleSeatCount);
-
-        public int InstanceThreadGroups => Mathf.CeilToInt((float)SeatCount / FanlightGpuDispatcher.InstanceThreadGroupSize);
-
-        public int BlockThreadGroups => Mathf.CeilToInt((float)BlockCount / FanlightGpuDispatcher.BlockThreadGroupSize);
-
-        public long BufferMemoryBytes => _buffers.EstimateMemoryBytes();
+        public int VisibleSeatCount => _visibilityReadback.VisibleSeatCount;
 
 
         // Methods
@@ -61,7 +49,11 @@ namespace PrismFanlight.Rendering
         {
             var validatedAudience = (audience ?? Audience.Default()).Validated();
 
-            if (!CanRender(mesh, material, computeShader, validatedAudience)) return;
+            if (!CanRender(mesh, material, computeShader, validatedAudience))
+            {
+                Dispose();
+                return;
+            }
 
             EnsureInitialized(mesh, computeShader, validatedAudience);
 
@@ -81,7 +73,7 @@ namespace PrismFanlight.Rendering
             {
                 Profiler.BeginSample("Prism Fanlight GPU Visibility");
                 _dispatcher.DispatchVisibility(computeShader, _kernels, _buffers, context);
-                _debugReadback.Request(_buffers.ArgsBuffer, _buffers.SeatCount);
+                _visibilityReadback.Request(_buffers.ArgsBuffer, _buffers.SeatCount);
                 Profiler.EndSample();
             }
 
@@ -115,7 +107,7 @@ namespace PrismFanlight.Rendering
         public void Dispose()
         {
             _buffers.Release();
-            _debugReadback.Reset();
+            _visibilityReadback.Reset();
             _properties = null;
             _mesh = null;
             _computeShader = null;
