@@ -38,11 +38,13 @@ namespace PrismFanlight.Rendering
         public static readonly int MotionBeatSpread = Shader.PropertyToID("_MotionBeatSpread");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
+        public static readonly int ColorSource = Shader.PropertyToID("_FanlightColorSource");
+        public static readonly int GlobalColor = Shader.PropertyToID("_FanlightGlobalColor");
+        public static readonly int GlobalIntensity = Shader.PropertyToID("_FanlightGlobalIntensity");
         public static readonly int PrimaryColor = Shader.PropertyToID("_PrimaryColor");
         public static readonly int SecondaryColor = Shader.PropertyToID("_SecondaryColor");
         public static readonly int Brightness = Shader.PropertyToID("_Brightness");
-        public static readonly int Hue = Shader.PropertyToID("_Hue");
-        public static readonly int Wave = Shader.PropertyToID("_Wave");
-        public static readonly int WaveShape = Shader.PropertyToID("_WaveShape");
+        public static readonly int PaletteColors = Shader.PropertyToID("_PaletteColors");
+        public static readonly int PaletteColorCount = Shader.PropertyToID("_PaletteColorCount");
     }
 }

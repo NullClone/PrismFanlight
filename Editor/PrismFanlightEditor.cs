@@ -117,7 +117,7 @@ namespace PrismFanlight.Editor
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Update Mode", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_animationUpdate.FindPropertyRelative("_mode"), new GUIContent("Animation / Color"));
+                EditorGUILayout.PropertyField(_animationUpdate.FindPropertyRelative("_mode"), new GUIContent("Animation"));
 
                 if (IsFixedRate(_animationUpdate))
                 {
@@ -197,7 +197,7 @@ namespace PrismFanlight.Editor
 
                     if (IsFixedRate(_animationUpdate))
                     {
-                        EditorGUILayout.HelpBox("BPM motion is only regenerated on the Animation / Color update lane. Use Every Frame for the tightest music sync.", MessageType.Info);
+                        EditorGUILayout.HelpBox("BPM motion is regenerated on the Animation update lane. Use Every Frame for the tightest music sync.", MessageType.Info);
                     }
                 }
             });
@@ -240,9 +240,9 @@ namespace PrismFanlight.Editor
 
                 EditorGUILayout.LabelField("Diagnostics", EditorStyles.boldLabel);
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", diagnostics.IsGpuReady ? "Yes" : "No");
-                PrismFanlightEditorStyles.DrawStat("Block", diagnostics.BlockCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Seats", diagnostics.TotalSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Total Seats", diagnostics.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Visible Seats", diagnostics.VisibleSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Blocks", diagnostics.BlockCount.ToString("N0"));
             });
         }
 
@@ -311,36 +311,37 @@ namespace PrismFanlight.Editor
             var colorMode = (FanlightColorMode)mode.enumValueIndex;
 
             EditorGUILayout.PropertyField(mode);
-            EditorGUILayout.PropertyField(color.FindPropertyRelative("primaryColor"));
 
-            if (colorMode == FanlightColorMode.BlockGradient)
+            switch (colorMode)
             {
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("secondaryColor"));
-            }
+                case FanlightColorMode.Single:
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Color"));
+                    DrawIntensityField(color);
+                    EditorGUILayout.HelpBox("Single uses material properties at draw time, so it does not regenerate the GPU color buffer.", MessageType.Info);
+                    break;
 
+                case FanlightColorMode.Random:
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("paletteColors"), new GUIContent("Palette"), true);
+                    DrawIntensityField(color);
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
+                    EditorGUILayout.HelpBox("Random chooses one fixed palette color per seat. The GPU color buffer updates only when color settings or layout are rebuilt.", MessageType.Info);
+                    break;
+
+                case FanlightColorMode.Gradient:
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Start Color"));
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("secondaryColor"), new GUIContent("End Color"));
+                    DrawIntensityField(color);
+                    EditorGUILayout.PropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
+                    EditorGUILayout.HelpBox("Gradient keeps the existing block-width gradient behavior.", MessageType.Info);
+                    break;
+            }
+        }
+
+        private static void DrawIntensityField(SerializedProperty color)
+        {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Brightness", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(color.FindPropertyRelative("intensity"), new GUIContent("Intensity"));
-            EditorGUILayout.PropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-
-            if (UsesHue(colorMode))
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Hue", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("saturation"));
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("hueSpeed"));
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("randomHueAmount"));
-            }
-
-            if (UsesWave(colorMode))
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Wave", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("waveOrigin"));
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("waveFrequency"));
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("waveSpeed"));
-                EditorGUILayout.PropertyField(color.FindPropertyRelative("waveSharpness"));
-            }
         }
 
         private static void DrawPresetSection(string title, SerializedProperty preset, Action drawLocalSettings, Action createPreset)
@@ -383,10 +384,6 @@ namespace PrismFanlight.Editor
                 }
             });
         }
-
-        private static bool UsesHue(FanlightColorMode mode) => mode is FanlightColorMode.RandomHue or FanlightColorMode.Rainbow or FanlightColorMode.Wave or FanlightColorMode.RadialWave;
-
-        private static bool UsesWave(FanlightColorMode mode) => mode is FanlightColorMode.Wave or FanlightColorMode.RadialWave;
 
         private static bool IsFixedRate(SerializedProperty property)
         {

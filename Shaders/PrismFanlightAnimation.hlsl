@@ -88,7 +88,6 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
 float4 PrismComputeColor(FanlightSeatData seat)
 {
     float seed = seat.localPositionSeed.w;
-    float2 pos = seat.planePositionBlock.xy;
     float2 block = seat.planePositionBlock.zw;
 
     float3 rgb = _PrimaryColor.rgb;
@@ -98,26 +97,16 @@ float4 PrismComputeColor(FanlightSeatData seat)
     }
     else if (_ColorMode == 1)
     {
-        rgb = HsvToRgb(frac(Hash11(seed + 107.0) * _Hue.y + _FanlightTime * _Hue.x), _Brightness.z, 1.0);
+        int count = clamp(_PaletteColorCount, 1, 16);
+        int paletteIndex = min((int)floor(Hash11(seed + 107.0) * count), count - 1);
+        rgb = _PaletteColors[paletteIndex].rgb;
     }
     else if (_ColorMode == 2)
-    {
-        rgb = HsvToRgb(frac(pos.x * 0.035 + pos.y * 0.02 + _FanlightTime * _Hue.x + Hash11(seed + 109.0) * _Hue.y), _Brightness.z, 1.0);
-    }
-    else if (_ColorMode == 3 || _ColorMode == 4)
-    {
-        float distanceValue = _ColorMode == 4 ? distance(pos, _Wave.xy) : pos.y - _Wave.y;
-        float wave = sin(distanceValue * _Wave.z - _FanlightTime * _Wave.w) * 0.5 + 0.5;
-        rgb = HsvToRgb(frac(Hash11(seed + 113.0) * _Hue.y + _FanlightTime * _Hue.x), _Brightness.z, 1.0);
-        rgb *= pow(wave, max(0.001, _WaveShape.x));
-    }
-    else if (_ColorMode == 5)
     {
         float denom = max(_BlockCount.x - 1.0, 1.0);
         rgb = lerp(_PrimaryColor.rgb, _SecondaryColor.rgb, block.x / denom);
     }
 
-    float intensity = _Brightness.x;
     float randomIntensityFactor = max(0.0, 1.0 + (Hash11(seed + 101.0) * 2.0 - 1.0) * _Brightness.y);
-    return float4(rgb * intensity * randomIntensityFactor, _PrimaryColor.a);
+    return float4(rgb * randomIntensityFactor, _PrimaryColor.a);
 }

@@ -7,6 +7,7 @@ namespace PrismFanlight.Rendering
         public const int InstanceThreadGroupSize = 128;
         public const int BlockThreadGroupSize = 64;
 
+        private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.MaxPaletteColors];
         private readonly Plane[] _planes = new Plane[6];
         private readonly Vector4[] _frustumPlanes = new Vector4[6];
 
@@ -38,8 +39,17 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernel, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Matrices, buffers.MatrixBuffer);
-            shader.SetBuffer(kernel, FanlightShaderIds.Colors, buffers.ColorBuffer);
             shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
+        }
+
+        public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
+        {
+            SetCommonParams(shader, context, buffers, false);
+            SetColorParams(shader, context.Color);
+
+            shader.SetBuffer(kernels.GenerateAllColors, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.GenerateAllColors, FanlightShaderIds.Colors, buffers.ColorBuffer);
+            shader.Dispatch(kernels.GenerateAllColors, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
         private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers, bool includeVisibilityParams)
@@ -47,7 +57,6 @@ namespace PrismFanlight.Rendering
             var audience = context.Audience;
             var tempo = context.Tempo;
             var motion = context.Motion;
-            var color = context.Color;
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
             shader.SetInt(FanlightShaderIds.BlockCountValue, buffers.BlockCount);
@@ -78,13 +87,42 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.restCycleDuration, motion.restDuration, motion.restFadeDuration, motion.restPhaseRandomness));
             shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSyncAmount, motion.beatsPerSwing, motion.beatPhaseOffset, motion.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatReactionDelay, motion.beatSeatJitter, motion.beatBlockDelay.x, motion.beatBlockDelay.y));
+        }
+
+        private void SetColorParams(ComputeShader shader, FanlightColorSettings color)
+        {
             shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
             shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
             shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);
-            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, color.saturation, 0.0f));
-            shader.SetVector(FanlightShaderIds.Hue, new Vector4(color.hueSpeed, color.randomHueAmount, 0.0f, 0.0f));
-            shader.SetVector(FanlightShaderIds.Wave, new Vector4(color.waveOrigin.x, color.waveOrigin.y, color.waveFrequency, color.waveSpeed));
-            shader.SetVector(FanlightShaderIds.WaveShape, new Vector4(color.waveSharpness, 0.0f, 0.0f, 0.0f));
+            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, 0.0f, 0.0f));
+            shader.SetInt(FanlightShaderIds.PaletteColorCount, FillPalette(color));
+            shader.SetVectorArray(FanlightShaderIds.PaletteColors, _paletteColors);
+        }
+
+        private int FillPalette(FanlightColorSettings color)
+        {
+            var palette = color.paletteColors;
+            var count = Mathf.Clamp(palette?.Length ?? 0, 0, FanlightColorSettings.MaxPaletteColors);
+
+            if (count == 0)
+            {
+                _paletteColors[0] = color.primaryColor;
+                count = 1;
+            }
+            else
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    _paletteColors[i] = palette[i];
+                }
+            }
+
+            for (var i = count; i < _paletteColors.Length; i++)
+            {
+                _paletteColors[i] = Color.black;
+            }
+
+            return count;
         }
 
         private void SetFrustumPlanes(ComputeShader shader, Camera cullingCamera, Bounds worldBounds)

@@ -19,6 +19,8 @@ namespace PrismFanlight.Rendering
         private ComputeShader _computeShader;
         private bool _isInitialized;
         private bool _animationInitialized;
+        private bool _instanceColorsInitialized;
+        private int _lastInstanceColorHash;
         private Matrix4x4 _lastAnimationLocalToWorld;
 
 
@@ -90,10 +92,22 @@ namespace PrismFanlight.Rendering
                 Profiler.EndSample();
             }
 
+            if (ShouldUpdateInstanceColors(color))
+            {
+                Profiler.BeginSample("Prism Fanlight GPU Colors");
+                _dispatcher.DispatchColors(computeShader, _kernels, _buffers, context);
+                _instanceColorsInitialized = true;
+                _lastInstanceColorHash = color.GetStableHash();
+                Profiler.EndSample();
+            }
+
             Profiler.BeginSample("Prism Fanlight GPU Draw");
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
             _properties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
             _properties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.VisibleIndexBuffer);
+            _properties.SetInt(FanlightShaderIds.ColorSource, color.mode == FanlightColorMode.Single ? 0 : 1);
+            _properties.SetColor(FanlightShaderIds.GlobalColor, color.GetGlobalColor());
+            _properties.SetFloat(FanlightShaderIds.GlobalIntensity, color.GetGlobalIntensity());
 
             var renderParams = new RenderParams(material)
             {
@@ -115,6 +129,8 @@ namespace PrismFanlight.Rendering
             _computeShader = null;
             _isInitialized = false;
             _animationInitialized = false;
+            _instanceColorsInitialized = false;
+            _lastInstanceColorHash = 0;
             _lastAnimationLocalToWorld = Matrix4x4.identity;
             _scheduler.Reset();
         }
@@ -148,6 +164,16 @@ namespace PrismFanlight.Rendering
             _properties = new MaterialPropertyBlock();
             _buffers.Allocate(mesh, audience);
             _isInitialized = true;
+        }
+
+        private bool ShouldUpdateInstanceColors(FanlightColorSettings color)
+        {
+            if (color.mode == FanlightColorMode.Single)
+            {
+                return false;
+            }
+
+            return !_instanceColorsInitialized || _lastInstanceColorHash != color.GetStableHash();
         }
     }
 }

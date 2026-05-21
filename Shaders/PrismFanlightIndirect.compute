@@ -3,6 +3,7 @@
 #pragma kernel BuildVisibleInstances
 #pragma kernel GenerateVisibleAnimation
 #pragma kernel GenerateAllAnimation
+#pragma kernel GenerateAllColors
 
 #include "PrismFanlightTypes.hlsl"
 
@@ -42,9 +43,8 @@ int _ColorMode;
 float4 _PrimaryColor;
 float4 _SecondaryColor;
 float4 _Brightness;
-float4 _Hue;
-float4 _Wave;
-float4 _WaveShape;
+int _PaletteColorCount;
+float4 _PaletteColors[16];
 
 #include "PrismFanlightMath.hlsl"
 #include "PrismFanlightCulling.hlsl"
@@ -96,7 +96,6 @@ void GenerateVisibleAnimation(uint3 dispatchId : SV_DispatchThreadID)
     uint id = _VisibleIndices[visibleSlot];
     FanlightSeatData seat = _Seats[id];
     _FanlightMatrices[id] = PrismComputeMatrix(seat);
-    _FanlightColors[id] = PrismComputeColor(seat);
 }
 
 [numthreads(128, 1, 1)]
@@ -107,5 +106,14 @@ void GenerateAllAnimation(uint3 dispatchId : SV_DispatchThreadID)
 
     FanlightSeatData seat = _Seats[id];
     _FanlightMatrices[id] = PrismComputeMatrix(seat);
+}
+
+[numthreads(128, 1, 1)]
+void GenerateAllColors(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
+    if (id >= (uint)_InstanceCount) return;
+
+    FanlightSeatData seat = _Seats[id];
     _FanlightColors[id] = PrismComputeColor(seat);
 }
