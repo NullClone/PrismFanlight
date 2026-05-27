@@ -41,16 +41,28 @@ namespace PrismFanlight
         [Range(-1.0f, 1.0f)]
         public float returnBias;
 
-        public Vector3 baseAxis;
+        public FanlightSwingMode swingMode;
+
+        [Range(0.0f, 360.0f)]
+        public float swingYaw;
 
         [Range(0.0f, 1.0f)]
-        public float forwardBackAmount;
+        public float axisSpread;
 
         [Range(0.0f, 1.0f)]
-        public float verticalAmount;
+        public float aimStrength;
+
+        [Min(0.0f)]
+        public float noiseAmount;
+
+        [Min(0.0f)]
+        public float noiseSpeed;
+
+        [Range(1, 4)]
+        public int noiseOctaves;
 
         [Range(0.0f, 1.0f)]
-        public float axisRandomness;
+        public float noisePersistence;
 
         [Range(0.0f, 1.0f)]
         public float seatJitter;
@@ -60,12 +72,6 @@ namespace PrismFanlight
 
         [Range(0.0f, 1.0f)]
         public float armLengthJitter;
-
-        [Min(0.0f)]
-        public float axisNoiseAmount;
-
-        [Min(0.0f)]
-        public float axisNoiseSpeed;
 
         [Range(0.0f, 2.0f)]
         public float enthusiasm;
@@ -133,15 +139,17 @@ namespace PrismFanlight
             holdAmount = 0.0f,
             flickAmount = 0.0f,
             returnBias = 0.0f,
-            baseAxis = Vector3.forward,
-            forwardBackAmount = 1.0f,
-            verticalAmount = 0.0f,
-            axisRandomness = 1.0f,
+            swingMode = FanlightSwingMode.WorldDirection,
+            swingYaw = 180.0f,
+            axisSpread = 0.3f,
+            aimStrength = 1.0f,
+            noiseAmount = 1.0f,
+            noiseSpeed = 0.23f,
+            noiseOctaves = 2,
+            noisePersistence = 0.5f,
             seatJitter = 0.3f,
             heightJitter = 0.2f,
             armLengthJitter = 0.25f,
-            axisNoiseAmount = 1.0f,
-            axisNoiseSpeed = 0.23f,
             enthusiasm = 1.0f,
             enthusiasmVariation = 0.15f,
             reactionDelay = 0.0f,
@@ -164,10 +172,8 @@ namespace PrismFanlight
 
         public FanlightMotionSettings Validated()
         {
-            var legacyDirectionDefaults = baseAxis.sqrMagnitude <= 0.0001f
-                                          && forwardBackAmount <= 0.0f
-                                          && verticalAmount <= 0.0f
-                                          && axisRandomness <= 0.0f;
+            // noiseOctaves <= 0 indicates uninitialized legacy data; apply defaults
+            var legacyNoise = noiseOctaves <= 0;
 
             var legacyHumanDefaults = enthusiasm <= 0.0f
                                       && enthusiasmVariation <= 0.0f
@@ -187,15 +193,17 @@ namespace PrismFanlight
                 holdAmount = math.saturate(holdAmount),
                 flickAmount = math.saturate(flickAmount),
                 returnBias = math.clamp(returnBias, -1.0f, 1.0f),
-                baseAxis = ValidateAxis(baseAxis),
-                forwardBackAmount = legacyDirectionDefaults ? 1.0f : math.saturate(forwardBackAmount),
-                verticalAmount = math.saturate(verticalAmount),
-                axisRandomness = legacyDirectionDefaults ? 1.0f : math.saturate(axisRandomness),
+                swingMode = IsSupportedSwingMode(swingMode) ? swingMode : FanlightSwingMode.Target,
+                swingYaw = ((swingYaw % 360.0f) + 360.0f) % 360.0f,
+                axisSpread = math.saturate(axisSpread),
+                aimStrength = math.saturate(aimStrength),
+                noiseAmount = legacyNoise ? 1.0f : math.max(noiseAmount, 0.0f),
+                noiseSpeed = legacyNoise ? 0.23f : math.max(noiseSpeed, 0.0f),
+                noiseOctaves = legacyNoise ? 2 : math.clamp(noiseOctaves, 1, 4),
+                noisePersistence = legacyNoise ? 0.5f : math.saturate(noisePersistence),
                 seatJitter = math.saturate(seatJitter),
                 heightJitter = math.max(heightJitter, 0.0f),
                 armLengthJitter = math.saturate(armLengthJitter),
-                axisNoiseAmount = math.max(axisNoiseAmount, 0.0f),
-                axisNoiseSpeed = math.max(axisNoiseSpeed, 0.0f),
                 enthusiasm = legacyHumanDefaults ? 1.0f : math.max(enthusiasm, 0.0f),
                 enthusiasmVariation = legacyHumanDefaults ? 0.15f : math.saturate(enthusiasmVariation),
                 reactionDelay = math.max(reactionDelay, 0.0f),
@@ -219,7 +227,7 @@ namespace PrismFanlight
 
         public float4x4 GetMatrix(Audience audience, float2 pos, float4x4 xform, float time, uint seed)
         {
-            return GetMatrix(audience, pos, xform, time, FanlightTempoState.Disabled(time), seed);
+            return GetMatrix(audience, pos, float2.zero, xform, time, FanlightTempoState.Disabled(time), seed);
         }
 
         public float4x4 GetMatrix(Audience audience, float2 pos, float4x4 xform, float time, FanlightTempoState tempo, uint seed)
@@ -227,7 +235,7 @@ namespace PrismFanlight
             return GetMatrix(audience, pos, float2.zero, xform, time, tempo, seed);
         }
 
-        public float4x4 GetMatrix(Audience audience, float2 pos, float2 block, float4x4 xform, float time, FanlightTempoState tempo, uint seed)
+        public float4x4 GetMatrix(Audience audience, float2 pos, float2 block, float4x4 xform, float time, FanlightTempoState tempo, uint seed, float3 swingTargetWorldPos = default)
         {
             var rand = new Random(seed);
             rand.NextUInt4();
@@ -240,7 +248,10 @@ namespace PrismFanlight
             var beatPhase = 2 * math.PI * ((delayedBeat / math.max(0.001f, beatsPerSwing)) + beatPhaseOffset);
             var phase = math.lerp(legacyPhase, beatPhase, tempo.Enabled ? math.saturate(beatSyncAmount) : 0.0f);
             phase += rand.NextFloat(0.0f, 2 * math.PI) * randomPhase;
-            phase += noise.snoise(math.float2(rand.NextFloat(-1000, 1000), time * phaseNoiseSpeed)) * phaseNoiseAmount;
+
+            var validatedOctaves = math.clamp(noiseOctaves, 1, 4);
+            var validatedPersistence = math.saturate(noisePersistence);
+            phase += FbmNoise(math.float2(rand.NextFloat(-1000, 1000), time * phaseNoiseSpeed), validatedOctaves, validatedPersistence) * phaseNoiseAmount;
 
             var origin = float3.zero;
             origin.xz = pos + rand.NextFloat2(-seatJitter, seatJitter) * audience.seatPitch;
@@ -256,10 +267,29 @@ namespace PrismFanlight
             angle = math.clamp(angle + returnBias * 0.35f, -1.0f, 1.0f);
             angle *= rand.NextFloat(minAngle, maxAngle);
 
-            var axisNoise = noise.snoise(math.float2(rand.NextFloat(-1000, 1000), time * axisNoiseSpeed + 100));
-            var baseAxisValue = SafeNormalize(math.float3(baseAxis.x, baseAxis.y, baseAxis.z), math.float3(0.0f, 0.0f, 1.0f));
-            var expressiveAxis = SafeNormalize(math.float3(axisNoise * axisNoiseAmount, verticalAmount, forwardBackAmount), baseAxisValue);
-            var axis = SafeNormalize(math.lerp(baseAxisValue, expressiveAxis, axisRandomness), baseAxisValue);
+            // Determine base axis from swing mode and aim settings
+            var baseAxis = ComputeBaseAxisCpu(pos, xform, swingTargetWorldPos);
+
+            // Per-seat static random spread: rotate base axis on sphere surface
+            var perpU = GetSafePerp(baseAxis);
+            var perpV = math.cross(baseAxis, perpU);
+            var spreadDx = rand.NextFloat(-1.0f, 1.0f);
+            var spreadDy = rand.NextFloat(-1.0f, 1.0f);
+            var spreadLen = math.sqrt(spreadDx * spreadDx + spreadDy * spreadDy);
+            var spreadDir = spreadLen > 0.001f
+                ? math.float2(spreadDx, spreadDy) / spreadLen
+                : math.float2(1.0f, 0.0f);
+            var spreadAngle = rand.NextFloat() * axisSpread * math.PI * 0.5f;
+            var axis = SafeNormalize(
+                baseAxis * math.cos(spreadAngle) + (perpU * spreadDir.x + perpV * spreadDir.y) * math.sin(spreadAngle),
+                baseAxis);
+
+            // Time-varying fBm noise perturbation on sphere surface (two orthogonal components)
+            var nu = FbmNoise(math.float2(rand.NextFloat(-1000.0f, 1000.0f), time * noiseSpeed), validatedOctaves, validatedPersistence);
+            var nv = FbmNoise(math.float2(rand.NextFloat(-1000.0f, 1000.0f), time * noiseSpeed + 317.5f), validatedOctaves, validatedPersistence);
+            var ap1 = GetSafePerp(axis);
+            var ap2 = math.cross(axis, ap1);
+            axis = SafeNormalize(axis + (ap1 * nu + ap2 * nv) * noiseAmount, axis);
 
             var armJitter = 1.0f + rand.NextFloat(-armLengthJitter, armLengthJitter);
             var enthusiasmFactor = enthusiasm * math.lerp(1.0f, rand.NextFloat(0.65f, 1.35f), enthusiasmVariation);
@@ -276,9 +306,54 @@ namespace PrismFanlight
             return math.mul(math.mul(math.mul(xform, m1), m2), m3);
         }
 
-        private static Vector3 ValidateAxis(Vector3 value)
+        private float3 ComputeBaseAxisCpu(float2 pos, float4x4 localToWorld, float3 swingTargetWorldPos)
         {
-            return value.sqrMagnitude > 0.0001f ? value.normalized : Vector3.forward;
+            var yaw = math.radians(swingYaw);
+            var worldDirection = SafeNormalize(
+                math.float3(math.sin(yaw), 0.0f, math.cos(yaw)),
+                math.float3(0.0f, 0.0f, 1.0f));
+
+            if (swingMode == FanlightSwingMode.Target && aimStrength > 0.001f)
+            {
+                var seatWorldPos = math.transform(localToWorld, math.float3(pos.x, 0.0f, pos.y));
+                var targetDirection = swingTargetWorldPos - seatWorldPos;
+                targetDirection.y = 0.0f;
+                targetDirection = SafeNormalize(targetDirection, worldDirection);
+                worldDirection = SafeNormalize(math.lerp(worldDirection, targetDirection, aimStrength), worldDirection);
+            }
+
+            var worldAxis = SafeNormalize(math.cross(math.float3(0.0f, 1.0f, 0.0f), worldDirection), math.float3(1.0f, 0.0f, 0.0f));
+            var localAxis = math.mul((float3x3)math.inverse(localToWorld), worldAxis);
+            return SafeNormalize(localAxis, math.float3(1.0f, 0.0f, 0.0f));
+        }
+
+        private static bool IsSupportedSwingMode(FanlightSwingMode mode)
+        {
+            return mode is FanlightSwingMode.WorldDirection or FanlightSwingMode.Target;
+        }
+
+        private static float3 GetSafePerp(float3 axis)
+        {
+            var v0 = math.cross(axis, math.float3(0.0f, 1.0f, 0.0f));
+            var v1 = math.cross(axis, math.float3(0.0f, 0.0f, 1.0f));
+            var v = math.dot(v0, v0) >= math.dot(v1, v1) ? v0 : v1;
+            return SafeNormalize(v, math.float3(1.0f, 0.0f, 0.0f));
+        }
+
+        private static float FbmNoise(float2 pos, int octaves, float persistence)
+        {
+            var value = 0.0f;
+            var amplitude = 1.0f;
+            var frequency = 1.0f;
+            var maxValue = 0.0f;
+            for (var i = 0; i < octaves; i++)
+            {
+                value += amplitude * noise.snoise(pos * frequency);
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= 2.0f;
+            }
+            return maxValue > 0.001f ? value / maxValue : 0.0f;
         }
 
         private static float3 SafeNormalize(float3 value, float3 fallback)

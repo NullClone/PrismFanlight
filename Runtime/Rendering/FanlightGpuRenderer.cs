@@ -46,6 +46,7 @@ namespace PrismFanlight.Rendering
             Audience audience,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
+            Vector3 swingTargetWorldPos,
             Matrix4x4 localToWorld,
             float time,
             float updateClock)
@@ -69,6 +70,7 @@ namespace PrismFanlight.Rendering
                 tempo,
                 motion,
                 color,
+                swingTargetWorldPos,
                 localToWorld,
                 time,
                 worldBounds);

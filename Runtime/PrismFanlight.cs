@@ -49,6 +49,9 @@ namespace PrismFanlight
         [SerializeField]
         private FanlightColorSettings _color = FanlightColorSettings.Default();
 
+        [SerializeField]
+        private Transform _swingTarget = null;
+
         private readonly FanlightGpuRenderer _renderer = new();
 
 
@@ -78,6 +81,12 @@ namespace PrismFanlight
 
         public ComputeShader ComputeShader => _computeShader;
 
+        public Transform SwingTarget
+        {
+            get => _swingTarget;
+            set => _swingTarget = value;
+        }
+
         public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
 
         public FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
@@ -91,9 +100,12 @@ namespace PrismFanlight
 
         // Methods
 
-        private void OnEnable()
+        private void Start()
         {
-            _cullingCamera ??= Camera.main;
+            if (_enableCulling && _cullingCamera == null && Camera.main != null)
+            {
+                _cullingCamera = Camera.main;
+            }
         }
 
         private void Update()
@@ -111,6 +123,7 @@ namespace PrismFanlight
                 GetAudience(),
                 GetMotion(),
                 GetColorSettings(),
+                _swingTarget != null ? _swingTarget.position : Vector3.zero,
                 transform.localToWorldMatrix,
                 Time.time,
                 Time.unscaledTime);

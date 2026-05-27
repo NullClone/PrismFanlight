@@ -23,6 +23,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _audience;
         private SerializedProperty _motionPreset;
         private SerializedProperty _motion;
+        private SerializedProperty _swingTarget;
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
 
@@ -45,6 +46,7 @@ namespace PrismFanlight.Editor
             _audience = serializedObject.FindProperty(nameof(_audience));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
+            _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
         }
@@ -70,15 +72,13 @@ namespace PrismFanlight.Editor
             }
 
             DrawRenderingSection();
-
             DrawLayoutSection();
             DrawTempoSection();
             DrawMotionSection(instance);
             DrawColorSection(instance);
+            DrawDebugSection(instance);
 
             serializedObject.ApplyModifiedProperties();
-
-            DrawDebugSection(instance);
         }
 
         private void DrawRenderingSection()
@@ -140,11 +140,10 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Culling", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
-                EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
 
-                if (_enableCulling.boolValue && _cullingCamera.objectReferenceValue == null)
+                if (_enableCulling.boolValue)
                 {
-                    EditorGUILayout.HelpBox("Culling is enabled but no camera is assigned. The component will try Camera.main at runtime.", MessageType.Info);
+                    EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
                 }
             });
         }
@@ -247,7 +246,7 @@ namespace PrismFanlight.Editor
         }
 
 
-        private static void DrawMotionFields(SerializedProperty motion)
+        private void DrawMotionFields(SerializedProperty motion)
         {
             EditorGUILayout.LabelField("Timing", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(motion.FindPropertyRelative("frequency"), new GUIContent("Frequency"));
@@ -278,13 +277,38 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(motion.FindPropertyRelative("returnBias"), new GUIContent("Return Bias"));
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Direction / Axis", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("baseAxis"), new GUIContent("Base Axis"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("forwardBackAmount"), new GUIContent("Forward / Back"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("verticalAmount"), new GUIContent("Vertical"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisRandomness"), new GUIContent("Axis Randomness"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseAmount"), new GUIContent("Axis Noise"));
-            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisNoiseSpeed"), new GUIContent("Axis Noise Speed"));
+            EditorGUILayout.LabelField("Direction", EditorStyles.boldLabel);
+
+            var swingModeProp = motion.FindPropertyRelative("swingMode");
+            EditorGUILayout.PropertyField(swingModeProp, new GUIContent("Swing Mode"));
+
+            var swingMode = (FanlightSwingMode)swingModeProp.enumValueIndex;
+
+            if (swingMode == FanlightSwingMode.WorldDirection)
+            {
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("swingYaw"), new GUIContent("Direction"));
+            }
+            else
+            {
+                EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Swing Target"));
+
+                var aimStrengthProp = motion.FindPropertyRelative("aimStrength");
+                EditorGUILayout.PropertyField(aimStrengthProp, new GUIContent("Direction Strength"));
+
+                if (aimStrengthProp.floatValue < 1f)
+                {
+                    EditorGUILayout.PropertyField(motion.FindPropertyRelative("swingYaw"), new GUIContent("Fallback Direction"));
+                }
+            }
+
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("axisSpread"), new GUIContent("Direction Spread"));
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Noise", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("noiseAmount"), new GUIContent("Amount"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("noiseSpeed"), new GUIContent("Speed"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("noiseOctaves"), new GUIContent("Octaves"));
+            EditorGUILayout.PropertyField(motion.FindPropertyRelative("noisePersistence"), new GUIContent("Persistence"));
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Variation", EditorStyles.boldLabel);
