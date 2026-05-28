@@ -5,19 +5,16 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightEditorStyles
     {
-        private static GUIStyle _header;
         private static GUIStyle _section;
         private static GUIStyle _sectionTitle;
+        private static GUIStyle _subGroupLabel;
         private static GUIStyle _statLabel;
         private static GUIStyle _statValue;
-        private static GUIStyle _statusPill;
 
         private static GUIStyle Section => _section ??= CreateSection();
-
         private static GUIStyle SectionTitle => _sectionTitle ??= CreateSectionTitle();
-
+        private static GUIStyle SubGroupLabel => _subGroupLabel ??= CreateSubGroupLabel();
         private static GUIStyle StatLabel => _statLabel ??= CreateStatLabel();
-
         private static GUIStyle StatValue => _statValue ??= CreateStatValue();
 
 
@@ -33,6 +30,24 @@ namespace PrismFanlight.Editor
             }
         }
 
+        public static void DrawSubGroupLabel(string title)
+        {
+            EditorGUILayout.LabelField(title, SubGroupLabel);
+        }
+
+        public static bool DrawFoldout(bool isExpanded, string label, System.Action draw)
+        {
+            isExpanded = EditorGUILayout.Foldout(isExpanded, label, true);
+            if (isExpanded)
+            {
+                EditorGUI.indentLevel++;
+                draw();
+                EditorGUI.indentLevel--;
+            }
+
+            return isExpanded;
+        }
+
         public static void DrawStat(string label, string value)
         {
             using (new EditorGUILayout.HorizontalScope())
@@ -45,39 +60,43 @@ namespace PrismFanlight.Editor
 
         private static GUIStyle CreateSection()
         {
-            var style = new GUIStyle(EditorStyles.helpBox)
+            return new GUIStyle(EditorStyles.helpBox)
             {
                 padding = new RectOffset(10, 10, 8, 10),
                 margin = new RectOffset(0, 0, 4, 4)
             };
-            return style;
         }
 
         private static GUIStyle CreateSectionTitle()
         {
-            var style = new GUIStyle(EditorStyles.boldLabel)
+            return new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 14
             };
-            return style;
+        }
+
+        private static GUIStyle CreateSubGroupLabel()
+        {
+            return new GUIStyle(EditorStyles.boldLabel)
+            {
+                //margin = new RectOffset(0, 0, 6, 2)
+            };
         }
 
         private static GUIStyle CreateStatLabel()
         {
-            var style = new GUIStyle(EditorStyles.miniLabel)
+            return new GUIStyle(EditorStyles.miniLabel)
             {
                 alignment = TextAnchor.MiddleLeft
             };
-            return style;
         }
 
         private static GUIStyle CreateStatValue()
         {
-            var style = new GUIStyle(EditorStyles.miniBoldLabel)
+            return new GUIStyle(EditorStyles.miniBoldLabel)
             {
                 alignment = TextAnchor.MiddleRight
             };
-            return style;
         }
     }
 }

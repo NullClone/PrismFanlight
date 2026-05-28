@@ -13,8 +13,8 @@ namespace PrismFanlight.Rendering
 
         private static Vector3 ComputeWorldDirection(FanlightMotionSettings motion)
         {
-            var yaw = motion.swingYaw * Mathf.Deg2Rad;
-            return new Vector3(Mathf.Sin(yaw), 0.0f, Mathf.Cos(yaw)).normalized;
+            var yaw = motion.direction.swingYaw * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
         }
 
 
@@ -70,10 +70,10 @@ namespace PrismFanlight.Rendering
             shader.SetMatrix(FanlightShaderIds.WorldToLocal, context.WorldToLocal);
             shader.SetFloat(FanlightShaderIds.Time, context.Time);
             shader.SetVector(FanlightShaderIds.Beat, new Vector4(tempo.SongTime, tempo.Beat, tempo.BeatPhase, tempo.BarPhase));
-            shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enabled ? 1.0f : 0.0f, tempo.Bpm, tempo.BeatsPerBar, 0.0f));
+            shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enabled ? 1f : 0f, tempo.Bpm, tempo.BeatsPerBar, 0f));
 
-            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0.0f, 0.0f));
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(audience.blockCount.x, audience.blockCount.y, 0.0f, 0.0f));
+            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(audience.blockCount.x, audience.blockCount.y, 0f, 0f));
 
             if (includeVisibilityParams)
             {
@@ -82,20 +82,20 @@ namespace PrismFanlight.Rendering
                 SetFrustumPlanes(shader, context.EnableCulling ? context.CullingCamera : null, context.WorldBounds);
             }
 
-            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.frequency, motion.randomPhase, motion.phaseNoiseAmount, motion.phaseNoiseSpeed));
-            shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.armLength, motion.minAngle, motion.maxAngle, motion.snapAmount));
-            shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.holdAmount, motion.flickAmount, motion.returnBias, 0.0f));
             var worldDirection = ComputeWorldDirection(motion);
-            shader.SetInt(FanlightShaderIds.SwingMode, (int)motion.swingMode);
-            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, motion.axisSpread));
-            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(context.SwingTargetWorldPos.x, context.SwingTargetWorldPos.y, context.SwingTargetWorldPos.z, motion.aimStrength));
-            shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.seatJitter, motion.heightJitter, motion.armLengthJitter, 0.0f));
-            shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(motion.noiseAmount, motion.noiseSpeed, motion.noiseOctaves, motion.noisePersistence));
-            shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.enthusiasm, motion.enthusiasmVariation, motion.reactionDelay, motion.tempoDrift));
-            shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.restAmount, motion.restIntensity, motion.smallMotionRatio, 0.0f));
-            shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.restCycleDuration, motion.restDuration, motion.restFadeDuration, motion.restPhaseRandomness));
-            shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSyncAmount, motion.beatsPerSwing, motion.beatPhaseOffset, motion.downbeatAccent));
-            shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatReactionDelay, motion.beatSeatJitter, motion.beatBlockDelay.x, motion.beatBlockDelay.y));
+            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.swing.swingSpeed, motion.swing.randomPhase, motion.noise.phaseIrregularity, motion.noise.phaseIrregularitySpeed));
+            shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.swing.armLength, motion.swing.minAngle, motion.swing.maxAngle, motion.swing.snapAmount));
+            shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.swing.holdAmount, motion.swing.flickAmount, motion.swing.returnBias, 0f));
+            shader.SetInt(FanlightShaderIds.SwingMode, (int)motion.direction.swingMode);
+            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, motion.direction.directionSpread));
+            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(context.SwingTargetWorldPos.x, context.SwingTargetWorldPos.y, context.SwingTargetWorldPos.z, motion.direction.aimStrength));
+            shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.human.seatJitter, motion.human.heightJitter, motion.human.armLengthJitter, 0f));
+            shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(motion.noise.axisNoiseAmount, motion.noise.axisNoiseSpeed, motion.noise.noiseOctaves, motion.noise.noiseDetail));
+            shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.human.enthusiasm, motion.human.enthusiasmVariation, motion.human.reactionDelay, motion.human.speedVariation));
+            shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.human.restProbability, motion.human.restMotionLevel, motion.human.lazyFanRatio, 0f));
+            shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.human.restCycleDuration, motion.human.restDuration, motion.human.restFadeDuration, motion.human.restPhaseRandomness));
+            shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSync.beatSyncBlend, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
+            shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
         }
 
         private void SetColorParams(ComputeShader shader, FanlightColorSettings color)
@@ -103,7 +103,7 @@ namespace PrismFanlight.Rendering
             shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
             shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
             shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);
-            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, 0.0f, 0.0f));
+            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, 0f, 0f));
             shader.SetInt(FanlightShaderIds.PaletteColorCount, FillPalette(color));
             shader.SetVectorArray(FanlightShaderIds.PaletteColors, _paletteColors);
         }
@@ -121,15 +121,11 @@ namespace PrismFanlight.Rendering
             else
             {
                 for (var i = 0; i < count; i++)
-                {
                     _paletteColors[i] = palette[i];
-                }
             }
 
             for (var i = count; i < _paletteColors.Length; i++)
-            {
                 _paletteColors[i] = Color.black;
-            }
 
             return count;
         }
@@ -137,13 +133,10 @@ namespace PrismFanlight.Rendering
         private void SetFrustumPlanes(ComputeShader shader, Camera cullingCamera, Bounds worldBounds)
         {
             if (cullingCamera == null)
-            {
                 SetAlwaysVisiblePlanes(worldBounds);
-            }
             else
             {
                 GeometryUtility.CalculateFrustumPlanes(cullingCamera, _planes);
-
                 for (var i = 0; i < _planes.Length; i++)
                 {
                     var plane = _planes[i];
@@ -158,7 +151,7 @@ namespace PrismFanlight.Rendering
         private void SetAlwaysVisiblePlanes(Bounds bounds)
         {
             var center = bounds.center;
-            var radius = bounds.extents.magnitude + 1.0f;
+            var radius = bounds.extents.magnitude + 1f;
 
             _frustumPlanes[0] = new Vector4(1, 0, 0, radius - center.x);
             _frustumPlanes[1] = new Vector4(-1, 0, 0, radius + center.x);
