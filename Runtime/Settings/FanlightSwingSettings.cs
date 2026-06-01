@@ -40,16 +40,12 @@ namespace PrismFanlight
         [Range(-1f, 1f)]
         public float lean;
 
-        // Fraction of the crowd that does the side-to-side (horizontal) wave instead of the
-        // fore-aft (vertical) swing. 0 = all vertical, 1 = all horizontal, in between = a mix.
         [Range(0f, 1f)]
         public float horizontalRatio;
 
-        // How much faster the wrist flick is than the arm sway in the horizontal wave.
         [Min(1f)]
         public float wristSwingSpeed;
 
-        // Amplitude (radians) of the wrist flick in the horizontal wave. Kept small for a natural range.
         [Range(0f, 1.5f)]
         public float wristSwingAngle;
 

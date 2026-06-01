@@ -35,19 +35,6 @@ namespace PrismFanlight.Editor
             EditorGUILayout.LabelField(title, SubGroupLabel);
         }
 
-        public static bool DrawFoldout(bool isExpanded, string label, System.Action draw)
-        {
-            isExpanded = EditorGUILayout.Foldout(isExpanded, label, true);
-            if (isExpanded)
-            {
-                EditorGUI.indentLevel++;
-                draw();
-                EditorGUI.indentLevel--;
-            }
-
-            return isExpanded;
-        }
-
         public static void DrawStat(string label, string value)
         {
             using (new EditorGUILayout.HorizontalScope())
@@ -57,6 +44,7 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.LabelField(value, StatValue, GUILayout.Width(110));
             }
         }
+
 
         private static GUIStyle CreateSection()
         {

@@ -533,7 +533,9 @@ namespace PrismFanlight.Editor
             });
         }
 
-        private static bool IsFixedRate(SerializedProperty property) =>
-            property.FindPropertyRelative("_mode").enumValueIndex == (int)FanlightGpuUpdateMode.FixedRate;
+        private static bool IsFixedRate(SerializedProperty property)
+        {
+            return property.FindPropertyRelative("_mode").enumValueIndex == (int)FanlightGpuUpdateMode.FixedRate;
+        }
     }
 }

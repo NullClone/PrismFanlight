@@ -7,6 +7,7 @@ namespace PrismFanlight.Rendering
         private UpdateLane _visibility;
         private UpdateLane _animation;
 
+
         public void Reset()
         {
             _visibility.Reset();

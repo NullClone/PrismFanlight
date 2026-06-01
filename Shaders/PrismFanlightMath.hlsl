@@ -35,7 +35,6 @@ float3 SafeNormalize(float3 value, float3 fallback)
     return lengthSq > 0.000001 ? value * rsqrt(lengthSq) : fallback;
 }
 
-// ベース軸に直交する安定したベクトルを返す（ゼロ除算を回避）
 float3 SafePerp(float3 axis)
 {
     float3 v0 = cross(axis, float3(0.0, 1.0, 0.0));
@@ -44,7 +43,6 @@ float3 SafePerp(float3 axis)
     return SafeNormalize(v, float3(1.0, 0.0, 0.0));
 }
 
-// fBm（fractal Brownian motion）ノイズ
 float FbmNoise21(float2 p, int octaves, float persistence)
 {
     float value = 0.0;

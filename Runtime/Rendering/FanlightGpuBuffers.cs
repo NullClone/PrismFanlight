@@ -27,8 +27,6 @@ namespace PrismFanlight.Rendering
 
         public Bounds LocalBounds { get; private set; }
 
-        // Local-space Y of the penlight grip (bottom of the mesh). Used as the rotation pivot
-        // so the stick swings about its handle instead of its center.
         public float MeshPivotY { get; private set; }
 
 

@@ -26,6 +26,7 @@ float PrismComputeRestFactor(float seed)
     float restWeight = fade > 0.0001
         ? saturate(cycleTime / fade) * saturate((restDuration - cycleTime) / fade)
         : 1.0;
+        
     return lerp(1.0, _MotionRest.y, restWeight);
 }
 
@@ -51,14 +52,13 @@ float3 PrismComputeWorldDirection(FanlightSeatData seat)
     return worldDirection;
 }
 
-// Compute the local rotation axis. Vertical patterns nod the stick fore-aft (axis perpendicular to
-// the facing direction); horizontal patterns tilt it left-right (axis along the facing direction).
 float3 PrismComputeBaseAxis(FanlightSeatData seat, bool horizontal)
 {
     float3 worldDirection = PrismComputeWorldDirection(seat);
     float3 worldAxis = horizontal
         ? worldDirection
         : SafeNormalize(cross(float3(0.0, 1.0, 0.0), worldDirection), float3(1.0, 0.0, 0.0));
+        
     return SafeNormalize(PrismWorldVectorToLocal(worldAxis), float3(1.0, 0.0, 0.0));
 }
 
@@ -92,48 +92,30 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
     localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
 
-    // Per-seat motion pattern: vertical (fore-aft swing) or horizontal (side-to-side wave).
-    // horizontalRatio = _SwingWrist.x decides the crowd mix.
     bool isHorizontal = Hash11(seed + 131.0) < saturate(_SwingWrist.x);
 
-    // --- Arm joint angle (the main shaped swing) ---
     float angle = cos(phase);
-    // crispness = _MotionShape.w
     float snappedAngle = smoothstep(-1.0, 1.0, angle) * 2.0 - 1.0;
     angle = lerp(angle, snappedAngle, _MotionShape.w * Hash11(seed + 43.0));
-    // peakHold = _MotionShape.x
     float heldAngle = sign(angle) * pow(abs(angle), lerp(1.0, 0.25, _MotionShape.x));
     angle = lerp(angle, heldAngle, _MotionShape.x);
-    // lean = _MotionShape.z (static tilt of the whole swing)
     angle = clamp(angle + _MotionShape.z * 0.35, -1.0, 1.0);
-    // minAngle = _MotionSwing.z, maxAngle = _MotionSwing.w
     float angleAmplitude = lerp(_MotionSwing.z, _MotionSwing.w, Hash11(seed + 47.0));
-    // angleNoise = _MotionVariation.w — amplitude breathes slowly over time
     float angleNoiseVal = FbmNoise21(float2(Hash11(seed + 103.0) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y), noiseOctaves, noisePersistence);
     angleAmplitude = max(0.0, angleAmplitude * (1.0 + angleNoiseVal * _MotionVariation.w));
     float armAngle = angle * angleAmplitude;
 
-    // --- Wrist joint angle (secondary articulation, pivots at the grip) ---
     float wristAngle;
     if (isHorizontal)
     {
-        // Fast, small flick layered on the slow arm sway (the "登場" side-to-side wave).
-        // wristSwingSpeed = _SwingWrist.y, wristSwingAngle = _SwingWrist.z
         wristAngle = cos(phase * max(1.0, _SwingWrist.y)) * _SwingWrist.z;
     }
     else
     {
-        // Follow-through: the hand trails the arm and curls back during the stroke.
-        // followThrough = _MotionShape.y
         wristAngle = sin(phase) * _MotionShape.y * 0.5 * angleAmplitude;
     }
-
-    // --- Rotation axis (shared by both joints) ---
-
-    // 1. Base axis: vertical -> fore-aft, horizontal -> left-right
+    
     float3 baseAxis = PrismComputeBaseAxis(seat, isHorizontal);
-
-    // 2. Per-seat static random spread: rotate base axis on sphere surface
     float3 perpU = SafePerp(baseAxis);
     float3 perpV = cross(baseAxis, perpU);
 
@@ -148,18 +130,13 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
         baseAxis * cosSpread + (perpU * spreadDir.x + perpV * spreadDir.y) * sinSpread,
         baseAxis);
 
-    // 3. Time-varying fBm noise perturbation on sphere surface (two orthogonal components)
     float noiseU = FbmNoise21(float2(Hash11(seed + 89.0) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y), noiseOctaves, noisePersistence);
     float noiseV = FbmNoise21(float2(Hash11(seed + 97.0) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 317.5), noiseOctaves, noisePersistence);
     float3 ap1 = SafePerp(axis);
     float3 ap2 = cross(axis, ap1);
     axis = SafeNormalize(axis + (ap1 * noiseU + ap2 * noiseV) * _MotionNoise.x, axis);
-
-    // --- Arm length & overall energy ---
-
-    // armLengthMin = _MotionSwing.x, armLengthMax = _MotionSwing.y — per-seat random arm length
+    
     float armLength = lerp(_MotionSwing.x, _MotionSwing.y, Hash11(seed + 105.0));
-    // armLengthJitter = _MotionVariation.z — static per-seat variation
     float armJitter = 1.0 + (Hash11(seed + 59.0) * 2.0 - 1.0) * _MotionVariation.z;
     armLength = max(0.0, armLength * armJitter);
 
@@ -169,17 +146,14 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     float downbeatPulse = pow(1.0 - saturate(_FanlightBeat.w), 8.0) * saturate(_FanlightTempo.x);
     float motionScale = enthusiasm * restFactor * smallMotionFactor * (1.0 + downbeatPulse * _MotionBeat.w);
     armAngle *= motionScale;
-    // Clamp the wrist into a natural range of motion (no biomechanical IK, just a bound).
     wristAngle = clamp(wristAngle * motionScale, -1.4, 1.4);
 
-    // --- Two-segment articulation: seat -> shoulder rotation -> arm length -> wrist rotation -> grip ---
-    // mGrip moves the mesh so its bottom (the penlight grip) sits at the rotation pivot, so the stick
-    // swings about its handle instead of its center.
     float4x4 m1 = Translate(localPosition);
     float4x4 mArm = AxisAngle(axis, armAngle);
     float4x4 m3 = Translate(float3(0.0, armLength * max(0.0, enthusiasm), 0.0));
     float4x4 mWrist = AxisAngle(axis, wristAngle);
     float4x4 mGrip = Translate(float3(0.0, -_GripPivotY, 0.0));
+    
     return mul(_LocalToWorld, mul(m1, mul(mArm, mul(m3, mul(mWrist, mGrip)))));
 }
 
@@ -206,5 +180,6 @@ float4 PrismComputeColor(FanlightSeatData seat)
     }
 
     float randomIntensityFactor = max(0.0, 1.0 + (Hash11(seed + 101.0) * 2.0 - 1.0) * _Brightness.y);
+    
     return float4(rgb * randomIntensityFactor, _PrimaryColor.a);
 }
