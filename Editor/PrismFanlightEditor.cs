@@ -274,7 +274,6 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSubGroupLabel("Swing");
 
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("swingType"), new GUIContent("Swing Type"));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("swingSpeed"), new GUIContent("Swing Speed"));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("randomPhase"), new GUIContent("Phase Randomness"));
 
@@ -300,6 +299,8 @@ namespace PrismFanlight.Editor
                 armMinProp.floatValue = armMin;
                 armMaxProp.floatValue = armMax;
             }
+
+            EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("armLengthJitter"), new GUIContent("Arm Length Jitter"));
 
             EditorGUILayout.Space();
             PrismFanlightEditorStyles.DrawSubGroupLabel("Angle");
@@ -331,8 +332,26 @@ namespace PrismFanlight.Editor
 
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("crispness"), new GUIContent("Crispness"));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("peakHold"), new GUIContent("Peak Hold"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("followThrough"), new GUIContent("Follow Through"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("followThrough"), new GUIContent("Follow Through", "Wrist trails the arm and curls back during the stroke (vertical pattern)."));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("lean"), new GUIContent("Lean"));
+
+            EditorGUILayout.Space();
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Pattern");
+
+            var horizontalRatioProp = swingProp.FindPropertyRelative("horizontalRatio");
+            EditorGUILayout.PropertyField(horizontalRatioProp,
+                new GUIContent("Horizontal Ratio", "Fraction of the crowd doing the side-to-side wave instead of the fore-aft swing."));
+
+            if (horizontalRatioProp.floatValue > 0f)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("wristSwingSpeed"),
+                        new GUIContent("Wrist Speed", "How much faster the wrist flick is than the arm sway."));
+                    EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("wristSwingAngle"),
+                        new GUIContent("Wrist Swing", "Amplitude of the fast wrist flick (radians)."));
+                }
+            }
 
             EditorGUILayout.Space();
             PrismFanlightEditorStyles.DrawSubGroupLabel("Direction");
@@ -383,7 +402,6 @@ namespace PrismFanlight.Editor
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("seatJitter"), new GUIContent("Seat Jitter"));
             EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("heightJitter"), new GUIContent("Height Jitter"));
-            EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("armLengthJitter"), new GUIContent("Arm Length Jitter"));
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("reactionDelay"), new GUIContent("Reaction Delay"));
             EditorGUILayout.PropertyField(humanProp.FindPropertyRelative("speedVariation"), new GUIContent("Speed Variation"));

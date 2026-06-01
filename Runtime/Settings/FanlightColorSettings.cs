@@ -102,8 +102,6 @@ namespace PrismFanlight
             return destination;
         }
 
-        private static float3 ToFloat3(Color color) => math.float3(color.r, color.g, color.b);
-
         private static bool IsSupportedMode(FanlightColorMode value)
         {
             return value is FanlightColorMode.Single or FanlightColorMode.Random or FanlightColorMode.Gradient;

@@ -28,7 +28,7 @@ namespace PrismFanlight.Rendering
         public static readonly int MotionSwing = Shader.PropertyToID("_MotionSwing");
         public static readonly int MotionShape = Shader.PropertyToID("_MotionShape");
         public static readonly int SwingMode = Shader.PropertyToID("_SwingMode");
-        public static readonly int SwingType = Shader.PropertyToID("_SwingType");
+        public static readonly int SwingWrist = Shader.PropertyToID("_SwingWrist");
         public static readonly int SwingAxis = Shader.PropertyToID("_SwingAxis");
         public static readonly int SwingTargetPos = Shader.PropertyToID("_SwingTargetPos");
         public static readonly int WorldToLocal = Shader.PropertyToID("_WorldToLocal");
@@ -39,6 +39,7 @@ namespace PrismFanlight.Rendering
         public static readonly int MotionRestTiming = Shader.PropertyToID("_MotionRestTiming");
         public static readonly int MotionBeat = Shader.PropertyToID("_MotionBeat");
         public static readonly int MotionBeatSpread = Shader.PropertyToID("_MotionBeatSpread");
+        public static readonly int GripPivotY = Shader.PropertyToID("_GripPivotY");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
         public static readonly int ColorSource = Shader.PropertyToID("_FanlightColorSource");

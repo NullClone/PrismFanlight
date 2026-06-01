@@ -17,7 +17,6 @@ namespace PrismFanlight
         {
             swing = new FanlightSwingSettings
             {
-                swingType = FanlightSwingType.Arm,
                 swingSpeed = 0.5f,
                 randomPhase = 0f,
                 armLengthMin = 0.2f,
@@ -28,7 +27,10 @@ namespace PrismFanlight
                 crispness = 1f,
                 peakHold = 0f,
                 followThrough = 0f,
-                lean = 0f
+                lean = 0f,
+                horizontalRatio = 0f,
+                wristSwingSpeed = 4f,
+                wristSwingAngle = 0.3f
             },
             direction = new FanlightDirectionSettings
             {

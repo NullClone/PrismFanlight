@@ -89,7 +89,8 @@ namespace PrismFanlight.Rendering
             // x=peakHold, y=followThrough, z=lean, w=crispness
             shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.swing.peakHold, motion.swing.followThrough, motion.swing.lean, motion.swing.crispness));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)motion.direction.swingMode);
-            shader.SetInt(FanlightShaderIds.SwingType, (int)motion.swing.swingType);
+            // x=horizontalRatio, y=wristSwingSpeed, z=wristSwingAngle
+            shader.SetVector(FanlightShaderIds.SwingWrist, new Vector4(motion.swing.horizontalRatio, motion.swing.wristSwingSpeed, motion.swing.wristSwingAngle, 0f));
             shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, motion.direction.directionSpread));
             shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(context.SwingTargetWorldPos.x, context.SwingTargetWorldPos.y, context.SwingTargetWorldPos.z, motion.direction.aimStrength));
             // x=seatJitter, y=heightJitter, z=armLengthJitter, w=angleNoise
@@ -100,6 +101,7 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.human.restCycleDuration, motion.human.restDuration, motion.human.restFadeDuration, motion.human.restPhaseRandomness));
             shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSync.beatSyncBlend, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
+            shader.SetFloat(FanlightShaderIds.GripPivotY, buffers.MeshPivotY);
         }
 
         private void SetColorParams(ComputeShader shader, FanlightColorSettings color)

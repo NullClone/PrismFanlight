@@ -92,7 +92,7 @@ namespace PrismFanlight
             set => _enablePreview = value;
         }
 
-        public bool Enable => enabled && SystemInfo.supportsComputeShaders && (Application.isPlaying || _enablePreview);
+        public bool Enable => enabled && SystemInfo.supportsComputeShaders && (Application.isPlaying || (_enablePreview && IsSelectedInEditor()));
 
         public bool IsCullingEnabled => _enableCulling && Application.isPlaying;
 
@@ -159,6 +159,15 @@ namespace PrismFanlight
         private void OnDestroy()
         {
             ReleaseGpuResources();
+        }
+
+        private bool IsSelectedInEditor()
+        {
+#if UNITY_EDITOR
+            return UnityEditor.Selection.Contains(gameObject);
+#else
+            return false;
+#endif
         }
 
 

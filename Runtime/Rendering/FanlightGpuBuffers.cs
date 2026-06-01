@@ -27,6 +27,10 @@ namespace PrismFanlight.Rendering
 
         public Bounds LocalBounds { get; private set; }
 
+        // Local-space Y of the penlight grip (bottom of the mesh). Used as the rotation pivot
+        // so the stick swings about its handle instead of its center.
+        public float MeshPivotY { get; private set; }
+
 
         // Methods
 
@@ -37,6 +41,7 @@ namespace PrismFanlight.Rendering
             SeatCount = audience.TotalSeatCount;
             BlockCount = audience.blockCount.x * audience.blockCount.y;
             LocalBounds = FanlightGeometryBuilder.BuildBounds(audience, mesh);
+            MeshPivotY = mesh.bounds.min.y;
 
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
             BlockBuffer = new ComputeBuffer(BlockCount, FanlightBlockData.Stride, ComputeBufferType.Structured);
@@ -84,6 +89,7 @@ namespace PrismFanlight.Rendering
             SeatCount = 0;
             BlockCount = 0;
             LocalBounds = default;
+            MeshPivotY = 0f;
         }
     }
 }

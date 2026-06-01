@@ -7,8 +7,6 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightSwingSettings
     {
-        public FanlightSwingType swingType;
-
         [Min(0f)]
         public float swingSpeed;
 
@@ -42,10 +40,22 @@ namespace PrismFanlight
         [Range(-1f, 1f)]
         public float lean;
 
+        // Fraction of the crowd that does the side-to-side (horizontal) wave instead of the
+        // fore-aft (vertical) swing. 0 = all vertical, 1 = all horizontal, in between = a mix.
+        [Range(0f, 1f)]
+        public float horizontalRatio;
+
+        // How much faster the wrist flick is than the arm sway in the horizontal wave.
+        [Min(1f)]
+        public float wristSwingSpeed;
+
+        // Amplitude (radians) of the wrist flick in the horizontal wave. Kept small for a natural range.
+        [Range(0f, 1.5f)]
+        public float wristSwingAngle;
+
 
         public FanlightSwingSettings Validated() => new()
         {
-            swingType = swingType,
             swingSpeed = math.max(swingSpeed, 0f),
             randomPhase = math.saturate(randomPhase),
             armLengthMin = math.max(math.min(armLengthMin, armLengthMax), 0f),
@@ -56,7 +66,10 @@ namespace PrismFanlight
             crispness = math.saturate(crispness),
             peakHold = math.saturate(peakHold),
             followThrough = math.saturate(followThrough),
-            lean = math.clamp(lean, -1f, 1f)
+            lean = math.clamp(lean, -1f, 1f),
+            horizontalRatio = math.saturate(horizontalRatio),
+            wristSwingSpeed = math.max(1f, wristSwingSpeed),
+            wristSwingAngle = math.clamp(wristSwingAngle, 0f, 1.5f)
         };
     }
 }
