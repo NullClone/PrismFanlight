@@ -10,6 +10,8 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
+        private PrismFanlight _instance;
+
         private SerializedProperty _mesh;
         private SerializedProperty _material;
         private SerializedProperty _computeShader;
@@ -25,16 +27,16 @@ namespace PrismFanlight.Editor
         private SerializedProperty _swingTarget;
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
+        private SerializedProperty _enablePreview;
 
-        private bool _noiseDetailFoldout;
-        private bool _restTimingFoldout;
-        private bool _beatSpreadFoldout;
-
-        private bool _enablePreview = true;
+        private bool _enableGizmos = true;
+        private bool _wasPreviewing;
 
 
         private void OnEnable()
         {
+            _instance = target as PrismFanlight;
+
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
@@ -50,11 +52,56 @@ namespace PrismFanlight.Editor
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
+            _enablePreview = serializedObject.FindProperty(nameof(_enablePreview));
+
+            EditorApplication.update += DrawPreview;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.update -= DrawPreview;
+
+            if (_instance != null && !Application.isPlaying)
+            {
+                _instance.ReleaseGpuResources();
+
+                SceneView.RepaintAll();
+            }
+
+            _wasPreviewing = false;
+        }
+
+        private void DrawPreview()
+        {
+            if (_instance == null || Application.isPlaying)
+            {
+                _wasPreviewing = false;
+
+                return;
+            }
+
+            var previewing = _instance.EnablePreview && _instance.enabled;
+
+            if (previewing)
+            {
+                EditorApplication.QueuePlayerLoopUpdate();
+                SceneView.RepaintAll();
+
+                Repaint();
+            }
+            else if (_wasPreviewing)
+            {
+                _instance.ReleaseGpuResources();
+
+                SceneView.RepaintAll();
+            }
+
+            _wasPreviewing = previewing;
         }
 
         private void OnSceneGUI()
         {
-            if (!_enablePreview) return;
+            if (!_enableGizmos) return;
 
             if (target is PrismFanlight fanlight)
             {
@@ -66,49 +113,44 @@ namespace PrismFanlight.Editor
         {
             serializedObject.Update();
 
-            var instance = target as PrismFanlight;
-
             using (new EditorGUI.DisabledScope(true))
             {
                 EditorGUILayout.PropertyField(_computeShader, new GUIContent("Compute Shader"));
             }
 
-            DrawRenderingSection();
-            DrawLayoutSection();
-            DrawMotionSection(instance);
-            DrawTempoSection();
-            DrawColorSection(instance);
-            DrawDebugSection(instance);
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-
-        private void DrawRenderingSection()
-        {
             if (_computeShader.objectReferenceValue == null)
             {
                 EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Warning);
             }
 
-            PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
+            EditorGUILayout.Space();
+            EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+
+            if (_mesh.objectReferenceValue == null)
             {
-                EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+                EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
+            }
 
-                if (_mesh.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
-                }
+            if (_material.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign a Material to render the fanlight instances.", MessageType.Warning);
+            }
 
-                EditorGUILayout.PropertyField(_material, new GUIContent("Material"));
+            DrawGeneralSection();
+            DrawLayoutSection();
+            DrawMotionSection();
+            DrawTempoSection();
+            DrawColorSection();
+            DrawDebugSection();
 
-                if (_material.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Indirect rendering material is required.", MessageType.Warning);
-                }
+            serializedObject.ApplyModifiedProperties();
+        }
 
-                EditorGUILayout.Space();
 
+        private void DrawGeneralSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| General", () =>
+            {
                 EditorGUI.BeginChangeCheck();
                 var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
                 if (EditorGUI.EndChangeCheck()) _renderingLayerMask.longValue = mask;
@@ -210,7 +252,7 @@ namespace PrismFanlight.Editor
             });
         }
 
-        private void DrawMotionSection(PrismFanlight fanlight)
+        private void DrawMotionSection()
         {
             DrawPresetSection(
                 "| Motion",
@@ -219,7 +261,7 @@ namespace PrismFanlight.Editor
                 () =>
                 {
                     serializedObject.ApplyModifiedProperties();
-                    PrismFanlightPresetUtility.CreateMotionPreset(fanlight, fanlight.GetMotion());
+                    PrismFanlightPresetUtility.CreateMotionPreset(_instance, _instance.GetMotion());
                 });
         }
 
@@ -362,7 +404,7 @@ namespace PrismFanlight.Editor
                 new GUIContent("Phase Randomness", "Per-fan variation in rest cycle timing"));
         }
 
-        private void DrawColorSection(PrismFanlight fanlight)
+        private void DrawColorSection()
         {
             DrawPresetSection(
                 "| Color",
@@ -371,7 +413,7 @@ namespace PrismFanlight.Editor
                 () =>
                 {
                     serializedObject.ApplyModifiedProperties();
-                    PrismFanlightPresetUtility.CreateColorPreset(fanlight, fanlight.GetColorSettings());
+                    PrismFanlightPresetUtility.CreateColorPreset(_instance, _instance.GetColorSettings());
                 });
         }
 
@@ -411,13 +453,28 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(color.FindPropertyRelative("intensity"), new GUIContent("Intensity"));
         }
 
-        private void DrawDebugSection(PrismFanlight fanlight)
+        private void DrawDebugSection()
         {
-            var diagnostics = fanlight.GetDiagnostics();
+            var diagnostics = _instance.GetDiagnostics();
 
             PrismFanlightEditorStyles.DrawSection("| Debug", () =>
             {
-                _enablePreview = EditorGUILayout.Toggle("Enable Preview", _enablePreview);
+                using (new EditorGUI.DisabledScope(Application.isPlaying))
+                {
+                    EditorGUILayout.PropertyField(_enablePreview,
+                        new GUIContent("Enable Preview", "Render the fanlights in the Scene view while not in Play mode."));
+                }
+
+                if (Application.isPlaying)
+                {
+                    EditorGUILayout.HelpBox("Preview always renders during Play mode.", MessageType.None);
+                }
+                else if (_enablePreview.boolValue && !SystemInfo.supportsComputeShaders)
+                {
+                    EditorGUILayout.HelpBox("Compute shaders are not supported on this platform; preview is unavailable.", MessageType.Warning);
+                }
+
+                _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Diagnostics", EditorStyles.boldLabel);
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", diagnostics.IsGpuReady ? "Yes" : "No");

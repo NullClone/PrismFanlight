@@ -4,6 +4,7 @@ using UnityEngine;
 namespace PrismFanlight
 {
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
+    [ExecuteAlways]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
@@ -53,14 +54,13 @@ namespace PrismFanlight
         [SerializeField]
         private Transform _swingTarget = null;
 
+        [SerializeField]
+        private bool _enablePreview = false;
+
         private readonly FanlightGpuRenderer _renderer = new();
 
 
         // Properties
-
-        public bool IsCullingEnabled => _enableCulling;
-
-        public uint RenderingLayerMask => _renderingLayerMask;
 
         public Mesh Mesh
         {
@@ -80,13 +80,23 @@ namespace PrismFanlight
             set => _cullingCamera = value;
         }
 
-        public ComputeShader ComputeShader => _computeShader;
-
         public Transform SwingTarget
         {
             get => _swingTarget;
             set => _swingTarget = value;
         }
+
+        public bool EnablePreview
+        {
+            get => _enablePreview;
+            set => _enablePreview = value;
+        }
+
+        public bool Enable => enabled && SystemInfo.supportsComputeShaders && (Application.isPlaying || _enablePreview);
+
+        public bool IsCullingEnabled => _enableCulling && Application.isPlaying;
+
+        public uint RenderingLayerMask => _renderingLayerMask;
 
         public FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
 
@@ -103,6 +113,15 @@ namespace PrismFanlight
 
         private void Start()
         {
+            if (!Application.isPlaying) return;
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogWarning("Compute shaders are not supported on this platform.");
+
+                return;
+            }
+
             if (_enableCulling && _cullingCamera == null && Camera.main != null)
             {
                 _cullingCamera = Camera.main;
@@ -111,13 +130,15 @@ namespace PrismFanlight
 
         private void Update()
         {
+            if (!Enable) return;
+
             _renderer.Render(
                 _mesh,
                 _material,
                 _computeShader,
                 _renderingLayerMask,
                 _cullingCamera,
-                _enableCulling,
+                IsCullingEnabled,
                 VisibilityUpdate,
                 AnimationUpdate,
                 GetTempoState(),
@@ -129,6 +150,17 @@ namespace PrismFanlight
                 Time.time,
                 Time.unscaledTime);
         }
+
+        private void OnDisable()
+        {
+            ReleaseGpuResources();
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseGpuResources();
+        }
+
 
         public Audience GetAudience() => (_audience ?? Audience.Default()).Validated();
 
@@ -202,12 +234,7 @@ namespace PrismFanlight
             _renderingLayerMask = renderingLayerMask;
         }
 
-        private void OnDisable()
-        {
-            _renderer.Dispose();
-        }
-
-        private void OnDestroy()
+        public void ReleaseGpuResources()
         {
             _renderer.Dispose();
         }
