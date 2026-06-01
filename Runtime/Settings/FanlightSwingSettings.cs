@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightSwingSettings
     {
+        public FanlightSwingType swingType;
+
         [Min(0f)]
         public float swingSpeed;
 
@@ -14,7 +16,10 @@ namespace PrismFanlight
         public float randomPhase;
 
         [Min(0f)]
-        public float armLength;
+        public float armLengthMin;
+
+        [Min(0f)]
+        public float armLengthMax;
 
         [Min(0f)]
         public float minAngle;
@@ -23,29 +28,35 @@ namespace PrismFanlight
         public float maxAngle;
 
         [Range(0f, 1f)]
-        public float snapAmount;
+        public float angleNoise;
 
         [Range(0f, 1f)]
-        public float holdAmount;
+        public float crispness;
 
         [Range(0f, 1f)]
-        public float flickAmount;
+        public float peakHold;
+
+        [Range(0f, 1f)]
+        public float followThrough;
 
         [Range(-1f, 1f)]
-        public float returnBias;
+        public float lean;
 
 
         public FanlightSwingSettings Validated() => new()
         {
+            swingType = swingType,
             swingSpeed = math.max(swingSpeed, 0f),
             randomPhase = math.saturate(randomPhase),
-            armLength = math.max(armLength, 0f),
+            armLengthMin = math.max(math.min(armLengthMin, armLengthMax), 0f),
+            armLengthMax = math.max(math.max(armLengthMin, armLengthMax), 0f),
             minAngle = math.max(math.min(minAngle, maxAngle), 0f),
             maxAngle = math.max(math.max(minAngle, maxAngle), 0f),
-            snapAmount = math.saturate(snapAmount),
-            holdAmount = math.saturate(holdAmount),
-            flickAmount = math.saturate(flickAmount),
-            returnBias = math.clamp(returnBias, -1f, 1f)
+            angleNoise = math.saturate(angleNoise),
+            crispness = math.saturate(crispness),
+            peakHold = math.saturate(peakHold),
+            followThrough = math.saturate(followThrough),
+            lean = math.clamp(lean, -1f, 1f)
         };
     }
 }

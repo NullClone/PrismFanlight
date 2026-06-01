@@ -31,6 +31,7 @@ float4 _MotionTiming;
 float4 _MotionSwing;
 float4 _MotionShape;
 int _SwingMode;
+int _SwingType;
 float4 _SwingAxis;
 float4 _SwingTargetPos;
 float4x4 _WorldToLocal;

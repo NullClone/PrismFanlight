@@ -232,8 +232,35 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSubGroupLabel("Swing");
 
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("swingType"), new GUIContent("Swing Type"));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("swingSpeed"), new GUIContent("Swing Speed"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("armLength"), new GUIContent("Arm Length"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("randomPhase"), new GUIContent("Phase Randomness"));
+
+            EditorGUILayout.Space();
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Arm");
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel("Arm Length");
+
+                var armMinProp = swingProp.FindPropertyRelative("armLengthMin");
+                var armMaxProp = swingProp.FindPropertyRelative("armLengthMax");
+                var armMin = armMinProp.floatValue;
+                var armMax = armMaxProp.floatValue;
+
+                armMin = EditorGUILayout.FloatField(armMin);
+                EditorGUILayout.MinMaxSlider(ref armMin, ref armMax, 0f, 2f);
+                armMax = EditorGUILayout.FloatField(armMax);
+
+                armMin = math.round(armMin * 100f) / 100f;
+                armMax = math.round(armMax * 100f) / 100f;
+
+                armMinProp.floatValue = armMin;
+                armMaxProp.floatValue = armMax;
+            }
+
+            EditorGUILayout.Space();
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Angle");
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -255,11 +282,15 @@ namespace PrismFanlight.Editor
                 maxAngleProp.floatValue = maxAngle;
             }
 
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("snapAmount"), new GUIContent("Snap"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("holdAmount"), new GUIContent("Hold"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("flickAmount"), new GUIContent("Flick"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("returnBias"), new GUIContent("Return Bias"));
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("randomPhase"), new GUIContent("Phase Randomness"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("angleNoise"), new GUIContent("Angle Variation"));
+
+            EditorGUILayout.Space();
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Shape");
+
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("crispness"), new GUIContent("Crispness"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("peakHold"), new GUIContent("Peak Hold"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("followThrough"), new GUIContent("Follow Through"));
+            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("lean"), new GUIContent("Lean"));
 
             EditorGUILayout.Space();
             PrismFanlightEditorStyles.DrawSubGroupLabel("Direction");

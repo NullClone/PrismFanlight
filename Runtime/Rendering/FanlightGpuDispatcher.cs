@@ -84,12 +84,16 @@ namespace PrismFanlight.Rendering
 
             var worldDirection = ComputeWorldDirection(motion);
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.swing.swingSpeed, motion.swing.randomPhase, motion.noise.phaseIrregularity, motion.noise.phaseIrregularitySpeed));
-            shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.swing.armLength, motion.swing.minAngle, motion.swing.maxAngle, motion.swing.snapAmount));
-            shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.swing.holdAmount, motion.swing.flickAmount, motion.swing.returnBias, 0f));
+            // x=armLengthMin, y=armLengthMax, z=minAngle, w=maxAngle
+            shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.swing.armLengthMin, motion.swing.armLengthMax, motion.swing.minAngle, motion.swing.maxAngle));
+            // x=peakHold, y=followThrough, z=lean, w=crispness
+            shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.swing.peakHold, motion.swing.followThrough, motion.swing.lean, motion.swing.crispness));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)motion.direction.swingMode);
+            shader.SetInt(FanlightShaderIds.SwingType, (int)motion.swing.swingType);
             shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, motion.direction.directionSpread));
             shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(context.SwingTargetWorldPos.x, context.SwingTargetWorldPos.y, context.SwingTargetWorldPos.z, motion.direction.aimStrength));
-            shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.human.seatJitter, motion.human.heightJitter, motion.human.armLengthJitter, 0f));
+            // x=seatJitter, y=heightJitter, z=armLengthJitter, w=angleNoise
+            shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(motion.human.seatJitter, motion.human.heightJitter, motion.human.armLengthJitter, motion.swing.angleNoise));
             shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(motion.noise.axisNoiseAmount, motion.noise.axisNoiseSpeed, motion.noise.noiseOctaves, motion.noise.noiseDetail));
             shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.human.enthusiasm, motion.human.enthusiasmVariation, motion.human.reactionDelay, motion.human.speedVariation));
             shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.human.restProbability, motion.human.restMotionLevel, motion.human.lazyFanRatio, 0f));

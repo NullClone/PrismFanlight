@@ -19,15 +19,18 @@ namespace PrismFanlight
         {
             swing = new FanlightSwingSettings
             {
+                swingType = FanlightSwingType.Arm,
                 swingSpeed = 0.5f,
                 randomPhase = 0f,
-                armLength = 0.3f,
+                armLengthMin = 0.2f,
+                armLengthMax = 0.4f,
                 minAngle = 0.3f,
                 maxAngle = 1f,
-                snapAmount = 1f,
-                holdAmount = 0f,
-                flickAmount = 0f,
-                returnBias = 0f
+                angleNoise = 0f,
+                crispness = 1f,
+                peakHold = 0f,
+                followThrough = 0f,
+                lean = 0f
             },
             direction = new FanlightDirectionSettings
             {
@@ -107,13 +110,16 @@ namespace PrismFanlight
 
             var angle = math.cos(phase);
             var snappedAngle = math.smoothstep(-1, 1, angle) * 2 - 1;
-            angle = math.lerp(angle, snappedAngle, swing.snapAmount * rand.NextFloat());
-            var heldAngle = math.sign(angle) * math.pow(math.abs(angle), math.lerp(1f, 0.25f, swing.holdAmount));
-            angle = math.lerp(angle, heldAngle, swing.holdAmount);
+            angle = math.lerp(angle, snappedAngle, swing.crispness * rand.NextFloat());
+            var heldAngle = math.sign(angle) * math.pow(math.abs(angle), math.lerp(1f, 0.25f, swing.peakHold));
+            angle = math.lerp(angle, heldAngle, swing.peakHold);
             var flickWave = math.sin(phase * 2f) * (1f - math.abs(angle));
-            angle = math.clamp(angle + flickWave * swing.flickAmount * 0.35f, -1f, 1f);
-            angle = math.clamp(angle + swing.returnBias * 0.35f, -1f, 1f);
-            angle *= rand.NextFloat(swing.minAngle, swing.maxAngle);
+            angle = math.clamp(angle + flickWave * swing.followThrough * 0.35f, -1f, 1f);
+            angle = math.clamp(angle + swing.lean * 0.35f, -1f, 1f);
+            var angleAmplitude = rand.NextFloat(swing.minAngle, swing.maxAngle);
+            var angleNoiseVal = FbmNoise(math.float2(rand.NextFloat(-1000f, 1000f), time * noise.axisNoiseSpeed), octaves, detail);
+            angleAmplitude = math.max(0f, angleAmplitude * (1f + angleNoiseVal * swing.angleNoise));
+            angle *= angleAmplitude;
 
             var baseAxis = ComputeBaseAxisCpu(pos, xform, swingTargetWorldPos);
 
@@ -136,6 +142,7 @@ namespace PrismFanlight
             var ap2 = math.cross(axis, ap1);
             axis = SafeNormalize(axis + (ap1 * nu + ap2 * nv) * noise.axisNoiseAmount, axis);
 
+            var armLen = rand.NextFloat(swing.armLengthMin, swing.armLengthMax);
             var armJitter = 1f + rand.NextFloat(-human.armLengthJitter, human.armLengthJitter);
             var enthusiasmFactor = human.enthusiasm * math.lerp(1f, rand.NextFloat(0.65f, 1.35f), human.enthusiasmVariation);
             var restFactor = GetRestFactor(time, ref rand);
@@ -143,12 +150,15 @@ namespace PrismFanlight
             var downbeatPulse = tempo.Enabled ? math.pow(1f - math.saturate(tempo.BarPhase), 8f) : 0f;
             var downbeatFactor = 1f + downbeatPulse * beatSync.downbeatAccent;
             angle *= enthusiasmFactor * restFactor * smallMotionFactor * downbeatFactor;
-            var offset = swing.armLength * armJitter * math.max(0f, enthusiasmFactor);
+            var offset = armLen * armJitter * math.max(0f, enthusiasmFactor);
 
             var m1 = float4x4.Translate(origin);
             var m2 = float4x4.AxisAngle(axis, angle);
             var m3 = float4x4.Translate(math.float3(0, offset, 0));
-            return math.mul(math.mul(math.mul(xform, m1), m2), m3);
+            // Arm: rotate at shoulder — wide arc. Wrist: translate to wrist then rotate — tight motion.
+            return swing.swingType == FanlightSwingType.Arm
+                ? math.mul(math.mul(math.mul(xform, m1), m2), m3)
+                : math.mul(math.mul(math.mul(xform, m1), m3), m2);
         }
 
 

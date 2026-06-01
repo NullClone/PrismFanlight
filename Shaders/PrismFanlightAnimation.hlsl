@@ -90,14 +90,22 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
 
     float angle = cos(phase);
+    // crispness = _MotionShape.w
     float snappedAngle = smoothstep(-1.0, 1.0, angle) * 2.0 - 1.0;
-    angle = lerp(angle, snappedAngle, _MotionSwing.w * Hash11(seed + 43.0));
+    angle = lerp(angle, snappedAngle, _MotionShape.w * Hash11(seed + 43.0));
+    // peakHold = _MotionShape.x
     float heldAngle = sign(angle) * pow(abs(angle), lerp(1.0, 0.25, _MotionShape.x));
     angle = lerp(angle, heldAngle, _MotionShape.x);
+    // followThrough = _MotionShape.y, lean = _MotionShape.z
     float flickWave = sin(phase * 2.0) * (1.0 - abs(angle));
     angle = clamp(angle + flickWave * _MotionShape.y * 0.35, -1.0, 1.0);
     angle = clamp(angle + _MotionShape.z * 0.35, -1.0, 1.0);
-    angle *= lerp(_MotionSwing.y, _MotionSwing.z, Hash11(seed + 47.0));
+    // minAngle = _MotionSwing.z, maxAngle = _MotionSwing.w
+    float angleAmplitude = lerp(_MotionSwing.z, _MotionSwing.w, Hash11(seed + 47.0));
+    // angleNoise = _MotionVariation.w — amplitude breathes slowly over time
+    float angleNoiseVal = FbmNoise21(float2(Hash11(seed + 103.0) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y), noiseOctaves, noisePersistence);
+    angleAmplitude = max(0.0, angleAmplitude * (1.0 + angleNoiseVal * _MotionVariation.w));
+    angle *= angleAmplitude;
 
     // --- Axis computation ---
 
@@ -128,6 +136,9 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
 
     // --- End axis computation ---
 
+    // armLengthMin = _MotionSwing.x, armLengthMax = _MotionSwing.y — per-seat random arm length
+    float armLength = lerp(_MotionSwing.x, _MotionSwing.y, Hash11(seed + 105.0));
+    // armLengthJitter = _MotionVariation.z
     float armJitter = 1.0 + (Hash11(seed + 59.0) * 2.0 - 1.0) * _MotionVariation.z;
 
     float enthusiasm = _MotionHuman.x * lerp(1.0, lerp(0.65, 1.35, Hash11(seed + 61.0)), _MotionHuman.y);
@@ -139,8 +150,12 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
 
     float4x4 m1 = Translate(localPosition);
     float4x4 m2 = AxisAngle(axis, angle);
-    float4x4 m3 = Translate(float3(0.0, _MotionSwing.x * armJitter * max(0.0, enthusiasm), 0.0));
-    return mul(_LocalToWorld, mul(m1, mul(m2, m3)));
+    float4x4 m3 = Translate(float3(0.0, armLength * armJitter * max(0.0, enthusiasm), 0.0));
+    // Arm (0): rotate at shoulder — wide arc. Wrist (1): translate to wrist then rotate — tight motion.
+    if (_SwingType == 0)
+        return mul(_LocalToWorld, mul(m1, mul(m2, m3)));
+    else
+        return mul(_LocalToWorld, mul(m1, mul(m3, m2)));
 }
 
 float4 PrismComputeColor(FanlightSeatData seat)

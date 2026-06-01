@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
+    [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
