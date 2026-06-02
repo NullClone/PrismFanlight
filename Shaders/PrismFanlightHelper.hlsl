@@ -21,7 +21,7 @@ uint PrismFanlightSeatIndex(float instanceId)
 float3 PrismFanlightObjectPosition(float3 positionOS, uint seatIndex)
 {
     float4 positionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0));
-    return mul(unity_WorldToObject, positionWS).xyz;
+    return mul(UNITY_MATRIX_I_M, positionWS).xyz;
 }
 
 void GetFanlightColor_float(float instanceId, out float4 color)
