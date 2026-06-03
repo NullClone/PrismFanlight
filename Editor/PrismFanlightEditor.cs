@@ -2,6 +2,7 @@ using System;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PrismFanlight.Editor
 {
@@ -151,9 +152,7 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection("| General", () =>
             {
-                EditorGUI.BeginChangeCheck();
-                var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
-                if (EditorGUI.EndChangeCheck()) _renderingLayerMask.longValue = mask;
+                DrawRenderingLayerMask();
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Update Mode", EditorStyles.boldLabel);
@@ -186,6 +185,31 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
                 }
             });
+        }
+
+        private void DrawRenderingLayerMask()
+        {
+            EditorGUI.BeginChangeCheck();
+
+#if UNITY_6000_0_OR_NEWER
+            var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
+#else
+            string[] renderingLayerMaskNames = null;
+
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                renderingLayerMaskNames = GraphicsSettings.currentRenderPipeline.renderingLayerMaskNames;
+            }
+
+            if (renderingLayerMaskNames == null || renderingLayerMaskNames.Length == 0) return;
+            
+            var mask = (uint)EditorGUILayout.MaskField(new GUIContent("Rendering Layer"), (int)_renderingLayerMask.longValue, renderingLayerMaskNames);
+#endif
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                _renderingLayerMask.longValue = mask;
+            }
         }
 
         private void DrawLayoutSection()
