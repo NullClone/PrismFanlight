@@ -4,6 +4,7 @@
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<float4x4> _FanlightMatrices;
 StructuredBuffer<float4> _FanlightColors;
+
 int _FanlightColorSource;
 float4 _FanlightGlobalColor;
 float _FanlightGlobalIntensity;
@@ -16,12 +17,6 @@ uint PrismFanlightVisibleIndex(float instanceId)
 uint PrismFanlightSeatIndex(float instanceId)
 {
     return _VisibleIndices[PrismFanlightVisibleIndex(instanceId)];
-}
-
-float3 PrismFanlightObjectPosition(float3 positionOS, uint seatIndex)
-{
-    float4 positionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0));
-    return mul(UNITY_MATRIX_I_M, positionWS).xyz;
 }
 
 void GetFanlightColor_float(float instanceId, out float4 color)
@@ -40,15 +35,14 @@ void GetFanlightColor_float(float instanceId, out float4 color)
 void GetFanlightObjectPosition_float(float3 positionOS, float instanceId, out float3 outPositionOS)
 {
     uint seatIndex = PrismFanlightSeatIndex(instanceId);
-    outPositionOS = PrismFanlightObjectPosition(positionOS, seatIndex);
+    float4 positionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0));
+    outPositionOS = mul(UNITY_MATRIX_I_M, positionWS).xyz;
 }
 
-void GetFanlightVertexDataObject_float(float3 positionOS, float instanceId, out float3 outPositionOS, out float4 color)
+void GetFanlightWorldPosition_float(float3 positionOS, float instanceId, out float3 outPositionWS)
 {
     uint seatIndex = PrismFanlightSeatIndex(instanceId);
-    outPositionOS = PrismFanlightObjectPosition(positionOS, seatIndex);
-    color = _FanlightColorSource == 0 ? _FanlightGlobalColor : _FanlightColors[seatIndex];
-    color.rgb *= _FanlightGlobalIntensity;
+    outPositionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0)).xyz;
 }
 
 #endif
