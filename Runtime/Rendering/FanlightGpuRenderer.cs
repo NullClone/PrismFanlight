@@ -113,9 +113,10 @@ namespace PrismFanlight.Rendering
 
             var renderParams = new RenderParams(material)
             {
+                renderingLayerMask = renderingLayerMask,
+                receiveShadows = false,
                 worldBounds = worldBounds,
-                matProps = _properties,
-                renderingLayerMask = renderingLayerMask
+                matProps = _properties
             };
 
             Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.ArgsBuffer);
