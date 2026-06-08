@@ -74,21 +74,37 @@ void CullBlocks(uint3 dispatchId : SV_DispatchThreadID)
                                : 0;
 }
 
+groupshared uint _GroupVisibleCount;
+groupshared uint _GroupBaseOffset;
+
 [numthreads(128, 1, 1)]
-void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID)
+void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
+    if (groupIndex == 0)
+        _GroupVisibleCount = 0;
+    GroupMemoryBarrierWithGroupSync();
+
     uint id = dispatchId.x;
-    if (id >= (uint)_InstanceCount) return;
+    bool visible = false;
 
-    FanlightSeatData seat = _Seats[id];
-    uint blockIndex = (uint)(seat.planePositionBlock.z + seat.planePositionBlock.w * _BlockCount.x);
+    if (id < (uint)_InstanceCount)
+    {
+        FanlightSeatData seat = _Seats[id];
+        uint blockIndex = (uint)(seat.planePositionBlock.z + seat.planePositionBlock.w * _BlockCount.x);
+        visible = _BlockVisibility[blockIndex] != 0;
+    }
 
-    if (_BlockVisibility[blockIndex] == 0)
-        return;
+    uint localSlot = 0;
+    if (visible)
+        InterlockedAdd(_GroupVisibleCount, 1, localSlot);
+    GroupMemoryBarrierWithGroupSync();
 
-    uint visibleIndex;
-    InterlockedAdd(_DrawArgs[1], 1, visibleIndex);
-    _VisibleIndices[visibleIndex] = id;
+    if (groupIndex == 0)
+        InterlockedAdd(_DrawArgs[1], _GroupVisibleCount, _GroupBaseOffset);
+    GroupMemoryBarrierWithGroupSync();
+
+    if (visible)
+        _VisibleIndices[_GroupBaseOffset + localSlot] = id;
 }
 
 [numthreads(128, 1, 1)]
