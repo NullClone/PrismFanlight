@@ -2,10 +2,10 @@ using System;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace PrismFanlight.Editor
 {
+    [CanEditMultipleObjects]
     [CustomEditor(typeof(PrismFanlight))]
     public sealed class PrismFanlightEditor : UnityEditor.Editor
     {
@@ -37,6 +37,8 @@ namespace PrismFanlight.Editor
         private void OnEnable()
         {
             _instance = target as PrismFanlight;
+
+            if (!_instance) return;
 
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
@@ -112,6 +114,8 @@ namespace PrismFanlight.Editor
 
         public override void OnInspectorGUI()
         {
+            if (!_instance) return;
+
             serializedObject.Update();
 
             using (new EditorGUI.DisabledScope(true))
