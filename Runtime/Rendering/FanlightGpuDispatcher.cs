@@ -48,6 +48,36 @@ namespace PrismFanlight.Rendering
             shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
+        public void DispatchBodyArgs(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers)
+        {
+            shader.SetBuffer(kernels.ScaleBodyArgs, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
+            shader.SetBuffer(kernels.ScaleBodyArgs, FanlightShaderIds.BodyArgs, buffers.BodyArgsBuffer);
+            shader.Dispatch(kernels.ScaleBodyArgs, 1, 1, 1);
+        }
+
+        public void DispatchBody(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context, bool visibleOnly)
+        {
+            SetCommonParams(shader, context, buffers, false);
+            SetBodyParams(shader, context);
+
+            var kernel = visibleOnly ? kernels.GenerateVisibleBody : kernels.GenerateAllBody;
+            shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.BodyParts, buffers.BodyPartBuffer);
+            shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
+        }
+
+        private void SetBodyParams(ComputeShader shader, FanlightGpuDispatchContext context)
+        {
+            var body = context.Body;
+            var worldScale = FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld);
+
+            shader.SetVector(FanlightShaderIds.BodyShape, new Vector4(body.bodyHeight, body.bodyHeightJitter, body.shoulderHeight, body.bodyWidth * 0.5f));
+            shader.SetVector(FanlightShaderIds.BodyArm, new Vector4(body.upperArmLength, body.forearmLength, body.armWidth * 0.5f, body.shoulderOffset));
+            shader.SetVector(FanlightShaderIds.BodyReach, new Vector4(body.leanFactor, body.leanMax, body.elbowBias, worldScale));
+        }
+
         public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
         {
             SetCommonParams(shader, context, buffers, false);
@@ -98,6 +128,7 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSync.beatSyncBlend, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
             shader.SetFloat(FanlightShaderIds.GripPivotY, buffers.MeshPivotY);
+            shader.SetFloat(FanlightShaderIds.HandBaseHeight, context.HandBaseHeight);
         }
 
         private void SetColorParams(ComputeShader shader, FanlightColorSettings color)

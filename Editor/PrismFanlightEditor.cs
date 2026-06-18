@@ -15,6 +15,7 @@ namespace PrismFanlight.Editor
 
         private SerializedProperty _mesh;
         private SerializedProperty _material;
+        private SerializedProperty _audienceMaterial;
         private SerializedProperty _computeShader;
         private SerializedProperty _renderingLayerMask;
         private SerializedProperty _enableCulling;
@@ -28,6 +29,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _swingTarget;
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
+        private SerializedProperty _body;
         private SerializedProperty _enablePreview;
 
         private bool _enableGizmos = true;
@@ -42,6 +44,7 @@ namespace PrismFanlight.Editor
 
             _mesh = serializedObject.FindProperty(nameof(_mesh));
             _material = serializedObject.FindProperty(nameof(_material));
+            _audienceMaterial = serializedObject.FindProperty(nameof(_audienceMaterial));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
             _renderingLayerMask = serializedObject.FindProperty(nameof(_renderingLayerMask));
             _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
@@ -55,6 +58,7 @@ namespace PrismFanlight.Editor
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
+            _body = serializedObject.FindProperty(nameof(_body));
             _enablePreview = serializedObject.FindProperty(nameof(_enablePreview));
 
             EditorApplication.update += DrawPreview;
@@ -138,14 +142,20 @@ namespace PrismFanlight.Editor
 
             if (_material.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Assign a Material to render the fanlight instances.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Assign a Material to render the penlight.", MessageType.Warning);
+            }
+
+            if (_audienceMaterial.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign a Material to render the audience.", MessageType.Warning);
             }
 
             DrawGeneralSection();
             DrawLayoutSection();
             DrawMotionSection();
-            DrawTempoSection();
+            DrawAudienceSection();
             DrawColorSection();
+            DrawTempoSection();
             DrawDebugSection();
 
             serializedObject.ApplyModifiedProperties();
@@ -237,46 +247,45 @@ namespace PrismFanlight.Editor
             {
                 var enabledProp = _tempo.FindPropertyRelative("enabled");
                 EditorGUILayout.PropertyField(enabledProp, new GUIContent("Enable"));
+
+                if (!enabledProp.boolValue) return;
+
                 EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("bpm"), new GUIContent("BPM"));
+                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("beatsPerBar"), new GUIContent("Beats Per Bar"));
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("clockSource"), new GUIContent("Clock Source"));
 
-                using (new EditorGUI.DisabledScope(!enabledProp.boolValue))
+                var clockSource = (FanlightTempoClockSource)_tempo.FindPropertyRelative("clockSource").enumValueIndex;
+
+                if (clockSource == FanlightTempoClockSource.AudioSourceTime)
                 {
-                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("bpm"), new GUIContent("BPM"));
-                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("beatsPerBar"), new GUIContent("Beats Per Bar"));
-                    EditorGUILayout.Space();
-                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("clockSource"), new GUIContent("Clock Source"));
-
-                    var clockSource = (FanlightTempoClockSource)_tempo.FindPropertyRelative("clockSource").enumValueIndex;
-
-                    if (clockSource == FanlightTempoClockSource.AudioSourceTime)
+                    var audioSourceProp = _tempo.FindPropertyRelative("audioSource");
+                    EditorGUILayout.PropertyField(audioSourceProp, new GUIContent("Audio Source"));
+                    if (audioSourceProp.objectReferenceValue == null)
                     {
-                        var audioSourceProp = _tempo.FindPropertyRelative("audioSource");
-                        EditorGUILayout.PropertyField(audioSourceProp, new GUIContent("Audio Source"));
-                        if (audioSourceProp.objectReferenceValue == null)
-                        {
-                            EditorGUILayout.HelpBox("Assign an AudioSource with a clip for BPM sync.", MessageType.Info);
-                        }
+                        EditorGUILayout.HelpBox("Assign an AudioSource with a clip for BPM sync.", MessageType.Info);
                     }
-                    else if (clockSource == FanlightTempoClockSource.ManualTime)
-                    {
-                        EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("manualTime"), new GUIContent("Manual Time"));
-                    }
-
-                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("offsetSeconds"), new GUIContent("Offset"));
-                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("latencyCompensationSeconds"), new GUIContent("Latency Compensation"));
-                    EditorGUILayout.Space();
-                    PrismFanlightEditorStyles.DrawSubGroupLabel("Beat Sync");
-
-                    var beatSync = _motion.FindPropertyRelative("beatSync");
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatSyncBlend"), new GUIContent("Sync Blend"));
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatsPerSwing"), new GUIContent("Beats Per Swing"));
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatPhaseOffset"), new GUIContent("Phase Offset"));
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("downbeatAccent"), new GUIContent("Downbeat Accent"));
-                    EditorGUILayout.Space();
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatReactionDelay"), new GUIContent("Reaction Delay"));
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatSeatJitter"), new GUIContent("Seat Jitter"));
-                    EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatBlockDelay"), new GUIContent("Block Delay"));
                 }
+                else if (clockSource == FanlightTempoClockSource.ManualTime)
+                {
+                    EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("manualTime"), new GUIContent("Manual Time"));
+                }
+
+                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("offsetSeconds"), new GUIContent("Offset"));
+                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("latencyCompensationSeconds"), new GUIContent("Latency Compensation"));
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Beat Sync");
+
+                var beatSync = _motion.FindPropertyRelative("beatSync");
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatSyncBlend"), new GUIContent("Sync Blend"));
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatsPerSwing"), new GUIContent("Beats Per Swing"));
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatPhaseOffset"), new GUIContent("Phase Offset"));
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("downbeatAccent"), new GUIContent("Downbeat Accent"));
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatReactionDelay"), new GUIContent("Reaction Delay"));
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatSeatJitter"), new GUIContent("Seat Jitter"));
+                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatBlockDelay"), new GUIContent("Block Delay"));
             });
         }
 
@@ -497,6 +506,37 @@ namespace PrismFanlight.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Brightness", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(color.FindPropertyRelative("intensity"), new GUIContent("Intensity"));
+        }
+
+        private void DrawAudienceSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| Audience", () =>
+            {
+                var enabledProp = _body.FindPropertyRelative("enabled");
+                EditorGUILayout.PropertyField(enabledProp, new GUIContent("Enable"));
+
+                if (!enabledProp.boolValue) return;
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Body");
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyHeight"), new GUIContent("Height"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyHeightJitter"), new GUIContent("Height Jitter"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyWidth"), new GUIContent("Width"));
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Arm (IK)");
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("shoulderHeight"), new GUIContent("Shoulder Height"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("shoulderOffset"), new GUIContent("Shoulder Offset"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("upperArmLength"), new GUIContent("Upper Arm Length"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("forearmLength"), new GUIContent("Forearm Length"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("armWidth"), new GUIContent("Arm Width"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("elbowBias"), new GUIContent("Elbow Bias"));
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Reach");
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("leanFactor"), new GUIContent("Lean Factor"));
+                EditorGUILayout.PropertyField(_body.FindPropertyRelative("leanMax"), new GUIContent("Lean Max"));
+            });
         }
 
         private void DrawDebugSection()

@@ -5,6 +5,41 @@ namespace PrismFanlight.Rendering
 {
     internal static class FanlightGeometryBuilder
     {
+        private static Mesh _bodyQuad;
+
+        public static Mesh GetBodyQuad()
+        {
+            if (_bodyQuad != null)
+            {
+                return _bodyQuad;
+            }
+
+            _bodyQuad = new Mesh
+            {
+                name = "PrismFanlightBodyQuad",
+                hideFlags = HideFlags.HideAndDontSave,
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, 0f),
+                    new Vector3(0.5f, 0f, 0f),
+                    new Vector3(-0.5f, 1f, 0f),
+                    new Vector3(0.5f, 1f, 0f)
+                },
+                uv = new[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f)
+                }
+            };
+
+            _bodyQuad.SetTriangles(new[] { 0, 2, 1, 2, 3, 1 }, 0);
+            _bodyQuad.bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
+
+            return _bodyQuad;
+        }
+
         public static FanlightSeatData[] BuildSeatData(Audience audience)
         {
             var data = new FanlightSeatData[audience.TotalSeatCount];

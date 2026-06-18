@@ -11,6 +11,8 @@ namespace PrismFanlight.Rendering
         public static readonly int DrawArgs = Shader.PropertyToID("_DrawArgs");
         public static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
         public static readonly int Colors = Shader.PropertyToID("_FanlightColors");
+        public static readonly int BodyParts = Shader.PropertyToID("_BodyParts");
+        public static readonly int BodyArgs = Shader.PropertyToID("_BodyArgs");
 
         public static readonly int InstanceCount = Shader.PropertyToID("_InstanceCount");
         public static readonly int BlockCountValue = Shader.PropertyToID("_BlockCountValue");
@@ -40,6 +42,11 @@ namespace PrismFanlight.Rendering
         public static readonly int MotionBeat = Shader.PropertyToID("_MotionBeat");
         public static readonly int MotionBeatSpread = Shader.PropertyToID("_MotionBeatSpread");
         public static readonly int GripPivotY = Shader.PropertyToID("_GripPivotY");
+
+        public static readonly int BodyShape = Shader.PropertyToID("_BodyShape");
+        public static readonly int BodyArm = Shader.PropertyToID("_BodyArm");
+        public static readonly int BodyReach = Shader.PropertyToID("_BodyReach");
+        public static readonly int HandBaseHeight = Shader.PropertyToID("_HandBaseHeight");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
         public static readonly int ColorSource = Shader.PropertyToID("_FanlightColorSource");

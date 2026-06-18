@@ -10,6 +10,8 @@ namespace PrismFanlight.Rendering
         public readonly FanlightTempoState Tempo;
         public readonly FanlightMotionSettings Motion;
         public readonly FanlightColorSettings Color;
+        public readonly FanlightBodySettings Body;
+        public readonly float HandBaseHeight;
         public readonly Vector3 SwingTargetWorldPos;
         public readonly Matrix4x4 LocalToWorld;
         public readonly Matrix4x4 WorldToLocal;
@@ -23,6 +25,8 @@ namespace PrismFanlight.Rendering
             FanlightTempoState tempo,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
+            FanlightBodySettings body,
+            float handBaseHeight,
             Vector3 swingTargetWorldPos,
             Matrix4x4 localToWorld,
             float time,
@@ -34,6 +38,8 @@ namespace PrismFanlight.Rendering
             Tempo = tempo;
             Motion = motion;
             Color = color;
+            Body = body;
+            HandBaseHeight = handBaseHeight;
             SwingTargetWorldPos = swingTargetWorldPos;
             LocalToWorld = localToWorld;
             WorldToLocal = localToWorld.inverse;

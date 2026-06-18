@@ -16,6 +16,9 @@ namespace PrismFanlight
         private Material _material = null;
 
         [SerializeField]
+        private Material _audienceMaterial = null;
+
+        [SerializeField]
         private ComputeShader _computeShader = null;
 
         [SerializeField]
@@ -52,6 +55,9 @@ namespace PrismFanlight
         private FanlightColorSettings _color = FanlightColorSettings.Default();
 
         [SerializeField]
+        private FanlightBodySettings _body = FanlightBodySettings.Default();
+
+        [SerializeField]
         private Transform _swingTarget = null;
 
         [SerializeField]
@@ -66,12 +72,6 @@ namespace PrismFanlight
         {
             get => _mesh;
             set => _mesh = value;
-        }
-
-        public Material Material
-        {
-            get => _material;
-            set => _material = value;
         }
 
         public Camera CullingCamera
@@ -145,6 +145,8 @@ namespace PrismFanlight
                 GetAudience(),
                 GetMotion(),
                 GetColorSettings(),
+                GetBodySettings(),
+                _audienceMaterial,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero,
                 transform.localToWorldMatrix,
                 Time.time,
@@ -176,6 +178,8 @@ namespace PrismFanlight
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
+
+        public FanlightBodySettings GetBodySettings() => _body.Validated();
 
         public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
@@ -236,6 +240,11 @@ namespace PrismFanlight
         public void SetColorPreset(FanlightColorPreset preset)
         {
             _colorPreset = preset;
+        }
+
+        public void SetBodySettings(FanlightBodySettings body)
+        {
+            _body = body.Validated();
         }
 
         public void SetRenderingLayerMask(uint renderingLayerMask)

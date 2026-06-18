@@ -20,6 +20,12 @@ namespace PrismFanlight.Rendering
 
         public GraphicsBuffer ArgsBuffer { get; private set; }
 
+        public ComputeBuffer BodyPartBuffer { get; private set; }
+
+        public GraphicsBuffer BodyArgsBuffer { get; private set; }
+
+        public bool HasBody => BodyPartBuffer != null;
+
 
         public int SeatCount { get; private set; }
 
@@ -32,7 +38,7 @@ namespace PrismFanlight.Rendering
 
         // Methods
 
-        public void Allocate(Mesh mesh, Audience audience)
+        public void Allocate(Mesh mesh, Audience audience, bool allocateBody)
         {
             Release();
 
@@ -52,12 +58,19 @@ namespace PrismFanlight.Rendering
             SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(audience));
             BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(audience, mesh));
 
-            ResetArgs(mesh);
+            ResetArgs(ArgsBuffer, mesh);
+
+            if (allocateBody)
+            {
+                BodyPartBuffer = new ComputeBuffer(SeatCount * FanlightBodyPart.PartsPerSeat, FanlightBodyPart.Stride, ComputeBufferType.Structured);
+                BodyArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
+                ResetArgs(BodyArgsBuffer, FanlightGeometryBuilder.GetBodyQuad());
+            }
         }
 
-        private void ResetArgs(Mesh mesh)
+        private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
         {
-            ArgsBuffer.SetData(new[]
+            argsBuffer.SetData(new[]
             {
                 mesh.GetIndexCount(0),
                 0u,
@@ -76,6 +89,8 @@ namespace PrismFanlight.Rendering
             MatrixBuffer?.Release();
             ColorBuffer?.Release();
             ArgsBuffer?.Release();
+            BodyPartBuffer?.Release();
+            BodyArgsBuffer?.Release();
 
             SeatBuffer = null;
             BlockBuffer = null;
@@ -84,6 +99,8 @@ namespace PrismFanlight.Rendering
             MatrixBuffer = null;
             ColorBuffer = null;
             ArgsBuffer = null;
+            BodyPartBuffer = null;
+            BodyArgsBuffer = null;
             SeatCount = 0;
             BlockCount = 0;
             LocalBounds = default;
