@@ -62,7 +62,14 @@ float3 PrismComputeBaseAxis(FanlightSeatData seat, bool horizontal)
     return SafeNormalize(PrismWorldVectorToLocal(worldAxis), float3(1.0, 0.0, 0.0));
 }
 
-float4x4 PrismComputeMatrix(FanlightSeatData seat)
+struct PrismArm
+{
+    float4x4 worldMatrix;
+    float3 handLocal;
+    float3 baseLocal;
+};
+
+PrismArm PrismComputeArm(FanlightSeatData seat)
 {
     float seed = seat.localPositionSeed.w;
     float3 localPosition = seat.localPositionSeed.xyz;
@@ -91,6 +98,7 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
     localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
     localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
+    localPosition.y += _HandBaseHeight;
 
     bool isHorizontal = Hash11(seed + 131.0) < saturate(_SwingWrist.x);
 
@@ -148,13 +156,23 @@ float4x4 PrismComputeMatrix(FanlightSeatData seat)
     armAngle *= motionScale;
     wristAngle = clamp(wristAngle * motionScale, -1.4, 1.4);
 
+    float armReach = armLength * max(0.0, enthusiasm);
     float4x4 m1 = Translate(localPosition);
     float4x4 mArm = AxisAngle(axis, armAngle);
-    float4x4 m3 = Translate(float3(0.0, armLength * max(0.0, enthusiasm), 0.0));
+    float4x4 m3 = Translate(float3(0.0, armReach, 0.0));
     float4x4 mWrist = AxisAngle(axis, wristAngle);
     float4x4 mGrip = Translate(float3(0.0, -_GripPivotY, 0.0));
-    
-    return mul(_LocalToWorld, mul(m1, mul(mArm, mul(m3, mul(mWrist, mGrip)))));
+
+    PrismArm result;
+    result.worldMatrix = mul(_LocalToWorld, mul(m1, mul(mArm, mul(m3, mul(mWrist, mGrip)))));
+    result.handLocal = localPosition + mul((float3x3)mArm, float3(0.0, armReach, 0.0));
+    result.baseLocal = localPosition;
+    return result;
+}
+
+float4x4 PrismComputeMatrix(FanlightSeatData seat)
+{
+    return PrismComputeArm(seat).worldMatrix;
 }
 
 float4 PrismComputeColor(FanlightSeatData seat)

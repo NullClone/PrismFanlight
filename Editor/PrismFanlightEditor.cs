@@ -129,7 +129,7 @@ namespace PrismFanlight.Editor
 
             if (_computeShader.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Assign PrismFanlightIndirect.compute to generate instance data on the GPU.", MessageType.Error);
             }
 
             EditorGUILayout.Space();
@@ -137,17 +137,19 @@ namespace PrismFanlight.Editor
 
             if (_mesh.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Error);
             }
 
             if (_material.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Assign a Material to render the penlight.", MessageType.Warning);
+                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox("Assign a Material to render the penlight.", MessageType.Error);
             }
 
             if (_audienceMaterial.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Assign a Material to render the audience.", MessageType.Warning);
+                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox("Assign a Material to render the audience.", MessageType.Error);
             }
 
             DrawGeneralSection();

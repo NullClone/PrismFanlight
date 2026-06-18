@@ -4,6 +4,9 @@
 #pragma kernel GenerateVisibleAnimation
 #pragma kernel GenerateAllAnimation
 #pragma kernel GenerateAllColors
+#pragma kernel GenerateVisibleBody
+#pragma kernel GenerateAllBody
+#pragma kernel ScaleBodyArgs
 
 #include "PrismFanlightTypes.hlsl"
 
@@ -14,6 +17,8 @@ RWStructuredBuffer<uint> _VisibleIndices;
 RWStructuredBuffer<uint> _DrawArgs;
 RWStructuredBuffer<float4x4> _FanlightMatrices;
 RWStructuredBuffer<float4> _FanlightColors;
+RWStructuredBuffer<FanlightBodyPart> _BodyParts;
+RWStructuredBuffer<uint> _BodyArgs;
 
 int _InstanceCount;
 int _BlockCountValue;
@@ -49,10 +54,15 @@ float4 _SecondaryColor;
 float4 _Brightness;
 int _PaletteColorCount;
 float4 _PaletteColors[16];
+float4 _BodyShape;
+float4 _BodyArm;
+float4 _BodyReach;
+float _HandBaseHeight;
 
 #include "PrismFanlightMath.hlsl"
 #include "PrismFanlightCulling.hlsl"
 #include "PrismFanlightAnimation.hlsl"
+#include "PrismFanlightBody.hlsl"
 
 [numthreads(1, 1, 1)]
 void ClearIndirectArgs(uint3 id : SV_DispatchThreadID)
@@ -136,4 +146,28 @@ void GenerateAllColors(uint3 dispatchId : SV_DispatchThreadID)
 
     FanlightSeatData seat = _Seats[id];
     _FanlightColors[id] = PrismComputeColor(seat);
+}
+
+[numthreads(128, 1, 1)]
+void GenerateVisibleBody(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint visibleSlot = dispatchId.x;
+    if (visibleSlot >= _DrawArgs[1]) return;
+
+    PrismBuildBodyParts(_VisibleIndices[visibleSlot]);
+}
+
+[numthreads(128, 1, 1)]
+void GenerateAllBody(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
+    if (id >= (uint)_InstanceCount) return;
+
+    PrismBuildBodyParts(id);
+}
+
+[numthreads(1, 1, 1)]
+void ScaleBodyArgs(uint3 id : SV_DispatchThreadID)
+{
+    _BodyArgs[1] = _DrawArgs[1] * 3u;
 }
