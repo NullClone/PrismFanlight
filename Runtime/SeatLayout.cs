@@ -3,8 +3,10 @@ using Unity.Mathematics;
 
 namespace PrismFanlight
 {
+    // 観客の座席配置（ブロック数・座席数・間隔）。観客 1 人 1 人の見た目は
+    // FanlightAudienceSettings が担い、こちらは「どこに座席があるか」のみを表す。
     [Serializable]
-    public class Audience : IEquatable<Audience>
+    public class SeatLayout : IEquatable<SeatLayout>
     {
         // Fields
 
@@ -16,7 +18,7 @@ namespace PrismFanlight
 
         // Properties
 
-        public static Audience Default() => new()
+        public static SeatLayout Default() => new()
         {
             seatPerBlock = math.int2(8, 12),
             seatPitch = math.float2(0.4f, 0.8f),
@@ -31,7 +33,7 @@ namespace PrismFanlight
 
         // Methods
 
-        public Audience Validated() => new()
+        public SeatLayout Validated() => new()
         {
             seatPerBlock = math.max(seatPerBlock, math.int2(1, 1)),
             seatPitch = math.max(seatPitch, math.float2(0.001f, 0.001f)),
@@ -39,7 +41,7 @@ namespace PrismFanlight
             aisleWidth = math.max(aisleWidth, math.float2(0.0f, 0.0f))
         };
 
-        public bool Equals(Audience other)
+        public bool Equals(SeatLayout other)
         {
             return other != null
                    && seatPerBlock.Equals(other.seatPerBlock)
@@ -50,7 +52,7 @@ namespace PrismFanlight
 
         public override bool Equals(object obj)
         {
-            return obj is Audience other && Equals(other);
+            return obj is SeatLayout other && Equals(other);
         }
 
         public override int GetHashCode()

@@ -1,14 +1,14 @@
 #ifndef PRISM_FANLIGHT_BODY_SHADER_GRAPH_HELPER_INCLUDED
 #define PRISM_FANLIGHT_BODY_SHADER_GRAPH_HELPER_INCLUDED
 
-struct PrismFanlightBodyPart
+struct PrismFanlightAudiencePart
 {
-    float4 p0HalfWidth;
-    float4 p1Type;
+    float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅(World)
+    float4 p1Type;      // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
 };
 
 StructuredBuffer<uint> _VisibleIndices;
-StructuredBuffer<PrismFanlightBodyPart> _BodyParts;
+StructuredBuffer<PrismFanlightAudiencePart> _AudienceParts;
 
 StructuredBuffer<float4> _FanlightColors;
 int _FanlightColorSource;
@@ -21,26 +21,39 @@ void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positio
     uint slot = global / 3u;
     uint part = global % 3u;
     uint seat = _VisibleIndices[slot];
-    PrismFanlightBodyPart bp = _BodyParts[seat * 3u + part];
+    PrismFanlightAudiencePart bp = _AudienceParts[seat * 3u + part];
 
     float3 p0 = bp.p0HalfWidth.xyz;
     float halfWidth = bp.p0HalfWidth.w;
     float3 p1 = bp.p1Type.xyz;
     partType = bp.p1Type.w;
 
-    float3 center = lerp(p0, p1, uv.y);
-    float3 axis = p1 - p0;
-    float segLen = max(1e-4, length(axis));
-    axis /= segLen;
+    float3 worldPos;
+    if (partType >= 1.5)
+    {
+        // 頭: スクリーン正対の全方位ビルボード。ビュー行列の行がワールドのカメラ右/上。
+        float3 camRight = UNITY_MATRIX_V._m00_m01_m02;
+        float3 camUp    = UNITY_MATRIX_V._m10_m11_m12;
+        worldPos = p0 + (camRight * (uv.x - 0.5) + camUp * (uv.y - 0.5)) * (halfWidth * 2.0);
+        capT = 0.5; // 頭は端を丸める前提（カバレッジで円形にできる）
+    }
+    else
+    {
+        float3 center = lerp(p0, p1, uv.y);
+        float3 axis = p1 - p0;
+        float segLen = max(1e-4, length(axis));
+        axis /= segLen;
 
-    float3 view = _WorldSpaceCameraPos.xyz - center;
-    float3 side = cross(axis, view);
-    float sideLen = length(side);
-    side = sideLen > 1e-4 ? side / sideLen : float3(1.0, 0.0, 0.0);
+        float3 view = _WorldSpaceCameraPos.xyz - center;
+        float3 side = cross(axis, view);
+        float sideLen = length(side);
+        side = sideLen > 1e-4 ? side / sideLen : float3(1.0, 0.0, 0.0);
 
-    float3 worldPos = center + side * (uv.x - 0.5) * (halfWidth * 2.0);
+        worldPos = center + side * (uv.x - 0.5) * (halfWidth * 2.0);
+        capT = saturate(halfWidth / segLen);
+    }
+
     positionOS = mul(UNITY_MATRIX_I_M, float4(worldPos, 1.0)).xyz;
-    capT = saturate(halfWidth / segLen);
 }
 
 void GetAudienceBodyCoverage_float(float2 uv, float capT, out float coverage)

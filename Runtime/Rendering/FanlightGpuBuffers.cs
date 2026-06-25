@@ -20,11 +20,11 @@ namespace PrismFanlight.Rendering
 
         public GraphicsBuffer ArgsBuffer { get; private set; }
 
-        public ComputeBuffer BodyPartBuffer { get; private set; }
+        public ComputeBuffer AudiencePartBuffer { get; private set; }
 
-        public GraphicsBuffer BodyArgsBuffer { get; private set; }
+        public GraphicsBuffer AudienceArgsBuffer { get; private set; }
 
-        public bool HasBody => BodyPartBuffer != null;
+        public bool HasAudience => AudiencePartBuffer != null;
 
 
         public int SeatCount { get; private set; }
@@ -38,13 +38,13 @@ namespace PrismFanlight.Rendering
 
         // Methods
 
-        public void Allocate(Mesh mesh, Audience audience, bool allocateBody)
+        public void Allocate(Mesh mesh, SeatLayout layout, bool allocateAudience)
         {
             Release();
 
-            SeatCount = audience.TotalSeatCount;
-            BlockCount = audience.blockCount.x * audience.blockCount.y;
-            LocalBounds = FanlightGeometryBuilder.BuildBounds(audience, mesh);
+            SeatCount = layout.TotalSeatCount;
+            BlockCount = layout.blockCount.x * layout.blockCount.y;
+            LocalBounds = FanlightGeometryBuilder.BuildBounds(layout, mesh);
             MeshPivotY = mesh.bounds.min.y;
 
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
@@ -55,16 +55,16 @@ namespace PrismFanlight.Rendering
             ColorBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
             ArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
 
-            SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(audience));
-            BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(audience, mesh));
+            SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(layout));
+            BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(layout, mesh));
 
             ResetArgs(ArgsBuffer, mesh);
 
-            if (allocateBody)
+            if (allocateAudience)
             {
-                BodyPartBuffer = new ComputeBuffer(SeatCount * FanlightBodyPart.PartsPerSeat, FanlightBodyPart.Stride, ComputeBufferType.Structured);
-                BodyArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
-                ResetArgs(BodyArgsBuffer, FanlightGeometryBuilder.GetBodyQuad());
+                AudiencePartBuffer = new ComputeBuffer(SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, ComputeBufferType.Structured);
+                AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
+                ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
             }
         }
 
@@ -89,8 +89,8 @@ namespace PrismFanlight.Rendering
             MatrixBuffer?.Release();
             ColorBuffer?.Release();
             ArgsBuffer?.Release();
-            BodyPartBuffer?.Release();
-            BodyArgsBuffer?.Release();
+            AudiencePartBuffer?.Release();
+            AudienceArgsBuffer?.Release();
 
             SeatBuffer = null;
             BlockBuffer = null;
@@ -99,8 +99,8 @@ namespace PrismFanlight.Rendering
             MatrixBuffer = null;
             ColorBuffer = null;
             ArgsBuffer = null;
-            BodyPartBuffer = null;
-            BodyArgsBuffer = null;
+            AudiencePartBuffer = null;
+            AudienceArgsBuffer = null;
             SeatCount = 0;
             BlockCount = 0;
             LocalBounds = default;

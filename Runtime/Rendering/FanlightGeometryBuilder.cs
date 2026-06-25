@@ -5,18 +5,18 @@ namespace PrismFanlight.Rendering
 {
     internal static class FanlightGeometryBuilder
     {
-        private static Mesh _bodyQuad;
+        private static Mesh _audienceQuad;
 
-        public static Mesh GetBodyQuad()
+        public static Mesh GetAudienceQuad()
         {
-            if (_bodyQuad != null)
+            if (_audienceQuad != null)
             {
-                return _bodyQuad;
+                return _audienceQuad;
             }
 
-            _bodyQuad = new Mesh
+            _audienceQuad = new Mesh
             {
-                name = "PrismFanlightBodyQuad",
+                name = "PrismFanlightAudienceQuad",
                 hideFlags = HideFlags.HideAndDontSave,
                 vertices = new[]
                 {
@@ -34,13 +34,13 @@ namespace PrismFanlight.Rendering
                 }
             };
 
-            _bodyQuad.SetTriangles(new[] { 0, 2, 1, 2, 3, 1 }, 0);
-            _bodyQuad.bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
+            _audienceQuad.SetTriangles(new[] { 0, 2, 1, 2, 3, 1 }, 0);
+            _audienceQuad.bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
 
-            return _bodyQuad;
+            return _audienceQuad;
         }
 
-        public static FanlightSeatData[] BuildSeatData(Audience audience)
+        public static FanlightSeatData[] BuildSeatData(SeatLayout audience)
         {
             var data = new FanlightSeatData[audience.TotalSeatCount];
 
@@ -60,7 +60,7 @@ namespace PrismFanlight.Rendering
             return data;
         }
 
-        public static FanlightBlockData[] BuildBlockData(Audience audience, Mesh mesh)
+        public static FanlightBlockData[] BuildBlockData(SeatLayout audience, Mesh mesh)
         {
             var data = new FanlightBlockData[audience.blockCount.x * audience.blockCount.y];
             var blockSeatCount = audience.BlockSeatCount;
@@ -89,7 +89,7 @@ namespace PrismFanlight.Rendering
             return data;
         }
 
-        public static Bounds BuildBounds(Audience audience, Mesh mesh)
+        public static Bounds BuildBounds(SeatLayout audience, Mesh mesh)
         {
             var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
             var max = new float2(float.NegativeInfinity, float.NegativeInfinity);

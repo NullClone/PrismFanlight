@@ -10,9 +10,9 @@ namespace PrismFanlight.Rendering
         public readonly int GenerateVisibleAnimation;
         public readonly int GenerateAllAnimation;
         public readonly int GenerateAllColors;
-        public readonly int GenerateVisibleBody;
-        public readonly int GenerateAllBody;
-        public readonly int ScaleBodyArgs;
+        public readonly int GenerateVisibleAudience;
+        public readonly int GenerateAllAudience;
+        public readonly int ScaleAudienceArgs;
 
         public FanlightGpuKernels(ComputeShader shader)
         {
@@ -22,9 +22,9 @@ namespace PrismFanlight.Rendering
             GenerateVisibleAnimation = shader.FindKernel("GenerateVisibleAnimation");
             GenerateAllAnimation = shader.FindKernel("GenerateAllAnimation");
             GenerateAllColors = shader.FindKernel("GenerateAllColors");
-            GenerateVisibleBody = shader.FindKernel("GenerateVisibleBody");
-            GenerateAllBody = shader.FindKernel("GenerateAllBody");
-            ScaleBodyArgs = shader.FindKernel("ScaleBodyArgs");
+            GenerateVisibleAudience = shader.FindKernel("GenerateVisibleAudience");
+            GenerateAllAudience = shader.FindKernel("GenerateAllAudience");
+            ScaleAudienceArgs = shader.FindKernel("ScaleAudienceArgs");
         }
     }
 }

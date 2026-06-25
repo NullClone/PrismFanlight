@@ -48,34 +48,34 @@ namespace PrismFanlight.Rendering
             shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
-        public void DispatchBodyArgs(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers)
+        public void DispatchAudienceArgs(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers)
         {
-            shader.SetBuffer(kernels.ScaleBodyArgs, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
-            shader.SetBuffer(kernels.ScaleBodyArgs, FanlightShaderIds.BodyArgs, buffers.BodyArgsBuffer);
-            shader.Dispatch(kernels.ScaleBodyArgs, 1, 1, 1);
+            shader.SetBuffer(kernels.ScaleAudienceArgs, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
+            shader.SetBuffer(kernels.ScaleAudienceArgs, FanlightShaderIds.AudienceArgs, buffers.AudienceArgsBuffer);
+            shader.Dispatch(kernels.ScaleAudienceArgs, 1, 1, 1);
         }
 
-        public void DispatchBody(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context, bool visibleOnly)
+        public void DispatchAudience(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context, bool visibleOnly)
         {
             SetCommonParams(shader, context, buffers, false);
-            SetBodyParams(shader, context);
+            SetAudienceParams(shader, context);
 
-            var kernel = visibleOnly ? kernels.GenerateVisibleBody : kernels.GenerateAllBody;
+            var kernel = visibleOnly ? kernels.GenerateVisibleAudience : kernels.GenerateAllAudience;
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.VisibleIndices, buffers.VisibleIndexBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.DrawArgs, buffers.ArgsBuffer);
-            shader.SetBuffer(kernel, FanlightShaderIds.BodyParts, buffers.BodyPartBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.AudienceParts, buffers.AudiencePartBuffer);
             shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
-        private void SetBodyParams(ComputeShader shader, FanlightGpuDispatchContext context)
+        private void SetAudienceParams(ComputeShader shader, FanlightGpuDispatchContext context)
         {
-            var body = context.Body;
+            var audience = context.Audience;
             var worldScale = FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld);
 
-            shader.SetVector(FanlightShaderIds.BodyShape, new Vector4(body.bodyHeight, body.bodyHeightJitter, body.shoulderHeight, body.bodyWidth * 0.5f));
-            shader.SetVector(FanlightShaderIds.BodyArm, new Vector4(body.upperArmLength, body.forearmLength, body.armWidth * 0.5f, body.shoulderOffset));
-            shader.SetVector(FanlightShaderIds.BodyReach, new Vector4(body.leanFactor, body.leanMax, body.elbowBias, worldScale));
+            shader.SetVector(FanlightShaderIds.AudienceShape, new Vector4(audience.bodyHeight, audience.bodyHeightJitter, audience.shoulderHeight, audience.bodyWidth * 0.5f));
+            shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(audience.armWidth * 0.5f, audience.shoulderOffset, audience.headSize * 0.5f, audience.maxReach));
+            shader.SetVector(FanlightShaderIds.AudienceReach, new Vector4(audience.leanFactor, audience.leanMax, worldScale, 0f));
         }
 
         public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
@@ -90,7 +90,7 @@ namespace PrismFanlight.Rendering
 
         private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers, bool includeVisibilityParams)
         {
-            var audience = context.Audience;
+            var layout = context.Layout;
             var tempo = context.Tempo;
             var motion = context.Motion;
 
@@ -102,8 +102,8 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.Beat, new Vector4(tempo.SongTime, tempo.Beat, tempo.BeatPhase, tempo.BarPhase));
             shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enabled ? 1f : 0f, tempo.Bpm, tempo.BeatsPerBar, 0f));
 
-            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(audience.seatPitch.x, audience.seatPitch.y, 0f, 0f));
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(audience.blockCount.x, audience.blockCount.y, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.seatPitch.x, layout.seatPitch.y, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.blockCount.x, layout.blockCount.y, 0f, 0f));
 
             if (includeVisibilityParams)
             {

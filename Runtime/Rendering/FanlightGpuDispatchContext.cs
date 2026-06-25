@@ -6,11 +6,11 @@ namespace PrismFanlight.Rendering
     {
         public readonly Camera CullingCamera;
         public readonly bool EnableCulling;
-        public readonly Audience Audience;
+        public readonly SeatLayout Layout;
         public readonly FanlightTempoState Tempo;
         public readonly FanlightMotionSettings Motion;
         public readonly FanlightColorSettings Color;
-        public readonly FanlightBodySettings Body;
+        public readonly FanlightAudienceSettings Audience;
         public readonly float HandBaseHeight;
         public readonly Vector3 SwingTargetWorldPos;
         public readonly Matrix4x4 LocalToWorld;
@@ -21,11 +21,11 @@ namespace PrismFanlight.Rendering
         public FanlightGpuDispatchContext(
             Camera cullingCamera,
             bool enableCulling,
-            Audience audience,
+            SeatLayout layout,
             FanlightTempoState tempo,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
-            FanlightBodySettings body,
+            FanlightAudienceSettings audience,
             float handBaseHeight,
             Vector3 swingTargetWorldPos,
             Matrix4x4 localToWorld,
@@ -34,11 +34,11 @@ namespace PrismFanlight.Rendering
         {
             CullingCamera = cullingCamera;
             EnableCulling = enableCulling;
-            Audience = audience;
+            Layout = layout;
             Tempo = tempo;
             Motion = motion;
             Color = color;
-            Body = body;
+            Audience = audience;
             HandBaseHeight = handBaseHeight;
             SwingTargetWorldPos = swingTargetWorldPos;
             LocalToWorld = localToWorld;

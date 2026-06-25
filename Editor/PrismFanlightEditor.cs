@@ -23,13 +23,13 @@ namespace PrismFanlight.Editor
         private SerializedProperty _animationUpdate;
         private SerializedProperty _tempo;
         private SerializedProperty _cullingCamera;
-        private SerializedProperty _audience;
+        private SerializedProperty _seatLayout;
         private SerializedProperty _motionPreset;
         private SerializedProperty _motion;
         private SerializedProperty _swingTarget;
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
-        private SerializedProperty _body;
+        private SerializedProperty _audienceSettings;
         private SerializedProperty _enablePreview;
 
         private bool _enableGizmos = true;
@@ -52,13 +52,13 @@ namespace PrismFanlight.Editor
             _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
             _tempo = serializedObject.FindProperty(nameof(_tempo));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
-            _audience = serializedObject.FindProperty(nameof(_audience));
+            _seatLayout = serializedObject.FindProperty(nameof(_seatLayout));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
-            _body = serializedObject.FindProperty(nameof(_body));
+            _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
             _enablePreview = serializedObject.FindProperty(nameof(_enablePreview));
 
             EditorApplication.update += DrawPreview;
@@ -233,13 +233,13 @@ namespace PrismFanlight.Editor
             PrismFanlightEditorStyles.DrawSection("| Layout", () =>
             {
                 EditorGUILayout.LabelField("Blocks", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
-                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
+                EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
+                EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Seats", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
-                EditorGUILayout.PropertyField(_audience.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
+                EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
+                EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
             });
         }
 
@@ -514,30 +514,30 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection("| Audience", () =>
             {
-                var enabledProp = _body.FindPropertyRelative("enabled");
+                var enabledProp = _audienceSettings.FindPropertyRelative("enabled");
                 EditorGUILayout.PropertyField(enabledProp, new GUIContent("Enable"));
 
                 if (!enabledProp.boolValue) return;
 
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Body");
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyHeight"), new GUIContent("Height"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyHeightJitter"), new GUIContent("Height Jitter"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("bodyWidth"), new GUIContent("Width"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("bodyHeight"), new GUIContent("Height"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("bodyHeightJitter"), new GUIContent("Height Jitter"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("bodyWidth"), new GUIContent("Width"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("headSize"), new GUIContent("Head Size"));
 
                 EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Arm (IK)");
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("shoulderHeight"), new GUIContent("Shoulder Height"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("shoulderOffset"), new GUIContent("Shoulder Offset"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("upperArmLength"), new GUIContent("Upper Arm Length"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("forearmLength"), new GUIContent("Forearm Length"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("armWidth"), new GUIContent("Arm Width"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("elbowBias"), new GUIContent("Elbow Bias"));
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Arm");
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("shoulderHeight"), new GUIContent("Shoulder Height"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("shoulderOffset"), new GUIContent("Shoulder Offset"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("armWidth"), new GUIContent("Arm Width"));
 
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Reach");
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("leanFactor"), new GUIContent("Lean Factor"));
-                EditorGUILayout.PropertyField(_body.FindPropertyRelative("leanMax"), new GUIContent("Lean Max"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("maxReach"),
+                    new GUIContent("Max Reach", "Comfortable arm length. Beyond this the body leans toward the penlight."));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanFactor"), new GUIContent("Lean Factor"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanMax"), new GUIContent("Lean Max"));
             });
         }
 

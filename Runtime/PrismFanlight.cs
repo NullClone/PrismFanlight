@@ -1,5 +1,6 @@
 using PrismFanlight.Rendering;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace PrismFanlight
 {
@@ -40,7 +41,8 @@ namespace PrismFanlight
         private Camera _cullingCamera = null;
 
         [SerializeField]
-        private Audience _audience = Audience.Default();
+        [FormerlySerializedAs("_audience")]
+        private SeatLayout _seatLayout = SeatLayout.Default();
 
         [SerializeField]
         private FanlightMotionPreset _motionPreset = null;
@@ -55,7 +57,8 @@ namespace PrismFanlight
         private FanlightColorSettings _color = FanlightColorSettings.Default();
 
         [SerializeField]
-        private FanlightBodySettings _body = FanlightBodySettings.Default();
+        [FormerlySerializedAs("_body")]
+        private FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
 
         [SerializeField]
         private Transform _swingTarget = null;
@@ -142,10 +145,10 @@ namespace PrismFanlight
                 VisibilityUpdate,
                 AnimationUpdate,
                 GetTempoState(),
-                GetAudience(),
+                GetSeatLayout(),
                 GetMotion(),
                 GetColorSettings(),
-                GetBodySettings(),
+                GetAudienceSettings(),
                 _audienceMaterial,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero,
                 transform.localToWorldMatrix,
@@ -173,24 +176,24 @@ namespace PrismFanlight
         }
 
 
-        public Audience GetAudience() => (_audience ?? Audience.Default()).Validated();
+        public SeatLayout GetSeatLayout() => (_seatLayout ?? SeatLayout.Default()).Validated();
 
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
 
-        public FanlightBodySettings GetBodySettings() => _body.Validated();
+        public FanlightAudienceSettings GetAudienceSettings() => _audienceSettings.Validated();
 
         public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
         public FanlightDiagnostics GetDiagnostics()
         {
-            var audience = GetAudience();
-            var blockCount = audience.blockCount.x * audience.blockCount.y;
+            var layout = GetSeatLayout();
+            var blockCount = layout.blockCount.x * layout.blockCount.y;
 
             return new FanlightDiagnostics(
                 _renderer.IsReady,
-                audience.TotalSeatCount,
+                layout.TotalSeatCount,
                 _renderer.VisibleSeatCount,
                 blockCount);
         }
@@ -205,9 +208,9 @@ namespace PrismFanlight
             _animationUpdate = timing.Validated();
         }
 
-        public void SetAudience(Audience audience)
+        public void SetSeatLayout(SeatLayout layout)
         {
-            _audience = (audience ?? Audience.Default()).Validated();
+            _seatLayout = (layout ?? SeatLayout.Default()).Validated();
         }
 
         public void SetTempo(FanlightTempoSettings tempo)
@@ -242,9 +245,9 @@ namespace PrismFanlight
             _colorPreset = preset;
         }
 
-        public void SetBodySettings(FanlightBodySettings body)
+        public void SetAudienceSettings(FanlightAudienceSettings audience)
         {
-            _body = body.Validated();
+            _audienceSettings = audience.Validated();
         }
 
         public void SetRenderingLayerMask(uint renderingLayerMask)

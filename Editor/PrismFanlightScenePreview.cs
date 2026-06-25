@@ -17,7 +17,7 @@ namespace PrismFanlight.Editor
         {
             if (fanlight == null) return;
 
-            var audience = fanlight.GetAudience();
+            var audience = fanlight.GetSeatLayout();
             if (audience.TotalSeatCount <= 0 || audience.BlockSeatCount <= 0) return;
 
             var targetTransform = fanlight.transform;
@@ -29,7 +29,7 @@ namespace PrismFanlight.Editor
         }
 
 
-        private static void DrawBlocks(Transform transform, Audience audience, BlockCullingPreview culling)
+        private static void DrawBlocks(Transform transform, SeatLayout audience, BlockCullingPreview culling)
         {
             for (var bx = 0; bx < audience.blockCount.x; bx++)
             {
@@ -53,7 +53,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawSeatsInBlock(Transform transform, Audience audience, int2 block)
+        private static void DrawSeatsInBlock(Transform transform, SeatLayout audience, int2 block)
         {
             Handles.color = SeatColor;
 
@@ -71,7 +71,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static int2 GetPreviewBlock(Audience audience)
+        private static int2 GetPreviewBlock(SeatLayout audience)
         {
             return math.max((audience.blockCount - math.int2(1, 1)) / 2, math.int2(0, 0));
         }
@@ -105,7 +105,7 @@ namespace PrismFanlight.Editor
             return new BlockCullingPreview(true, transform, GeometryUtility.CalculateFrustumPlanes(fanlight.CullingCamera));
         }
 
-        public bool IsCulled(Audience audience, int2 block)
+        public bool IsCulled(SeatLayout audience, int2 block)
         {
             if (!_enabled || _planes == null) return false;
 
@@ -124,7 +124,7 @@ namespace PrismFanlight.Editor
             return false;
         }
 
-        private static (Vector3 center, float radius) GetBlockSphere(Audience audience, int2 block)
+        private static (Vector3 center, float radius) GetBlockSphere(SeatLayout audience, int2 block)
         {
             var min = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
             var max = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;

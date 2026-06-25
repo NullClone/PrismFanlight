@@ -13,12 +13,12 @@ namespace PrismFanlight.Rendering
         private readonly FanlightGpuUpdateScheduler _scheduler = new();
 
         private MaterialPropertyBlock _properties;
-        private MaterialPropertyBlock _bodyProperties;
+        private MaterialPropertyBlock _audienceProperties;
         private FanlightGpuKernels _kernels;
-        private Audience _audience;
+        private SeatLayout _layout;
         private Mesh _mesh;
         private ComputeShader _computeShader;
-        private bool _bodyAllocated;
+        private bool _audienceAllocated;
         private bool _isInitialized;
         private bool _animationInitialized;
         private bool _instanceColorsInitialized;
@@ -45,39 +45,39 @@ namespace PrismFanlight.Rendering
             FanlightGpuUpdateTiming visibilityUpdate,
             FanlightGpuUpdateTiming animationUpdate,
             FanlightTempoState tempo,
-            Audience audience,
+            SeatLayout layout,
             FanlightMotionSettings motion,
             FanlightColorSettings color,
-            FanlightBodySettings body,
+            FanlightAudienceSettings audience,
             Material audienceMaterial,
             Vector3 swingTargetWorldPos,
             Matrix4x4 localToWorld,
             float time,
             float updateClock)
         {
-            var validatedAudience = (audience ?? Audience.Default()).Validated();
+            var validatedLayout = (layout ?? SeatLayout.Default()).Validated();
 
-            if (!CanRender(mesh, material, computeShader, validatedAudience))
+            if (!CanRender(mesh, material, computeShader, validatedLayout))
             {
                 Dispose();
                 return;
             }
 
-            var bodyEnabled = body.enabled && audienceMaterial != null;
-            var handBaseHeight = bodyEnabled ? body.bodyHeight * body.shoulderHeight : 0f;
+            var audienceEnabled = audience.enabled && audienceMaterial != null;
+            var handBaseHeight = audienceEnabled ? audience.bodyHeight * audience.shoulderHeight : 0f;
 
-            EnsureInitialized(mesh, computeShader, validatedAudience, bodyEnabled);
+            EnsureInitialized(mesh, computeShader, validatedLayout, audienceEnabled);
 
             var worldBounds = FanlightGeometryBuilder.TransformBounds(localToWorld, _buffers.LocalBounds);
 
             var context = new FanlightGpuDispatchContext(
                 cullingCamera,
                 enableCulling,
-                validatedAudience,
+                validatedLayout,
                 tempo,
                 motion,
                 color,
-                body,
+                audience,
                 handBaseHeight,
                 swingTargetWorldPos,
                 localToWorld,
@@ -90,9 +90,9 @@ namespace PrismFanlight.Rendering
                 _dispatcher.DispatchVisibility(computeShader, _kernels, _buffers, context);
                 _visibilityReadback.Request(_buffers.ArgsBuffer, _buffers.SeatCount);
 
-                if (bodyEnabled)
+                if (audienceEnabled)
                 {
-                    _dispatcher.DispatchBodyArgs(computeShader, _kernels, _buffers);
+                    _dispatcher.DispatchAudienceArgs(computeShader, _kernels, _buffers);
                 }
 
                 Profiler.EndSample();
@@ -105,9 +105,9 @@ namespace PrismFanlight.Rendering
                 Profiler.BeginSample("Prism Fanlight GPU Animation");
                 _dispatcher.DispatchAnimation(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
 
-                if (bodyEnabled)
+                if (audienceEnabled)
                 {
-                    _dispatcher.DispatchBody(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
+                    _dispatcher.DispatchAudience(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
                 }
 
                 _animationInitialized = true;
@@ -143,33 +143,35 @@ namespace PrismFanlight.Rendering
             Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.ArgsBuffer);
             Profiler.EndSample();
 
-            if (bodyEnabled)
+            if (audienceEnabled)
             {
-                DrawBody(audienceMaterial, renderingLayerMask, worldBounds, color);
+                DrawAudience(audienceMaterial, renderingLayerMask, worldBounds, color);
             }
         }
 
-        private void DrawBody(Material bodyMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
+        private void DrawAudience(Material audienceMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
         {
-            Profiler.BeginSample("Prism Fanlight GPU Body Draw");
+            Profiler.BeginSample("Prism Fanlight GPU Audience Draw");
 
-            _bodyProperties ??= new MaterialPropertyBlock();
-            _bodyProperties.SetBuffer(FanlightShaderIds.BodyParts, _buffers.BodyPartBuffer);
-            _bodyProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.VisibleIndexBuffer);
-            _bodyProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
-            _bodyProperties.SetInt(FanlightShaderIds.ColorSource, color.mode == FanlightColorMode.Single ? 0 : 1);
-            _bodyProperties.SetColor(FanlightShaderIds.GlobalColor, color.GetGlobalColor());
-            _bodyProperties.SetFloat(FanlightShaderIds.GlobalIntensity, color.GetGlobalIntensity());
+            _audienceProperties ??= new MaterialPropertyBlock();
+            _audienceProperties.SetBuffer(FanlightShaderIds.AudienceParts, _buffers.AudiencePartBuffer);
+            _audienceProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.VisibleIndexBuffer);
+            // 観客からもペンライトと同じ per-seat カラーを参照できるようにバインドする
+            // （Shader Graph の GetAudienceBodyColor_float 用）。
+            _audienceProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
+            _audienceProperties.SetInt(FanlightShaderIds.ColorSource, color.mode == FanlightColorMode.Single ? 0 : 1);
+            _audienceProperties.SetColor(FanlightShaderIds.GlobalColor, color.GetGlobalColor());
+            _audienceProperties.SetFloat(FanlightShaderIds.GlobalIntensity, color.GetGlobalIntensity());
 
-            var renderParams = new RenderParams(bodyMaterial)
+            var renderParams = new RenderParams(audienceMaterial)
             {
                 renderingLayerMask = renderingLayerMask,
                 receiveShadows = false,
                 worldBounds = worldBounds,
-                matProps = _bodyProperties
+                matProps = _audienceProperties
             };
 
-            Graphics.RenderMeshIndirect(renderParams, FanlightGeometryBuilder.GetBodyQuad(), _buffers.BodyArgsBuffer);
+            Graphics.RenderMeshIndirect(renderParams, FanlightGeometryBuilder.GetAudienceQuad(), _buffers.AudienceArgsBuffer);
             Profiler.EndSample();
         }
 
@@ -178,8 +180,8 @@ namespace PrismFanlight.Rendering
             _buffers.Release();
             _visibilityReadback.Reset();
             _properties = null;
-            _bodyProperties = null;
-            _bodyAllocated = false;
+            _audienceProperties = null;
+            _audienceAllocated = false;
             _mesh = null;
             _computeShader = null;
             _isInitialized = false;
@@ -190,23 +192,23 @@ namespace PrismFanlight.Rendering
             _scheduler.Reset();
         }
 
-        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, Audience audience)
+        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, SeatLayout layout)
         {
             return mesh != null
                    && material != null
                    && computeShader != null
-                   && audience.TotalSeatCount > 0
-                   && audience.BlockSeatCount > 0;
+                   && layout.TotalSeatCount > 0
+                   && layout.BlockSeatCount > 0;
         }
 
-        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, Audience audience, bool allocateBody)
+        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, SeatLayout layout, bool allocateAudience)
         {
             if (_isInitialized
                 && _mesh == mesh
                 && _computeShader == computeShader
-                && _bodyAllocated == allocateBody
-                && _buffers.SeatCount == audience.TotalSeatCount
-                && audience.Equals(_audience))
+                && _audienceAllocated == allocateAudience
+                && _buffers.SeatCount == layout.TotalSeatCount
+                && layout.Equals(_layout))
             {
                 return;
             }
@@ -215,11 +217,11 @@ namespace PrismFanlight.Rendering
 
             _mesh = mesh;
             _computeShader = computeShader;
-            _audience = audience;
+            _layout = layout;
             _kernels = new FanlightGpuKernels(computeShader);
             _properties = new MaterialPropertyBlock();
-            _buffers.Allocate(mesh, audience, allocateBody);
-            _bodyAllocated = allocateBody;
+            _buffers.Allocate(mesh, layout, allocateAudience);
+            _audienceAllocated = allocateAudience;
             _isInitialized = true;
         }
 

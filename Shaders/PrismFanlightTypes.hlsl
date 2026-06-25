@@ -10,8 +10,8 @@ struct FanlightBlockData
     float4 indexRange;
 };
 
-struct FanlightBodyPart
+struct FanlightAudiencePart
 {
-    float4 p0HalfWidth;
-    float4 p1Type;
+    float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅(World)
+    float4 p1Type;      // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
 };
