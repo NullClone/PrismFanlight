@@ -46,6 +46,11 @@ namespace PrismFanlight.Rendering
         public static readonly int AudienceShape = Shader.PropertyToID("_AudienceShape");
         public static readonly int AudienceArm = Shader.PropertyToID("_AudienceArm");
         public static readonly int AudienceReach = Shader.PropertyToID("_AudienceReach");
+        public static readonly int AudienceMotionBody = Shader.PropertyToID("_AudienceMotionBody");
+        public static readonly int AudienceMotionHead = Shader.PropertyToID("_AudienceMotionHead");
+        public static readonly int AudienceShoulder = Shader.PropertyToID("_AudienceShoulder");
+        public static readonly int AudienceVariation = Shader.PropertyToID("_AudienceVariation");
+        public static readonly int AudienceCrowd = Shader.PropertyToID("_AudienceCrowd");
         public static readonly int HandBaseHeight = Shader.PropertyToID("_HandBaseHeight");
 
         public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");

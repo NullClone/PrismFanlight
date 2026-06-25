@@ -82,7 +82,11 @@
             "m_Id": "94b10696765f46a29344145afdd6d8e9"
         }
     ],
-    "m_GroupDatas": [],
+    "m_GroupDatas": [
+        {
+            "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
+        }
+    ],
     "m_StickyNoteDatas": [],
     "m_Edges": [
         {
@@ -385,7 +389,7 @@
         },
         "preventRotation": false
     },
-    "m_Path": "Shader Graphs",
+    "m_Path": "Hidden",
     "m_GraphPrecision": 1,
     "m_PreviewMode": 2,
     "m_OutputNode": {
@@ -615,8 +619,8 @@
     "m_Type": "UnityEditor.Rendering.Universal.ShaderGraph.UniversalUnlitSubTarget",
     "m_ObjectId": "13aa1e80e63f4ee09737fc1a70ca2549",
     "m_KeepLightingVariants": false,
-    "m_DefaultDecalBlending": true,
-    "m_DefaultSSAO": true
+    "m_DefaultDecalBlending": false,
+    "m_DefaultSSAO": false
 }
 
 {
@@ -926,7 +930,7 @@
     "m_Type": "UnityEditor.ShaderGraph.OneMinusNode",
     "m_ObjectId": "3ef81fbe9f494c0aa88908c64ea656e5",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "One Minus",
     "m_DrawState": {
@@ -1597,7 +1601,7 @@
     "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
     "m_ObjectId": "94b10696765f46a29344145afdd6d8e9",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "Property",
     "m_DrawState": {
@@ -1860,7 +1864,7 @@
     "m_Type": "UnityEditor.ShaderGraph.SplitNode",
     "m_ObjectId": "b88b43f18f614eb7bdc225a7576d0c8a",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "Split",
     "m_DrawState": {
@@ -2081,6 +2085,17 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.GroupData",
+    "m_ObjectId": "cbeccd66aa9b43c886955aaacab9bdb6",
+    "m_Title": "Penlight Visual",
+    "m_Position": {
+        "x": -1095.3333740234375,
+        "y": 432.6665954589844
+    }
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
     "m_ObjectId": "d79dcf496f84408c8a84f6e3ff95beef",
     "m_Id": 2,
@@ -2157,7 +2172,7 @@
     "m_Type": "UnityEditor.ShaderGraph.SaturateNode",
     "m_ObjectId": "e06b2bbdba824f1f95639983820d6b21",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "Saturate",
     "m_DrawState": {
@@ -2241,7 +2256,7 @@
     "m_Type": "UnityEditor.ShaderGraph.RemapNode",
     "m_ObjectId": "f2e9baa0a469495888f07c8cded91680",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "Remap",
     "m_DrawState": {
@@ -2330,7 +2345,7 @@
     "m_Type": "UnityEditor.ShaderGraph.UVNode",
     "m_ObjectId": "fb88382f2f6c4e78b2dddc41a3d7d325",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "cbeccd66aa9b43c886955aaacab9bdb6"
     },
     "m_Name": "UV",
     "m_DrawState": {

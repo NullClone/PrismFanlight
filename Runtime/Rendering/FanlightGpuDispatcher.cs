@@ -71,11 +71,18 @@ namespace PrismFanlight.Rendering
         private void SetAudienceParams(ComputeShader shader, FanlightGpuDispatchContext context)
         {
             var audience = context.Audience;
+            var motion = audience.motion;
+            var variation = audience.variation;
             var worldScale = FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld);
 
             shader.SetVector(FanlightShaderIds.AudienceShape, new Vector4(audience.bodyHeight, audience.bodyHeightJitter, audience.shoulderHeight, audience.bodyWidth * 0.5f));
             shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(audience.armWidth * 0.5f, audience.shoulderOffset, audience.headSize * 0.5f, audience.maxReach));
             shader.SetVector(FanlightShaderIds.AudienceReach, new Vector4(audience.leanFactor, audience.leanMax, worldScale, 0f));
+            shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(motion.bodyBounce, motion.bodySway, motion.bodyMotionSpeed, motion.shoulderFollow));
+            shader.SetVector(FanlightShaderIds.AudienceMotionHead, new Vector4(motion.shoulderBounce, motion.headBob, motion.headSway, motion.headCounterMotion));
+            shader.SetVector(FanlightShaderIds.AudienceShoulder, new Vector4(motion.shoulderFollowMax, motion.headMotionSpeed, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.AudienceVariation, new Vector4(variation.enthusiasmVariation, variation.bodyMotionVariation, variation.headMotionVariation, variation.reactionDelay));
+            shader.SetVector(FanlightShaderIds.AudienceCrowd, new Vector4(variation.quietProbability, variation.quietMotionLevel, 0f, 0f));
         }
 
         public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)

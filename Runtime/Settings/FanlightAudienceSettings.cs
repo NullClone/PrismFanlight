@@ -4,10 +4,9 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
-    // 観客 1 人の見た目（体・頭・腕のビルボード）の設定。
-    // 手の位置はペンライトのモーション計算（PrismComputeArm）から取得し、
-    // 腕は「肩 → 手」を結ぶ 1 本のリボンとして描く（肘の IK は持たない）。
-    // 手が肩から maxReach 以上離れると、体が水平方向へ寄って（lean）追従する。
+    // Appearance and motion settings for one audience member.
+    // The hand position is driven by the penlight motion, while the body and
+    // head stay anchored to the seat with low-frequency crowd motion.
     [Serializable]
     public struct FanlightAudienceSettings
     {
@@ -43,6 +42,10 @@ namespace PrismFanlight
         [Min(0f)]
         public float leanMax;
 
+        public FanlightAudienceMotionSettings motion;
+
+        public FanlightAudienceVariationSettings variation;
+
 
         public static FanlightAudienceSettings Default() => new()
         {
@@ -56,7 +59,9 @@ namespace PrismFanlight
             armWidth = 0.14f,
             maxReach = 0.55f,
             leanFactor = 0.5f,
-            leanMax = 0.4f
+            leanMax = 0.4f,
+            motion = FanlightAudienceMotionSettings.Default(),
+            variation = FanlightAudienceVariationSettings.Default()
         };
 
         public FanlightAudienceSettings Validated() => new()
@@ -65,15 +70,137 @@ namespace PrismFanlight
             bodyHeight = math.max(0.1f, bodyHeight),
             bodyHeightJitter = math.saturate(bodyHeightJitter),
             bodyWidth = math.max(0.01f, bodyWidth),
-            // headSize / maxReach は旧 Body 設定からの移行時に 0 で読み込まれうるため、
-            // 未設定（0 以下）のときは既定値で埋めて見た目が壊れないようにする。
+            // Migration guard: older serialized body settings can read as zero.
             headSize = headSize > 0f ? math.max(0.01f, headSize) : 0.28f,
             shoulderHeight = math.saturate(shoulderHeight),
             shoulderOffset = math.clamp(shoulderOffset, -1f, 1f),
             armWidth = math.max(0.01f, armWidth),
             maxReach = maxReach > 0f ? math.max(0.01f, maxReach) : 0.55f,
             leanFactor = math.saturate(leanFactor),
-            leanMax = math.max(0f, leanMax)
+            leanMax = math.max(0f, leanMax),
+            motion = motion.Validated(),
+            variation = variation.Validated()
+        };
+    }
+
+    [Serializable]
+    public struct FanlightAudienceMotionSettings
+    {
+        [Min(0f)]
+        public float bodyBounce;
+
+        [Min(0.01f)]
+        public float bodyMotionSpeed;
+
+        [Min(0f)]
+        public float bodySway;
+
+        [Min(0.01f)]
+        public float headMotionSpeed;
+
+        [Range(0f, 1f)]
+        public float shoulderFollow;
+
+        [Min(0f)]
+        public float shoulderFollowMax;
+
+        [Min(0f)]
+        public float shoulderBounce;
+
+        [Min(0f)]
+        public float headBob;
+
+        [Min(0f)]
+        public float headSway;
+
+        [Range(0f, 1f)]
+        public float headCounterMotion;
+
+
+        public static FanlightAudienceMotionSettings Default() => new()
+        {
+            bodyBounce = 0.018f,
+            bodyMotionSpeed = 0.65f,
+            bodySway = 0.025f,
+            headMotionSpeed = 0.45f,
+            shoulderFollow = 0.2f,
+            shoulderFollowMax = 0.045f,
+            shoulderBounce = 0.012f,
+            headBob = 0.012f,
+            headSway = 0.015f,
+            headCounterMotion = 0.15f
+        };
+
+        public FanlightAudienceMotionSettings Validated()
+        {
+            var uninitialized = bodyBounce <= 0f
+                                && bodyMotionSpeed <= 0f
+                                && bodySway <= 0f
+                                && headMotionSpeed <= 0f
+                                && shoulderFollow <= 0f
+                                && shoulderFollowMax <= 0f
+                                && shoulderBounce <= 0f
+                                && headBob <= 0f
+                                && headSway <= 0f
+                                && headCounterMotion <= 0f;
+            var source = uninitialized ? Default() : this;
+
+            return new FanlightAudienceMotionSettings
+            {
+                bodyBounce = math.max(0f, source.bodyBounce),
+                bodyMotionSpeed = math.max(0.01f, source.bodyMotionSpeed),
+                bodySway = math.max(0f, source.bodySway),
+                headMotionSpeed = math.max(0.01f, source.headMotionSpeed),
+                shoulderFollow = math.saturate(source.shoulderFollow),
+                shoulderFollowMax = math.max(0f, source.shoulderFollowMax),
+                shoulderBounce = math.max(0f, source.shoulderBounce),
+                headBob = math.max(0f, source.headBob),
+                headSway = math.max(0f, source.headSway),
+                headCounterMotion = math.saturate(source.headCounterMotion)
+            };
+        }
+    }
+
+    [Serializable]
+    public struct FanlightAudienceVariationSettings
+    {
+        [Range(0f, 1f)]
+        public float enthusiasmVariation;
+
+        [Range(0f, 1f)]
+        public float bodyMotionVariation;
+
+        [Range(0f, 1f)]
+        public float headMotionVariation;
+
+        [Min(0f)]
+        public float reactionDelay;
+
+        [Range(0f, 1f)]
+        public float quietProbability;
+
+        [Range(0f, 1f)]
+        public float quietMotionLevel;
+
+
+        public static FanlightAudienceVariationSettings Default() => new()
+        {
+            enthusiasmVariation = 0.25f,
+            bodyMotionVariation = 0.2f,
+            headMotionVariation = 0.25f,
+            reactionDelay = 0.08f,
+            quietProbability = 0.05f,
+            quietMotionLevel = 0.35f
+        };
+
+        public FanlightAudienceVariationSettings Validated() => new()
+        {
+            enthusiasmVariation = math.saturate(enthusiasmVariation),
+            bodyMotionVariation = math.saturate(bodyMotionVariation),
+            headMotionVariation = math.saturate(headMotionVariation),
+            reactionDelay = math.max(0f, reactionDelay),
+            quietProbability = math.saturate(quietProbability),
+            quietMotionLevel = math.saturate(quietMotionLevel)
         };
     }
 }

@@ -538,6 +538,33 @@ namespace PrismFanlight.Editor
                     new GUIContent("Max Reach", "Comfortable arm length. Beyond this the body leans toward the penlight."));
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanFactor"), new GUIContent("Lean Factor"));
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanMax"), new GUIContent("Lean Max"));
+
+                var motion = _audienceSettings.FindPropertyRelative("motion");
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Motion");
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodyBounce"), new GUIContent("Body Bounce"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodySway"), new GUIContent("Body Sway"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodyMotionSpeed"), new GUIContent("Body Speed"));
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("shoulderFollow"), new GUIContent("Shoulder Follow"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("shoulderFollowMax"), new GUIContent("Shoulder Follow Max"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("shoulderBounce"), new GUIContent("Shoulder Bounce"));
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("headBob"), new GUIContent("Head Bob"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("headSway"), new GUIContent("Head Sway"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("headMotionSpeed"), new GUIContent("Head Speed"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("headCounterMotion"), new GUIContent("Head Counter Motion"));
+
+                var variation = _audienceSettings.FindPropertyRelative("variation");
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Variation");
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("enthusiasmVariation"), new GUIContent("Enthusiasm Variation"));
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("bodyMotionVariation"), new GUIContent("Body Variation"));
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("headMotionVariation"), new GUIContent("Head Variation"));
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("reactionDelay"), new GUIContent("Reaction Delay"));
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("quietProbability"), new GUIContent("Quiet Probability"));
+                EditorGUILayout.PropertyField(variation.FindPropertyRelative("quietMotionLevel"), new GUIContent("Quiet Motion Level"));
             });
         }
 

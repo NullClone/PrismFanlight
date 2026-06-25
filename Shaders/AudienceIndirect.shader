@@ -1,4 +1,4 @@
-Shader "Custom/AudienceBillboardIndirect"
+Shader "Hidden/AudienceBillboardIndirect"
 {
     // 観客（体・腕・頭）のビルボードシェーダー。
     // PrismFanlightIndirect.compute が書き出した _AudienceParts を展開し、
@@ -51,7 +51,10 @@ Shader "Custom/AudienceBillboardIndirect"
         Pass
         {
             Name "Unlit"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -63,7 +66,7 @@ Shader "Custom/AudienceBillboardIndirect"
             struct AudiencePart
             {
                 float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅
-                float4 p1Type;      // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
+                float4 p1Type; // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
             };
 
             StructuredBuffer<AudiencePart> _AudienceParts;
@@ -104,7 +107,7 @@ Shader "Custom/AudienceBillboardIndirect"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float2 shape : TEXCOORD1;            // x: partType, y: カプセル長/半幅
+                float2 shape : TEXCOORD1; // x: partType, y: カプセル長/半幅
                 nointerpolation uint seat : TEXCOORD2;
             };
 
@@ -174,7 +177,7 @@ Shader "Custom/AudienceBillboardIndirect"
                 {
                     // 頭: スクリーン正対の全方位ビルボード（真上から見ても円盤として残る）。
                     float3 camRight = UNITY_MATRIX_V._m00_m01_m02;
-                    float3 camUp    = UNITY_MATRIX_V._m10_m11_m12;
+                    float3 camUp = UNITY_MATRIX_V._m10_m11_m12;
                     worldPos = p0 + (camRight * (IN.uv.x - 0.5) + camUp * (IN.uv.y - 0.5)) * (halfWidth * 2.0);
                 }
                 else
@@ -213,7 +216,7 @@ Shader "Custom/AudienceBillboardIndirect"
                 if (isHead)
                 {
                     // 頭: 円 SDF + 球断面の法線
-                    float2 q = (uv - 0.5) * 2.0;       // [-1,1]
+                    float2 q = (uv - 0.5) * 2.0; // [-1,1]
                     float r2 = dot(q, q);
                     coverage = SdfCoverage(sqrt(r2) - 1.0);
                     float nz = sqrt(saturate(1.0 - r2));
@@ -223,8 +226,8 @@ Shader "Custom/AudienceBillboardIndirect"
                 {
                     // 体・腕: 縦カプセル SDF + 円柱断面の法線
                     float L = IN.shape.y;
-                    float px = (uv.x - 0.5) * 2.0;     // 横 [-1,1]
-                    float py = uv.y * L;               // 縦 [0,L]
+                    float px = (uv.x - 0.5) * 2.0; // 横 [-1,1]
+                    float py = uv.y * L; // 縦 [0,L]
                     float cy = clamp(py, 1.0, max(1.0, L - 1.0));
                     coverage = SdfCoverage(length(float2(px, py - cy)) - 1.0);
                     float nz = sqrt(saturate(1.0 - px * px));
