@@ -3,8 +3,6 @@ using Unity.Mathematics;
 
 namespace PrismFanlight
 {
-    // 観客の座席配置（ブロック数・座席数・間隔）。観客 1 人 1 人の見た目は
-    // FanlightAudienceSettings が担い、こちらは「どこに座席があるか」のみを表す。
     [Serializable]
     public class SeatLayout : IEquatable<SeatLayout>
     {

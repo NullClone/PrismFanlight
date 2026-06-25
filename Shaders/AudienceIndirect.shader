@@ -1,13 +1,5 @@
-Shader "Hidden/AudienceBillboardIndirect"
+Shader "Hidden/AudienceIndirect"
 {
-    // 観客（体・腕・頭）のビルボードシェーダー。
-    // PrismFanlightIndirect.compute が書き出した _AudienceParts を展開し、
-    // フラグメントで SDF により形を出す（partType で分岐）。
-    //   体・腕(type<2): p0->p1 のカメラ正対リボン  → カプセル SDF（円柱断面で陰影）
-    //   頭   (type>=2): 中心 p0・半径 w の全方位ビルボード → 円 SDF（球断面で陰影）
-    // 立体感は SDF から復元した擬似法線でハーフランバート＋リム発光。
-    // 肌色/服色を席ごとにわずかにばらして「群衆」感を出す。リムはその席の
-    // ペンライト色で染められる（ステージ逆光の雰囲気）。
     Properties
     {
         _MainTex ("Texture (RGBA)", 2D) = "white" {}
