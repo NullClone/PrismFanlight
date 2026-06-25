@@ -4,9 +4,9 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
-    // Appearance and motion settings for one audience member.
-    // The hand position is driven by the penlight motion, while the body and
-    // head stay anchored to the seat with low-frequency crowd motion.
+    // Appearance and minimal crowd motion for one audience member.
+    // The body/head stay anchored to the seat; only the arm and a tiny shoulder
+    // offset connect the silhouette to the penlight hand.
     [Serializable]
     public struct FanlightAudienceSettings
     {
@@ -44,8 +44,6 @@ namespace PrismFanlight
 
         public FanlightAudienceMotionSettings motion;
 
-        public FanlightAudienceVariationSettings variation;
-
 
         public static FanlightAudienceSettings Default() => new()
         {
@@ -60,8 +58,7 @@ namespace PrismFanlight
             maxReach = 0.55f,
             leanFactor = 0.5f,
             leanMax = 0.4f,
-            motion = FanlightAudienceMotionSettings.Default(),
-            variation = FanlightAudienceVariationSettings.Default()
+            motion = FanlightAudienceMotionSettings.Default()
         };
 
         public FanlightAudienceSettings Validated() => new()
@@ -78,8 +75,7 @@ namespace PrismFanlight
             maxReach = maxReach > 0f ? math.max(0.01f, maxReach) : 0.55f,
             leanFactor = math.saturate(leanFactor),
             leanMax = math.max(0f, leanMax),
-            motion = motion.Validated(),
-            variation = variation.Validated()
+            motion = motion.Validated()
         };
     }
 
@@ -89,14 +85,11 @@ namespace PrismFanlight
         [Min(0f)]
         public float bodyBounce;
 
-        [Min(0.01f)]
-        public float bodyMotionSpeed;
-
         [Min(0f)]
         public float bodySway;
 
         [Min(0.01f)]
-        public float headMotionSpeed;
+        public float bodyMotionSpeed;
 
         [Range(0f, 1f)]
         public float shoulderFollow;
@@ -104,103 +97,33 @@ namespace PrismFanlight
         [Min(0f)]
         public float shoulderFollowMax;
 
-        [Min(0f)]
-        public float shoulderBounce;
-
-        [Min(0f)]
-        public float headBob;
-
-        [Min(0f)]
-        public float headSway;
-
-        [Range(0f, 1f)]
-        public float headCounterMotion;
-
 
         public static FanlightAudienceMotionSettings Default() => new()
         {
             bodyBounce = 0.018f,
-            bodyMotionSpeed = 0.65f,
             bodySway = 0.025f,
-            headMotionSpeed = 0.45f,
+            bodyMotionSpeed = 0.65f,
             shoulderFollow = 0.2f,
-            shoulderFollowMax = 0.045f,
-            shoulderBounce = 0.012f,
-            headBob = 0.012f,
-            headSway = 0.015f,
-            headCounterMotion = 0.15f
+            shoulderFollowMax = 0.045f
         };
 
         public FanlightAudienceMotionSettings Validated()
         {
             var uninitialized = bodyBounce <= 0f
-                                && bodyMotionSpeed <= 0f
                                 && bodySway <= 0f
-                                && headMotionSpeed <= 0f
+                                && bodyMotionSpeed <= 0f
                                 && shoulderFollow <= 0f
-                                && shoulderFollowMax <= 0f
-                                && shoulderBounce <= 0f
-                                && headBob <= 0f
-                                && headSway <= 0f
-                                && headCounterMotion <= 0f;
+                                && shoulderFollowMax <= 0f;
             var source = uninitialized ? Default() : this;
 
             return new FanlightAudienceMotionSettings
             {
                 bodyBounce = math.max(0f, source.bodyBounce),
-                bodyMotionSpeed = math.max(0.01f, source.bodyMotionSpeed),
                 bodySway = math.max(0f, source.bodySway),
-                headMotionSpeed = math.max(0.01f, source.headMotionSpeed),
+                bodyMotionSpeed = math.max(0.01f, source.bodyMotionSpeed),
                 shoulderFollow = math.saturate(source.shoulderFollow),
-                shoulderFollowMax = math.max(0f, source.shoulderFollowMax),
-                shoulderBounce = math.max(0f, source.shoulderBounce),
-                headBob = math.max(0f, source.headBob),
-                headSway = math.max(0f, source.headSway),
-                headCounterMotion = math.saturate(source.headCounterMotion)
+                shoulderFollowMax = math.max(0f, source.shoulderFollowMax)
             };
         }
-    }
-
-    [Serializable]
-    public struct FanlightAudienceVariationSettings
-    {
-        [Range(0f, 1f)]
-        public float enthusiasmVariation;
-
-        [Range(0f, 1f)]
-        public float bodyMotionVariation;
-
-        [Range(0f, 1f)]
-        public float headMotionVariation;
-
-        [Min(0f)]
-        public float reactionDelay;
-
-        [Range(0f, 1f)]
-        public float quietProbability;
-
-        [Range(0f, 1f)]
-        public float quietMotionLevel;
-
-
-        public static FanlightAudienceVariationSettings Default() => new()
-        {
-            enthusiasmVariation = 0.25f,
-            bodyMotionVariation = 0.2f,
-            headMotionVariation = 0.25f,
-            reactionDelay = 0.08f,
-            quietProbability = 0.05f,
-            quietMotionLevel = 0.35f
-        };
-
-        public FanlightAudienceVariationSettings Validated() => new()
-        {
-            enthusiasmVariation = math.saturate(enthusiasmVariation),
-            bodyMotionVariation = math.saturate(bodyMotionVariation),
-            headMotionVariation = math.saturate(headMotionVariation),
-            reactionDelay = math.max(0f, reactionDelay),
-            quietProbability = math.saturate(quietProbability),
-            quietMotionLevel = math.saturate(quietMotionLevel)
-        };
     }
 }

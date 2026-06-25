@@ -29,16 +29,13 @@ namespace PrismFanlight
         private bool _enableCulling = true;
 
         [SerializeField]
+        private Camera _cullingCamera = null;
+
+        [SerializeField]
         private FanlightGpuUpdateTiming _visibilityUpdate = FanlightGpuUpdateTiming.EveryFrame();
 
         [SerializeField]
         private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.EveryFrame();
-
-        [SerializeField]
-        private FanlightTempoSettings _tempo = FanlightTempoSettings.Default();
-
-        [SerializeField]
-        private Camera _cullingCamera = null;
 
         [SerializeField]
         [FormerlySerializedAs("_audience")]
@@ -59,6 +56,9 @@ namespace PrismFanlight
         [SerializeField]
         [FormerlySerializedAs("_body")]
         private FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
+
+        [SerializeField]
+        private FanlightTempoSettings _tempo = FanlightTempoSettings.Default();
 
         [SerializeField]
         private Transform _swingTarget = null;

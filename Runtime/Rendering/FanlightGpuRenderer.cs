@@ -145,7 +145,9 @@ namespace PrismFanlight.Rendering
 
             if (audienceEnabled)
             {
-                DrawAudience(audienceMaterial, renderingLayerMask, worldBounds, color);
+                var audienceBounds = worldBounds;
+                audienceBounds.Expand(2.0f);
+                DrawAudience(audienceMaterial, renderingLayerMask, audienceBounds, color);
             }
         }
 

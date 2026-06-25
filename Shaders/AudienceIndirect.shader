@@ -2,8 +2,7 @@ Shader "Hidden/AudienceIndirect"
 {
     Properties
     {
-        _MainTex ("Texture (RGBA)", 2D) = "white" {}
-        _Color ("Opacity / Tex Tint", Color) = (1, 1, 1, 1)
+        _Color ("Opacity", Color) = (1, 1, 1, 1)
 
         [Header(Colors)]
         _SkinColor ("Skin (Head)", Color) = (0.92, 0.78, 0.69, 1)
@@ -13,6 +12,7 @@ Shader "Hidden/AudienceIndirect"
         _LightDir ("Light Dir (billboard xyz)", Vector) = (0.35, 0.55, 0.75, 0)
         _Ambient ("Ambient Floor", Range(0, 1)) = 0.35
         _GroundShade ("Ground Shade (body)", Range(0, 1)) = 0.35
+        _DepthCutoff ("Depth Cutoff", Range(0.001, 1)) = 0.35
 
         [Header(Rim)]
         _RimColor ("Rim Color", Color) = (0.7, 0.85, 1, 1)
@@ -20,9 +20,6 @@ Shader "Hidden/AudienceIndirect"
         _RimStrength ("Rim Strength", Range(0, 4)) = 1.3
         _PenlightRimTint ("Penlight Rim Tint", Range(0, 1)) = 0.6
 
-        [Header(Per Seat Variation)]
-        _HueVariation ("Hue Variation", Range(0, 1)) = 0.06
-        _ValueVariation ("Value Variation", Range(0, 1)) = 0.3
     }
 
     SubShader
@@ -36,7 +33,7 @@ Shader "Hidden/AudienceIndirect"
         }
         LOD 100
         Cull Off
-        ZWrite Off
+        ZWrite On
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
 
@@ -47,6 +44,9 @@ Shader "Hidden/AudienceIndirect"
             {
                 "LightMode" = "UniversalForward"
             }
+
+            ZWrite On
+            ZTest LEqual
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -70,23 +70,18 @@ Shader "Hidden/AudienceIndirect"
             float4 _FanlightGlobalColor;
             float _FanlightGlobalIntensity;
 
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
-
             CBUFFER_START(UnityPerMaterial)
-                float4 _MainTex_ST;
                 float4 _Color;
                 float4 _SkinColor;
                 float4 _ClothColor;
                 float4 _LightDir;
                 float _Ambient;
                 float _GroundShade;
+                float _DepthCutoff;
                 float4 _RimColor;
                 float _RimPower;
                 float _RimStrength;
                 float _PenlightRimTint;
-                float _HueVariation;
-                float _ValueVariation;
             CBUFFER_END
 
             struct Attributes
@@ -104,33 +99,6 @@ Shader "Hidden/AudienceIndirect"
             };
 
             // 整数ハッシュ（席ごとのばらつき用、0..1）
-            float Hash11(uint n)
-            {
-                n = (n ^ 61u) ^ (n >> 16);
-                n *= 9u;
-                n = n ^ (n >> 4);
-                n *= 0x27d4eb2du;
-                n = n ^ (n >> 15);
-                return float(n & 0x00ffffffu) / float(0x01000000);
-            }
-
-            float3 RGBToHSV(float3 c)
-            {
-                float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-                float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
-                float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
-                float d = q.x - min(q.w, q.y);
-                float e = 1.0e-10;
-                return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-            }
-
-            float3 HSVToRGB(float3 c)
-            {
-                float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
-            }
-
             float4 SeatPenlightColor(uint seat)
             {
                 if (_FanlightColorSource == 0)
@@ -228,12 +196,6 @@ Shader "Hidden/AudienceIndirect"
 
                 // ベース色：頭=肌 / 体腕=服。席ごとに色相・明度をわずかにばらす。
                 float3 baseCol = isHead ? _SkinColor.rgb : _ClothColor.rgb;
-                float vh = Hash11(IN.seat * 2u + 1u);
-                float vv = Hash11(IN.seat * 2u + 7u);
-                float3 hsv = RGBToHSV(baseCol);
-                hsv.x = frac(hsv.x + (vh - 0.5) * _HueVariation);
-                hsv.z = saturate(hsv.z * lerp(1.0 - _ValueVariation, 1.0 + _ValueVariation, vv));
-                baseCol = HSVToRGB(hsv);
 
                 // 擬似ライティング（ハーフランバート＋アンビエント床）
                 float3 L = normalize(_LightDir.xyz);
@@ -248,9 +210,9 @@ Shader "Hidden/AudienceIndirect"
                 float rim = pow(saturate(1.0 - N.z), _RimPower) * _RimStrength;
                 float3 rimCol = lerp(_RimColor.rgb, SeatPenlightColor(IN.seat).rgb, _PenlightRimTint);
 
-                half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, TRANSFORM_TEX(uv, _MainTex));
-                float3 rgb = (lit + rim * rimCol) * tex.rgb;
-                float alpha = coverage * tex.a * _Color.a;
+                float3 rgb = lit + rim * rimCol;
+                float alpha = coverage * _Color.a;
+                clip(alpha - max(_DepthCutoff, 0.001));
                 return half4(rgb, alpha);
             }
             ENDHLSL
