@@ -5,8 +5,8 @@ using UnityEngine;
 namespace PrismFanlight
 {
     // Appearance and minimal crowd motion for one audience member.
-    // The body/head stay anchored to the seat; only the arm and a tiny shoulder
-    // offset connect the silhouette to the penlight hand.
+    // The body/head form the parent pose; the arm and penlight are generated
+    // from the shoulder so the light reads as held by the audience.
     [Serializable]
     public struct FanlightAudienceSettings
     {

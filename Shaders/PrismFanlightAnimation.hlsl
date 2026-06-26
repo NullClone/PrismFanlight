@@ -66,13 +66,89 @@ struct PrismArm
 {
     float4x4 worldMatrix;
     float3 handLocal;
-    float3 baseLocal;
+    float3 shoulderLocal;
 };
+
+struct PrismHumanPose
+{
+    float3 feetLocal;
+    float3 shoulderLocal;
+    float3 neckLocal;
+    float3 headCenterLocal;
+    float bodyHalfWidth;
+    float armHalfWidth;
+    float headHalf;
+};
+
+float3 PrismComputeSeatAnchor(FanlightSeatData seat)
+{
+    float3 localPosition = seat.localPositionSeed.xyz;
+    float seed = seat.localPositionSeed.w;
+
+    float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
+    localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
+    localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
+
+    return localPosition;
+}
+
+PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
+{
+    float seed = seat.localPositionSeed.w;
+    float3 anchor = PrismComputeSeatAnchor(seat);
+
+    float heightJitter = (Hash11(seed + 211.0) * 2.0 - 1.0) * _AudienceShape.y;
+    float bodyHeight = max(0.1, _AudienceShape.x * (1.0 + heightJitter));
+    float shoulderHeight = bodyHeight * saturate(_AudienceShape.z);
+    float bodyHalfWidth = _AudienceShape.w;
+    float armHalfWidth = _AudienceArm.x;
+    float shoulderOffset = _AudienceArm.y;
+    float headHalf = _AudienceArm.z;
+
+    float phaseSeed = Hash11(seed + 227.0);
+    float phase = (_FanlightTime * max(0.01, _AudienceMotionBody.z) + phaseSeed) * 2.0 * PRISM_FANLIGHT_PI;
+    float sway = sin(phase);
+    float bounce = sway * 0.5 + 0.5;
+
+    float3 bodyOffset = float3(sway * _AudienceMotionBody.y, bounce * _AudienceMotionBody.x, 0.0);
+    float3 feet = float3(anchor.x, anchor.y, anchor.z) + bodyOffset;
+    float neckY = max(shoulderHeight, bodyHeight - headHalf * 2.0);
+    float shoulderLean = min(_AudienceShoulder.x, _AudienceReach.y) * saturate(_AudienceReach.x) * saturate(_AudienceMotionBody.w);
+    float3 leanAxis = PrismComputeBaseAxis(seat, false);
+    float3 upperBodyLean = leanAxis * sway * shoulderLean;
+
+    PrismHumanPose pose = (PrismHumanPose)0;
+    pose.feetLocal = feet;
+    pose.shoulderLocal = feet + float3(shoulderOffset, shoulderHeight, 0.0) + upperBodyLean;
+    pose.neckLocal = feet + float3(0.0, neckY, 0.0) + upperBodyLean * 0.35;
+    pose.headCenterLocal = feet + float3(0.0, neckY + headHalf, 0.0) + upperBodyLean * 0.35;
+    pose.bodyHalfWidth = bodyHalfWidth;
+    pose.armHalfWidth = armHalfWidth;
+    pose.headHalf = headHalf;
+    return pose;
+}
+
+float3 PrismComputeArmBase(FanlightSeatData seat)
+{
+    float3 baseLocal = PrismComputeSeatAnchor(seat);
+
+    if (_HandBaseHeight > 0.0001)
+    {
+        PrismHumanPose human = PrismComputeHumanPose(seat);
+        baseLocal = human.shoulderLocal;
+    }
+    else
+    {
+        baseLocal.y += _HandBaseHeight;
+    }
+
+    return baseLocal;
+}
 
 PrismArm PrismComputeArm(FanlightSeatData seat)
 {
     float seed = seat.localPositionSeed.w;
-    float3 localPosition = seat.localPositionSeed.xyz;
+    float3 shoulderLocal = PrismComputeArmBase(seat);
 
     int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
     float noisePersistence = max(0.001, _MotionNoise.w);
@@ -94,11 +170,6 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
     float phase = lerp(legacyPhase, beatPhase, beatSync);
     phase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
     phase += FbmNoise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
-
-    float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
-    localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
-    localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
-    localPosition.y += _HandBaseHeight;
 
     bool isHorizontal = Hash11(seed + 131.0) < saturate(_SwingWrist.x);
 
@@ -157,16 +228,16 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
     wristAngle = clamp(wristAngle * motionScale, -1.4, 1.4);
 
     float armReach = armLength * max(0.0, enthusiasm);
-    float4x4 m1 = Translate(localPosition);
+    float4x4 m1 = Translate(shoulderLocal);
     float4x4 mArm = AxisAngle(axis, armAngle);
     float4x4 m3 = Translate(float3(0.0, armReach, 0.0));
     float4x4 mWrist = AxisAngle(axis, wristAngle);
     float4x4 mGrip = Translate(float3(0.0, -_GripPivotY, 0.0));
 
-    PrismArm result;
+    PrismArm result = (PrismArm)0;
     result.worldMatrix = mul(_LocalToWorld, mul(m1, mul(mArm, mul(m3, mul(mWrist, mGrip)))));
-    result.handLocal = localPosition + mul((float3x3)mArm, float3(0.0, armReach, 0.0));
-    result.baseLocal = localPosition;
+    result.handLocal = shoulderLocal + mul((float3x3)mArm, float3(0.0, armReach, 0.0));
+    result.shoulderLocal = shoulderLocal;
     return result;
 }
 

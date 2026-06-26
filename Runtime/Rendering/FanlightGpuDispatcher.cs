@@ -39,6 +39,7 @@ namespace PrismFanlight.Rendering
         public void DispatchAnimation(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context, bool visibleOnly)
         {
             SetCommonParams(shader, context, buffers, false);
+            SetAudienceParams(shader, context);
 
             var kernel = visibleOnly ? kernels.GenerateVisibleAnimation : kernels.GenerateAllAnimation;
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
