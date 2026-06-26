@@ -1,3 +1,8 @@
+#ifndef PRISM_FANLIGHT_CULLING_INCLUDED
+#define PRISM_FANLIGHT_CULLING_INCLUDED
+
+#include "PrismFanlightComputeContext.hlsl"
+
 bool PrismSphereInFrustum(float3 center, float radius)
 {
     [unroll]
@@ -11,3 +16,5 @@ bool PrismSphereInFrustum(float3 center, float radius)
 
     return true;
 }
+
+#endif

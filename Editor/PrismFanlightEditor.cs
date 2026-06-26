@@ -531,13 +531,13 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("shoulderHeight"), new GUIContent("Shoulder Height"));
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("shoulderOffset"), new GUIContent("Shoulder Offset"));
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("armWidth"), new GUIContent("Arm Width"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("armLengthLimit"),
+                    new GUIContent("Arm Length Limit", "Caps the generated arm length before the penlight is placed at the hand."));
 
                 EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Reach");
-                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("maxReach"),
-                    new GUIContent("Max Reach", "Comfortable arm length. Beyond this the shoulder can make a small clamped follow adjustment."));
-                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanFactor"), new GUIContent("Lean Factor"));
-                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("leanMax"), new GUIContent("Lean Max"));
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Upper Body");
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("upperBodyLean"), new GUIContent("Body Lean"));
+                EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("upperBodyLeanMax"), new GUIContent("Lean Max"));
 
                 var motion = _audienceSettings.FindPropertyRelative("motion");
                 EditorGUILayout.Space();
@@ -546,8 +546,7 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodySway"), new GUIContent("Body Sway"));
                 EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodyMotionSpeed"), new GUIContent("Body Speed"));
                 EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(motion.FindPropertyRelative("shoulderFollow"), new GUIContent("Shoulder Follow"));
-                EditorGUILayout.PropertyField(motion.FindPropertyRelative("shoulderFollowMax"), new GUIContent("Shoulder Follow Max"));
+                EditorGUILayout.PropertyField(motion.FindPropertyRelative("upperBodyLeanMotion"), new GUIContent("Lean Motion"));
             });
         }
 

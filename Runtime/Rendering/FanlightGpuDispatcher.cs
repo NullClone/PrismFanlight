@@ -76,10 +76,9 @@ namespace PrismFanlight.Rendering
             var worldScale = FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld);
 
             shader.SetVector(FanlightShaderIds.AudienceShape, new Vector4(audience.bodyHeight, audience.bodyHeightJitter, audience.shoulderHeight, audience.bodyWidth * 0.5f));
-            shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(audience.armWidth * 0.5f, audience.shoulderOffset, audience.headSize * 0.5f, audience.maxReach));
-            shader.SetVector(FanlightShaderIds.AudienceReach, new Vector4(audience.leanFactor, audience.leanMax, worldScale, 0f));
-            shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(motion.bodyBounce, motion.bodySway, motion.bodyMotionSpeed, motion.shoulderFollow));
-            shader.SetVector(FanlightShaderIds.AudienceShoulder, new Vector4(motion.shoulderFollowMax, 0f, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(audience.armWidth * 0.5f, audience.shoulderOffset, audience.headSize * 0.5f, audience.armLengthLimit));
+            shader.SetVector(FanlightShaderIds.AudienceUpperBody, new Vector4(audience.upperBodyLean, audience.upperBodyLeanMax, worldScale, 0f));
+            shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(motion.bodyBounce, motion.bodySway, motion.bodyMotionSpeed, motion.upperBodyLeanMotion));
         }
 
         public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)

@@ -31,6 +31,7 @@ Shader "Hidden/AudienceIndirect"
             "RenderType" = "Transparent"
             "IgnoreProjector" = "True"
         }
+
         LOD 100
         Cull Off
         ZWrite On
@@ -57,15 +58,14 @@ Shader "Hidden/AudienceIndirect"
 
             struct AudiencePart
             {
-                float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅
-                float4 p1Type; // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
+                float4 p0HalfWidth;
+                float4 p1Type;
             };
 
             StructuredBuffer<AudiencePart> _AudienceParts;
             StructuredBuffer<uint> _VisibleIndices;
-
-            // ペンライト色（DrawAudience が MaterialPropertyBlock でバインド）
             StructuredBuffer<float4> _FanlightColors;
+
             int _FanlightColorSource;
             float4 _FanlightGlobalColor;
             float _FanlightGlobalIntensity;
@@ -94,11 +94,10 @@ Shader "Hidden/AudienceIndirect"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float2 shape : TEXCOORD1; // x: partType, y: カプセル長/半幅
+                float2 shape : TEXCOORD1;
                 nointerpolation uint seat : TEXCOORD2;
             };
 
-            // 整数ハッシュ（席ごとのばらつき用、0..1）
             float4 SeatPenlightColor(uint seat)
             {
                 if (_FanlightColorSource == 0)
@@ -110,7 +109,6 @@ Shader "Hidden/AudienceIndirect"
                 return c;
             }
 
-            // 1px 程度のアンチエイリアスを掛けた被覆。d<0 が内側。
             float SdfCoverage(float d)
             {
                 float aa = max(fwidth(d), 1e-5);
@@ -133,16 +131,15 @@ Shader "Hidden/AudienceIndirect"
 
                 float3 worldPos;
                 float lenUnits = 1.0;
+
                 if (type >= 1.5)
                 {
-                    // 頭: スクリーン正対の全方位ビルボード（真上から見ても円盤として残る）。
                     float3 camRight = UNITY_MATRIX_V._m00_m01_m02;
                     float3 camUp = UNITY_MATRIX_V._m10_m11_m12;
                     worldPos = p0 + (camRight * (IN.uv.x - 0.5) + camUp * (IN.uv.y - 0.5)) * (halfWidth * 2.0);
                 }
                 else
                 {
-                    // 体・腕: p0->p1 を結ぶカメラ正対リボンに展開。
                     float3 center = lerp(p0, p1, IN.uv.y);
                     float3 axis = p1 - p0;
                     float segLen = max(1e-4, length(axis));
@@ -171,12 +168,11 @@ Shader "Hidden/AudienceIndirect"
                 bool isBody = IN.shape.x < 0.5;
 
                 float coverage;
-                float3 N; // 擬似法線（x:横, y:縦, z:カメラ方向）
+                float3 N;
 
                 if (isHead)
                 {
-                    // 頭: 円 SDF + 球断面の法線
-                    float2 q = (uv - 0.5) * 2.0; // [-1,1]
+                    float2 q = (uv - 0.5) * 2.0;
                     float r2 = dot(q, q);
                     coverage = SdfCoverage(sqrt(r2) - 1.0);
                     float nz = sqrt(saturate(1.0 - r2));
@@ -184,29 +180,24 @@ Shader "Hidden/AudienceIndirect"
                 }
                 else
                 {
-                    // 体・腕: 縦カプセル SDF + 円柱断面の法線
                     float L = IN.shape.y;
-                    float px = (uv.x - 0.5) * 2.0; // 横 [-1,1]
-                    float py = uv.y * L; // 縦 [0,L]
+                    float px = (uv.x - 0.5) * 2.0;
+                    float py = uv.y * L;
                     float cy = clamp(py, 1.0, max(1.0, L - 1.0));
                     coverage = SdfCoverage(length(float2(px, py - cy)) - 1.0);
                     float nz = sqrt(saturate(1.0 - px * px));
                     N = normalize(float3(px, 0.0, nz));
                 }
 
-                // ベース色：頭=肌 / 体腕=服。席ごとに色相・明度をわずかにばらす。
                 float3 baseCol = isHead ? _SkinColor.rgb : _ClothColor.rgb;
 
-                // 擬似ライティング（ハーフランバート＋アンビエント床）
                 float3 L = normalize(_LightDir.xyz);
                 float ndl = dot(N, L) * 0.5 + 0.5;
                 float shade = lerp(_Ambient, 1.0, ndl);
 
-                // 接地感：体だけ足元(uv.y=0)を暗く
                 float ground = isBody ? lerp(1.0 - _GroundShade, 1.0, saturate(uv.y)) : 1.0;
                 float3 lit = baseCol * shade * ground;
 
-                // リム：シルエット端（N.z→0）。その席のペンライト色で染める。
                 float rim = pow(saturate(1.0 - N.z), _RimPower) * _RimStrength;
                 float3 rimCol = lerp(_RimColor.rgb, SeatPenlightColor(IN.seat).rgb, _PenlightRimTint);
 

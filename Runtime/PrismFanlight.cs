@@ -1,6 +1,6 @@
 using PrismFanlight.Rendering;
+using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace PrismFanlight
 {
@@ -38,7 +38,6 @@ namespace PrismFanlight
         private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.EveryFrame();
 
         [SerializeField]
-        [FormerlySerializedAs("_audience")]
         private SeatLayout _seatLayout = SeatLayout.Default();
 
         [SerializeField]
@@ -54,7 +53,6 @@ namespace PrismFanlight
         private FanlightColorSettings _color = FanlightColorSettings.Default();
 
         [SerializeField]
-        [FormerlySerializedAs("_body")]
         private FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
 
         [SerializeField]
@@ -169,7 +167,7 @@ namespace PrismFanlight
         private bool IsSelectedInEditor()
         {
 #if UNITY_EDITOR
-            return UnityEditor.Selection.Contains(gameObject);
+            return Selection.Contains(gameObject);
 #else
             return false;
 #endif

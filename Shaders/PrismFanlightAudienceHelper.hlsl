@@ -1,15 +1,14 @@
-#ifndef PRISM_FANLIGHT_BODY_SHADER_GRAPH_HELPER_INCLUDED
-#define PRISM_FANLIGHT_BODY_SHADER_GRAPH_HELPER_INCLUDED
+#ifndef PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
+#define PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
 
 struct PrismFanlightAudiencePart
 {
-    float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅(World)
-    float4 p1Type;      // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
+    float4 p0HalfWidth;
+    float4 p1Type;
 };
 
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<PrismFanlightAudiencePart> _AudienceParts;
-
 StructuredBuffer<float4> _FanlightColors;
 int _FanlightColorSource;
 float4 _FanlightGlobalColor;
@@ -31,11 +30,10 @@ void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positio
     float3 worldPos;
     if (partType >= 1.5)
     {
-        // 頭: スクリーン正対の全方位ビルボード。ビュー行列の行がワールドのカメラ右/上。
         float3 camRight = UNITY_MATRIX_V._m00_m01_m02;
         float3 camUp    = UNITY_MATRIX_V._m10_m11_m12;
         worldPos = p0 + (camRight * (uv.x - 0.5) + camUp * (uv.y - 0.5)) * (halfWidth * 2.0);
-        capT = 0.5; // 頭は端を丸める前提（カバレッジで円形にできる）
+        capT = 0.5;
     }
     else
     {

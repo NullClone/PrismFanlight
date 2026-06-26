@@ -1,3 +1,8 @@
+#ifndef PRISM_FANLIGHT_AUDIENCE_INCLUDED
+#define PRISM_FANLIGHT_AUDIENCE_INCLUDED
+
+#include "PrismFanlightMotion.hlsl"
+
 // Builds three billboard parts for each audience seat:
 //   part 0: body ribbon, feet -> neck
 //   part 1: arm ribbon, shoulder -> hand
@@ -7,10 +12,9 @@
 // from the same shoulder point, so the light reads as held by the audience.
 //
 //   _AudienceShape      = (bodyHeight, heightJitter, shoulderHeightRatio, bodyHalfWidth)
-//   _AudienceArm        = (armHalfWidth, shoulderOffset, headHalfSize, maxReach)
-//   _AudienceReach      = (leanFactor, leanMax, worldScale, _)
-//   _AudienceMotionBody = (bodyBounce, bodySway, bodyMotionSpeed, shoulderFollow)
-//   _AudienceShoulder   = (shoulderFollowMax, _, _, _)
+//   _AudienceArm        = (armHalfWidth, shoulderOffset, headHalfSize, armLengthLimit)
+//   _AudienceUpperBody  = (upperBodyLean, upperBodyLeanMax, worldScale, _)
+//   _AudienceMotionBody = (bodyBounce, bodySway, bodyMotionSpeed, upperBodyLeanMotion)
 
 FanlightAudiencePart PrismMakeAudiencePart(float3 p0, float3 p1, float halfWidth, float type)
 {
@@ -24,9 +28,9 @@ void PrismBuildAudienceParts(uint seatId)
 {
     FanlightSeatData seat = _Seats[seatId];
     PrismHumanPose human = PrismComputeHumanPose(seat);
-    PrismArm arm = PrismComputeArm(seat);
+    PrismArm arm = PrismComputeArm(seat, human);
 
-    float scale = _AudienceReach.z;
+    float scale = _AudienceUpperBody.z;
     float3 feetW = mul(_LocalToWorld, float4(human.feetLocal, 1.0)).xyz;
     float3 neckW = mul(_LocalToWorld, float4(human.neckLocal, 1.0)).xyz;
     float3 shoulderW = mul(_LocalToWorld, float4(human.shoulderLocal, 1.0)).xyz;
@@ -38,3 +42,5 @@ void PrismBuildAudienceParts(uint seatId)
     _AudienceParts[b + 1u] = PrismMakeAudiencePart(shoulderW, handW, human.armHalfWidth * scale, 1.0);
     _AudienceParts[b + 2u] = PrismMakeAudiencePart(headW, headW, human.headHalf * scale, 2.0);
 }
+
+#endif

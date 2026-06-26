@@ -4,9 +4,6 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
-    // Appearance and minimal crowd motion for one audience member.
-    // The body/head form the parent pose; the arm and penlight are generated
-    // from the shoulder so the light reads as held by the audience.
     [Serializable]
     public struct FanlightAudienceSettings
     {
@@ -34,13 +31,13 @@ namespace PrismFanlight
         public float armWidth;
 
         [Min(0.01f)]
-        public float maxReach;
+        public float armLengthLimit;
 
         [Range(0f, 1f)]
-        public float leanFactor;
+        public float upperBodyLean;
 
         [Min(0f)]
-        public float leanMax;
+        public float upperBodyLeanMax;
 
         public FanlightAudienceMotionSettings motion;
 
@@ -55,9 +52,9 @@ namespace PrismFanlight
             shoulderHeight = 0.82f,
             shoulderOffset = 0.16f,
             armWidth = 0.14f,
-            maxReach = 0.55f,
-            leanFactor = 0.5f,
-            leanMax = 0.4f,
+            armLengthLimit = 0.55f,
+            upperBodyLean = 0.5f,
+            upperBodyLeanMax = 0.4f,
             motion = FanlightAudienceMotionSettings.Default()
         };
 
@@ -72,9 +69,9 @@ namespace PrismFanlight
             shoulderHeight = math.saturate(shoulderHeight),
             shoulderOffset = math.clamp(shoulderOffset, -1f, 1f),
             armWidth = math.max(0.01f, armWidth),
-            maxReach = maxReach > 0f ? math.max(0.01f, maxReach) : 0.55f,
-            leanFactor = math.saturate(leanFactor),
-            leanMax = math.max(0f, leanMax),
+            armLengthLimit = armLengthLimit > 0f ? math.max(0.01f, armLengthLimit) : 0.55f,
+            upperBodyLean = math.saturate(upperBodyLean),
+            upperBodyLeanMax = math.max(0f, upperBodyLeanMax),
             motion = motion.Validated()
         };
     }
@@ -92,10 +89,7 @@ namespace PrismFanlight
         public float bodyMotionSpeed;
 
         [Range(0f, 1f)]
-        public float shoulderFollow;
-
-        [Min(0f)]
-        public float shoulderFollowMax;
+        public float upperBodyLeanMotion;
 
 
         public static FanlightAudienceMotionSettings Default() => new()
@@ -103,8 +97,7 @@ namespace PrismFanlight
             bodyBounce = 0.018f,
             bodySway = 0.025f,
             bodyMotionSpeed = 0.65f,
-            shoulderFollow = 0.2f,
-            shoulderFollowMax = 0.045f
+            upperBodyLeanMotion = 0.2f
         };
 
         public FanlightAudienceMotionSettings Validated()
@@ -112,8 +105,7 @@ namespace PrismFanlight
             var uninitialized = bodyBounce <= 0f
                                 && bodySway <= 0f
                                 && bodyMotionSpeed <= 0f
-                                && shoulderFollow <= 0f
-                                && shoulderFollowMax <= 0f;
+                                && upperBodyLeanMotion <= 0f;
             var source = uninitialized ? Default() : this;
 
             return new FanlightAudienceMotionSettings
@@ -121,8 +113,7 @@ namespace PrismFanlight
                 bodyBounce = math.max(0f, source.bodyBounce),
                 bodySway = math.max(0f, source.bodySway),
                 bodyMotionSpeed = math.max(0.01f, source.bodyMotionSpeed),
-                shoulderFollow = math.saturate(source.shoulderFollow),
-                shoulderFollowMax = math.max(0f, source.shoulderFollowMax)
+                upperBodyLeanMotion = math.saturate(source.upperBodyLeanMotion)
             };
         }
     }

@@ -1,3 +1,6 @@
+#ifndef PRISM_FANLIGHT_TYPES_INCLUDED
+#define PRISM_FANLIGHT_TYPES_INCLUDED
+
 struct FanlightSeatData
 {
     float4 localPositionSeed;
@@ -12,6 +15,27 @@ struct FanlightBlockData
 
 struct FanlightAudiencePart
 {
-    float4 p0HalfWidth; // xyz: 始点/中心(World), w: 半幅(World)
-    float4 p1Type;      // xyz: 終点(World), w: 種別 (0:体, 1:腕, 2:頭)
+    float4 p0HalfWidth;
+    float4 p1Type;
 };
+
+struct PrismArm
+{
+    float4x4 worldMatrix;
+    float3 handLocal;
+    float3 shoulderLocal;
+};
+
+struct PrismHumanPose
+{
+    float3 anchorLocal;
+    float3 feetLocal;
+    float3 shoulderLocal;
+    float3 neckLocal;
+    float3 headCenterLocal;
+    float bodyHalfWidth;
+    float armHalfWidth;
+    float headHalf;
+};
+
+#endif

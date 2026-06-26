@@ -1,3 +1,8 @@
+#ifndef PRISM_FANLIGHT_MOTION_INCLUDED
+#define PRISM_FANLIGHT_MOTION_INCLUDED
+
+#include "PrismFanlightPose.hlsl"
+
 float PrismComputeRestFactor(float seed)
 {
     if (Hash11(seed + 67.0) >= _MotionRest.x)
@@ -26,129 +31,14 @@ float PrismComputeRestFactor(float seed)
     float restWeight = fade > 0.0001
         ? saturate(cycleTime / fade) * saturate((restDuration - cycleTime) / fade)
         : 1.0;
-        
+
     return lerp(1.0, _MotionRest.y, restWeight);
 }
 
-float3 PrismWorldVectorToLocal(float3 vectorWS)
-{
-    return mul((float3x3)_WorldToLocal, vectorWS);
-}
-
-float3 PrismComputeWorldDirection(FanlightSeatData seat)
-{
-    float3 worldDirection = SafeNormalize(_SwingAxis.xyz, float3(0.0, 0.0, 1.0));
-    float aimStrength = saturate(_SwingTargetPos.w);
-
-    if (_SwingMode == 1 && aimStrength > 0.001)
-    {
-        float3 seatWorldPos = mul(_LocalToWorld, float4(seat.localPositionSeed.xyz, 1.0)).xyz;
-        float3 targetDirection = _SwingTargetPos.xyz - seatWorldPos;
-        targetDirection.y = 0.0;
-        targetDirection = SafeNormalize(targetDirection, worldDirection);
-        worldDirection = SafeNormalize(lerp(worldDirection, targetDirection, aimStrength), worldDirection);
-    }
-
-    return worldDirection;
-}
-
-float3 PrismComputeBaseAxis(FanlightSeatData seat, bool horizontal)
-{
-    float3 worldDirection = PrismComputeWorldDirection(seat);
-    float3 worldAxis = horizontal
-        ? worldDirection
-        : SafeNormalize(cross(float3(0.0, 1.0, 0.0), worldDirection), float3(1.0, 0.0, 0.0));
-        
-    return SafeNormalize(PrismWorldVectorToLocal(worldAxis), float3(1.0, 0.0, 0.0));
-}
-
-struct PrismArm
-{
-    float4x4 worldMatrix;
-    float3 handLocal;
-    float3 shoulderLocal;
-};
-
-struct PrismHumanPose
-{
-    float3 feetLocal;
-    float3 shoulderLocal;
-    float3 neckLocal;
-    float3 headCenterLocal;
-    float bodyHalfWidth;
-    float armHalfWidth;
-    float headHalf;
-};
-
-float3 PrismComputeSeatAnchor(FanlightSeatData seat)
-{
-    float3 localPosition = seat.localPositionSeed.xyz;
-    float seed = seat.localPositionSeed.w;
-
-    float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
-    localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
-    localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
-
-    return localPosition;
-}
-
-PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
+PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
 {
     float seed = seat.localPositionSeed.w;
-    float3 anchor = PrismComputeSeatAnchor(seat);
-
-    float heightJitter = (Hash11(seed + 211.0) * 2.0 - 1.0) * _AudienceShape.y;
-    float bodyHeight = max(0.1, _AudienceShape.x * (1.0 + heightJitter));
-    float shoulderHeight = bodyHeight * saturate(_AudienceShape.z);
-    float bodyHalfWidth = _AudienceShape.w;
-    float armHalfWidth = _AudienceArm.x;
-    float shoulderOffset = _AudienceArm.y;
-    float headHalf = _AudienceArm.z;
-
-    float phaseSeed = Hash11(seed + 227.0);
-    float phase = (_FanlightTime * max(0.01, _AudienceMotionBody.z) + phaseSeed) * 2.0 * PRISM_FANLIGHT_PI;
-    float sway = sin(phase);
-    float bounce = sway * 0.5 + 0.5;
-
-    float3 bodyOffset = float3(sway * _AudienceMotionBody.y, bounce * _AudienceMotionBody.x, 0.0);
-    float3 feet = float3(anchor.x, anchor.y, anchor.z) + bodyOffset;
-    float neckY = max(shoulderHeight, bodyHeight - headHalf * 2.0);
-    float shoulderLean = min(_AudienceShoulder.x, _AudienceReach.y) * saturate(_AudienceReach.x) * saturate(_AudienceMotionBody.w);
-    float3 leanAxis = PrismComputeBaseAxis(seat, false);
-    float3 upperBodyLean = leanAxis * sway * shoulderLean;
-
-    PrismHumanPose pose = (PrismHumanPose)0;
-    pose.feetLocal = feet;
-    pose.shoulderLocal = feet + float3(shoulderOffset, shoulderHeight, 0.0) + upperBodyLean;
-    pose.neckLocal = feet + float3(0.0, neckY, 0.0) + upperBodyLean * 0.35;
-    pose.headCenterLocal = feet + float3(0.0, neckY + headHalf, 0.0) + upperBodyLean * 0.35;
-    pose.bodyHalfWidth = bodyHalfWidth;
-    pose.armHalfWidth = armHalfWidth;
-    pose.headHalf = headHalf;
-    return pose;
-}
-
-float3 PrismComputeArmBase(FanlightSeatData seat)
-{
-    float3 baseLocal = PrismComputeSeatAnchor(seat);
-
-    if (_HandBaseHeight > 0.0001)
-    {
-        PrismHumanPose human = PrismComputeHumanPose(seat);
-        baseLocal = human.shoulderLocal;
-    }
-    else
-    {
-        baseLocal.y += _HandBaseHeight;
-    }
-
-    return baseLocal;
-}
-
-PrismArm PrismComputeArm(FanlightSeatData seat)
-{
-    float seed = seat.localPositionSeed.w;
-    float3 shoulderLocal = PrismComputeArmBase(seat);
+    float3 shoulderLocal = PrismGetArmBase(pose);
 
     int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
     float noisePersistence = max(0.001, _MotionNoise.w);
@@ -193,7 +83,7 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
     {
         wristAngle = sin(phase) * _MotionShape.y * 0.5 * angleAmplitude;
     }
-    
+
     float3 baseAxis = PrismComputeBaseAxis(seat, isHorizontal);
     float3 perpU = SafePerp(baseAxis);
     float3 perpV = cross(baseAxis, perpU);
@@ -214,7 +104,7 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
     float3 ap1 = SafePerp(axis);
     float3 ap2 = cross(axis, ap1);
     axis = SafeNormalize(axis + (ap1 * noiseU + ap2 * noiseV) * _MotionNoise.x, axis);
-    
+
     float armLength = lerp(_MotionSwing.x, _MotionSwing.y, Hash11(seed + 105.0));
     float armJitter = 1.0 + (Hash11(seed + 59.0) * 2.0 - 1.0) * _MotionVariation.z;
     armLength = max(0.0, armLength * armJitter);
@@ -227,7 +117,8 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
     armAngle *= motionScale;
     wristAngle = clamp(wristAngle * motionScale, -1.4, 1.4);
 
-    float armReach = armLength * max(0.0, enthusiasm);
+    float armLengthLimit = _AudienceArm.w;
+    float armReach = min(armLength * max(0.0, enthusiasm), armLengthLimit);
     float4x4 m1 = Translate(shoulderLocal);
     float4x4 mArm = AxisAngle(axis, armAngle);
     float4x4 m3 = Translate(float3(0.0, armReach, 0.0));
@@ -243,32 +134,8 @@ PrismArm PrismComputeArm(FanlightSeatData seat)
 
 float4x4 PrismComputeMatrix(FanlightSeatData seat)
 {
-    return PrismComputeArm(seat).worldMatrix;
+    PrismHumanPose pose = PrismComputeHumanPose(seat);
+    return PrismComputeArm(seat, pose).worldMatrix;
 }
 
-float4 PrismComputeColor(FanlightSeatData seat)
-{
-    float seed = seat.localPositionSeed.w;
-    float2 block = seat.planePositionBlock.zw;
-
-    float3 rgb = _PrimaryColor.rgb;
-
-    if (_ColorMode == 0)
-    {
-    }
-    else if (_ColorMode == 1)
-    {
-        int count = clamp(_PaletteColorCount, 1, 16);
-        int paletteIndex = min((int)floor(Hash11(seed + 107.0) * count), count - 1);
-        rgb = _PaletteColors[paletteIndex].rgb;
-    }
-    else if (_ColorMode == 2)
-    {
-        float denom = max(_BlockCount.x - 1.0, 1.0);
-        rgb = lerp(_PrimaryColor.rgb, _SecondaryColor.rgb, block.x / denom);
-    }
-
-    float randomIntensityFactor = max(0.0, 1.0 + (Hash11(seed + 101.0) * 2.0 - 1.0) * _Brightness.y);
-    
-    return float4(rgb * randomIntensityFactor, _PrimaryColor.a);
-}
+#endif

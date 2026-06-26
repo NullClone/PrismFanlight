@@ -1,3 +1,6 @@
+#ifndef PRISM_FANLIGHT_MATH_INCLUDED
+#define PRISM_FANLIGHT_MATH_INCLUDED
+
 static const float PRISM_FANLIGHT_PI = 3.14159265359;
 
 float Hash11(float n)
@@ -81,3 +84,5 @@ float4x4 AxisAngle(float3 axis, float angle)
         oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0,
         0, 0, 0, 1);
 }
+
+#endif
