@@ -39,31 +39,14 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
 {
     float seed = seat.localPositionSeed.w;
     float3 shoulderLocal = PrismGetArmBase(pose);
+    PrismCrowdRhythm rhythm = PrismComputeCrowdRhythm(seat);
 
     int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
     float noisePersistence = max(0.001, _MotionNoise.w);
 
-    float reactionDelay = Hash11(seed + 17.0) * _MotionHuman.z;
-    float tempoDrift = (Hash11(seed + 19.0) * 2.0 - 1.0) * _MotionHuman.w;
-    float phaseTime = max(0.0, _FanlightTime - reactionDelay);
-    float legacyPhase = 2.0 * PRISM_FANLIGHT_PI * max(0.0, _MotionTiming.x + tempoDrift) * phaseTime;
-    float beatSync = saturate(_MotionBeat.x) * saturate(_FanlightTempo.x);
-    float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
-    float randomBeatReaction = Hash11(seed + 73.0) * _MotionBeatSpread.x;
-    float seatBeatJitter = (Hash11(seed + 79.0) * 2.0 - 1.0) * _MotionBeatSpread.y;
-    float2 block01 = float2(
-        _BlockCount.x > 1.0 ? seat.planePositionBlock.z / max(1.0, _BlockCount.x - 1.0) : 0.5,
-        _BlockCount.y > 1.0 ? seat.planePositionBlock.w / max(1.0, _BlockCount.y - 1.0) : 0.5);
-    float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.zw);
-    float delayedBeat = max(0.0, _FanlightBeat.y - beatReaction - randomBeatReaction - seatBeatJitter - blockBeatDelay);
-    float beatPhase = 2.0 * PRISM_FANLIGHT_PI * ((delayedBeat / max(0.001, _MotionBeat.y)) + _MotionBeat.z);
-    float phase = lerp(legacyPhase, beatPhase, beatSync);
-    phase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
-    phase += FbmNoise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
-
     bool isHorizontal = Hash11(seed + 131.0) < saturate(_SwingWrist.x);
 
-    float angle = cos(phase);
+    float angle = cos(rhythm.armPhase);
     float snappedAngle = smoothstep(-1.0, 1.0, angle) * 2.0 - 1.0;
     angle = lerp(angle, snappedAngle, _MotionShape.w * Hash11(seed + 43.0));
     float heldAngle = sign(angle) * pow(abs(angle), lerp(1.0, 0.25, _MotionShape.x));
@@ -77,11 +60,11 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
     float wristAngle;
     if (isHorizontal)
     {
-        wristAngle = cos(phase * max(1.0, _SwingWrist.y)) * _SwingWrist.z;
+        wristAngle = cos(rhythm.wristPhase * max(1.0, _SwingWrist.y)) * _SwingWrist.z;
     }
     else
     {
-        wristAngle = sin(phase) * _MotionShape.y * 0.5 * angleAmplitude;
+        wristAngle = sin(rhythm.wristPhase) * _MotionShape.y * 0.5 * angleAmplitude;
     }
 
     float3 baseAxis = PrismComputeBaseAxis(seat, isHorizontal);
@@ -112,8 +95,7 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
     float enthusiasm = _MotionHuman.x * lerp(1.0, lerp(0.65, 1.35, Hash11(seed + 61.0)), _MotionHuman.y);
     float restFactor = PrismComputeRestFactor(seed);
     float smallMotionFactor = Hash11(seed + 71.0) < _MotionRest.z ? 0.35 : 1.0;
-    float downbeatPulse = pow(1.0 - saturate(_FanlightBeat.w), 8.0) * saturate(_FanlightTempo.x);
-    float motionScale = enthusiasm * restFactor * smallMotionFactor * (1.0 + downbeatPulse * _MotionBeat.w);
+    float motionScale = enthusiasm * restFactor * smallMotionFactor * (1.0 + rhythm.downbeatPulse * _MotionBeat.w);
     armAngle *= motionScale;
     wristAngle = clamp(wristAngle * motionScale, -1.4, 1.4);
 
