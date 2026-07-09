@@ -1,8 +1,10 @@
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace PrismFanlight.Rendering
 {
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct FanlightSeatData
     {
@@ -18,6 +20,7 @@ namespace PrismFanlight.Rendering
         }
     }
 
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct FanlightBlockData
     {

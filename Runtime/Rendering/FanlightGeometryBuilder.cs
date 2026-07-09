@@ -40,15 +40,20 @@ namespace PrismFanlight.Rendering
             return _audienceQuad;
         }
 
-        public static FanlightSeatData[] BuildSeatData(SeatLayout audience)
+        public static FanlightSeatData[] BuildSeatData(SeatLayout audience, bool useBakedData = true)
         {
+            if (useBakedData && audience.TryGetBakedSeats(out var bakedSeats))
+            {
+                return bakedSeats;
+            }
+
             var data = new FanlightSeatData[audience.TotalSeatCount];
 
             for (var i = 0; i < data.Length; i++)
             {
                 var (block, seat) = audience.GetCoordinatesFromIndex(i);
                 var planePosition = audience.GetPositionOnPlane(block, seat);
-                var localPosition = new Vector3(planePosition.x, 0.0f, planePosition.y);
+                var localPosition = audience.GetSeatLocalPosition(block, seat);
 
                 data[i] = new FanlightSeatData(
                     localPosition,
@@ -60,27 +65,22 @@ namespace PrismFanlight.Rendering
             return data;
         }
 
-        public static FanlightBlockData[] BuildBlockData(SeatLayout audience, Mesh mesh)
+        public static FanlightBakedBlockData[] BuildBakedBlockData(SeatLayout audience)
         {
-            var data = new FanlightBlockData[audience.blockCount.x * audience.blockCount.y];
+            var data = new FanlightBakedBlockData[audience.TotalBlockCount];
             var blockSeatCount = audience.BlockSeatCount;
-            var meshPadding = mesh.bounds.size.magnitude + 4.0f;
 
             for (var by = 0; by < audience.blockCount.y; by++)
             {
                 for (var bx = 0; bx < audience.blockCount.x; bx++)
                 {
                     var block = math.int2(bx, by);
-                    var min = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
-                    var max = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
-                    var center2 = (min + max) * 0.5f;
-                    var size2 = math.max(max - min, math.float2(0.01f, 0.01f));
-                    var radius = math.length(math.float3(size2.x, 8.0f, size2.y) * 0.5f) + meshPadding;
-                    var blockIndex = by * audience.blockCount.x + bx;
+                    var bounds = BuildBlockAuthoringBounds(audience, block);
+                    var blockIndex = audience.GetBlockIndex(block);
 
-                    data[blockIndex] = new FanlightBlockData(
-                        new Vector3(center2.x, 0.0f, center2.y),
-                        radius,
+                    data[blockIndex] = new FanlightBakedBlockData(
+                        bounds.center,
+                        bounds.extents.magnitude,
                         blockIndex * blockSeatCount,
                         blockSeatCount);
                 }
@@ -89,26 +89,81 @@ namespace PrismFanlight.Rendering
             return data;
         }
 
-        public static Bounds BuildBounds(SeatLayout audience, Mesh mesh)
+        public static FanlightBlockData[] BuildBlockData(SeatLayout audience, Mesh mesh, bool useBakedData = true)
         {
-            var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
-            var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
+            var bakedBlocks = useBakedData && audience.TryGetBakedBlocks(out var blocks)
+                ? blocks
+                : BuildBakedBlockData(audience);
+            var data = new FanlightBlockData[bakedBlocks.Length];
+            var meshPadding = mesh.bounds.size.magnitude + 4.0f;
 
-            for (var bx = 0; bx < audience.blockCount.x; bx++)
+            for (var i = 0; i < bakedBlocks.Length; i++)
             {
-                for (var by = 0; by < audience.blockCount.y; by++)
+                var block = bakedBlocks[i];
+                data[i] = new FanlightBlockData(
+                    block.localCenter,
+                    block.radius + meshPadding,
+                    block.startIndex,
+                    block.count);
+            }
+
+            return data;
+        }
+
+        public static Bounds BuildBounds(SeatLayout audience, Mesh mesh, bool useBakedData = true)
+        {
+            var bounds = useBakedData && audience.TryGetBakedBounds(out var bakedBounds)
+                ? bakedBounds
+                : BuildAuthoringBounds(audience);
+
+            bounds.Expand(mesh.bounds.size.magnitude + 4.0f);
+            return bounds;
+        }
+
+        public static Bounds BuildAuthoringBounds(SeatLayout audience)
+        {
+            var hasBounds = false;
+            var bounds = default(Bounds);
+
+            for (var by = 0; by < audience.blockCount.y; by++)
+            {
+                for (var bx = 0; bx < audience.blockCount.x; bx++)
                 {
-                    var block = math.int2(bx, by);
-                    min = math.min(min, audience.GetPositionOnPlane(block, math.int2(0, 0)));
-                    max = math.max(max, audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)));
+                    var blockBounds = BuildBlockAuthoringBounds(audience, math.int2(bx, by));
+
+                    if (!hasBounds)
+                    {
+                        bounds = blockBounds;
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(blockBounds.min);
+                        bounds.Encapsulate(blockBounds.max);
+                    }
                 }
             }
 
-            var center = new Vector3((min.x + max.x) * 0.5f, 0.0f, (min.y + max.y) * 0.5f);
-            var size = new Vector3(math.max(max.x - min.x, 1.0f), 8.0f, math.max(max.y - min.y, 1.0f));
-            var meshPadding = mesh.bounds.size.magnitude + 4.0f;
-            size += Vector3.one * meshPadding;
-            return new Bounds(center, size);
+            return hasBounds ? bounds : new Bounds(Vector3.zero, Vector3.one);
+        }
+
+        public static Bounds BuildBlockAuthoringBounds(SeatLayout audience, int2 block)
+        {
+            var min2 = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
+            var max2 = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
+            var min = new Vector3(min2.x, -4f, min2.y);
+            var max = new Vector3(max2.x, 4f, max2.y);
+            var first = audience.TransformBlockPoint(block, new Vector3(min.x, min.y, min.z));
+            var bounds = new Bounds(first, Vector3.zero);
+
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, min.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, max.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, max.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, min.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, min.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, max.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, max.y, max.z)));
+            return bounds;
         }
 
         public static Bounds TransformBounds(Matrix4x4 matrix, Bounds bounds)

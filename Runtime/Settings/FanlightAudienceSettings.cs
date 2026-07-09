@@ -33,6 +33,8 @@ namespace PrismFanlight
         [Min(0.01f)]
         public float armLengthLimit;
 
+        public FanlightHandZoneSettings handZone;
+
         [Range(0f, 1f)]
         public float upperBodyLean;
 
@@ -53,6 +55,7 @@ namespace PrismFanlight
             shoulderOffset = 0.16f,
             armWidth = 0.14f,
             armLengthLimit = 0.55f,
+            handZone = FanlightHandZoneSettings.Default(),
             upperBodyLean = 0.5f,
             upperBodyLeanMax = 0.4f,
             motion = FanlightAudienceMotionSettings.Default()
@@ -70,6 +73,7 @@ namespace PrismFanlight
             shoulderOffset = math.clamp(shoulderOffset, -1f, 1f),
             armWidth = math.max(0.01f, armWidth),
             armLengthLimit = armLengthLimit > 0f ? math.max(0.01f, armLengthLimit) : 0.55f,
+            handZone = handZone.Validated(),
             upperBodyLean = math.saturate(upperBodyLean),
             upperBodyLeanMax = math.max(0f, upperBodyLeanMax),
             motion = motion.Validated()

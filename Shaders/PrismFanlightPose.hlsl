@@ -82,9 +82,24 @@ PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
     return pose;
 }
 
-float3 PrismGetArmBase(PrismHumanPose pose)
+float3 PrismComputeHandZoneBase(FanlightSeatData seat, PrismHumanPose pose)
 {
-    return _HandBaseHeight > 0.0001 ? pose.shoulderLocal : pose.anchorLocal + float3(0.0, _HandBaseHeight, 0.0);
+    float seed = seat.localPositionSeed.w;
+    float variation = max(0.0, _HandZone.w);
+
+    float3 forwardLocal = PrismWorldVectorToLocal(PrismComputeWorldDirection(seat));
+    forwardLocal.y = 0.0;
+    forwardLocal = SafeNormalize(forwardLocal, float3(0.0, 0.0, -1.0));
+
+    float3 sideLocal = SafeNormalize(cross(float3(0.0, 1.0, 0.0), forwardLocal), float3(1.0, 0.0, 0.0));
+    float heightOffset = _HandZone.x + (Hash11(seed + 151.0) * 2.0 - 1.0) * variation;
+    float forwardOffset = _HandZone.y + (Hash11(seed + 157.0) * 2.0 - 1.0) * variation;
+    float sideOffset = (Hash11(seed + 163.0) * 2.0 - 1.0) * variation * 0.5;
+
+    return pose.shoulderLocal
+        + float3(0.0, heightOffset, 0.0)
+        + forwardLocal * forwardOffset
+        + sideLocal * sideOffset;
 }
 
 #endif

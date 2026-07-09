@@ -176,6 +176,8 @@ namespace PrismFanlight
 
         public SeatLayout GetSeatLayout() => (_seatLayout ?? SeatLayout.Default()).Validated();
 
+        public bool IsSeatLayoutBakeCurrent => GetSeatLayout().HasValidBake;
+
         public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
@@ -208,8 +210,40 @@ namespace PrismFanlight
 
         public void SetSeatLayout(SeatLayout layout)
         {
+            if (Application.isPlaying)
+            {
+                Debug.LogWarning("Seat layout changes are editor-only. Bake the layout before entering Play mode.");
+                return;
+            }
+
             _seatLayout = (layout ?? SeatLayout.Default()).Validated();
+            ReleaseGpuResources();
         }
+
+#if UNITY_EDITOR
+        public void BakeSeatLayoutForEditor()
+        {
+            if (Application.isPlaying) return;
+
+            var layout = GetSeatLayout();
+            layout.SetBakedGeometry(
+                FanlightGeometryBuilder.BuildSeatData(layout, false),
+                FanlightGeometryBuilder.BuildBakedBlockData(layout),
+                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
+
+            _seatLayout = layout;
+            ReleaseGpuResources();
+        }
+
+        public void ClearSeatLayoutBakeForEditor()
+        {
+            if (Application.isPlaying) return;
+
+            _seatLayout = GetSeatLayout();
+            _seatLayout.ClearBakedGeometry();
+            ReleaseGpuResources();
+        }
+#endif
 
         public void SetTempo(FanlightTempoSettings tempo)
         {

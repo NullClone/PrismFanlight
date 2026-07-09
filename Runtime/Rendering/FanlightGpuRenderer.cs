@@ -64,7 +64,6 @@ namespace PrismFanlight.Rendering
             }
 
             var audienceEnabled = audience.enabled && audienceMaterial != null;
-            var handBaseHeight = audienceEnabled ? audience.bodyHeight * audience.shoulderHeight : 0f;
 
             EnsureInitialized(mesh, computeShader, validatedLayout, audienceEnabled);
 
@@ -78,7 +77,6 @@ namespace PrismFanlight.Rendering
                 motion,
                 color,
                 audience,
-                handBaseHeight,
                 swingTargetWorldPos,
                 localToWorld,
                 time,

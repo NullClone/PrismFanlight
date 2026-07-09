@@ -49,8 +49,8 @@ int _PaletteColorCount;
 float4 _PaletteColors[16];
 float4 _AudienceShape;
 float4 _AudienceArm;
+float4 _HandZone;
 float4 _AudienceUpperBody;
 float4 _AudienceMotionBody;
-float _HandBaseHeight;
 
 #endif

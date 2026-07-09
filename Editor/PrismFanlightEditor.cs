@@ -240,7 +240,124 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.LabelField("Seats", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
                 EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
+
+                EditorGUILayout.Space();
+                DrawBlockPlacementFields();
             });
+        }
+
+        private void DrawBlockPlacementFields()
+        {
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Block Placement");
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                PrismFanlightScenePreview.EditBlockTransforms = EditorGUILayout.Toggle(
+                    new GUIContent("Edit In Scene View", "Select a block in the Scene view, then move and rotate it with Unity handles."),
+                    PrismFanlightScenePreview.EditBlockTransforms);
+            }
+
+            var layout = _instance.GetSeatLayout();
+            var totalBlockCount = layout.TotalBlockCount;
+            EnsureBlockTransformProperties(_seatLayout, totalBlockCount);
+
+            var selected = PrismFanlightScenePreview.SelectedBlockIndex;
+            if (selected >= totalBlockCount)
+            {
+                PrismFanlightScenePreview.SelectedBlockIndex = -1;
+                selected = -1;
+            }
+
+            if (layout.NeedsBake)
+            {
+                EditorGUILayout.HelpBox("Layout placement has unbaked changes. Bake before entering Play mode for the fastest runtime path.", MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Layout placement is baked. Runtime will upload the baked seat and block data directly.", MessageType.None);
+            }
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Bake Layout"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        _instance.BakeSeatLayoutForEditor();
+                        EditorUtility.SetDirty(_instance);
+                        serializedObject.Update();
+                    }
+
+                    if (GUILayout.Button("Clear Bake"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        _instance.ClearSeatLayoutBakeForEditor();
+                        EditorUtility.SetDirty(_instance);
+                        serializedObject.Update();
+                    }
+                }
+            }
+
+            EditorGUILayout.Space();
+
+            if (selected < 0)
+            {
+                EditorGUILayout.LabelField("Selected Block", "None");
+                return;
+            }
+
+            var block = layout.GetBlockCoordinates(selected);
+            EditorGUILayout.LabelField("Selected Block", $"{block.x}, {block.y}");
+
+            var transformsProperty = EnsureBlockTransformProperties(_seatLayout, totalBlockCount);
+            var transformProperty = transformsProperty.GetArrayElementAtIndex(selected);
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                EditorGUILayout.PropertyField(transformProperty.FindPropertyRelative("position"), new GUIContent("Position"));
+                EditorGUILayout.PropertyField(transformProperty.FindPropertyRelative("eulerRotation"), new GUIContent("Rotation"));
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Reset Selected"))
+                    {
+                        ResetBlockTransform(transformProperty);
+                    }
+
+                    if (GUILayout.Button("Reset All"))
+                    {
+                        for (var i = 0; i < transformsProperty.arraySize; i++)
+                        {
+                            ResetBlockTransform(transformsProperty.GetArrayElementAtIndex(i));
+                        }
+                    }
+                }
+            }
+        }
+
+        private static SerializedProperty EnsureBlockTransformProperties(SerializedProperty seatLayout, int count)
+        {
+            var transformsProperty = seatLayout.FindPropertyRelative("blockTransforms");
+
+            if (transformsProperty.arraySize != count)
+            {
+                var oldSize = transformsProperty.arraySize;
+                transformsProperty.arraySize = count;
+
+                for (var i = oldSize; i < count; i++)
+                {
+                    ResetBlockTransform(transformsProperty.GetArrayElementAtIndex(i));
+                }
+            }
+
+            return transformsProperty;
+        }
+
+        private static void ResetBlockTransform(SerializedProperty transformProperty)
+        {
+            transformProperty.FindPropertyRelative("position").vector3Value = Vector3.zero;
+            transformProperty.FindPropertyRelative("eulerRotation").vector3Value = Vector3.zero;
         }
 
         private void DrawTempoSection()
@@ -528,6 +645,9 @@ namespace PrismFanlight.Editor
                     new GUIContent("Arm Length Limit", "Caps the generated arm length before the penlight is placed at the hand."));
 
                 EditorGUILayout.Space();
+                DrawHandZoneFields(_audienceSettings.FindPropertyRelative("handZone"));
+
+                EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Upper Body");
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("upperBodyLean"), new GUIContent("Body Lean"));
                 EditorGUILayout.PropertyField(_audienceSettings.FindPropertyRelative("upperBodyLeanMax"), new GUIContent("Lean Max"));
@@ -541,6 +661,34 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(motion.FindPropertyRelative("upperBodyLeanMotion"), new GUIContent("Lean Motion"));
             });
+        }
+
+        private static void DrawHandZoneFields(SerializedProperty handZone)
+        {
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Hand Zone");
+
+            var zoneProp = handZone.FindPropertyRelative("zone");
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(zoneProp, new GUIContent("Zone"));
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                ApplyHandZonePreset(handZone, (FanlightHandZone)zoneProp.enumValueIndex);
+            }
+
+            EditorGUILayout.PropertyField(handZone.FindPropertyRelative("heightOffset"), new GUIContent("Height Offset"));
+            EditorGUILayout.PropertyField(handZone.FindPropertyRelative("forwardOffset"), new GUIContent("Forward Offset"));
+            EditorGUILayout.PropertyField(handZone.FindPropertyRelative("reachScale"), new GUIContent("Reach Scale"));
+            EditorGUILayout.PropertyField(handZone.FindPropertyRelative("variation"), new GUIContent("Variation"));
+        }
+
+        private static void ApplyHandZonePreset(SerializedProperty handZone, FanlightHandZone zone)
+        {
+            var preset = FanlightHandZoneSettings.Preset(zone);
+            handZone.FindPropertyRelative("heightOffset").floatValue = preset.heightOffset;
+            handZone.FindPropertyRelative("forwardOffset").floatValue = preset.forwardOffset;
+            handZone.FindPropertyRelative("reachScale").floatValue = preset.reachScale;
+            handZone.FindPropertyRelative("variation").floatValue = preset.variation;
         }
 
         private void DrawDebugSection()

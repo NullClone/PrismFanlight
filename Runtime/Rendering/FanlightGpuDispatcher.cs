@@ -73,10 +73,12 @@ namespace PrismFanlight.Rendering
         {
             var audience = context.Audience;
             var motion = audience.motion;
+            var handZone = audience.handZone;
             var worldScale = FanlightGeometryBuilder.GetMaxScale(context.LocalToWorld);
 
             shader.SetVector(FanlightShaderIds.AudienceShape, new Vector4(audience.bodyHeight, audience.bodyHeightJitter, audience.shoulderHeight, audience.bodyWidth * 0.5f));
             shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(audience.armWidth * 0.5f, audience.shoulderOffset, audience.headSize * 0.5f, audience.armLengthLimit));
+            shader.SetVector(FanlightShaderIds.HandZone, new Vector4(handZone.heightOffset, handZone.forwardOffset, handZone.reachScale, handZone.variation));
             shader.SetVector(FanlightShaderIds.AudienceUpperBody, new Vector4(audience.upperBodyLean, audience.upperBodyLeanMax, worldScale, 0f));
             shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(motion.bodyBounce, motion.bodySway, motion.bodyMotionSpeed, motion.upperBodyLeanMotion));
         }
@@ -131,7 +133,6 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(0f, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
             shader.SetFloat(FanlightShaderIds.GripPivotY, buffers.MeshPivotY);
-            shader.SetFloat(FanlightShaderIds.HandBaseHeight, context.HandBaseHeight);
         }
 
         private void SetColorParams(ComputeShader shader, FanlightColorSettings color)

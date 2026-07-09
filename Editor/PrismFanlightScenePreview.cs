@@ -7,7 +7,12 @@ namespace PrismFanlight.Editor
     internal sealed class PrismFanlightScenePreview
     {
         private static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
+        private static readonly Color SelectedBlockColor = new(1.0f, 0.82f, 0.2f, 0.95f);
         private static readonly Color CulledBlockColor = new(1.0f, 0.25f, 0.15f, 0.45f);
+
+        public static bool EditBlockTransforms { get; set; } = true;
+
+        public static int SelectedBlockIndex { get; set; } = -1;
 
 
         // Methods
@@ -24,6 +29,7 @@ namespace PrismFanlight.Editor
             var culling = BlockCullingPreview.Create(fanlight, targetTransform);
 
             DrawBlocks(targetTransform, audience, culling);
+            DrawBlockTransformEditor(fanlight, targetTransform, audience);
         }
 
 
@@ -34,24 +40,124 @@ namespace PrismFanlight.Editor
                 for (var by = 0; by < audience.blockCount.y; by++)
                 {
                     var block = math.int2(bx, by);
+                    var blockIndex = audience.GetBlockIndex(block);
                     var isCulled = culling.IsCulled(audience, block);
+                    var isSelected = blockIndex == SelectedBlockIndex;
 
-                    Handles.color = isCulled ? CulledBlockColor : BlockColor;
+                    Handles.color = isSelected ? SelectedBlockColor : isCulled ? CulledBlockColor : BlockColor;
 
-                    var min = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
-                    var max = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
+                    var corners = GetBlockPlaneCorners(audience, block);
+                    var p0 = transform.TransformPoint(corners[0]);
+                    var p1 = transform.TransformPoint(corners[1]);
+                    var p2 = transform.TransformPoint(corners[2]);
+                    var p3 = transform.TransformPoint(corners[3]);
 
-                    var p0 = ToWorld(transform, math.float2(min.x, min.y));
-                    var p1 = ToWorld(transform, math.float2(max.x, min.y));
-                    var p2 = ToWorld(transform, math.float2(max.x, max.y));
-                    var p3 = ToWorld(transform, math.float2(min.x, max.y));
+                    Handles.DrawAAPolyLine(isSelected ? 4.0f : 2.0f, p0, p1, p2, p3, p0);
 
-                    Handles.DrawAAPolyLine(2.0f, p0, p1, p2, p3, p0);
+                    var center = transform.TransformPoint(audience.GetBlockCenterLocal(block));
+                    var handleSize = HandleUtility.GetHandleSize(center) * 0.08f;
+
+                    if (isSelected)
+                    {
+                        DrawSeatDots(transform, audience, block);
+                    }
+
+                    if (!Application.isPlaying && EditBlockTransforms
+                        && Handles.Button(center, transform.rotation, handleSize, handleSize, Handles.SphereHandleCap))
+                    {
+                        SelectedBlockIndex = blockIndex;
+                    }
+
+                    Handles.Label(center, $"Block {bx}, {by}");
                 }
             }
         }
 
-        private static Vector3 ToWorld(Transform transform, float2 planePosition) => transform.TransformPoint(new Vector3(planePosition.x, 0.0f, planePosition.y));
+        private static void DrawBlockTransformEditor(PrismFanlight fanlight, Transform transform, SeatLayout audience)
+        {
+            if (Application.isPlaying || !EditBlockTransforms) return;
+
+            if (SelectedBlockIndex < 0 || SelectedBlockIndex >= audience.TotalBlockCount) return;
+
+            var block = audience.GetBlockCoordinates(SelectedBlockIndex);
+            var placement = audience.GetBlockTransform(block);
+            var baseCenter = audience.GetBlockBaseCenterLocal(block);
+            var localCenter = baseCenter + placement.position;
+            var worldCenter = transform.TransformPoint(localCenter);
+            var worldRotation = transform.rotation * placement.Rotation;
+
+            EditorGUI.BeginChangeCheck();
+            var newWorldCenter = Handles.PositionHandle(worldCenter, worldRotation);
+            var newWorldRotation = Handles.RotationHandle(worldRotation, newWorldCenter);
+
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            Undo.RecordObject(fanlight, "Edit Fanlight Block Transform");
+
+            var serialized = new SerializedObject(fanlight);
+            serialized.Update();
+            var layoutProperty = serialized.FindProperty("_seatLayout");
+            var transformsProperty = EnsureBlockTransforms(layoutProperty, audience.TotalBlockCount);
+            var transformProperty = transformsProperty.GetArrayElementAtIndex(SelectedBlockIndex);
+
+            transformProperty.FindPropertyRelative("position").vector3Value = transform.InverseTransformPoint(newWorldCenter) - baseCenter;
+            transformProperty.FindPropertyRelative("eulerRotation").vector3Value = (Quaternion.Inverse(transform.rotation) * newWorldRotation).eulerAngles;
+
+            serialized.ApplyModifiedProperties();
+            EditorUtility.SetDirty(fanlight);
+        }
+
+        private static void DrawSeatDots(Transform transform, SeatLayout audience, int2 block)
+        {
+            var color = SelectedBlockColor;
+            color.a = 0.7f;
+            Handles.color = color;
+
+            for (var y = 0; y < audience.seatPerBlock.y; y++)
+            {
+                for (var x = 0; x < audience.seatPerBlock.x; x++)
+                {
+                    var seat = math.int2(x, y);
+                    var world = transform.TransformPoint(audience.GetSeatLocalPosition(block, seat));
+                    var size = HandleUtility.GetHandleSize(world) * 0.025f;
+                    Handles.DotHandleCap(0, world, Quaternion.identity, size, EventType.Repaint);
+                }
+            }
+        }
+
+        private static SerializedProperty EnsureBlockTransforms(SerializedProperty layoutProperty, int count)
+        {
+            var transformsProperty = layoutProperty.FindPropertyRelative("blockTransforms");
+
+            if (transformsProperty.arraySize != count)
+            {
+                var oldSize = transformsProperty.arraySize;
+                transformsProperty.arraySize = count;
+
+                for (var i = oldSize; i < count; i++)
+                {
+                    var element = transformsProperty.GetArrayElementAtIndex(i);
+                    element.FindPropertyRelative("position").vector3Value = Vector3.zero;
+                    element.FindPropertyRelative("eulerRotation").vector3Value = Vector3.zero;
+                }
+            }
+
+            return transformsProperty;
+        }
+
+        private static Vector3[] GetBlockPlaneCorners(SeatLayout audience, int2 block)
+        {
+            var min = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
+            var max = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
+
+            return new[]
+            {
+                audience.TransformBlockPoint(block, new Vector3(min.x, 0f, min.y)),
+                audience.TransformBlockPoint(block, new Vector3(max.x, 0f, min.y)),
+                audience.TransformBlockPoint(block, new Vector3(max.x, 0f, max.y)),
+                audience.TransformBlockPoint(block, new Vector3(min.x, 0f, max.y))
+            };
+        }
     }
 
     internal readonly struct BlockCullingPreview
@@ -101,13 +207,22 @@ namespace PrismFanlight.Editor
 
         private static (Vector3 center, float radius) GetBlockSphere(SeatLayout audience, int2 block)
         {
-            var min = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
-            var max = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
-            var center2 = (min + max) * 0.5f;
-            var size2 = math.max(max - min, math.float2(0.01f, 0.01f));
-            var radius = math.length(math.float3(size2.x, 8.0f, size2.y) * 0.5f) + 4.0f;
+            var min2 = audience.GetPositionOnPlane(block, math.int2(0, 0)) - audience.seatPitch * 0.5f;
+            var max2 = audience.GetPositionOnPlane(block, audience.seatPerBlock - math.int2(1, 1)) + audience.seatPitch * 0.5f;
+            var min = new Vector3(min2.x, -4f, min2.y);
+            var max = new Vector3(max2.x, 4f, max2.y);
+            var first = audience.TransformBlockPoint(block, new Vector3(min.x, min.y, min.z));
+            var bounds = new Bounds(first, Vector3.zero);
 
-            return (new Vector3(center2.x, 0.0f, center2.y), radius);
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, min.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, max.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, max.y, min.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, min.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, min.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(min.x, max.y, max.z)));
+            bounds.Encapsulate(audience.TransformBlockPoint(block, new Vector3(max.x, max.y, max.z)));
+
+            return (bounds.center, bounds.extents.magnitude + 4.0f);
         }
 
         private static float GetMaxScale(Matrix4x4 matrix)
