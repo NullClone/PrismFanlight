@@ -23,10 +23,6 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
     float noisePersistence = max(0.001, _MotionNoise.w);
 
     float reactionDelay = Hash11(seed + 17.0) * _MotionHuman.z;
-    float tempoDrift = (Hash11(seed + 19.0) * 2.0 - 1.0) * _MotionHuman.w;
-    float phaseTime = max(0.0, _FanlightTime - reactionDelay);
-    float legacyPhase = 2.0 * PRISM_FANLIGHT_PI * max(0.0, _MotionTiming.x + tempoDrift) * phaseTime;
-    float beatSync = saturate(_MotionBeat.x) * saturate(_FanlightTempo.x);
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
     float randomBeatReaction = Hash11(seed + 73.0) * _MotionBeatSpread.x;
     float seatBeatJitter = (Hash11(seed + 79.0) * 2.0 - 1.0) * _MotionBeatSpread.y;
@@ -36,20 +32,15 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
     float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.zw);
     float delayedBeat = max(0.0, _FanlightBeat.y - beatReaction - randomBeatReaction - seatBeatJitter - blockBeatDelay);
     float beatPhase = 2.0 * PRISM_FANLIGHT_PI * ((delayedBeat / max(0.001, _MotionBeat.y)) + _MotionBeat.z);
-    float basePhase = lerp(legacyPhase, beatPhase, beatSync);
-    basePhase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
-    basePhase += FbmNoise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
-
-    float bodyLegacyPhase = (_FanlightTime * max(0.01, _AudienceMotionBody.z) + Hash11(seed + 227.0)) * 2.0 * PRISM_FANLIGHT_PI;
-    float bodyBasePhase = lerp(bodyLegacyPhase, basePhase, beatSync);
+    beatPhase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
+    beatPhase += FbmNoise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
 
     PrismCrowdRhythm rhythm = (PrismCrowdRhythm)0;
-    rhythm.basePhase = basePhase;
-    rhythm.bodyPhase = bodyBasePhase + 0.35;
-    rhythm.shoulderPhase = basePhase + 0.18;
-    rhythm.armPhase = basePhase;
-    rhythm.wristPhase = basePhase - 0.16;
-    rhythm.beatSync = beatSync;
+    rhythm.basePhase = beatPhase;
+    rhythm.bodyPhase = beatPhase + 0.35;
+    rhythm.shoulderPhase = beatPhase + 0.18;
+    rhythm.armPhase = beatPhase;
+    rhythm.wristPhase = beatPhase - 0.16;
     rhythm.downbeatPulse = pow(1.0 - saturate(_FanlightBeat.w), 8.0) * saturate(_FanlightTempo.x);
     return rhythm;
 }

@@ -4,8 +4,8 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightGpuDispatcher
     {
-        public const int InstanceThreadGroupSize = 128;
-        public const int BlockThreadGroupSize = 64;
+        private const int InstanceThreadGroupSize = 128;
+        private const int BlockThreadGroupSize = 64;
 
         private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.MaxPaletteColors];
         private readonly Plane[] _planes = new Plane[6];
@@ -103,7 +103,7 @@ namespace PrismFanlight.Rendering
             shader.SetMatrix(FanlightShaderIds.WorldToLocal, context.WorldToLocal);
             shader.SetFloat(FanlightShaderIds.Time, context.Time);
             shader.SetVector(FanlightShaderIds.Beat, new Vector4(tempo.SongTime, tempo.Beat, tempo.BeatPhase, tempo.BarPhase));
-            shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enabled ? 1f : 0f, tempo.Bpm, tempo.BeatsPerBar, 0f));
+            shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enable ? 1f : 0f, tempo.Bpm, tempo.BeatsPerBar, 0f));
 
             shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.seatPitch.x, layout.seatPitch.y, 0f, 0f));
             shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.blockCount.x, layout.blockCount.y, 0f, 0f));
@@ -116,7 +116,7 @@ namespace PrismFanlight.Rendering
             }
 
             var worldDirection = ComputeWorldDirection(motion);
-            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(motion.swing.swingSpeed, motion.swing.randomPhase, motion.noise.phaseIrregularity, motion.noise.phaseIrregularitySpeed));
+            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(0f, motion.swing.randomPhase, motion.noise.phaseIrregularity, motion.noise.phaseIrregularitySpeed));
             shader.SetVector(FanlightShaderIds.MotionSwing, new Vector4(motion.swing.armLengthMin, motion.swing.armLengthMax, motion.swing.minAngle, motion.swing.maxAngle));
             shader.SetVector(FanlightShaderIds.MotionShape, new Vector4(motion.swing.peakHold, motion.swing.followThrough, motion.swing.lean, motion.swing.crispness));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)motion.direction.swingMode);
@@ -128,7 +128,7 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(motion.human.enthusiasm, motion.human.enthusiasmVariation, motion.human.reactionDelay, motion.human.speedVariation));
             shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(motion.human.restProbability, motion.human.restMotionLevel, motion.human.lazyFanRatio, 0f));
             shader.SetVector(FanlightShaderIds.MotionRestTiming, new Vector4(motion.human.restCycleDuration, motion.human.restDuration, motion.human.restFadeDuration, motion.human.restPhaseRandomness));
-            shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(motion.beatSync.beatSyncBlend, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
+            shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(0f, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
             shader.SetFloat(FanlightShaderIds.GripPivotY, buffers.MeshPivotY);
             shader.SetFloat(FanlightShaderIds.HandBaseHeight, context.HandBaseHeight);
@@ -157,22 +157,29 @@ namespace PrismFanlight.Rendering
             else
             {
                 for (var i = 0; i < count; i++)
+                {
                     _paletteColors[i] = palette[i];
+                }
             }
 
             for (var i = count; i < _paletteColors.Length; i++)
+            {
                 _paletteColors[i] = Color.black;
+            }
 
             return count;
         }
 
         private void SetFrustumPlanes(ComputeShader shader, Camera cullingCamera, Bounds worldBounds)
         {
-            if (cullingCamera == null)
+            if (!cullingCamera)
+            {
                 SetAlwaysVisiblePlanes(worldBounds);
+            }
             else
             {
                 GeometryUtility.CalculateFrustumPlanes(cullingCamera, _planes);
+
                 for (var i = 0; i < _planes.Length; i++)
                 {
                     var plane = _planes[i];

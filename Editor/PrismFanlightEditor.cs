@@ -247,11 +247,6 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection("| Tempo", () =>
             {
-                var enabledProp = _tempo.FindPropertyRelative("enabled");
-                EditorGUILayout.PropertyField(enabledProp, new GUIContent("Enable"));
-
-                if (!enabledProp.boolValue) return;
-
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("bpm"), new GUIContent("BPM"));
                 EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("beatsPerBar"), new GUIContent("Beats Per Bar"));
@@ -280,7 +275,6 @@ namespace PrismFanlight.Editor
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Beat Sync");
 
                 var beatSync = _motion.FindPropertyRelative("beatSync");
-                EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatSyncBlend"), new GUIContent("Sync Blend"));
                 EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatsPerSwing"), new GUIContent("Beats Per Swing"));
                 EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("beatPhaseOffset"), new GUIContent("Phase Offset"));
                 EditorGUILayout.PropertyField(beatSync.FindPropertyRelative("downbeatAccent"), new GUIContent("Downbeat Accent"));
@@ -313,7 +307,6 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSubGroupLabel("Swing");
 
-            EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("swingSpeed"), new GUIContent("Swing Speed"));
             EditorGUILayout.PropertyField(swingProp.FindPropertyRelative("randomPhase"), new GUIContent("Phase Randomness"));
 
             EditorGUILayout.Space();

@@ -7,9 +7,6 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightSwingSettings
     {
-        [Min(0f)]
-        public float swingSpeed;
-
         [Range(0f, 1f)]
         public float randomPhase;
 
@@ -52,7 +49,6 @@ namespace PrismFanlight
 
         public FanlightSwingSettings Validated() => new()
         {
-            swingSpeed = math.max(swingSpeed, 0f),
             randomPhase = math.saturate(randomPhase),
             armLengthMin = math.max(math.min(armLengthMin, armLengthMax), 0f),
             armLengthMax = math.max(math.max(armLengthMin, armLengthMax), 0f),

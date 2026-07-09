@@ -6,7 +6,6 @@ namespace PrismFanlight.Editor
 {
     internal sealed class PrismFanlightScenePreview
     {
-        private static readonly Color SeatColor = new(1.0f, 0.65f, 0.0f, 0.75f);
         private static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
         private static readonly Color CulledBlockColor = new(1.0f, 0.25f, 0.15f, 0.45f);
 
@@ -18,14 +17,13 @@ namespace PrismFanlight.Editor
             if (fanlight == null) return;
 
             var audience = fanlight.GetSeatLayout();
+
             if (audience.TotalSeatCount <= 0 || audience.BlockSeatCount <= 0) return;
 
             var targetTransform = fanlight.transform;
-            var previewBlock = GetPreviewBlock(audience);
             var culling = BlockCullingPreview.Create(fanlight, targetTransform);
 
             DrawBlocks(targetTransform, audience, culling);
-            DrawSeatsInBlock(targetTransform, audience, previewBlock);
         }
 
 
@@ -51,29 +49,6 @@ namespace PrismFanlight.Editor
                     Handles.DrawAAPolyLine(2.0f, p0, p1, p2, p3, p0);
                 }
             }
-        }
-
-        private static void DrawSeatsInBlock(Transform transform, SeatLayout audience, int2 block)
-        {
-            Handles.color = SeatColor;
-
-            for (var y = 0; y < audience.seatPerBlock.y; y++)
-            {
-                for (var x = 0; x < audience.seatPerBlock.x; x++)
-                {
-                    var seat = math.int2(x, y);
-                    var pos = audience.GetPositionOnPlane(block, seat);
-                    var world = ToWorld(transform, pos);
-                    var size = HandleUtility.GetHandleSize(world) * 0.025f;
-
-                    Handles.DotHandleCap(0, world, Quaternion.identity, size, EventType.Repaint);
-                }
-            }
-        }
-
-        private static int2 GetPreviewBlock(SeatLayout audience)
-        {
-            return math.max((audience.blockCount - math.int2(1, 1)) / 2, math.int2(0, 0));
         }
 
         private static Vector3 ToWorld(Transform transform, float2 planePosition) => transform.TransformPoint(new Vector3(planePosition.x, 0.0f, planePosition.y));

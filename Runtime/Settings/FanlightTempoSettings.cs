@@ -16,8 +16,6 @@ namespace PrismFanlight
     {
         // Fields
 
-        public bool enabled;
-
         [Min(1.0f)]
         public float bpm;
 
@@ -40,7 +38,6 @@ namespace PrismFanlight
 
         public static FanlightTempoSettings Default() => new()
         {
-            enabled = false,
             bpm = 120.0f,
             beatsPerBar = 4,
             offsetSeconds = 0.0f,
@@ -52,7 +49,6 @@ namespace PrismFanlight
 
         public FanlightTempoSettings Validated() => new()
         {
-            enabled = enabled,
             bpm = math.max(1.0f, bpm),
             beatsPerBar = math.max(1, beatsPerBar),
             offsetSeconds = offsetSeconds,
@@ -65,27 +61,29 @@ namespace PrismFanlight
         public FanlightTempoState Evaluate(float unityTime)
         {
             var settings = Validated();
-            var clockReady = true;
+            var enable = true;
             var rawTime = settings.clockSource switch
             {
-                FanlightTempoClockSource.AudioSourceTime => GetAudioSourceTime(settings.audioSource, unityTime, out clockReady),
+                FanlightTempoClockSource.AudioSourceTime => GetAudioSourceTime(settings.audioSource, unityTime, out enable),
                 FanlightTempoClockSource.ManualTime => settings.manualTime,
                 _ => unityTime
             };
 
             var songTime = math.max(0.0f, rawTime - settings.offsetSeconds + settings.latencyCompensationSeconds);
-            return FanlightTempoState.FromSongTime(settings.enabled && clockReady, songTime, settings.bpm, settings.beatsPerBar, clockReady);
+
+            return FanlightTempoState.FromSongTime(enable, songTime, settings.bpm, settings.beatsPerBar);
         }
 
-        private static float GetAudioSourceTime(AudioSource source, float fallbackTime, out bool clockReady)
+        private static float GetAudioSourceTime(AudioSource source, float fallbackTime, out bool enable)
         {
             if (source == null || source.clip == null)
             {
-                clockReady = false;
+                enable = false;
                 return fallbackTime;
             }
 
-            clockReady = true;
+            enable = true;
+
             return source.clip.frequency > 0
                 ? (float)source.timeSamples / source.clip.frequency
                 : source.time;
@@ -94,9 +92,7 @@ namespace PrismFanlight
 
     public readonly struct FanlightTempoState
     {
-        public bool Enabled { get; }
-
-        public bool ClockReady { get; }
+        public bool Enable { get; }
 
         public float SongTime { get; }
 
@@ -111,10 +107,9 @@ namespace PrismFanlight
         public float BarPhase { get; }
 
 
-        public FanlightTempoState(bool enabled, bool clockReady, float songTime, float bpm, int beatsPerBar, float beat, float beatPhase, float barPhase)
+        private FanlightTempoState(bool enable, float songTime, float bpm, int beatsPerBar, float beat, float beatPhase, float barPhase)
         {
-            Enabled = enabled;
-            ClockReady = clockReady;
+            Enable = enable;
             SongTime = songTime;
             Bpm = bpm;
             BeatsPerBar = beatsPerBar;
@@ -123,17 +118,7 @@ namespace PrismFanlight
             BarPhase = barPhase;
         }
 
-        public static FanlightTempoState Disabled(float time)
-        {
-            return FromSongTime(false, time, 120.0f, 4);
-        }
-
-        public static FanlightTempoState FromSongTime(bool enabled, float songTime, float bpm, int beatsPerBar)
-        {
-            return FromSongTime(enabled, songTime, bpm, beatsPerBar, true);
-        }
-
-        public static FanlightTempoState FromSongTime(bool enabled, float songTime, float bpm, int beatsPerBar, bool clockReady)
+        public static FanlightTempoState FromSongTime(bool enable, float songTime, float bpm, int beatsPerBar)
         {
             var validatedBpm = math.max(1.0f, bpm);
             var validatedBeatsPerBar = math.max(1, beatsPerBar);
@@ -142,8 +127,7 @@ namespace PrismFanlight
             var barPhase = math.frac(beat / validatedBeatsPerBar);
 
             return new FanlightTempoState(
-                enabled,
-                clockReady,
+                enable,
                 songTime,
                 validatedBpm,
                 validatedBeatsPerBar,

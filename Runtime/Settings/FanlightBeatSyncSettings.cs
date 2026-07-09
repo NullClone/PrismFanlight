@@ -7,9 +7,6 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightBeatSyncSettings
     {
-        [Range(0f, 1f)]
-        public float beatSyncBlend;
-
         [Min(0.001f)]
         public float beatsPerSwing;
 
@@ -29,7 +26,6 @@ namespace PrismFanlight
 
         public FanlightBeatSyncSettings Validated() => new()
         {
-            beatSyncBlend = math.saturate(beatSyncBlend),
             beatsPerSwing = math.max(beatsPerSwing, 0.001f),
             beatPhaseOffset = beatPhaseOffset,
             downbeatAccent = math.max(downbeatAccent, 0f),

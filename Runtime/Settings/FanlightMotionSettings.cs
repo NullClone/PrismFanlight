@@ -17,7 +17,6 @@ namespace PrismFanlight
         {
             swing = new FanlightSwingSettings
             {
-                swingSpeed = 0.5f,
                 randomPhase = 0f,
                 armLengthMin = 0.2f,
                 armLengthMax = 0.4f,
@@ -67,7 +66,6 @@ namespace PrismFanlight
             },
             beatSync = new FanlightBeatSyncSettings
             {
-                beatSyncBlend = 1f,
                 beatsPerSwing = 1f,
                 beatPhaseOffset = 0f,
                 downbeatAccent = 0f,

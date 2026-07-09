@@ -33,7 +33,6 @@ struct PrismCrowdRhythm
     float shoulderPhase;
     float armPhase;
     float wristPhase;
-    float beatSync;
     float downbeatPulse;
 };
 
