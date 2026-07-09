@@ -12,13 +12,19 @@ namespace PrismFanlight.Rendering
 
         public ComputeBuffer BlockVisibilityBuffer { get; private set; }
 
-        public ComputeBuffer VisibleIndexBuffer { get; private set; }
+        public ComputeBuffer PenlightVisibleIndexBuffer { get; private set; }
+
+        public ComputeBuffer AudienceVisibleIndexBuffer { get; private set; }
+
+        public ComputeBuffer AudienceSlotBuffer { get; private set; }
 
         public ComputeBuffer MatrixBuffer { get; private set; }
 
         public ComputeBuffer ColorBuffer { get; private set; }
 
-        public GraphicsBuffer ArgsBuffer { get; private set; }
+        public ComputeBuffer RandomBuffer { get; private set; }
+
+        public GraphicsBuffer PenlightArgsBuffer { get; private set; }
 
         public ComputeBuffer AudiencePartBuffer { get; private set; }
 
@@ -38,7 +44,7 @@ namespace PrismFanlight.Rendering
 
         // Methods
 
-        public void Allocate(Mesh mesh, SeatLayout layout, bool allocateAudience)
+        public void Allocate(Mesh mesh, SeatLayout layout, bool allocateAudience, FanlightRandomSettings random)
         {
             Release();
 
@@ -50,22 +56,33 @@ namespace PrismFanlight.Rendering
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
             BlockBuffer = new ComputeBuffer(BlockCount, FanlightBlockData.Stride, ComputeBufferType.Structured);
             BlockVisibilityBuffer = new ComputeBuffer(BlockCount, sizeof(uint), ComputeBufferType.Structured);
-            VisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            PenlightVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            AudienceVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            AudienceSlotBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
             ColorBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
-            ArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
+            RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
+            PenlightArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
+            AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
 
             SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(layout));
             BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(layout, mesh));
+            RandomBuffer.SetData(BuildRandomData(SeatCount, random));
 
-            ResetArgs(ArgsBuffer, mesh);
+            ResetArgs(PenlightArgsBuffer, mesh);
+            ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
 
             if (allocateAudience)
             {
                 AudiencePartBuffer = new ComputeBuffer(SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, ComputeBufferType.Structured);
-                AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
-                ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
             }
+        }
+
+        public void UpdateRandomData(FanlightRandomSettings random)
+        {
+            if (RandomBuffer == null || SeatCount <= 0) return;
+
+            RandomBuffer.SetData(BuildRandomData(SeatCount, random));
         }
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
@@ -80,25 +97,76 @@ namespace PrismFanlight.Rendering
             });
         }
 
+        private static FanlightRandomData[] BuildRandomData(int seatCount, FanlightRandomSettings random)
+        {
+            var data = new FanlightRandomData[seatCount];
+            var seed = random.deterministic ? random.globalSeed : (uint)System.Environment.TickCount;
+
+            for (var i = 0; i < data.Length; i++)
+            {
+                data[i] = new FanlightRandomData
+                {
+                    random0 = Random4(seed, (uint)i, 0u),
+                    random1 = Random4(seed, (uint)i, 4u),
+                    random2 = Random4(seed, (uint)i, 8u),
+                    random3 = Random4(seed, (uint)i, 12u),
+                    random4 = Random4(seed, (uint)i, 16u),
+                    random5 = Random4(seed, (uint)i, 20u),
+                    random6 = Random4(seed, (uint)i, 24u),
+                    random7 = Random4(seed, (uint)i, 28u)
+                };
+            }
+
+            return data;
+        }
+
+        private static Vector4 Random4(uint globalSeed, uint seatIndex, uint offset)
+        {
+            return new Vector4(
+                Random01(globalSeed, seatIndex, offset + 0u),
+                Random01(globalSeed, seatIndex, offset + 1u),
+                Random01(globalSeed, seatIndex, offset + 2u),
+                Random01(globalSeed, seatIndex, offset + 3u));
+        }
+
+        private static float Random01(uint globalSeed, uint seatIndex, uint lane)
+        {
+            var x = globalSeed ^ 0x9E3779B9u;
+            x ^= seatIndex + 0x85EBCA6Bu + (x << 6) + (x >> 2);
+            x ^= lane + 0xC2B2AE35u + (x << 6) + (x >> 2);
+            x ^= x >> 16;
+            x *= 0x7FEB352Du;
+            x ^= x >> 15;
+            x *= 0x846CA68Bu;
+            x ^= x >> 16;
+            return (x & 0x00FFFFFFu) / 16777215.0f;
+        }
+
         public void Release()
         {
             SeatBuffer?.Release();
             BlockBuffer?.Release();
             BlockVisibilityBuffer?.Release();
-            VisibleIndexBuffer?.Release();
+            PenlightVisibleIndexBuffer?.Release();
+            AudienceVisibleIndexBuffer?.Release();
+            AudienceSlotBuffer?.Release();
             MatrixBuffer?.Release();
             ColorBuffer?.Release();
-            ArgsBuffer?.Release();
+            RandomBuffer?.Release();
+            PenlightArgsBuffer?.Release();
             AudiencePartBuffer?.Release();
             AudienceArgsBuffer?.Release();
 
             SeatBuffer = null;
             BlockBuffer = null;
             BlockVisibilityBuffer = null;
-            VisibleIndexBuffer = null;
+            PenlightVisibleIndexBuffer = null;
+            AudienceVisibleIndexBuffer = null;
+            AudienceSlotBuffer = null;
             MatrixBuffer = null;
             ColorBuffer = null;
-            ArgsBuffer = null;
+            RandomBuffer = null;
+            PenlightArgsBuffer = null;
             AudiencePartBuffer = null;
             AudienceArgsBuffer = null;
             SeatCount = 0;

@@ -6,34 +6,30 @@
 float3 PrismComputeSeatAnchor(FanlightSeatData seat)
 {
     float3 localPosition = seat.localPositionSeed.xyz;
-    float seed = seat.localPositionSeed.w;
-
-    float2 jitter = float2(Hash11(seed + 31.0), Hash11(seed + 37.0)) * 2.0 - 1.0;
+    float2 jitter = float2(PrismRandom(seat, 0u), PrismRandom(seat, 1u)) * 2.0 - 1.0;
     localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
-    localPosition.y += (Hash11(seed + 41.0) * 2.0 - 1.0) * _MotionVariation.y;
+    localPosition.y += (PrismRandom(seat, 2u) * 2.0 - 1.0) * _MotionVariation.y;
 
     return localPosition;
 }
 
 PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 {
-    float seed = seat.localPositionSeed.w;
-
     int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
     float noisePersistence = max(0.001, _MotionNoise.w);
 
-    float reactionDelay = Hash11(seed + 17.0) * _MotionHuman.z;
+    float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z;
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
-    float randomBeatReaction = Hash11(seed + 73.0) * _MotionBeatSpread.x;
-    float seatBeatJitter = (Hash11(seed + 79.0) * 2.0 - 1.0) * _MotionBeatSpread.y;
+    float randomBeatReaction = PrismRandom(seat, 4u) * _MotionBeatSpread.x;
+    float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.y;
     float2 block01 = float2(
         _BlockCount.x > 1.0 ? seat.planePositionBlock.z / max(1.0, _BlockCount.x - 1.0) : 0.5,
         _BlockCount.y > 1.0 ? seat.planePositionBlock.w / max(1.0, _BlockCount.y - 1.0) : 0.5);
     float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.zw);
     float delayedBeat = max(0.0, _FanlightBeat.y - beatReaction - randomBeatReaction - seatBeatJitter - blockBeatDelay);
     float beatPhase = 2.0 * PRISM_FANLIGHT_PI * ((delayedBeat / max(0.001, _MotionBeat.y)) + _MotionBeat.z);
-    beatPhase += Hash11(seed + 11.0) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
-    beatPhase += FbmNoise21(float2(Hash11(seed + 23.0) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
+    beatPhase += PrismRandom(seat, 6u) * 2.0 * PRISM_FANLIGHT_PI * _MotionTiming.y;
+    beatPhase += FbmNoise21(float2(PrismRandom(seat, 7u) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w), noiseOctaves, noisePersistence) * _MotionTiming.z;
 
     PrismCrowdRhythm rhythm = (PrismCrowdRhythm)0;
     rhythm.basePhase = beatPhase;
@@ -47,11 +43,10 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 
 PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
 {
-    float seed = seat.localPositionSeed.w;
     float3 anchor = PrismComputeSeatAnchor(seat);
     PrismCrowdRhythm rhythm = PrismComputeCrowdRhythm(seat);
 
-    float heightJitter = (Hash11(seed + 211.0) * 2.0 - 1.0) * _AudienceShape.y;
+    float heightJitter = (PrismRandom(seat, 8u) * 2.0 - 1.0) * _AudienceShape.y;
     float bodyHeight = max(0.1, _AudienceShape.x * (1.0 + heightJitter));
     float shoulderHeight = bodyHeight * saturate(_AudienceShape.z);
     float bodyHalfWidth = _AudienceShape.w;
@@ -84,7 +79,6 @@ PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
 
 float3 PrismComputeHandZoneBase(FanlightSeatData seat, PrismHumanPose pose)
 {
-    float seed = seat.localPositionSeed.w;
     float variation = max(0.0, _HandZone.w);
 
     float3 forwardLocal = PrismWorldVectorToLocal(PrismComputeWorldDirection(seat));
@@ -92,9 +86,9 @@ float3 PrismComputeHandZoneBase(FanlightSeatData seat, PrismHumanPose pose)
     forwardLocal = SafeNormalize(forwardLocal, float3(0.0, 0.0, -1.0));
 
     float3 sideLocal = SafeNormalize(cross(float3(0.0, 1.0, 0.0), forwardLocal), float3(1.0, 0.0, 0.0));
-    float heightOffset = _HandZone.x + (Hash11(seed + 151.0) * 2.0 - 1.0) * variation;
-    float forwardOffset = _HandZone.y + (Hash11(seed + 157.0) * 2.0 - 1.0) * variation;
-    float sideOffset = (Hash11(seed + 163.0) * 2.0 - 1.0) * variation * 0.5;
+    float heightOffset = _HandZone.x + (PrismRandom(seat, 9u) * 2.0 - 1.0) * variation;
+    float forwardOffset = _HandZone.y + (PrismRandom(seat, 10u) * 2.0 - 1.0) * variation;
+    float sideOffset = (PrismRandom(seat, 11u) * 2.0 - 1.0) * variation * 0.5;
 
     return pose.shoulderLocal
         + float3(0.0, heightOffset, 0.0)

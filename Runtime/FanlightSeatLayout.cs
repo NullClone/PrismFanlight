@@ -8,6 +8,8 @@ namespace PrismFanlight
     [Serializable]
     public class SeatLayout : IEquatable<SeatLayout>
     {
+        private const int AuthoringHashVersion = 2;
+
         // Fields
 
         public int2 seatPerBlock;
@@ -99,6 +101,7 @@ namespace PrismFanlight
             unchecked
             {
                 var hash = 17;
+                hash = hash * 31 + AuthoringHashVersion;
                 hash = hash * 31 + seatPerBlock.GetHashCode();
                 hash = hash * 31 + seatPitch.GetHashCode();
                 hash = hash * 31 + blockCount.GetHashCode();

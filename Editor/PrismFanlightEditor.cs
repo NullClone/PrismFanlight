@@ -30,6 +30,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
         private SerializedProperty _audienceSettings;
+        private SerializedProperty _lod;
+        private SerializedProperty _random;
         private SerializedProperty _enablePreview;
 
         private bool _enableGizmos = true;
@@ -59,6 +61,8 @@ namespace PrismFanlight.Editor
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
             _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
+            _lod = serializedObject.FindProperty(nameof(_lod));
+            _random = serializedObject.FindProperty(nameof(_random));
             _enablePreview = serializedObject.FindProperty(nameof(_enablePreview));
 
             EditorApplication.update += DrawPreview;
@@ -156,8 +160,10 @@ namespace PrismFanlight.Editor
             DrawLayoutSection();
             DrawMotionSection();
             DrawAudienceSection();
+            DrawLodSection();
             DrawColorSection();
             DrawTempoSection();
+            DrawRandomSection();
             DrawDebugSection();
 
             serializedObject.ApplyModifiedProperties();
@@ -660,6 +666,33 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.PropertyField(motion.FindPropertyRelative("bodyMotionSpeed"), new GUIContent("Body Speed"));
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(motion.FindPropertyRelative("upperBodyLeanMotion"), new GUIContent("Lean Motion"));
+            });
+        }
+
+        private void DrawLodSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| LOD", () =>
+            {
+                var audienceLod = _lod.FindPropertyRelative("enableAudienceDistanceLod");
+                EditorGUILayout.PropertyField(audienceLod, new GUIContent("Audience Distance LOD"));
+
+                if (!audienceLod.boolValue) return;
+
+                EditorGUILayout.PropertyField(_lod.FindPropertyRelative("audienceVisibleDistance"), new GUIContent("Audience Distance"));
+
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.PropertyField(_lod.FindPropertyRelative("audienceFadeRange"), new GUIContent("Fade Range"));
+                }
+            });
+        }
+
+        private void DrawRandomSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| Random", () =>
+            {
+                EditorGUILayout.PropertyField(_random.FindPropertyRelative("deterministic"), new GUIContent("Deterministic"));
+                EditorGUILayout.PropertyField(_random.FindPropertyRelative("globalSeed"), new GUIContent("Global Seed"));
             });
         }
 

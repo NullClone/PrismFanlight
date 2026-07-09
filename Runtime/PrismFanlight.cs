@@ -56,6 +56,12 @@ namespace PrismFanlight
         private FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
 
         [SerializeField]
+        private FanlightLodSettings _lod = FanlightLodSettings.Default();
+
+        [SerializeField]
+        private FanlightRandomSettings _random = FanlightRandomSettings.Default();
+
+        [SerializeField]
         private FanlightTempoSettings _tempo = FanlightTempoSettings.Default();
 
         [SerializeField]
@@ -65,6 +71,8 @@ namespace PrismFanlight
         private bool _enablePreview = false;
 
         private readonly FanlightGpuRenderer _renderer = new();
+        private bool _hasResolvedStateOverride;
+        private FanlightResolvedState _resolvedStateOverride;
 
 
         // Properties
@@ -109,6 +117,10 @@ namespace PrismFanlight
 
         public FanlightColorPreset ColorPreset => _colorPreset;
 
+        public FanlightLodSettings Lod => _lod.Validated();
+
+        public FanlightRandomSettings Random => _random.Validated();
+
 
         // Methods
 
@@ -133,6 +145,10 @@ namespace PrismFanlight
         {
             if (!Enable) return;
 
+            var state = _hasResolvedStateOverride
+                ? _resolvedStateOverride
+                : ResolveState(Time.time, Time.unscaledTime);
+
             _renderer.Render(
                 _mesh,
                 _material,
@@ -142,16 +158,10 @@ namespace PrismFanlight
                 IsCullingEnabled,
                 VisibilityUpdate,
                 AnimationUpdate,
-                GetTempoState(),
                 GetSeatLayout(),
-                GetMotion(),
-                GetColorSettings(),
-                GetAudienceSettings(),
                 _audienceMaterial,
-                _swingTarget != null ? _swingTarget.position : Vector3.zero,
-                transform.localToWorldMatrix,
-                Time.time,
-                Time.unscaledTime);
+                state,
+                ResolveLodCameraWorldPosition());
         }
 
         private void OnDisable()
@@ -184,7 +194,26 @@ namespace PrismFanlight
 
         public FanlightAudienceSettings GetAudienceSettings() => _audienceSettings.Validated();
 
+        public FanlightLodSettings GetLodSettings() => _lod.Validated();
+
+        public FanlightRandomSettings GetRandomSettings() => _random.Validated();
+
         public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
+
+        public FanlightResolvedState ResolveState(float time, float updateClock)
+        {
+            return new FanlightResolvedState(
+                Tempo.Evaluate(time),
+                GetMotion(),
+                GetColorSettings(),
+                GetAudienceSettings(),
+                GetLodSettings(),
+                GetRandomSettings(),
+                _swingTarget != null ? _swingTarget.position : Vector3.zero,
+                transform.localToWorldMatrix,
+                time,
+                updateClock);
+        }
 
         public FanlightDiagnostics GetDiagnostics()
         {
@@ -282,6 +311,27 @@ namespace PrismFanlight
             _audienceSettings = audience.Validated();
         }
 
+        public void SetLodSettings(FanlightLodSettings lod)
+        {
+            _lod = lod.Validated();
+        }
+
+        public void SetRandomSettings(FanlightRandomSettings random)
+        {
+            _random = random.Validated();
+        }
+
+        public void SetResolvedStateOverride(FanlightResolvedState state)
+        {
+            _resolvedStateOverride = state;
+            _hasResolvedStateOverride = true;
+        }
+
+        public void ClearResolvedStateOverride()
+        {
+            _hasResolvedStateOverride = false;
+        }
+
         public void SetRenderingLayerMask(uint renderingLayerMask)
         {
             _renderingLayerMask = renderingLayerMask;
@@ -290,6 +340,18 @@ namespace PrismFanlight
         public void ReleaseGpuResources()
         {
             _renderer.Dispose();
+        }
+
+        private Vector3 ResolveLodCameraWorldPosition()
+        {
+            if (_cullingCamera != null)
+            {
+                return _cullingCamera.transform.position;
+            }
+
+            return Camera.main != null
+                ? Camera.main.transform.position
+                : transform.position;
         }
     }
 }

@@ -5,9 +5,12 @@
 
 StructuredBuffer<FanlightSeatData> _Seats;
 StructuredBuffer<FanlightBlockData> _Blocks;
+StructuredBuffer<FanlightRandomData> _FanlightRandoms;
 RWStructuredBuffer<uint> _BlockVisibility;
-RWStructuredBuffer<uint> _VisibleIndices;
-RWStructuredBuffer<uint> _DrawArgs;
+RWStructuredBuffer<uint> _PenlightVisibleIndices;
+RWStructuredBuffer<uint> _AudienceVisibleIndices;
+RWStructuredBuffer<uint> _AudienceSlots;
+RWStructuredBuffer<uint> _PenlightArgs;
 RWStructuredBuffer<float4x4> _FanlightMatrices;
 RWStructuredBuffer<float4> _FanlightColors;
 RWStructuredBuffer<FanlightAudiencePart> _AudienceParts;
@@ -22,6 +25,9 @@ float4 _FanlightTempo;
 float4 _FrustumPlanes[6];
 float _CullingScale;
 int _EnableCulling;
+int _EnableAudienceLod;
+float4 _AudienceLod;
+float4 _LodCameraPos;
 
 float4 _SeatPitch;
 float4 _BlockCount;
@@ -52,5 +58,23 @@ float4 _AudienceArm;
 float4 _HandZone;
 float4 _AudienceUpperBody;
 float4 _AudienceMotionBody;
+
+uint PrismSeatIndex(FanlightSeatData seat)
+{
+    return (uint)round(seat.localPositionSeed.w);
+}
+
+float PrismRandom(FanlightSeatData seat, uint slot)
+{
+    FanlightRandomData r = _FanlightRandoms[PrismSeatIndex(seat)];
+    if (slot < 4u) return r.random0[(int)slot];
+    if (slot < 8u) return r.random1[(int)(slot - 4u)];
+    if (slot < 12u) return r.random2[(int)(slot - 8u)];
+    if (slot < 16u) return r.random3[(int)(slot - 12u)];
+    if (slot < 20u) return r.random4[(int)(slot - 16u)];
+    if (slot < 24u) return r.random5[(int)(slot - 20u)];
+    if (slot < 28u) return r.random6[(int)(slot - 24u)];
+    return r.random7[(int)min(slot - 28u, 3u)];
+}
 
 #endif

@@ -24,12 +24,8 @@ FanlightAudiencePart PrismMakeAudiencePart(float3 p0, float3 p1, float halfWidth
     return part;
 }
 
-void PrismBuildAudienceParts(uint seatId)
+void PrismBuildAudienceParts(uint seatId, PrismHumanPose human, PrismArm arm)
 {
-    FanlightSeatData seat = _Seats[seatId];
-    PrismHumanPose human = PrismComputeHumanPose(seat);
-    PrismArm arm = PrismComputeArm(seat, human);
-
     float scale = _AudienceUpperBody.z;
     float3 feetW = mul(_LocalToWorld, float4(human.feetLocal, 1.0)).xyz;
     float3 neckW = mul(_LocalToWorld, float4(human.neckLocal, 1.0)).xyz;

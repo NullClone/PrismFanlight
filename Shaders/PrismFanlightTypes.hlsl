@@ -19,6 +19,18 @@ struct FanlightAudiencePart
     float4 p1Type;
 };
 
+struct FanlightRandomData
+{
+    float4 random0;
+    float4 random1;
+    float4 random2;
+    float4 random3;
+    float4 random4;
+    float4 random5;
+    float4 random6;
+    float4 random7;
+};
+
 struct PrismArm
 {
     float4x4 worldMatrix;

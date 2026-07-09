@@ -8,9 +8,13 @@ namespace PrismFanlight.Rendering
         public static readonly int Blocks = Shader.PropertyToID("_Blocks");
         public static readonly int BlockVisibility = Shader.PropertyToID("_BlockVisibility");
         public static readonly int VisibleIndices = Shader.PropertyToID("_VisibleIndices");
-        public static readonly int DrawArgs = Shader.PropertyToID("_DrawArgs");
+        public static readonly int PenlightVisibleIndices = Shader.PropertyToID("_PenlightVisibleIndices");
+        public static readonly int AudienceVisibleIndices = Shader.PropertyToID("_AudienceVisibleIndices");
+        public static readonly int AudienceSlots = Shader.PropertyToID("_AudienceSlots");
+        public static readonly int PenlightArgs = Shader.PropertyToID("_PenlightArgs");
         public static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
         public static readonly int Colors = Shader.PropertyToID("_FanlightColors");
+        public static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
         public static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");
         public static readonly int AudienceArgs = Shader.PropertyToID("_AudienceArgs");
 
@@ -23,6 +27,9 @@ namespace PrismFanlight.Rendering
         public static readonly int FrustumPlanes = Shader.PropertyToID("_FrustumPlanes");
         public static readonly int CullingScale = Shader.PropertyToID("_CullingScale");
         public static readonly int EnableCulling = Shader.PropertyToID("_EnableCulling");
+        public static readonly int EnableAudienceLod = Shader.PropertyToID("_EnableAudienceLod");
+        public static readonly int AudienceLod = Shader.PropertyToID("_AudienceLod");
+        public static readonly int LodCameraPos = Shader.PropertyToID("_LodCameraPos");
 
         public static readonly int SeatPitch = Shader.PropertyToID("_SeatPitch");
         public static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
