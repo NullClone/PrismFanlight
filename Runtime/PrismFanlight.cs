@@ -1,3 +1,4 @@
+using System;
 using PrismFanlight.Rendering;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -114,6 +115,10 @@ namespace PrismFanlight
         public FanlightLodSettings Lod => _lod.Validated();
 
         public FanlightRandomSettings Random => _random.Validated();
+
+        internal bool HasResolvedStateOverride => _hasResolvedStateOverride;
+
+        internal static event Action<PrismFanlight> ResolvedStateOverrideChanged;
 
 
         // Methods
@@ -249,6 +254,7 @@ namespace PrismFanlight
             _resolvedStateOverride = state;
             _hasResolvedStateOverride = true;
             _overrideTimeJumpPending = state.IsTimeJump;
+            ResolvedStateOverrideChanged?.Invoke(this);
         }
 
         internal FanlightResolvedState ResolveState(FanlightEvaluationContext context)
@@ -276,9 +282,12 @@ namespace PrismFanlight
 
         public void ClearResolvedStateOverride()
         {
+            if (!_hasResolvedStateOverride) return;
+
             _hasResolvedStateOverride = false;
             _overrideTimeJumpPending = false;
             _resolvedStateOverride = default;
+            ResolvedStateOverrideChanged?.Invoke(this);
         }
 
 
