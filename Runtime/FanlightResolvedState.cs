@@ -14,6 +14,7 @@ namespace PrismFanlight
         public readonly Matrix4x4 LocalToWorld;
         public readonly float Time;
         public readonly float UpdateClock;
+        public readonly bool IsTimeJump;
 
         public FanlightResolvedState(
             FanlightTempoState tempo,
@@ -25,7 +26,8 @@ namespace PrismFanlight
             Vector3 swingTargetWorldPosition,
             Matrix4x4 localToWorld,
             float time,
-            float updateClock)
+            float updateClock,
+            bool isTimeJump = false)
         {
             Tempo = tempo;
             Motion = motion.Validated();
@@ -37,6 +39,7 @@ namespace PrismFanlight
             LocalToWorld = localToWorld;
             Time = time;
             UpdateClock = updateClock;
+            IsTimeJump = isTimeJump;
         }
     }
 }

@@ -50,6 +50,7 @@ namespace PrismFanlight.Rendering
             SeatLayout layout,
             Material audienceMaterial,
             FanlightResolvedState state,
+            bool isTimeJump,
             Vector3 lodCameraWorldPos)
         {
             var validatedLayout = (layout ?? SeatLayout.Default()).Validated();
@@ -90,7 +91,12 @@ namespace PrismFanlight.Rendering
                 state.Time,
                 worldBounds);
 
-            if (_hasLastUpdateClock && state.UpdateClock < _lastUpdateClock)
+            if (isTimeJump)
+            {
+                _scheduler.Reset();
+                _animationInitialized = false;
+            }
+            else if (_hasLastUpdateClock && state.UpdateClock < _lastUpdateClock)
             {
                 _scheduler.Reset();
             }

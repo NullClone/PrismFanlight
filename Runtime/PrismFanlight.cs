@@ -71,6 +71,7 @@ namespace PrismFanlight
 
         private readonly FanlightGpuRenderer _renderer = new();
         private bool _hasResolvedStateOverride;
+        private bool _overrideTimeJumpPending;
         private FanlightResolvedState _resolvedStateOverride;
 
 
@@ -134,24 +135,35 @@ namespace PrismFanlight
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if (!Enable) return;
 
-            if (_hasResolvedStateOverride) return;
+            if (_hasResolvedStateOverride)
+            {
+                Render(_resolvedStateOverride, _overrideTimeJumpPending);
+                _overrideTimeJumpPending = false;
 
-            var state = ResolveState(GetCurrentTime(), GetCurrentUpdateClock());
+                return;
+            }
+
+            if (!Application.isPlaying) return;
+
+            var context = FanlightEvaluationContext.Runtime(GetCurrentTime(), GetCurrentUpdateClock());
+            var state = ResolveState(context);
 
             Render(state);
         }
 
         private void OnDisable()
         {
+            ClearResolvedStateOverride();
             Dispose();
         }
 
         private void OnDestroy()
         {
+            ClearResolvedStateOverride();
             Dispose();
         }
 
@@ -174,6 +186,11 @@ namespace PrismFanlight
 
         public void Render(FanlightResolvedState state)
         {
+            Render(state, state.IsTimeJump);
+        }
+
+        private void Render(FanlightResolvedState state, bool isTimeJump)
+        {
             if (!Enable) return;
 
             var cameraPosition = _cullingCamera != null ? _cullingCamera.transform.position : transform.position;
@@ -190,6 +207,7 @@ namespace PrismFanlight
                 GetSeatLayout(),
                 _audienceMaterial,
                 state,
+                isTimeJump,
                 cameraPosition);
         }
 
@@ -230,12 +248,20 @@ namespace PrismFanlight
         {
             _resolvedStateOverride = state;
             _hasResolvedStateOverride = true;
+            _overrideTimeJumpPending = state.IsTimeJump;
         }
 
-        private FanlightResolvedState ResolveState(float time, float updateClock)
+        internal FanlightResolvedState ResolveState(FanlightEvaluationContext context)
         {
+            var tempo = Tempo;
+            if (context.Source == FanlightEvaluationSource.Timeline)
+            {
+                tempo.clockSource = FanlightTempoClockSource.ManualTime;
+                tempo.manualTime = Mathf.Max(0.0f, context.Time);
+            }
+
             return new FanlightResolvedState(
-                Tempo.Evaluate(time),
+                tempo.Evaluate(context.Time),
                 GetMotionSettings(),
                 GetColorSettings(),
                 GetAudienceSettings(),
@@ -243,13 +269,16 @@ namespace PrismFanlight
                 GetRandomSettings(),
                 _swingTarget != null ? _swingTarget.position : Vector3.zero,
                 transform.localToWorldMatrix,
-                time,
-                updateClock);
+                context.Time,
+                context.UpdateClock,
+                context.IsTimeJump);
         }
 
         public void ClearResolvedStateOverride()
         {
             _hasResolvedStateOverride = false;
+            _overrideTimeJumpPending = false;
+            _resolvedStateOverride = default;
         }
 
 
