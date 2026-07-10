@@ -59,12 +59,28 @@ namespace PrismFanlight
 
         public SeatLayout Validated()
         {
+            var validatedSeatPerBlock = math.max(seatPerBlock, math.int2(1, 1));
+            var validatedSeatPitch = math.max(seatPitch, math.float2(0.001f, 0.001f));
+            var validatedBlockCount = math.max(blockCount, math.int2(1, 1));
+            var validatedAisleWidth = math.max(aisleWidth, math.float2(0.0f, 0.0f));
+            var totalBlockCount = validatedBlockCount.x * validatedBlockCount.y;
+
+            if (seatPerBlock.Equals(validatedSeatPerBlock)
+                && seatPitch.Equals(validatedSeatPitch)
+                && blockCount.Equals(validatedBlockCount)
+                && aisleWidth.Equals(validatedAisleWidth)
+                && blockTransforms != null
+                && blockTransforms.Length == totalBlockCount)
+            {
+                return this;
+            }
+
             var layout = new SeatLayout
             {
-                seatPerBlock = math.max(seatPerBlock, math.int2(1, 1)),
-                seatPitch = math.max(seatPitch, math.float2(0.001f, 0.001f)),
-                blockCount = math.max(blockCount, math.int2(1, 1)),
-                aisleWidth = math.max(aisleWidth, math.float2(0.0f, 0.0f))
+                seatPerBlock = validatedSeatPerBlock,
+                seatPitch = validatedSeatPitch,
+                blockCount = validatedBlockCount,
+                aisleWidth = validatedAisleWidth
             };
 
             layout.blockTransforms = NormalizeBlockTransforms(blockTransforms, layout.TotalBlockCount);
@@ -235,7 +251,24 @@ namespace PrismFanlight
                 hash = hash * 31 + seatPitch.GetHashCode();
                 hash = hash * 31 + blockCount.GetHashCode();
                 hash = hash * 31 + aisleWidth.GetHashCode();
-                hash = hash * 31 + HashBlockTransforms(NormalizeBlockTransforms(blockTransforms, TotalBlockCount));
+                hash = hash * 31 + HashNormalizedBlockTransforms(blockTransforms, TotalBlockCount);
+                return hash;
+            }
+        }
+
+        private static int HashNormalizedBlockTransforms(FanlightBlockTransform[] transforms, int count)
+        {
+            unchecked
+            {
+                var hash = 17;
+                for (var i = 0; i < count; i++)
+                {
+                    var transform = transforms != null && i < transforms.Length
+                        ? transforms[i]
+                        : FanlightBlockTransform.Identity;
+                    hash = hash * 31 + transform.GetHashCode();
+                }
+
                 return hash;
             }
         }

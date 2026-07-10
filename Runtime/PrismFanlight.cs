@@ -71,6 +71,7 @@ namespace PrismFanlight
         private Transform _swingTarget = null;
 
         private readonly FanlightGpuRenderer _renderer = new();
+        private SeatLayout _validatedSeatLayout;
         private bool _hasResolvedStateOverride;
         private bool _overrideTimeJumpPending;
         private FanlightResolvedState _resolvedStateOverride;
@@ -172,6 +173,11 @@ namespace PrismFanlight
             Dispose();
         }
 
+        private void OnValidate()
+        {
+            _validatedSeatLayout = null;
+        }
+
         private float GetCurrentTime()
         {
 #if UNITY_EDITOR
@@ -209,7 +215,7 @@ namespace PrismFanlight
                 IsCullingEnabled,
                 VisibilityUpdate,
                 AnimationUpdate,
-                GetSeatLayout(),
+                GetValidatedSeatLayout(),
                 _audienceMaterial,
                 state,
                 isTimeJump,
@@ -222,7 +228,7 @@ namespace PrismFanlight
         }
 
 
-        public SeatLayout GetSeatLayout() => (_seatLayout ?? SeatLayout.Default()).Validated();
+        public SeatLayout GetSeatLayout() => GetValidatedSeatLayout();
 
         public FanlightMotionSettings GetMotionSettings() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
@@ -268,11 +274,11 @@ namespace PrismFanlight
 
             return new FanlightResolvedState(
                 tempo.Evaluate(context.Time),
-                GetMotionSettings(),
-                GetColorSettings(),
-                GetAudienceSettings(),
-                GetLodSettings(),
-                GetRandomSettings(),
+                _motionPreset != null ? _motionPreset.Settings : _motion,
+                _colorPreset != null ? _colorPreset.Settings : _color,
+                _audienceSettings,
+                _lod,
+                _random,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero,
                 transform.localToWorldMatrix,
                 context.Time,
@@ -315,6 +321,7 @@ namespace PrismFanlight
             }
 
             _seatLayout = (layout ?? SeatLayout.Default()).Validated();
+            _validatedSeatLayout = _seatLayout;
 
             Dispose();
         }
@@ -379,6 +386,7 @@ namespace PrismFanlight
                 FanlightGeometryBuilder.BuildAuthoringBounds(layout));
 
             _seatLayout = layout;
+            _validatedSeatLayout = _seatLayout;
 
             Dispose();
         }
@@ -389,9 +397,20 @@ namespace PrismFanlight
 
             _seatLayout = GetSeatLayout();
             _seatLayout.ClearBakedGeometry();
+            _validatedSeatLayout = _seatLayout;
 
             Dispose();
         }
 #endif
+
+        private SeatLayout GetValidatedSeatLayout()
+        {
+            if (_validatedSeatLayout == null)
+            {
+                _validatedSeatLayout = (_seatLayout ?? SeatLayout.Default()).Validated();
+            }
+
+            return _validatedSeatLayout;
+        }
     }
 }

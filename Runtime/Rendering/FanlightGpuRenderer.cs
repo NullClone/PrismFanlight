@@ -53,9 +53,7 @@ namespace PrismFanlight.Rendering
             bool isTimeJump,
             Vector3 lodCameraWorldPos)
         {
-            var validatedLayout = (layout ?? SeatLayout.Default()).Validated();
-
-            if (!CanRender(mesh, material, computeShader, validatedLayout))
+            if (!CanRender(mesh, material, computeShader, layout))
             {
                 Dispose();
                 return;
@@ -63,7 +61,7 @@ namespace PrismFanlight.Rendering
 
             var audienceEnabled = state.Audience.enabled && audienceMaterial != null;
 
-            EnsureInitialized(mesh, computeShader, validatedLayout, audienceEnabled, state.Random);
+            EnsureInitialized(mesh, computeShader, layout, audienceEnabled, state.Random);
 
             var randomHash = state.Random.GetStableHash();
             if (_lastRandomHash != randomHash)
@@ -79,7 +77,7 @@ namespace PrismFanlight.Rendering
             var context = new FanlightGpuDispatchContext(
                 cullingCamera,
                 enableCulling,
-                validatedLayout,
+                layout,
                 state.Tempo,
                 state.Motion,
                 state.Color,
@@ -166,6 +164,7 @@ namespace PrismFanlight.Rendering
             return mesh != null
                    && material != null
                    && computeShader != null
+                   && layout != null
                    && layout.TotalSeatCount > 0
                    && layout.BlockSeatCount > 0;
         }
