@@ -1,5 +1,7 @@
 using PrismFanlight.Rendering;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace PrismFanlight
@@ -67,9 +69,6 @@ namespace PrismFanlight
         [SerializeField]
         private Transform _swingTarget = null;
 
-        [SerializeField]
-        private bool _enablePreview = false;
-
         private readonly FanlightGpuRenderer _renderer = new();
         private bool _hasResolvedStateOverride;
         private FanlightResolvedState _resolvedStateOverride;
@@ -95,13 +94,7 @@ namespace PrismFanlight
             set => _swingTarget = value;
         }
 
-        public bool EnablePreview
-        {
-            get => _enablePreview;
-            set => _enablePreview = value;
-        }
-
-        public bool Enable => enabled && SystemInfo.supportsComputeShaders && (Application.isPlaying || (_enablePreview && IsSelectedInEditor()));
+        public bool Enable => enabled && SystemInfo.supportsComputeShaders;
 
         public bool IsCullingEnabled => _enableCulling && Application.isPlaying;
 
@@ -145,9 +138,45 @@ namespace PrismFanlight
         {
             if (!Enable) return;
 
-            var state = _hasResolvedStateOverride
-                ? _resolvedStateOverride
-                : ResolveState(Time.time, Time.unscaledTime);
+            if (_hasResolvedStateOverride) return;
+
+            var state = ResolveState(GetCurrentTime(), GetCurrentUpdateClock());
+
+            Render(state);
+        }
+
+        private void OnDisable()
+        {
+            Dispose();
+        }
+
+        private void OnDestroy()
+        {
+            Dispose();
+        }
+
+        private float GetCurrentTime()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
+#endif
+            return Time.time;
+        }
+
+        private float GetCurrentUpdateClock()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
+#endif
+            return Time.unscaledTime;
+        }
+
+
+        public void Render(FanlightResolvedState state)
+        {
+            if (!Enable) return;
+
+            var cameraPosition = _cullingCamera != null ? _cullingCamera.transform.position : transform.position;
 
             _renderer.Render(
                 _mesh,
@@ -161,34 +190,18 @@ namespace PrismFanlight
                 GetSeatLayout(),
                 _audienceMaterial,
                 state,
-                ResolveLodCameraWorldPosition());
+                cameraPosition);
         }
 
-        private void OnDisable()
+        public void Dispose()
         {
-            ReleaseGpuResources();
-        }
-
-        private void OnDestroy()
-        {
-            ReleaseGpuResources();
-        }
-
-        private bool IsSelectedInEditor()
-        {
-#if UNITY_EDITOR
-            return Selection.Contains(gameObject);
-#else
-            return false;
-#endif
+            _renderer.Dispose();
         }
 
 
         public SeatLayout GetSeatLayout() => (_seatLayout ?? SeatLayout.Default()).Validated();
 
-        public bool IsSeatLayoutBakeCurrent => GetSeatLayout().HasValidBake;
-
-        public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
+        public FanlightMotionSettings GetMotionSettings() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
 
@@ -200,21 +213,6 @@ namespace PrismFanlight
 
         public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
-        public FanlightResolvedState ResolveState(float time, float updateClock)
-        {
-            return new FanlightResolvedState(
-                Tempo.Evaluate(time),
-                GetMotion(),
-                GetColorSettings(),
-                GetAudienceSettings(),
-                GetLodSettings(),
-                GetRandomSettings(),
-                _swingTarget != null ? _swingTarget.position : Vector3.zero,
-                transform.localToWorldMatrix,
-                time,
-                updateClock);
-        }
-
         public FanlightDiagnostics GetDiagnostics()
         {
             var layout = GetSeatLayout();
@@ -225,6 +223,39 @@ namespace PrismFanlight
                 layout.TotalSeatCount,
                 _renderer.VisibleSeatCount,
                 blockCount);
+        }
+
+
+        public void SetResolvedStateOverride(FanlightResolvedState state)
+        {
+            _resolvedStateOverride = state;
+            _hasResolvedStateOverride = true;
+        }
+
+        private FanlightResolvedState ResolveState(float time, float updateClock)
+        {
+            return new FanlightResolvedState(
+                Tempo.Evaluate(time),
+                GetMotionSettings(),
+                GetColorSettings(),
+                GetAudienceSettings(),
+                GetLodSettings(),
+                GetRandomSettings(),
+                _swingTarget != null ? _swingTarget.position : Vector3.zero,
+                transform.localToWorldMatrix,
+                time,
+                updateClock);
+        }
+
+        public void ClearResolvedStateOverride()
+        {
+            _hasResolvedStateOverride = false;
+        }
+
+
+        public void SetRenderingLayerMask(uint renderingLayerMask)
+        {
+            _renderingLayerMask = renderingLayerMask;
         }
 
         public void SetVisibilityUpdate(FanlightGpuUpdateTiming timing)
@@ -246,33 +277,9 @@ namespace PrismFanlight
             }
 
             _seatLayout = (layout ?? SeatLayout.Default()).Validated();
-            ReleaseGpuResources();
+
+            Dispose();
         }
-
-#if UNITY_EDITOR
-        public void BakeSeatLayoutForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            var layout = GetSeatLayout();
-            layout.SetBakedGeometry(
-                FanlightGeometryBuilder.BuildSeatData(layout, false),
-                FanlightGeometryBuilder.BuildBakedBlockData(layout),
-                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
-
-            _seatLayout = layout;
-            ReleaseGpuResources();
-        }
-
-        public void ClearSeatLayoutBakeForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            _seatLayout = GetSeatLayout();
-            _seatLayout.ClearBakedGeometry();
-            ReleaseGpuResources();
-        }
-#endif
 
         public void SetTempo(FanlightTempoSettings tempo)
         {
@@ -321,37 +328,32 @@ namespace PrismFanlight
             _random = random.Validated();
         }
 
-        public void SetResolvedStateOverride(FanlightResolvedState state)
+
+#if UNITY_EDITOR
+        public void BakeSeatLayoutForEditor()
         {
-            _resolvedStateOverride = state;
-            _hasResolvedStateOverride = true;
+            if (Application.isPlaying) return;
+
+            var layout = GetSeatLayout();
+            layout.SetBakedGeometry(
+                FanlightGeometryBuilder.BuildSeatData(layout, false),
+                FanlightGeometryBuilder.BuildBakedBlockData(layout),
+                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
+
+            _seatLayout = layout;
+
+            Dispose();
         }
 
-        public void ClearResolvedStateOverride()
+        public void ClearSeatLayoutBakeForEditor()
         {
-            _hasResolvedStateOverride = false;
-        }
+            if (Application.isPlaying) return;
 
-        public void SetRenderingLayerMask(uint renderingLayerMask)
-        {
-            _renderingLayerMask = renderingLayerMask;
-        }
+            _seatLayout = GetSeatLayout();
+            _seatLayout.ClearBakedGeometry();
 
-        public void ReleaseGpuResources()
-        {
-            _renderer.Dispose();
+            Dispose();
         }
-
-        private Vector3 ResolveLodCameraWorldPosition()
-        {
-            if (_cullingCamera != null)
-            {
-                return _cullingCamera.transform.position;
-            }
-
-            return Camera.main != null
-                ? Camera.main.transform.position
-                : transform.position;
-        }
+#endif
     }
 }

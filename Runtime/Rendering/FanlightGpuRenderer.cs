@@ -22,8 +22,10 @@ namespace PrismFanlight.Rendering
         private bool _isInitialized;
         private bool _animationInitialized;
         private bool _instanceColorsInitialized;
+        private bool _hasLastUpdateClock;
         private int _lastInstanceColorHash;
         private int _lastRandomHash;
+        private float _lastUpdateClock;
         private Matrix4x4 _lastAnimationLocalToWorld;
 
 
@@ -88,6 +90,11 @@ namespace PrismFanlight.Rendering
                 state.Time,
                 worldBounds);
 
+            if (_hasLastUpdateClock && state.UpdateClock < _lastUpdateClock)
+            {
+                _scheduler.Reset();
+            }
+
             var refreshAllAnimation = !_animationInitialized || state.LocalToWorld != _lastAnimationLocalToWorld;
             var visibilityUpdated = refreshAllAnimation || _scheduler.ShouldUpdateVisibility(visibilityUpdate, state.UpdateClock);
 
@@ -117,6 +124,9 @@ namespace PrismFanlight.Rendering
                 Profiler.EndSample();
             }
 
+            _hasLastUpdateClock = true;
+            _lastUpdateClock = state.UpdateClock;
+
             Profiler.BeginSample("Prism Fanlight GPU Draw");
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
             _properties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
@@ -145,6 +155,15 @@ namespace PrismFanlight.Rendering
             }
         }
 
+        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, SeatLayout layout)
+        {
+            return mesh != null
+                   && material != null
+                   && computeShader != null
+                   && layout.TotalSeatCount > 0
+                   && layout.BlockSeatCount > 0;
+        }
+
         private void DrawAudience(Material audienceMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
         {
             Profiler.BeginSample("Prism Fanlight GPU Audience Draw");
@@ -154,8 +173,6 @@ namespace PrismFanlight.Rendering
             _audienceProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceVisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
-            // 観客からもペンライトと同じ per-seat カラーを参照できるようにバインドする
-            // （Shader Graph の GetAudienceBodyColor_float 用）。
             _audienceProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
             _audienceProperties.SetInt(FanlightShaderIds.ColorSource, color.mode == FanlightColorMode.Single ? 0 : 1);
             _audienceProperties.SetColor(FanlightShaderIds.GlobalColor, color.GetGlobalColor());
@@ -171,33 +188,6 @@ namespace PrismFanlight.Rendering
 
             Graphics.RenderMeshIndirect(renderParams, FanlightGeometryBuilder.GetAudienceQuad(), _buffers.AudienceArgsBuffer);
             Profiler.EndSample();
-        }
-
-        public void Dispose()
-        {
-            _buffers.Release();
-            _visibilityReadback.Reset();
-            _properties = null;
-            _audienceProperties = null;
-            _audienceAllocated = false;
-            _mesh = null;
-            _computeShader = null;
-            _isInitialized = false;
-            _animationInitialized = false;
-            _instanceColorsInitialized = false;
-            _lastInstanceColorHash = 0;
-            _lastRandomHash = 0;
-            _lastAnimationLocalToWorld = Matrix4x4.identity;
-            _scheduler.Reset();
-        }
-
-        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, SeatLayout layout)
-        {
-            return mesh != null
-                   && material != null
-                   && computeShader != null
-                   && layout.TotalSeatCount > 0
-                   && layout.BlockSeatCount > 0;
         }
 
         private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, SeatLayout layout, bool allocateAudience, FanlightRandomSettings random)
@@ -233,6 +223,26 @@ namespace PrismFanlight.Rendering
             }
 
             return !_instanceColorsInitialized || _lastInstanceColorHash != color.GetStableHash();
+        }
+
+        public void Dispose()
+        {
+            _buffers.Release();
+            _visibilityReadback.Reset();
+            _properties = null;
+            _audienceProperties = null;
+            _audienceAllocated = false;
+            _mesh = null;
+            _computeShader = null;
+            _isInitialized = false;
+            _animationInitialized = false;
+            _instanceColorsInitialized = false;
+            _hasLastUpdateClock = false;
+            _lastInstanceColorHash = 0;
+            _lastRandomHash = 0;
+            _lastUpdateClock = 0.0f;
+            _lastAnimationLocalToWorld = Matrix4x4.identity;
+            _scheduler.Reset();
         }
     }
 }

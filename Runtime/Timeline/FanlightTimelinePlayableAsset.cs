@@ -1,29 +1,32 @@
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight
 {
-    public sealed class FanlightTimelinePlayableAsset : PlayableAsset
+    public sealed class FanlightTimelinePlayableAsset : PlayableAsset, ITimelineClipAsset
     {
-        public ExposedReference<PrismFanlight> target;
-        public FanlightTempoSettings tempo = FanlightTempoSettings.Default();
-        public FanlightMotionPreset motionPreset;
-        public FanlightColorPreset colorPreset;
-        public FanlightAudienceSettings audience = FanlightAudienceSettings.Default();
-        public FanlightLodSettings lod = FanlightLodSettings.Default();
-        public FanlightRandomSettings random = FanlightRandomSettings.Default();
+        // Fields
+
+        [ColorUsage(false, true)]
+        public Color color = Color.white;
+
+        [Min(0.0f)]
+        public float intensity = 20.0f;
+
+
+        // Methods
+
+        public ClipCaps clipCaps => ClipCaps.Blending;
 
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
             var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
+
             var behaviour = playable.GetBehaviour();
-            behaviour.Target = target.Resolve(graph.GetResolver());
-            behaviour.Tempo = tempo.Validated();
-            behaviour.MotionPreset = motionPreset;
-            behaviour.ColorPreset = colorPreset;
-            behaviour.Audience = audience.Validated();
-            behaviour.Lod = lod.Validated();
-            behaviour.Random = random.Validated();
+            behaviour.Color = color;
+            behaviour.Intensity = Mathf.Max(0.0f, intensity);
+
             return playable;
         }
     }
