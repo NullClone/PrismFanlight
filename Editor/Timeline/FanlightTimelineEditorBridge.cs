@@ -11,6 +11,8 @@ namespace PrismFanlight.Editor
     [InitializeOnLoad]
     internal static class FanlightTimelineEditorBridge
     {
+        // Fields
+
         private const double TimeEpsilon = 0.000001;
 
         private static readonly HashSet<PrismFanlight> _targets = new();
@@ -19,6 +21,8 @@ namespace PrismFanlight.Editor
         private static double _time;
         private static bool _hasTime;
 
+
+        // Methods
 
         static FanlightTimelineEditorBridge()
         {
@@ -57,6 +61,7 @@ namespace PrismFanlight.Editor
             if (_director.state == PlayState.Playing) return;
 
             _director.Evaluate();
+
             RequestRender();
         }
 

@@ -1,16 +1,19 @@
 using System;
-using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight
 {
     public sealed class FanlightTimelineMixerBehaviour : PlayableBehaviour
     {
-        private PrismFanlight _lastTarget;
-        private bool _hasActiveCue;
+        // Fields
 
         private const float WeightEpsilon = 0.0001f;
 
+        private PrismFanlight _lastTarget;
+        private bool _hasActiveCue;
+
+
+        // Methods
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
@@ -27,6 +30,7 @@ namespace PrismFanlight
             }
 
             _lastTarget = fanlight;
+
             if (fanlight == null) return;
 
             var time = (float)playable.GetTime();
