@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace PrismFanlight
+namespace PrismFanlight.Timeline
 {
     public sealed class FanlightTimelinePlayableAsset : PlayableAsset, ITimelineClipAsset
     {

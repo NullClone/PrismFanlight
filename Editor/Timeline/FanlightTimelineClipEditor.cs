@@ -1,7 +1,8 @@
-﻿using UnityEditor.Timeline;
+﻿using PrismFanlight.Timeline;
+using UnityEditor.Timeline;
 using UnityEngine.Timeline;
 
-namespace PrismFanlight.Editor
+namespace PrismFanlight.Editor.Timeline
 {
     [CustomTimelineEditor(typeof(FanlightTimelinePlayableAsset))]
     public sealed class FanlightTimelineClipEditor : ClipEditor

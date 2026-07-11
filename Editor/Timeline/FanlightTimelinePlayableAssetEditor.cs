@@ -1,7 +1,8 @@
+using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEngine;
 
-namespace PrismFanlight.Editor
+namespace PrismFanlight.Editor.Timeline
 {
     [CustomEditor(typeof(FanlightTimelinePlayableAsset))]
     public sealed class FanlightTimelinePlayableAssetEditor : UnityEditor.Editor

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.Playables;
 
-namespace PrismFanlight
+namespace PrismFanlight.Timeline
 {
     public sealed class FanlightTimelineMixerBehaviour : PlayableBehaviour
     {
