@@ -4,13 +4,10 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightTimelinePlayableBehaviour : PlayableBehaviour
     {
-        public bool OverrideColor;
         public FanlightColorSettings Color;
-        public bool OverrideMotion;
         public FanlightMotionSettings Motion;
-        public bool OverrideTempo;
         public FanlightTempoSettings Tempo;
-        public bool OverrideAudience;
         public FanlightAudienceSettings Audience;
+        public FanlightTimelineOverrideSelection Overrides;
     }
 }

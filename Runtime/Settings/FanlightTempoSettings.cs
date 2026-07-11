@@ -26,11 +26,14 @@ namespace PrismFanlight
 
         public float latencyCompensationSeconds;
 
+        [FanlightTimelineIgnore]
         public FanlightTempoClockSource clockSource;
 
+        [FanlightTimelineIgnore]
         public AudioSource audioSource;
 
         [Min(0.0f)]
+        [FanlightTimelineIgnore]
         public float manualTime;
 
 

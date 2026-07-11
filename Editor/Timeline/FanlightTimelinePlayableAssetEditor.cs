@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using PrismFanlight.Timeline;
 using UnityEditor;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 namespace PrismFanlight.Editor.Timeline
@@ -9,115 +11,145 @@ namespace PrismFanlight.Editor.Timeline
     {
         // Fields
 
-        private SerializedProperty _overrideColor;
         private SerializedProperty _colorSettings;
-        private SerializedProperty _overrideMotion;
-        private SerializedProperty _motion;
-        private SerializedProperty _overrideTempo;
-        private SerializedProperty _tempo;
-        private SerializedProperty _overrideAudience;
-        private SerializedProperty _audience;
+        private SerializedProperty _motionSettings;
+        private SerializedProperty _tempoSettings;
+        private SerializedProperty _audienceSettings;
+        private SerializedProperty _paths;
 
 
         // Methods
 
         private void OnEnable()
         {
-            _overrideColor = serializedObject.FindProperty(nameof(_overrideColor));
+            serializedObject.Update();
+
             _colorSettings = serializedObject.FindProperty(nameof(_colorSettings));
-            _overrideMotion = serializedObject.FindProperty(nameof(_overrideMotion));
-            _motion = serializedObject.FindProperty(nameof(_motion));
-            _overrideTempo = serializedObject.FindProperty(nameof(_overrideTempo));
-            _tempo = serializedObject.FindProperty(nameof(_tempo));
-            _overrideAudience = serializedObject.FindProperty(nameof(_overrideAudience));
-            _audience = serializedObject.FindProperty(nameof(_audience));
+            _motionSettings = serializedObject.FindProperty(nameof(_motionSettings));
+            _tempoSettings = serializedObject.FindProperty(nameof(_tempoSettings));
+            _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
+
+            _paths = serializedObject.FindProperty("_overrides._paths");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            DrawColor();
-            DrawMotion();
-            DrawTempo();
-            DrawAudience();
+            DrawGroup("Color", FanlightTimelineSettingsGroup.Color, _colorSettings);
+            DrawGroup("Motion", FanlightTimelineSettingsGroup.Motion, _motionSettings);
+            DrawGroup("Tempo", FanlightTimelineSettingsGroup.Tempo, _tempoSettings);
+            DrawGroup("Audience", FanlightTimelineSettingsGroup.Audience, _audienceSettings);
 
-            serializedObject.ApplyModifiedProperties();
+            if (serializedObject.ApplyModifiedProperties())
+            {
+                RefreshTimelinePreview();
+            }
         }
 
-        private void DrawColor()
+        private void DrawGroup(string title, FanlightTimelineSettingsGroup group, SerializedProperty root)
         {
-            EditorGUILayout.LabelField("Color", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_overrideColor, new GUIContent("Override Color"));
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
 
-            if (!_overrideColor.boolValue) return;
+            var bySection = new Dictionary<string, List<FanlightTimelineOverrideDescriptor>>();
+
+            foreach (var descriptor in FanlightTimelineOverrideSchema.GetGroup(group))
+            {
+                if (!bySection.TryGetValue(descriptor.DisplayGroup, out var descriptors))
+                {
+                    descriptors = new List<FanlightTimelineOverrideDescriptor>();
+                    bySection.Add(descriptor.DisplayGroup, descriptors);
+                }
+
+                descriptors.Add(descriptor);
+            }
+
+            foreach (var pair in bySection)
+            {
+                DrawSection(pair.Key, pair.Value, root);
+            }
+        }
+
+        private void DrawSection(string title, List<FanlightTimelineOverrideDescriptor> descriptors, SerializedProperty root)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+
+                if (GUILayout.Button("All", EditorStyles.miniButtonLeft, GUILayout.Width(36))) SetAll(descriptors, true);
+                if (GUILayout.Button("None", EditorStyles.miniButtonRight, GUILayout.Width(42))) SetAll(descriptors, false);
+            }
 
             using (new EditorGUI.IndentLevelScope())
             {
-                var mode = _colorSettings.FindPropertyRelative("mode");
-                EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
-                EditorGUILayout.PropertyField(_colorSettings.FindPropertyRelative("primaryColor"), new GUIContent("Primary HDR Color"));
-
-                if ((FanlightColorMode)mode.enumValueIndex == FanlightColorMode.Gradient)
+                foreach (var descriptor in descriptors)
                 {
-                    EditorGUILayout.PropertyField(_colorSettings.FindPropertyRelative("secondaryColor"), new GUIContent("Secondary HDR Color"));
-                }
-                else if ((FanlightColorMode)mode.enumValueIndex == FanlightColorMode.Random)
-                {
-                    EditorGUILayout.PropertyField(_colorSettings.FindPropertyRelative("paletteColors"), new GUIContent("HDR Palette"), true);
-                }
+                    var property = root.FindPropertyRelative(descriptor.RelativePath);
+                    if (property == null) continue;
 
-                EditorGUILayout.PropertyField(_colorSettings.FindPropertyRelative("intensity"), new GUIContent("Intensity"));
-                EditorGUILayout.PropertyField(_colorSettings.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-            }
-        }
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        var enabled = Contains(descriptor.Path);
+                        var next = EditorGUILayout.Toggle(enabled, GUILayout.Width(16));
+                        if (next != enabled) Set(descriptor.Path, next);
 
-        private void DrawMotion()
-        {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Motion", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_overrideMotion, new GUIContent("Override Motion"));
-
-            if (_overrideMotion.boolValue)
-            {
-                using (new EditorGUI.IndentLevelScope())
-                {
-                    EditorGUILayout.PropertyField(_motion, new GUIContent("Settings"), true);
+                        using (new EditorGUI.DisabledScope(!next))
+                        {
+                            EditorGUILayout.PropertyField(property, new GUIContent(descriptor.DisplayName), property.isArray && property.propertyType != SerializedPropertyType.String);
+                        }
+                    }
                 }
             }
         }
 
-        private void DrawTempo()
+        private bool Contains(string path)
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Tempo", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_overrideTempo, new GUIContent("Override Tempo"));
-
-            if (!_overrideTempo.boolValue) return;
-
-            using (new EditorGUI.IndentLevelScope())
+            for (var i = 0; i < _paths.arraySize; i++)
             {
-                EditorGUILayout.HelpBox("Timeline time is always the song-time source. This cue overrides only BPM, beats per bar, and timing offsets.", MessageType.None);
-                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("bpm"), new GUIContent("BPM"));
-                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("beatsPerBar"), new GUIContent("Beats Per Bar"));
-                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("offsetSeconds"), new GUIContent("Offset Seconds"));
-                EditorGUILayout.PropertyField(_tempo.FindPropertyRelative("latencyCompensationSeconds"), new GUIContent("Latency Compensation"));
+                if (_paths.GetArrayElementAtIndex(i).stringValue == path) return true;
             }
+
+            return false;
         }
 
-        private void DrawAudience()
+        private void SetAll(IEnumerable<FanlightTimelineOverrideDescriptor> descriptors, bool enabled)
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Audience", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_overrideAudience, new GUIContent("Override Audience"));
+            foreach (var descriptor in descriptors) Set(descriptor.Path, enabled);
+        }
 
-            if (_overrideAudience.boolValue)
+        private void Set(string path, bool enabled)
+        {
+            for (var i = 0; i < _paths.arraySize; i++)
             {
-                using (new EditorGUI.IndentLevelScope())
+                if (_paths.GetArrayElementAtIndex(i).stringValue != path) continue;
+
+                if (!enabled)
                 {
-                    EditorGUILayout.PropertyField(_audience, new GUIContent("Settings"), true);
+                    _paths.DeleteArrayElementAtIndex(i);
                 }
+
+                return;
             }
+
+            if (!enabled) return;
+
+            _paths.InsertArrayElementAtIndex(_paths.arraySize);
+            _paths.GetArrayElementAtIndex(_paths.arraySize - 1).stringValue = path;
+        }
+
+        private static void RefreshTimelinePreview()
+        {
+            var director = TimelineEditor.inspectedDirector;
+
+            if (director && !Application.isPlaying)
+            {
+                director.RebuildGraph();
+                director.Evaluate();
+            }
+
+            EditorApplication.QueuePlayerLoopUpdate();
+            SceneView.RepaintAll();
         }
     }
 }

@@ -17,8 +17,8 @@ namespace PrismFanlight.Editor
         private const double TimeEpsilon = 0.000001;
 
         private static readonly HashSet<PrismFanlight> _targets = new();
-
         private static PlayableDirector _director;
+        private static PlayableAsset _playableAsset;
         private static double _time;
         private static bool _hasTime;
 
@@ -43,10 +43,12 @@ namespace PrismFanlight.Editor
 
             var director = TimelineEditor.inspectedDirector;
 
-            if (_director != director)
+            if (_director != director || _playableAsset != director?.playableAsset)
             {
                 ClearTargets();
+
                 _director = director;
+                _playableAsset = director != null ? director.playableAsset : null;
                 _hasTime = false;
             }
 
@@ -112,7 +114,7 @@ namespace PrismFanlight.Editor
             {
                 if (fanlight != null)
                 {
-                    fanlight.ClearResolvedStateOverride();
+                    fanlight.ClearTimelineContributions();
                 }
             }
 
@@ -123,6 +125,7 @@ namespace PrismFanlight.Editor
         {
             ClearTargets();
             _director = null;
+            _playableAsset = null;
             _hasTime = false;
         }
 

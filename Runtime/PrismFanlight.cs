@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using PrismFanlight.Rendering;
+using PrismFanlight.Timeline;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -71,10 +73,12 @@ namespace PrismFanlight
         private Transform _swingTarget = null;
 
         private readonly FanlightGpuRenderer _renderer = new();
+        private readonly Dictionary<FanlightTimelineMixerBehaviour, FanlightTimelineTrackContribution> _timelineContributions = new();
+        private readonly List<FanlightTimelineTrackContribution> _sortedTimelineContributions = new();
         private SeatLayout _validatedSeatLayout;
-        private bool _hasResolvedStateOverride;
-        private bool _overrideTimeJumpPending;
-        private FanlightResolvedState _resolvedStateOverride;
+        private bool _hasExternalResolvedStateOverride;
+        private bool _externalOverrideTimeJumpPending;
+        private FanlightResolvedState _externalResolvedStateOverride;
 
 
         // Properties
@@ -117,7 +121,7 @@ namespace PrismFanlight
 
         public FanlightRandomSettings Random => _random.Validated();
 
-        internal bool HasResolvedStateOverride => _hasResolvedStateOverride;
+        internal bool HasResolvedStateOverride => _hasExternalResolvedStateOverride || _timelineContributions.Count > 0;
 
         internal static event Action<PrismFanlight> ResolvedStateOverrideChanged;
 
@@ -145,15 +149,20 @@ namespace PrismFanlight
         {
             if (!Enable) return;
 
-            if (_hasResolvedStateOverride)
+            if (_timelineContributions.Count > 0 && TryResolveTimelineState(out var timelineState))
             {
-                Render(_resolvedStateOverride, _overrideTimeJumpPending);
-                _overrideTimeJumpPending = false;
+                Render(timelineState);
 
                 return;
             }
 
-            if (!Application.isPlaying) return;
+            if (_hasExternalResolvedStateOverride)
+            {
+                Render(_externalResolvedStateOverride, _externalOverrideTimeJumpPending);
+                _externalOverrideTimeJumpPending = false;
+
+                return;
+            }
 
             var context = FanlightEvaluationContext.Runtime(GetCurrentTime(), GetCurrentUpdateClock());
             var state = ResolveState(context);
@@ -163,12 +172,14 @@ namespace PrismFanlight
 
         private void OnDisable()
         {
+            ClearTimelineContributions();
             ClearResolvedStateOverride();
             Dispose();
         }
 
         private void OnDestroy()
         {
+            ClearTimelineContributions();
             ClearResolvedStateOverride();
             Dispose();
         }
@@ -257,9 +268,31 @@ namespace PrismFanlight
 
         public void SetResolvedStateOverride(FanlightResolvedState state)
         {
-            _resolvedStateOverride = state;
-            _hasResolvedStateOverride = true;
-            _overrideTimeJumpPending = state.IsTimeJump;
+            _externalResolvedStateOverride = state;
+            _hasExternalResolvedStateOverride = true;
+            _externalOverrideTimeJumpPending = state.IsTimeJump;
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        internal void SetTimelineContribution(FanlightTimelineMixerBehaviour source, FanlightTimelineTrackContribution contribution)
+        {
+            _timelineContributions[source] = contribution;
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        internal void ClearTimelineContribution(FanlightTimelineMixerBehaviour source)
+        {
+            if (!_timelineContributions.Remove(source)) return;
+
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        internal void ClearTimelineContributions()
+        {
+            if (_timelineContributions.Count == 0) return;
+
+            _timelineContributions.Clear();
+            _sortedTimelineContributions.Clear();
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
@@ -288,12 +321,53 @@ namespace PrismFanlight
 
         public void ClearResolvedStateOverride()
         {
-            if (!_hasResolvedStateOverride) return;
+            if (!_hasExternalResolvedStateOverride) return;
 
-            _hasResolvedStateOverride = false;
-            _overrideTimeJumpPending = false;
-            _resolvedStateOverride = default;
+            _hasExternalResolvedStateOverride = false;
+            _externalOverrideTimeJumpPending = false;
+            _externalResolvedStateOverride = default;
             ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        private bool TryResolveTimelineState(out FanlightResolvedState state)
+        {
+            _sortedTimelineContributions.Clear();
+            foreach (var contribution in _timelineContributions.Values)
+            {
+                _sortedTimelineContributions.Add(contribution);
+            }
+
+            if (_sortedTimelineContributions.Count == 0)
+            {
+                state = default;
+                return false;
+            }
+
+            _sortedTimelineContributions.Sort(FanlightTimelineContributionComparer.Instance);
+
+            var time = _sortedTimelineContributions[_sortedTimelineContributions.Count - 1].Time;
+            var isTimeJump = false;
+            for (var i = 0; i < _sortedTimelineContributions.Count; i++)
+            {
+                isTimeJump |= _sortedTimelineContributions[i].IsTimeJump;
+            }
+
+            var context = FanlightEvaluationContext.Timeline(time, isTimeJump);
+            var baseState = ResolveState(context);
+            state = FanlightTimelineStateComposer.Compose(baseState, Tempo, _sortedTimelineContributions, time, isTimeJump);
+            return true;
+        }
+
+        private sealed class FanlightTimelineContributionComparer : IComparer<FanlightTimelineTrackContribution>
+        {
+            public static readonly FanlightTimelineContributionComparer Instance = new();
+
+            public int Compare(FanlightTimelineTrackContribution x, FanlightTimelineTrackContribution y)
+            {
+                // Timeline returns output tracks from top to bottom. Applying the
+                // later entry last gives the visually lower track precedence.
+                return x.SortOrder.CompareTo(y.SortOrder);
+            }
         }
 
 
