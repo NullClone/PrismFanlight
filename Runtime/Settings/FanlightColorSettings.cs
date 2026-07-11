@@ -43,16 +43,15 @@ namespace PrismFanlight
 
         public FanlightColorSettings Validated()
         {
-            var palette = paletteColors == null || paletteColors.Length == 0
-                ? new[] { primaryColor }
-                : CopyPalette(paletteColors);
-
             return new FanlightColorSettings
             {
                 mode = IsSupportedMode(mode) ? mode : FanlightColorMode.Single,
                 primaryColor = primaryColor,
                 secondaryColor = secondaryColor,
-                paletteColors = palette,
+                // The GPU dispatcher already clamps the palette to MaxPaletteColors
+                // and falls back to primaryColor for an empty palette. Keeping the
+                // original reference avoids a Color[] allocation during evaluation.
+                paletteColors = paletteColors,
                 intensity = math.max(intensity, 0.0f),
                 randomIntensity = math.saturate(randomIntensity)
             };
@@ -79,27 +78,22 @@ namespace PrismFanlight
                 hash = hash * 31 + randomIntensity.GetHashCode();
 
                 var palette = paletteColors;
-                hash = hash * 31 + (palette?.Length ?? 0);
-
                 if (palette != null)
                 {
                     var count = math.min(palette.Length, MaxPaletteColors);
+                    hash = hash * 31 + count;
                     for (var i = 0; i < count; i++)
                     {
                         hash = hash * 31 + palette[i].GetHashCode();
                     }
                 }
+                else
+                {
+                    hash = hash * 31;
+                }
 
                 return hash;
             }
-        }
-
-        private static Color[] CopyPalette(Color[] source)
-        {
-            var count = math.clamp(source.Length, 1, MaxPaletteColors);
-            var destination = new Color[count];
-            Array.Copy(source, destination, count);
-            return destination;
         }
 
         private static bool IsSupportedMode(FanlightColorMode value)

@@ -30,10 +30,11 @@ namespace PrismFanlight.Editor
         private SerializedProperty _colorPreset;
         private SerializedProperty _color;
         private SerializedProperty _audienceSettings;
-        private SerializedProperty _enablePreview;
+        private SerializedProperty _lod;
+        private SerializedProperty _random;
 
         private bool _enableGizmos = true;
-        private bool _wasPreviewing;
+        //private bool _wasPreviewing;
 
 
         private void OnEnable()
@@ -59,25 +60,29 @@ namespace PrismFanlight.Editor
             _colorPreset = serializedObject.FindProperty(nameof(_colorPreset));
             _color = serializedObject.FindProperty(nameof(_color));
             _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
-            _enablePreview = serializedObject.FindProperty(nameof(_enablePreview));
+            _lod = serializedObject.FindProperty(nameof(_lod));
+            _random = serializedObject.FindProperty(nameof(_random));
 
-            EditorApplication.update += DrawPreview;
+            //EditorApplication.update += DrawPreview;
         }
 
         private void OnDisable()
         {
+            /*
             EditorApplication.update -= DrawPreview;
 
             if (_instance != null && !Application.isPlaying)
             {
-                _instance.ReleaseGpuResources();
+                _instance.Dispose();
 
                 SceneView.RepaintAll();
             }
 
             _wasPreviewing = false;
+            */
         }
 
+        /*
         private void DrawPreview()
         {
             if (_instance == null || Application.isPlaying)
@@ -87,7 +92,7 @@ namespace PrismFanlight.Editor
                 return;
             }
 
-            var previewing = _instance.EnablePreview && _instance.enabled;
+            var previewing = _instance.EnablePreview;
 
             if (previewing)
             {
@@ -98,13 +103,14 @@ namespace PrismFanlight.Editor
             }
             else if (_wasPreviewing)
             {
-                _instance.ReleaseGpuResources();
+                _instance.Dispose();
 
                 SceneView.RepaintAll();
             }
 
             _wasPreviewing = previewing;
         }
+        */
 
         private void OnSceneGUI()
         {
@@ -156,8 +162,10 @@ namespace PrismFanlight.Editor
             DrawLayoutSection();
             DrawMotionSection();
             DrawAudienceSection();
+            DrawLodSection();
             DrawColorSection();
             DrawTempoSection();
+            DrawRandomSection();
             DrawDebugSection();
 
             serializedObject.ApplyModifiedProperties();
@@ -411,7 +419,7 @@ namespace PrismFanlight.Editor
                 () =>
                 {
                     serializedObject.ApplyModifiedProperties();
-                    PrismFanlightPresetUtility.CreateMotionPreset(_instance, _instance.GetMotion());
+                    PrismFanlightPresetUtility.CreateMotionPreset(_instance, _instance.GetMotionSettings());
                 });
         }
 
@@ -663,6 +671,33 @@ namespace PrismFanlight.Editor
             });
         }
 
+        private void DrawLodSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| LOD", () =>
+            {
+                var audienceLod = _lod.FindPropertyRelative("enableAudienceDistanceLod");
+                EditorGUILayout.PropertyField(audienceLod, new GUIContent("Audience Distance LOD"));
+
+                if (!audienceLod.boolValue) return;
+
+                EditorGUILayout.PropertyField(_lod.FindPropertyRelative("audienceVisibleDistance"), new GUIContent("Audience Distance"));
+
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.PropertyField(_lod.FindPropertyRelative("audienceFadeRange"), new GUIContent("Fade Range"));
+                }
+            });
+        }
+
+        private void DrawRandomSection()
+        {
+            PrismFanlightEditorStyles.DrawSection("| Random", () =>
+            {
+                EditorGUILayout.PropertyField(_random.FindPropertyRelative("deterministic"), new GUIContent("Deterministic"));
+                EditorGUILayout.PropertyField(_random.FindPropertyRelative("globalSeed"), new GUIContent("Global Seed"));
+            });
+        }
+
         private static void DrawHandZoneFields(SerializedProperty handZone)
         {
             PrismFanlightEditorStyles.DrawSubGroupLabel("Hand Zone");
@@ -697,17 +732,7 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection("| Debug", () =>
             {
-                using (new EditorGUI.DisabledScope(Application.isPlaying))
-                {
-                    EditorGUILayout.PropertyField(_enablePreview,
-                        new GUIContent("Enable Preview", "Render the fanlights in the Scene view while not in Play mode."));
-                }
-
-                if (Application.isPlaying)
-                {
-                    EditorGUILayout.HelpBox("Preview always renders during Play mode.", MessageType.None);
-                }
-                else if (_enablePreview.boolValue && !SystemInfo.supportsComputeShaders)
+                if (!SystemInfo.supportsComputeShaders)
                 {
                     EditorGUILayout.HelpBox("Compute shaders are not supported on this platform; preview is unavailable.", MessageType.Warning);
                 }

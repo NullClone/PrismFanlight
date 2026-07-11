@@ -3,7 +3,9 @@
     "rootNamespace": "",
     "references": [
         "PrismFanlight.Runtime",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Timeline",
+        "Unity.Timeline.Editor"
     ],
     "includePlatforms": [
         "Editor"

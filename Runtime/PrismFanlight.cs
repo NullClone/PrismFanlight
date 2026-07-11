@@ -1,5 +1,8 @@
+using System;
 using PrismFanlight.Rendering;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace PrismFanlight
@@ -56,15 +59,22 @@ namespace PrismFanlight
         private FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
 
         [SerializeField]
+        private FanlightLodSettings _lod = FanlightLodSettings.Default();
+
+        [SerializeField]
+        private FanlightRandomSettings _random = FanlightRandomSettings.Default();
+
+        [SerializeField]
         private FanlightTempoSettings _tempo = FanlightTempoSettings.Default();
 
         [SerializeField]
         private Transform _swingTarget = null;
 
-        [SerializeField]
-        private bool _enablePreview = false;
-
         private readonly FanlightGpuRenderer _renderer = new();
+        private SeatLayout _validatedSeatLayout;
+        private bool _hasResolvedStateOverride;
+        private bool _overrideTimeJumpPending;
+        private FanlightResolvedState _resolvedStateOverride;
 
 
         // Properties
@@ -87,13 +97,7 @@ namespace PrismFanlight
             set => _swingTarget = value;
         }
 
-        public bool EnablePreview
-        {
-            get => _enablePreview;
-            set => _enablePreview = value;
-        }
-
-        public bool Enable => enabled && SystemInfo.supportsComputeShaders && (Application.isPlaying || (_enablePreview && IsSelectedInEditor()));
+        public bool Enable => enabled && SystemInfo.supportsComputeShaders;
 
         public bool IsCullingEnabled => _enableCulling && Application.isPlaying;
 
@@ -108,6 +112,14 @@ namespace PrismFanlight
         public FanlightMotionPreset MotionPreset => _motionPreset;
 
         public FanlightColorPreset ColorPreset => _colorPreset;
+
+        public FanlightLodSettings Lod => _lod.Validated();
+
+        public FanlightRandomSettings Random => _random.Validated();
+
+        internal bool HasResolvedStateOverride => _hasResolvedStateOverride;
+
+        internal static event Action<PrismFanlight> ResolvedStateOverrideChanged;
 
 
         // Methods
@@ -129,9 +141,70 @@ namespace PrismFanlight
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if (!Enable) return;
+
+            if (_hasResolvedStateOverride)
+            {
+                Render(_resolvedStateOverride, _overrideTimeJumpPending);
+                _overrideTimeJumpPending = false;
+
+                return;
+            }
+
+            if (!Application.isPlaying) return;
+
+            var context = FanlightEvaluationContext.Runtime(GetCurrentTime(), GetCurrentUpdateClock());
+            var state = ResolveState(context);
+
+            Render(state);
+        }
+
+        private void OnDisable()
+        {
+            ClearResolvedStateOverride();
+            Dispose();
+        }
+
+        private void OnDestroy()
+        {
+            ClearResolvedStateOverride();
+            Dispose();
+        }
+
+        private void OnValidate()
+        {
+            _validatedSeatLayout = null;
+        }
+
+        private float GetCurrentTime()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
+#endif
+            return Time.time;
+        }
+
+        private float GetCurrentUpdateClock()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
+#endif
+            return Time.unscaledTime;
+        }
+
+
+        public void Render(FanlightResolvedState state)
+        {
+            Render(state, state.IsTimeJump);
+        }
+
+        private void Render(FanlightResolvedState state, bool isTimeJump)
+        {
+            if (!Enable) return;
+
+            var cameraPosition = _cullingCamera != null ? _cullingCamera.transform.position : transform.position;
 
             _renderer.Render(
                 _mesh,
@@ -142,47 +215,30 @@ namespace PrismFanlight
                 IsCullingEnabled,
                 VisibilityUpdate,
                 AnimationUpdate,
-                GetTempoState(),
-                GetSeatLayout(),
-                GetMotion(),
-                GetColorSettings(),
-                GetAudienceSettings(),
+                GetValidatedSeatLayout(),
                 _audienceMaterial,
-                _swingTarget != null ? _swingTarget.position : Vector3.zero,
-                transform.localToWorldMatrix,
-                Time.time,
-                Time.unscaledTime);
+                state,
+                isTimeJump,
+                cameraPosition);
         }
 
-        private void OnDisable()
+        public void Dispose()
         {
-            ReleaseGpuResources();
-        }
-
-        private void OnDestroy()
-        {
-            ReleaseGpuResources();
-        }
-
-        private bool IsSelectedInEditor()
-        {
-#if UNITY_EDITOR
-            return Selection.Contains(gameObject);
-#else
-            return false;
-#endif
+            _renderer.Dispose();
         }
 
 
-        public SeatLayout GetSeatLayout() => (_seatLayout ?? SeatLayout.Default()).Validated();
+        public SeatLayout GetSeatLayout() => GetValidatedSeatLayout();
 
-        public bool IsSeatLayoutBakeCurrent => GetSeatLayout().HasValidBake;
-
-        public FanlightMotionSettings GetMotion() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
+        public FanlightMotionSettings GetMotionSettings() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
 
         public FanlightAudienceSettings GetAudienceSettings() => _audienceSettings.Validated();
+
+        public FanlightLodSettings GetLodSettings() => _lod.Validated();
+
+        public FanlightRandomSettings GetRandomSettings() => _random.Validated();
 
         public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
 
@@ -196,6 +252,54 @@ namespace PrismFanlight
                 layout.TotalSeatCount,
                 _renderer.VisibleSeatCount,
                 blockCount);
+        }
+
+
+        public void SetResolvedStateOverride(FanlightResolvedState state)
+        {
+            _resolvedStateOverride = state;
+            _hasResolvedStateOverride = true;
+            _overrideTimeJumpPending = state.IsTimeJump;
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        internal FanlightResolvedState ResolveState(FanlightEvaluationContext context)
+        {
+            var tempo = Tempo;
+            if (context.Source == FanlightEvaluationSource.Timeline)
+            {
+                tempo.clockSource = FanlightTempoClockSource.ManualTime;
+                tempo.manualTime = Mathf.Max(0.0f, context.Time);
+            }
+
+            return new FanlightResolvedState(
+                tempo.Evaluate(context.Time),
+                _motionPreset != null ? _motionPreset.Settings : _motion,
+                _colorPreset != null ? _colorPreset.Settings : _color,
+                _audienceSettings,
+                _lod,
+                _random,
+                _swingTarget != null ? _swingTarget.position : Vector3.zero,
+                transform.localToWorldMatrix,
+                context.Time,
+                context.UpdateClock,
+                context.IsTimeJump);
+        }
+
+        public void ClearResolvedStateOverride()
+        {
+            if (!_hasResolvedStateOverride) return;
+
+            _hasResolvedStateOverride = false;
+            _overrideTimeJumpPending = false;
+            _resolvedStateOverride = default;
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+
+        public void SetRenderingLayerMask(uint renderingLayerMask)
+        {
+            _renderingLayerMask = renderingLayerMask;
         }
 
         public void SetVisibilityUpdate(FanlightGpuUpdateTiming timing)
@@ -217,33 +321,10 @@ namespace PrismFanlight
             }
 
             _seatLayout = (layout ?? SeatLayout.Default()).Validated();
-            ReleaseGpuResources();
+            _validatedSeatLayout = _seatLayout;
+
+            Dispose();
         }
-
-#if UNITY_EDITOR
-        public void BakeSeatLayoutForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            var layout = GetSeatLayout();
-            layout.SetBakedGeometry(
-                FanlightGeometryBuilder.BuildSeatData(layout, false),
-                FanlightGeometryBuilder.BuildBakedBlockData(layout),
-                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
-
-            _seatLayout = layout;
-            ReleaseGpuResources();
-        }
-
-        public void ClearSeatLayoutBakeForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            _seatLayout = GetSeatLayout();
-            _seatLayout.ClearBakedGeometry();
-            ReleaseGpuResources();
-        }
-#endif
 
         public void SetTempo(FanlightTempoSettings tempo)
         {
@@ -282,14 +363,54 @@ namespace PrismFanlight
             _audienceSettings = audience.Validated();
         }
 
-        public void SetRenderingLayerMask(uint renderingLayerMask)
+        public void SetLodSettings(FanlightLodSettings lod)
         {
-            _renderingLayerMask = renderingLayerMask;
+            _lod = lod.Validated();
         }
 
-        public void ReleaseGpuResources()
+        public void SetRandomSettings(FanlightRandomSettings random)
         {
-            _renderer.Dispose();
+            _random = random.Validated();
+        }
+
+
+#if UNITY_EDITOR
+        public void BakeSeatLayoutForEditor()
+        {
+            if (Application.isPlaying) return;
+
+            var layout = GetSeatLayout();
+            layout.SetBakedGeometry(
+                FanlightGeometryBuilder.BuildSeatData(layout, false),
+                FanlightGeometryBuilder.BuildBakedBlockData(layout),
+                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
+
+            _seatLayout = layout;
+            _validatedSeatLayout = _seatLayout;
+
+            Dispose();
+        }
+
+        public void ClearSeatLayoutBakeForEditor()
+        {
+            if (Application.isPlaying) return;
+
+            _seatLayout = GetSeatLayout();
+            _seatLayout.ClearBakedGeometry();
+            _validatedSeatLayout = _seatLayout;
+
+            Dispose();
+        }
+#endif
+
+        private SeatLayout GetValidatedSeatLayout()
+        {
+            if (_validatedSeatLayout == null)
+            {
+                _validatedSeatLayout = (_seatLayout ?? SeatLayout.Default()).Validated();
+            }
+
+            return _validatedSeatLayout;
         }
     }
 }

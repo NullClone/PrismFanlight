@@ -6,7 +6,6 @@
 
 float4 PrismComputeColor(FanlightSeatData seat)
 {
-    float seed = seat.localPositionSeed.w;
     float2 block = seat.planePositionBlock.zw;
 
     float3 rgb = _PrimaryColor.rgb;
@@ -17,7 +16,7 @@ float4 PrismComputeColor(FanlightSeatData seat)
     else if (_ColorMode == 1)
     {
         int count = clamp(_PaletteColorCount, 1, 16);
-        int paletteIndex = min((int)floor(Hash11(seed + 107.0) * count), count - 1);
+        int paletteIndex = min((int)floor(PrismRandom(seat, 27u) * count), count - 1);
         rgb = _PaletteColors[paletteIndex].rgb;
     }
     else if (_ColorMode == 2)
@@ -26,7 +25,7 @@ float4 PrismComputeColor(FanlightSeatData seat)
         rgb = lerp(_PrimaryColor.rgb, _SecondaryColor.rgb, block.x / denom);
     }
 
-    float randomIntensityFactor = max(0.0, 1.0 + (Hash11(seed + 101.0) * 2.0 - 1.0) * _Brightness.y);
+    float randomIntensityFactor = max(0.0, 1.0 + (PrismRandom(seat, 28u) * 2.0 - 1.0) * _Brightness.y);
 
     return float4(rgb * randomIntensityFactor, _PrimaryColor.a);
 }

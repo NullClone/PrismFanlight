@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "displayName": "Prism Fanlight",
   "unity": "6000.3",
+  "dependencies": {
+    "com.unity.timeline": "1.8.10"
+  },
   "license": "MIT"
 }

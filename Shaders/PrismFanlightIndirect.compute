@@ -3,10 +3,9 @@
 #pragma kernel BuildVisibleInstances
 #pragma kernel GenerateVisibleAnimation
 #pragma kernel GenerateAllAnimation
+#pragma kernel GenerateVisibleFrameData
+#pragma kernel GenerateAllFrameData
 #pragma kernel GenerateAllColors
-#pragma kernel GenerateVisibleAudience
-#pragma kernel GenerateAllAudience
-#pragma kernel ScaleAudienceArgs
 
 #include "PrismFanlightComputeContext.hlsl"
 #include "PrismFanlightCulling.hlsl"
@@ -17,7 +16,8 @@
 [numthreads(1, 1, 1)]
 void ClearIndirectArgs(uint3 id : SV_DispatchThreadID)
 {
-    _DrawArgs[1] = 0;
+    _PenlightArgs[1] = 0;
+    _AudienceArgs[1] = 0;
 }
 
 [numthreads(64, 1, 1)]
@@ -36,44 +36,78 @@ void CullBlocks(uint3 dispatchId : SV_DispatchThreadID)
 
 groupshared uint _GroupVisibleCount;
 groupshared uint _GroupBaseOffset;
+groupshared uint _GroupAudienceVisibleCount;
+groupshared uint _GroupAudienceBaseOffset;
 
 [numthreads(128, 1, 1)]
 void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
     if (groupIndex == 0)
+    {
         _GroupVisibleCount = 0;
+        _GroupAudienceVisibleCount = 0;
+    }
     GroupMemoryBarrierWithGroupSync();
 
     uint id = dispatchId.x;
     bool visible = false;
+    bool audienceVisible = false;
 
     if (id < (uint)_InstanceCount)
     {
         FanlightSeatData seat = _Seats[id];
         uint blockIndex = (uint)(seat.planePositionBlock.z + seat.planePositionBlock.w * _BlockCount.x);
         visible = _BlockVisibility[blockIndex] != 0;
+
+        if (visible)
+        {
+            float3 seatWorldPos = mul(_LocalToWorld, float4(seat.localPositionSeed.xyz, 1.0)).xyz;
+            float visibleDistance = max(0.0, _AudienceLod.x);
+            float3 toCamera = seatWorldPos - _LodCameraPos.xyz;
+            audienceVisible = _EnableAudienceLod == 0 || dot(toCamera, toCamera) <= visibleDistance * visibleDistance;
+        }
     }
 
     uint localSlot = 0;
     if (visible)
         InterlockedAdd(_GroupVisibleCount, 1, localSlot);
+
+    uint localAudienceSlot = 0;
+    if (audienceVisible)
+        InterlockedAdd(_GroupAudienceVisibleCount, 1, localAudienceSlot);
+
     GroupMemoryBarrierWithGroupSync();
 
     if (groupIndex == 0)
-        InterlockedAdd(_DrawArgs[1], _GroupVisibleCount, _GroupBaseOffset);
+    {
+        InterlockedAdd(_PenlightArgs[1], _GroupVisibleCount, _GroupBaseOffset);
+        InterlockedAdd(_AudienceArgs[1], _GroupAudienceVisibleCount * 3u, _GroupAudienceBaseOffset);
+        _GroupAudienceBaseOffset /= 3u;
+    }
     GroupMemoryBarrierWithGroupSync();
 
     if (visible)
-        _VisibleIndices[_GroupBaseOffset + localSlot] = id;
+        _PenlightVisibleIndices[_GroupBaseOffset + localSlot] = id;
+
+    if (audienceVisible)
+    {
+        uint audienceSlot = _GroupAudienceBaseOffset + localAudienceSlot;
+        _AudienceSlots[id] = audienceSlot;
+        _AudienceVisibleIndices[audienceSlot] = id;
+    }
+    else if (id < (uint)_InstanceCount)
+    {
+        _AudienceSlots[id] = 0xFFFFFFFFu;
+    }
 }
 
 [numthreads(128, 1, 1)]
 void GenerateVisibleAnimation(uint3 dispatchId : SV_DispatchThreadID)
 {
     uint visibleSlot = dispatchId.x;
-    if (visibleSlot >= _DrawArgs[1]) return;
+    if (visibleSlot >= _PenlightArgs[1]) return;
 
-    uint id = _VisibleIndices[visibleSlot];
+    uint id = _PenlightVisibleIndices[visibleSlot];
     FanlightSeatData seat = _Seats[id];
     _FanlightMatrices[id] = PrismComputeMatrix(seat);
 }
@@ -89,6 +123,44 @@ void GenerateAllAnimation(uint3 dispatchId : SV_DispatchThreadID)
 }
 
 [numthreads(128, 1, 1)]
+void GenerateVisibleFrameData(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint visibleSlot = dispatchId.x;
+
+    if (visibleSlot < _PenlightArgs[1])
+    {
+        uint id = _PenlightVisibleIndices[visibleSlot];
+        FanlightSeatData seat = _Seats[id];
+        PrismHumanPose pose = PrismComputeHumanPose(seat);
+        PrismArm arm = PrismComputeArm(seat, pose);
+        _FanlightMatrices[id] = arm.worldMatrix;
+
+        if (_AudienceSlots[id] != 0xFFFFFFFFu)
+        {
+            PrismBuildAudienceParts(id, pose, arm);
+        }
+    }
+}
+
+[numthreads(128, 1, 1)]
+void GenerateAllFrameData(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint id = dispatchId.x;
+    if (id < (uint)_InstanceCount)
+    {
+        FanlightSeatData seat = _Seats[id];
+        PrismHumanPose pose = PrismComputeHumanPose(seat);
+        PrismArm arm = PrismComputeArm(seat, pose);
+        _FanlightMatrices[id] = arm.worldMatrix;
+
+        if (_AudienceSlots[id] != 0xFFFFFFFFu)
+        {
+            PrismBuildAudienceParts(id, pose, arm);
+        }
+    }
+}
+
+[numthreads(128, 1, 1)]
 void GenerateAllColors(uint3 dispatchId : SV_DispatchThreadID)
 {
     uint id = dispatchId.x;
@@ -98,26 +170,3 @@ void GenerateAllColors(uint3 dispatchId : SV_DispatchThreadID)
     _FanlightColors[id] = PrismComputeColor(seat);
 }
 
-[numthreads(128, 1, 1)]
-void GenerateVisibleAudience(uint3 dispatchId : SV_DispatchThreadID)
-{
-    uint visibleSlot = dispatchId.x;
-    if (visibleSlot >= _DrawArgs[1]) return;
-
-    PrismBuildAudienceParts(_VisibleIndices[visibleSlot]);
-}
-
-[numthreads(128, 1, 1)]
-void GenerateAllAudience(uint3 dispatchId : SV_DispatchThreadID)
-{
-    uint id = dispatchId.x;
-    if (id >= (uint)_InstanceCount) return;
-
-    PrismBuildAudienceParts(id);
-}
-
-[numthreads(1, 1, 1)]
-void ScaleAudienceArgs(uint3 id : SV_DispatchThreadID)
-{
-    _AudienceArgs[1] = _DrawArgs[1] * 3u;
-}

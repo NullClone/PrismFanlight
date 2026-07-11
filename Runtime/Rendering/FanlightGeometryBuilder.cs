@@ -59,7 +59,7 @@ namespace PrismFanlight.Rendering
                     localPosition,
                     new Vector2(planePosition.x, planePosition.y),
                     new Vector2(block.x, block.y),
-                    (uint)i * 2u + 123u);
+                    (uint)i);
             }
 
             return data;

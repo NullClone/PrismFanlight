@@ -1,3 +1,4 @@
+using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,13 +11,21 @@ namespace PrismFanlight.Rendering
 
         private const int ReadbackIntervalFrames = 10;
 
+        private readonly Action<AsyncGPUReadbackRequest> _onReadback;
         private int _lastReadbackFrame = -1;
         private bool _readbackPending;
+        private int _seatCountForReadback;
 
 
         // Properties
 
         public int VisibleSeatCount { get; private set; }
+
+
+        public FanlightGpuVisibilityReadback()
+        {
+            _onReadback = OnReadback;
+        }
 
 
         // Methods
@@ -36,19 +45,22 @@ namespace PrismFanlight.Rendering
 
             _readbackPending = true;
             _lastReadbackFrame = Time.frameCount;
+            _seatCountForReadback = seatCount;
 
-            AsyncGPUReadback.Request(argsBuffer, request =>
+            AsyncGPUReadback.Request(argsBuffer, _onReadback);
+        }
+
+        private void OnReadback(AsyncGPUReadbackRequest request)
+        {
+            _readbackPending = false;
+
+            if (request.hasError) return;
+
+            var args = request.GetData<uint>();
+            if (args.Length > 1)
             {
-                _readbackPending = false;
-
-                if (request.hasError) return;
-
-                var args = request.GetData<uint>();
-                if (args.Length > 1)
-                {
-                    VisibleSeatCount = (int)math.min(args[1], (uint)seatCount);
-                }
-            });
+                VisibleSeatCount = (int)math.min(args[1], (uint)_seatCountForReadback);
+            }
         }
     }
 }
