@@ -34,7 +34,6 @@ namespace PrismFanlight.Editor
         private SerializedProperty _random;
 
         private bool _enableGizmos = true;
-        //private bool _wasPreviewing;
 
 
         private void OnEnable()
@@ -62,55 +61,7 @@ namespace PrismFanlight.Editor
             _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
             _lod = serializedObject.FindProperty(nameof(_lod));
             _random = serializedObject.FindProperty(nameof(_random));
-
-            //EditorApplication.update += DrawPreview;
         }
-
-        private void OnDisable()
-        {
-            /*
-            EditorApplication.update -= DrawPreview;
-
-            if (_instance != null && !Application.isPlaying)
-            {
-                _instance.Dispose();
-
-                SceneView.RepaintAll();
-            }
-
-            _wasPreviewing = false;
-            */
-        }
-
-        /*
-        private void DrawPreview()
-        {
-            if (_instance == null || Application.isPlaying)
-            {
-                _wasPreviewing = false;
-
-                return;
-            }
-
-            var previewing = _instance.EnablePreview;
-
-            if (previewing)
-            {
-                EditorApplication.QueuePlayerLoopUpdate();
-                SceneView.RepaintAll();
-
-                Repaint();
-            }
-            else if (_wasPreviewing)
-            {
-                _instance.Dispose();
-
-                SceneView.RepaintAll();
-            }
-
-            _wasPreviewing = previewing;
-        }
-        */
 
         private void OnSceneGUI()
         {
