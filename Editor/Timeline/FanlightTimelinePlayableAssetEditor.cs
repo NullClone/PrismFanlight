@@ -22,6 +22,8 @@ namespace PrismFanlight.Editor.Timeline
 
         private void OnEnable()
         {
+            UpgradeLegacyOverrides();
+
             serializedObject.Update();
 
             _colorSettings = serializedObject.FindProperty(nameof(_colorSettings));
@@ -32,14 +34,26 @@ namespace PrismFanlight.Editor.Timeline
             _paths = serializedObject.FindProperty("_overrides._paths");
         }
 
+        private void UpgradeLegacyOverrides()
+        {
+            foreach (var inspected in targets)
+            {
+                if (inspected is not FanlightTimelinePlayableAsset asset) continue;
+
+                Undo.RecordObject(asset, "Upgrade Fanlight Timeline Overrides");
+                asset.UpgradeLegacyOverrides();
+                EditorUtility.SetDirty(asset);
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            DrawGroup("Color", FanlightTimelineSettingsGroup.Color, _colorSettings);
-            DrawGroup("Motion", FanlightTimelineSettingsGroup.Motion, _motionSettings);
-            DrawGroup("Tempo", FanlightTimelineSettingsGroup.Tempo, _tempoSettings);
-            DrawGroup("Audience", FanlightTimelineSettingsGroup.Audience, _audienceSettings);
+            DrawGroup("| Color", FanlightTimelineSettingsGroup.Color, _colorSettings);
+            DrawGroup("| Motion", FanlightTimelineSettingsGroup.Motion, _motionSettings);
+            DrawGroup("| Tempo", FanlightTimelineSettingsGroup.Tempo, _tempoSettings);
+            DrawGroup("| Audience", FanlightTimelineSettingsGroup.Audience, _audienceSettings);
 
             if (serializedObject.ApplyModifiedProperties())
             {
@@ -49,26 +63,26 @@ namespace PrismFanlight.Editor.Timeline
 
         private void DrawGroup(string title, FanlightTimelineSettingsGroup group, SerializedProperty root)
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-
-            var bySection = new Dictionary<string, List<FanlightTimelineOverrideDescriptor>>();
-
-            foreach (var descriptor in FanlightTimelineOverrideSchema.GetGroup(group))
+            PrismFanlightEditorStyles.DrawSection(title, () =>
             {
-                if (!bySection.TryGetValue(descriptor.DisplayGroup, out var descriptors))
+                var bySection = new Dictionary<string, List<FanlightTimelineOverrideDescriptor>>();
+
+                foreach (var descriptor in FanlightTimelineOverrideSchema.GetGroup(group))
                 {
-                    descriptors = new List<FanlightTimelineOverrideDescriptor>();
-                    bySection.Add(descriptor.DisplayGroup, descriptors);
+                    if (!bySection.TryGetValue(descriptor.DisplayGroup, out var descriptors))
+                    {
+                        descriptors = new List<FanlightTimelineOverrideDescriptor>();
+                        bySection.Add(descriptor.DisplayGroup, descriptors);
+                    }
+
+                    descriptors.Add(descriptor);
                 }
 
-                descriptors.Add(descriptor);
-            }
-
-            foreach (var pair in bySection)
-            {
-                DrawSection(pair.Key, pair.Value, root);
-            }
+                foreach (var pair in bySection)
+                {
+                    DrawSection(pair.Key, pair.Value, root);
+                }
+            });
         }
 
         private void DrawSection(string title, List<FanlightTimelineOverrideDescriptor> descriptors, SerializedProperty root)
@@ -77,27 +91,25 @@ namespace PrismFanlight.Editor.Timeline
             {
                 EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
 
-                if (GUILayout.Button("All", EditorStyles.miniButtonLeft, GUILayout.Width(36))) SetAll(descriptors, true);
-                if (GUILayout.Button("None", EditorStyles.miniButtonRight, GUILayout.Width(42))) SetAll(descriptors, false);
+                if (GUILayout.Button("All", EditorStyles.miniButtonLeft, GUILayout.Width(48))) SetAll(descriptors, true);
+                if (GUILayout.Button("None", EditorStyles.miniButtonRight, GUILayout.Width(48))) SetAll(descriptors, false);
             }
 
-            using (new EditorGUI.IndentLevelScope())
+            foreach (var descriptor in descriptors)
             {
-                foreach (var descriptor in descriptors)
+                var property = root.FindPropertyRelative(descriptor.RelativePath);
+
+                if (property == null) continue;
+
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    var property = root.FindPropertyRelative(descriptor.RelativePath);
-                    if (property == null) continue;
+                    var enabled = Contains(descriptor.Path);
+                    var next = EditorGUILayout.Toggle(enabled, GUILayout.Width(16));
+                    if (next != enabled) Set(descriptor.Path, next);
 
-                    using (new EditorGUILayout.HorizontalScope())
+                    using (new EditorGUI.DisabledScope(!next))
                     {
-                        var enabled = Contains(descriptor.Path);
-                        var next = EditorGUILayout.Toggle(enabled, GUILayout.Width(16));
-                        if (next != enabled) Set(descriptor.Path, next);
-
-                        using (new EditorGUI.DisabledScope(!next))
-                        {
-                            EditorGUILayout.PropertyField(property, new GUIContent(descriptor.DisplayName), property.isArray && property.propertyType != SerializedPropertyType.String);
-                        }
+                        EditorGUILayout.PropertyField(property, new GUIContent(descriptor.DisplayName), property.isArray && property.propertyType != SerializedPropertyType.String);
                     }
                 }
             }
@@ -142,7 +154,7 @@ namespace PrismFanlight.Editor.Timeline
         {
             var director = TimelineEditor.inspectedDirector;
 
-            if (director && !Application.isPlaying)
+            if (director)
             {
                 director.RebuildGraph();
                 director.Evaluate();

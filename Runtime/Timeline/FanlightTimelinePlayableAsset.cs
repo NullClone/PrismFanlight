@@ -6,6 +6,8 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightTimelinePlayableAsset : PlayableAsset, ITimelineClipAsset
     {
+        // Fields
+
         [HideInInspector]
         public bool _overrideColor;
 
@@ -31,10 +33,14 @@ namespace PrismFanlight.Timeline
 
         public ClipCaps clipCaps => ClipCaps.Blending;
 
+
+        // Methods
+
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
             var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
             var behaviour = playable.GetBehaviour();
+            behaviour.Asset = this;
             behaviour.Color = _colorSettings.Validated();
             behaviour.Motion = _motionSettings.Validated();
             behaviour.Tempo = _tempoSettings.Validated();
@@ -43,19 +49,37 @@ namespace PrismFanlight.Timeline
             return playable;
         }
 
-        internal FanlightTimelineOverrideSelection Overrides
+        internal FanlightColorSettings GetColorSettings() => _colorSettings.Validated();
+
+        internal FanlightMotionSettings GetMotionSettings() => _motionSettings.Validated();
+
+        internal FanlightTempoSettings GetTempoSettings() => _tempoSettings.Validated();
+
+        internal FanlightAudienceSettings GetAudienceSettings() => _audienceSettings.Validated();
+
+        internal void UpgradeLegacyOverrides()
         {
-            get
-            {
-                EnsureOverrides();
-                return _overrides;
-            }
+            EnsureOverrides();
+
+            _ = _overrides.Paths;
+
+            if (_usesPathOverrides) return;
+
+            if (_overrideColor) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Color), true);
+            if (_overrideMotion) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Motion), true);
+            if (_overrideTempo) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Tempo), true);
+            if (_overrideAudience) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Audience), true);
+
+            _usesPathOverrides = true;
         }
+
+        internal FanlightTimelineOverrideSelection GetTimelineOverrides() => GetOverrides();
 
         private FanlightTimelineOverrideSelection GetOverrides()
         {
             EnsureOverrides();
-            if (_usesPathOverrides) return _overrides;
+
+            if (_usesPathOverrides || _overrides.Paths.Count > 0) return _overrides;
 
             var legacy = new FanlightTimelineOverrideSelection();
             if (_overrideColor) legacy.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Color), true);

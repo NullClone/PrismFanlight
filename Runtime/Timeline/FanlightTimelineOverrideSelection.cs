@@ -10,12 +10,28 @@ namespace PrismFanlight.Timeline
         [SerializeField]
         private List<string> _paths = new();
 
-        public IReadOnlyList<string> Paths => _paths;
 
-        public bool Contains(string path) => _paths.Contains(path);
+        public IReadOnlyList<string> Paths
+        {
+            get
+            {
+                EnsurePaths();
+                return _paths;
+            }
+        }
+
+
+        public bool Contains(string path)
+        {
+            EnsurePaths();
+
+            return _paths.Contains(path);
+        }
 
         public void Set(string path, bool enabled)
         {
+            EnsurePaths();
+
             if (enabled)
             {
                 if (!_paths.Contains(path)) _paths.Add(path);
@@ -31,6 +47,11 @@ namespace PrismFanlight.Timeline
             {
                 Set(path, enabled);
             }
+        }
+
+        private void EnsurePaths()
+        {
+            _paths ??= new List<string>();
         }
     }
 }

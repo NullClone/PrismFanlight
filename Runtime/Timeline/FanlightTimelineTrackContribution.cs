@@ -41,7 +41,10 @@ namespace PrismFanlight.Timeline
         {
             if (weight <= WeightEpsilon) return;
 
-            foreach (var path in behaviour.Overrides.Paths)
+            var overrides = behaviour.GetOverrides();
+            if (overrides == null) return;
+
+            foreach (var path in overrides.Paths)
             {
                 if (!FanlightTimelineOverrideSchema.TryGet(path, out var descriptor)) continue;
 
@@ -65,55 +68,12 @@ namespace PrismFanlight.Timeline
         {
             return group switch
             {
-                FanlightTimelineSettingsGroup.Color => behaviour.Color,
-                FanlightTimelineSettingsGroup.Motion => behaviour.Motion,
-                FanlightTimelineSettingsGroup.Tempo => behaviour.Tempo,
-                FanlightTimelineSettingsGroup.Audience => behaviour.Audience,
+                FanlightTimelineSettingsGroup.Color => behaviour.GetColor(),
+                FanlightTimelineSettingsGroup.Motion => behaviour.GetMotion(),
+                FanlightTimelineSettingsGroup.Tempo => behaviour.GetTempo(),
+                FanlightTimelineSettingsGroup.Audience => behaviour.GetAudience(),
                 _ => null
             };
-        }
-    }
-
-    internal sealed class FanlightTimelineParameterContribution
-    {
-        public FanlightTimelineOverrideDescriptor Descriptor { get; }
-        public int Version { get; private set; }
-        public object Value { get; private set; }
-        public float Weight { get; private set; }
-
-        private float _strongestWeight;
-
-        public FanlightTimelineParameterContribution(FanlightTimelineOverrideDescriptor descriptor)
-        {
-            Descriptor = descriptor;
-        }
-
-        public void Reset(int version)
-        {
-            Version = version;
-            Value = null;
-            Weight = 0.0f;
-            _strongestWeight = 0.0f;
-        }
-
-        public void Add(object root, float weight)
-        {
-            var incoming = Descriptor.GetValue(root);
-            if (Weight <= 0.0f)
-            {
-                Value = incoming;
-            }
-            else if (Descriptor.IsDiscrete())
-            {
-                if (weight >= _strongestWeight) Value = incoming;
-            }
-            else
-            {
-                Value = Descriptor.Blend(Value, incoming, weight / (Weight + weight));
-            }
-
-            _strongestWeight = System.Math.Max(_strongestWeight, weight);
-            Weight += weight;
         }
     }
 }
