@@ -138,19 +138,11 @@ namespace PrismFanlight.Editor
             if (!overridden)
             {
                 EditorGUILayout.PropertyField(property, label, includeChildren);
-                return;
             }
-
-            var height = EditorGUI.GetPropertyHeight(property, label, includeChildren);
-            var rect = EditorGUILayout.GetControlRect(true, height);
-            var tint = AnimationMode.animatedPropertyColor;
-            tint.a = 0.22f;
-            EditorGUI.DrawRect(rect, tint);
-
-            var previousColor = GUI.color;
-            GUI.color = Color.Lerp(previousColor, AnimationMode.animatedPropertyColor, 0.45f);
-            EditorGUI.PropertyField(rect, property, label, includeChildren);
-            GUI.color = previousColor;
+            else
+            {
+                PrismFanlightEditorStyles.DrawOverride(property, label, includeChildren);
+            }
         }
 
         private bool IsTimelineOverridden(params SerializedProperty[] properties)
@@ -595,7 +587,7 @@ namespace PrismFanlight.Editor
                     break;
 
                 case FanlightColorMode.Random:
-                    DrawPropertyField(color.FindPropertyRelative("paletteColors"), new GUIContent("Palette"), true);
+                    DrawPropertyField(color.FindPropertyRelative("paletteColors"), new GUIContent("Palette"));
                     DrawIntensityField(color);
                     DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
                     break;

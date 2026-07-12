@@ -11,6 +11,7 @@ namespace PrismFanlight
 
         public const int MaxPaletteColors = 16;
 
+
         public FanlightColorMode mode;
 
         [ColorUsage(false, true)]
@@ -41,31 +42,19 @@ namespace PrismFanlight
             randomIntensity = 0.0f
         };
 
-        public FanlightColorSettings Validated()
+        public FanlightColorSettings Validated() => new()
         {
-            return new FanlightColorSettings
-            {
-                mode = IsSupportedMode(mode) ? mode : FanlightColorMode.Single,
-                primaryColor = primaryColor,
-                secondaryColor = secondaryColor,
-                // The GPU dispatcher already clamps the palette to MaxPaletteColors
-                // and falls back to primaryColor for an empty palette. Keeping the
-                // original reference avoids a Color[] allocation during evaluation.
-                paletteColors = paletteColors,
-                intensity = math.max(intensity, 0.0f),
-                randomIntensity = math.saturate(randomIntensity)
-            };
-        }
+            mode = IsSupportedMode(mode) ? mode : FanlightColorMode.Single,
+            primaryColor = primaryColor,
+            secondaryColor = secondaryColor,
+            paletteColors = paletteColors,
+            intensity = math.max(intensity, 0.0f),
+            randomIntensity = math.saturate(randomIntensity)
+        };
 
-        public Color GetGlobalColor()
-        {
-            return primaryColor;
-        }
+        public Color GetGlobalColor() => primaryColor;
 
-        public float GetGlobalIntensity()
-        {
-            return math.max(intensity, 0.0f);
-        }
+        public float GetGlobalIntensity() => math.max(intensity, 0.0f);
 
         public int GetStableHash()
         {
@@ -89,7 +78,7 @@ namespace PrismFanlight
                 }
                 else
                 {
-                    hash = hash * 31;
+                    hash *= 31;
                 }
 
                 return hash;
