@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace PrismFanlight
+namespace PrismFanlight.Timeline
 {
     [TrackClipType(typeof(FanlightTimelinePlayableAsset))]
     [TrackBindingType(typeof(PrismFanlight))]
@@ -11,7 +11,23 @@ namespace PrismFanlight
     {
         public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
         {
-            return ScriptPlayable<FanlightTimelineMixerBehaviour>.Create(graph, inputCount);
+            var mixer = ScriptPlayable<FanlightTimelineMixerBehaviour>.Create(graph, inputCount);
+            mixer.GetBehaviour().Configure(GetTrackSortOrder());
+            return mixer;
+        }
+
+        private int GetTrackSortOrder()
+        {
+            if (timelineAsset == null) return 0;
+
+            var order = 0;
+            foreach (var track in timelineAsset.GetOutputTracks())
+            {
+                if (track == this) return order;
+                order++;
+            }
+
+            return order;
         }
     }
 }
