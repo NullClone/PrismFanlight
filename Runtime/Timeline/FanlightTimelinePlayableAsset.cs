@@ -33,6 +33,8 @@ namespace PrismFanlight.Timeline
 
         public ClipCaps clipCaps => ClipCaps.Blending;
 
+        public System.Collections.Generic.IReadOnlyList<string> OverridePaths => GetOverrides().Paths;
+
 
         // Methods
 
