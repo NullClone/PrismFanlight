@@ -20,6 +20,8 @@ namespace PrismFanlight.Timeline
 
         public FanlightAudienceSettings GetAudience() => Asset != null ? Asset.GetAudienceSettings() : Audience;
 
+        public bool HasLegacyColorOverrides() => Asset != null && Asset.HasLegacyColorOverrides();
+
         public FanlightTimelineOverrideSelection GetOverrides() => Asset != null ? Asset.GetTimelineOverrides() : Overrides;
     }
 }

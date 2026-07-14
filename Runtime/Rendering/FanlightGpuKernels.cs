@@ -11,7 +11,6 @@ namespace PrismFanlight.Rendering
         public readonly int GenerateAllAnimation;
         public readonly int GenerateVisibleFrameData;
         public readonly int GenerateAllFrameData;
-        public readonly int GenerateAllColors;
 
         public FanlightGpuKernels(ComputeShader shader)
         {
@@ -22,7 +21,6 @@ namespace PrismFanlight.Rendering
             GenerateAllAnimation = shader.FindKernel("GenerateAllAnimation");
             GenerateVisibleFrameData = shader.FindKernel("GenerateVisibleFrameData");
             GenerateAllFrameData = shader.FindKernel("GenerateAllFrameData");
-            GenerateAllColors = shader.FindKernel("GenerateAllColors");
         }
     }
 }

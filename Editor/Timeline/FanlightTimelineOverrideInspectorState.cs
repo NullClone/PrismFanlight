@@ -27,7 +27,7 @@ namespace PrismFanlight.Editor
 
             foreach (var track in timeline.GetOutputTracks())
             {
-                if (track is not FanlightTimelineTrack) continue;
+                if (track is not FanlightTimelineTrack && track is not FanlightPaletteGradientTrack) continue;
                 if (track.mutedInHierarchy) continue;
                 if (_director.GetGenericBinding(track) != target) continue;
 
@@ -51,7 +51,8 @@ namespace PrismFanlight.Editor
 
             foreach (var track in timeline.GetOutputTracks())
             {
-                if (track is FanlightTimelineTrack && director.GetGenericBinding(track) == target)
+                if ((track is FanlightTimelineTrack || track is FanlightPaletteGradientTrack)
+                    && director.GetGenericBinding(track) == target)
                 {
                     return true;
                 }
@@ -65,11 +66,13 @@ namespace PrismFanlight.Editor
             foreach (var clip in track.GetClips())
             {
                 if (time < clip.start || time >= clip.end) continue;
-                if (clip.asset is not FanlightTimelinePlayableAsset asset) continue;
-
-                foreach (var path in asset.OverridePaths)
+                if (clip.asset is FanlightTimelinePlayableAsset asset)
                 {
-                    _activePaths.Add(path);
+                    foreach (var path in asset.OverridePaths) _activePaths.Add(path);
+                }
+                else if (clip.asset is FanlightPaletteGradientPlayableAsset gradient)
+                {
+                    foreach (var path in gradient.GetOverridePaths()) _activePaths.Add(path);
                 }
             }
         }

@@ -47,21 +47,50 @@ namespace PrismFanlight.Timeline
             foreach (var path in overrides.Paths)
             {
                 if (!FanlightTimelineOverrideSchema.TryGet(path, out var descriptor)) continue;
+                if (descriptor.Group == FanlightTimelineSettingsGroup.Color) continue;
 
-                if (!_parameters.TryGetValue(path, out var parameter))
-                {
-                    parameter = new FanlightTimelineParameterContribution(descriptor);
-                    _parameters.Add(path, parameter);
-                }
-
-                if (parameter.Version != _version)
-                {
-                    parameter.Reset(_version);
-                    _activeParameters.Add(parameter);
-                }
-
-                parameter.Add(GetRootValue(behaviour, descriptor.Group), weight);
+                Add(descriptor, GetRootValue(behaviour, descriptor.Group), weight);
             }
+
+            // Old Fanlight Cue assets can still play after the color system upgrade,
+            // but newly-authored cues expose color only through the palette track.
+            if (behaviour.HasLegacyColorOverrides())
+            {
+                var color = behaviour.GetColor();
+                foreach (var descriptor in FanlightTimelineOverrideSchema.GetGroup(FanlightTimelineSettingsGroup.Color))
+                {
+                    Add(descriptor, color, weight);
+                }
+            }
+        }
+
+        public void AddPalette(FanlightPaletteGradientPlayableBehaviour behaviour, float normalizedTime, float weight)
+        {
+            if (behaviour?.Asset == null || weight <= WeightEpsilon) return;
+
+            var color = behaviour.Evaluate(normalizedTime);
+            foreach (var path in behaviour.Asset.GetOverridePaths())
+            {
+                if (!FanlightTimelineOverrideSchema.TryGet(path, out var descriptor)) continue;
+                Add(descriptor, color, weight);
+            }
+        }
+
+        private void Add(FanlightTimelineOverrideDescriptor descriptor, object root, float weight)
+        {
+            if (!_parameters.TryGetValue(descriptor.Path, out var parameter))
+            {
+                parameter = new FanlightTimelineParameterContribution(descriptor);
+                _parameters.Add(descriptor.Path, parameter);
+            }
+
+            if (parameter.Version != _version)
+            {
+                parameter.Reset(_version);
+                _activeParameters.Add(parameter);
+            }
+
+            parameter.Add(root, weight);
         }
 
         private static object GetRootValue(FanlightTimelinePlayableBehaviour behaviour, FanlightTimelineSettingsGroup group)

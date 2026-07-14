@@ -49,11 +49,16 @@ namespace PrismFanlight.Editor
         {
             var previousColor = EditorStyles.label.normal.textColor;
 
-            EditorStyles.label.normal.textColor = new Color(0.540f, 0.850f, 1.000f, 1.000f);
+            try
+            {
+                EditorStyles.label.normal.textColor = new Color(0.540f, 0.850f, 1.000f, 1.000f);
 
-            EditorGUILayout.PropertyField(property, label, includeChildren);
-
-            EditorStyles.label.normal.textColor = previousColor;
+                EditorGUILayout.PropertyField(property, label, includeChildren);
+            }
+            finally
+            {
+                EditorStyles.label.normal.textColor = previousColor;
+            }
         }
 
 

@@ -1,13 +1,10 @@
 #ifndef PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 #define PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 
+#include "PrismFanlightColor.hlsl"
+
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<float4x4> _FanlightMatrices;
-StructuredBuffer<float4> _FanlightColors;
-
-int _FanlightColorSource;
-float4 _FanlightGlobalColor;
-float _FanlightGlobalIntensity;
 
 uint PrismFanlightVisibleIndex(float instanceId)
 {
@@ -54,15 +51,8 @@ float3 PrismStabilizeFanlightRadius(float3 positionOS, uint seatIndex)
 
 void GetFanlightColor_float(float instanceId, out float4 color)
 {
-    if (_FanlightColorSource == 0)
-    {
-        color = float4(_FanlightGlobalColor.rgb * _FanlightGlobalIntensity, _FanlightGlobalColor.a);
-        return;
-    }
-
     uint seatIndex = PrismFanlightSeatIndex(instanceId);
-    color = _FanlightColors[seatIndex];
-    color.rgb *= _FanlightGlobalIntensity;
+    color = PrismFanlightSeatColor(seatIndex);
 }
 
 void GetFanlightObjectPosition_float(float3 positionOS, float instanceId, out float3 outPositionOS)

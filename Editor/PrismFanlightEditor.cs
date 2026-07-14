@@ -574,31 +574,15 @@ namespace PrismFanlight.Editor
 
         private void DrawColorFields(SerializedProperty color)
         {
-            var mode = color.FindPropertyRelative("mode");
-            var colorMode = (FanlightColorMode)mode.enumValueIndex;
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Palette");
 
-            DrawPropertyField(mode, null);
-
-            switch (colorMode)
+            for (var i = 1; i <= FanlightColorSettings.PaletteSlotCount; i++)
             {
-                case FanlightColorMode.Single:
-                    DrawPropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Color"));
-                    DrawIntensityField(color);
-                    break;
-
-                case FanlightColorMode.Random:
-                    DrawPropertyField(color.FindPropertyRelative("paletteColors"), new GUIContent("Palette"));
-                    DrawIntensityField(color);
-                    DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-                    break;
-
-                case FanlightColorMode.Gradient:
-                    DrawPropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Start Color"));
-                    DrawPropertyField(color.FindPropertyRelative("secondaryColor"), new GUIContent("End Color"));
-                    DrawIntensityField(color);
-                    DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-                    break;
+                DrawPropertyField(color.FindPropertyRelative($"slot{i}"), new GUIContent($"Slot {i}"));
             }
+
+            DrawIntensityField(color);
+            DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
         }
 
         private void DrawIntensityField(SerializedProperty color)

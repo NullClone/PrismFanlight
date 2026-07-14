@@ -20,7 +20,7 @@ namespace PrismFanlight.Rendering
 
         public ComputeBuffer MatrixBuffer { get; private set; }
 
-        public ComputeBuffer ColorBuffer { get; private set; }
+        public ComputeBuffer ColorAssignmentBuffer { get; private set; }
 
         public ComputeBuffer RandomBuffer { get; private set; }
 
@@ -60,14 +60,14 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             AudienceSlotBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
-            ColorBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
+            ColorAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
             PenlightArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
             AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
 
             SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(layout));
             BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(layout, mesh));
-            RandomBuffer.SetData(BuildRandomData(SeatCount, random));
+            UpdateRandomData(random);
 
             ResetArgs(PenlightArgsBuffer, mesh);
             ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
@@ -80,9 +80,11 @@ namespace PrismFanlight.Rendering
 
         public void UpdateRandomData(FanlightRandomSettings random)
         {
-            if (RandomBuffer == null || SeatCount <= 0) return;
+            if (RandomBuffer == null || ColorAssignmentBuffer == null || SeatCount <= 0) return;
 
-            RandomBuffer.SetData(BuildRandomData(SeatCount, random));
+            var seed = random.deterministic ? random.globalSeed : (uint)System.Environment.TickCount;
+            RandomBuffer.SetData(BuildRandomData(SeatCount, seed));
+            ColorAssignmentBuffer.SetData(BuildColorAssignments(SeatCount, seed));
         }
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
@@ -97,10 +99,9 @@ namespace PrismFanlight.Rendering
             });
         }
 
-        private static FanlightRandomData[] BuildRandomData(int seatCount, FanlightRandomSettings random)
+        private static FanlightRandomData[] BuildRandomData(int seatCount, uint seed)
         {
             var data = new FanlightRandomData[seatCount];
-            var seed = random.deterministic ? random.globalSeed : (uint)System.Environment.TickCount;
 
             for (var i = 0; i < data.Length; i++)
             {
@@ -118,6 +119,24 @@ namespace PrismFanlight.Rendering
             }
 
             return data;
+        }
+
+        private static uint[] BuildColorAssignments(int seatCount, uint seed)
+        {
+            var assignments = new uint[seatCount];
+            for (var i = 0; i < assignments.Length; i++)
+            {
+                var paletteRandom = Random01(seed, (uint)i, 27u);
+                var intensityRandom = Random01(seed, (uint)i, 28u);
+                var paletteIndex = (uint)Mathf.Clamp(
+                    Mathf.FloorToInt(paletteRandom * FanlightColorSettings.PaletteSlotCount),
+                    0,
+                    FanlightColorSettings.PaletteSlotCount - 1);
+                var packedIntensity = (uint)Mathf.Clamp(Mathf.FloorToInt(intensityRandom * 65536.0f), 0, 65535);
+                assignments[i] = paletteIndex | (packedIntensity << 8);
+            }
+
+            return assignments;
         }
 
         private static Vector4 Random4(uint globalSeed, uint seatIndex, uint offset)
@@ -151,7 +170,7 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer?.Release();
             AudienceSlotBuffer?.Release();
             MatrixBuffer?.Release();
-            ColorBuffer?.Release();
+            ColorAssignmentBuffer?.Release();
             RandomBuffer?.Release();
             PenlightArgsBuffer?.Release();
             AudiencePartBuffer?.Release();
@@ -164,7 +183,7 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer = null;
             AudienceSlotBuffer = null;
             MatrixBuffer = null;
-            ColorBuffer = null;
+            ColorAssignmentBuffer = null;
             RandomBuffer = null;
             PenlightArgsBuffer = null;
             AudiencePartBuffer = null;

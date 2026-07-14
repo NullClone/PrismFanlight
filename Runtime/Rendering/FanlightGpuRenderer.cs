@@ -11,6 +11,7 @@ namespace PrismFanlight.Rendering
         private readonly FanlightGpuDispatcher _dispatcher = new();
         private readonly FanlightGpuVisibilityReadback _visibilityReadback = new();
         private readonly FanlightGpuUpdateScheduler _scheduler = new();
+        private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.PaletteSlotCount];
 
         private MaterialPropertyBlock _properties;
         private MaterialPropertyBlock _audienceProperties;
@@ -21,9 +22,7 @@ namespace PrismFanlight.Rendering
         private bool _audienceAllocated;
         private bool _isInitialized;
         private bool _animationInitialized;
-        private bool _instanceColorsInitialized;
         private bool _hasLastUpdateClock;
-        private int _lastInstanceColorHash;
         private int _lastRandomHash;
         private float _lastUpdateClock;
         private Matrix4x4 _lastAnimationLocalToWorld;
@@ -69,7 +68,6 @@ namespace PrismFanlight.Rendering
                 _buffers.UpdateRandomData(state.Random);
                 _lastRandomHash = randomHash;
                 _animationInitialized = false;
-                _instanceColorsInitialized = false;
             }
 
             var worldBounds = FanlightGeometryBuilder.TransformBounds(state.LocalToWorld, _buffers.LocalBounds);
@@ -80,7 +78,6 @@ namespace PrismFanlight.Rendering
                 layout,
                 state.Tempo,
                 state.Motion,
-                state.Color,
                 state.Audience,
                 state.Lod,
                 state.SwingTargetWorldPosition,
@@ -119,26 +116,15 @@ namespace PrismFanlight.Rendering
                 Profiler.EndSample();
             }
 
-            if (ShouldUpdateInstanceColors(state.Color))
-            {
-                Profiler.BeginSample("Prism Fanlight GPU Colors");
-                _dispatcher.DispatchColors(computeShader, _kernels, _buffers, context);
-                _instanceColorsInitialized = true;
-                _lastInstanceColorHash = state.Color.GetStableHash();
-                Profiler.EndSample();
-            }
-
             _hasLastUpdateClock = true;
             _lastUpdateClock = state.UpdateClock;
 
             Profiler.BeginSample("Prism Fanlight GPU Draw");
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
-            _properties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
+            _properties.SetBuffer(FanlightShaderIds.ColorAssignments, _buffers.ColorAssignmentBuffer);
             _properties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.PenlightVisibleIndexBuffer);
             _properties.SetBuffer(FanlightShaderIds.PenlightVisibleIndices, _buffers.PenlightVisibleIndexBuffer);
-            _properties.SetInt(FanlightShaderIds.ColorSource, state.Color.mode == FanlightColorMode.Single ? 0 : 1);
-            _properties.SetColor(FanlightShaderIds.GlobalColor, state.Color.GetGlobalColor());
-            _properties.SetFloat(FanlightShaderIds.GlobalIntensity, state.Color.GetGlobalIntensity());
+            SetColorProperties(_properties, state.Color);
 
             var renderParams = new RenderParams(material)
             {
@@ -177,11 +163,8 @@ namespace PrismFanlight.Rendering
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceParts, _buffers.AudiencePartBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceVisibleIndices, _buffers.AudienceVisibleIndexBuffer);
-            _audienceProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
-            _audienceProperties.SetBuffer(FanlightShaderIds.Colors, _buffers.ColorBuffer);
-            _audienceProperties.SetInt(FanlightShaderIds.ColorSource, color.mode == FanlightColorMode.Single ? 0 : 1);
-            _audienceProperties.SetColor(FanlightShaderIds.GlobalColor, color.GetGlobalColor());
-            _audienceProperties.SetFloat(FanlightShaderIds.GlobalIntensity, color.GetGlobalIntensity());
+            _audienceProperties.SetBuffer(FanlightShaderIds.ColorAssignments, _buffers.ColorAssignmentBuffer);
+            SetColorProperties(_audienceProperties, color);
 
             var renderParams = new RenderParams(audienceMaterial)
             {
@@ -220,14 +203,17 @@ namespace PrismFanlight.Rendering
             _isInitialized = true;
         }
 
-        private bool ShouldUpdateInstanceColors(FanlightColorSettings color)
+        private void SetColorProperties(MaterialPropertyBlock properties, FanlightColorSettings color)
         {
-            if (color.mode == FanlightColorMode.Single)
+            var settings = color.Validated();
+            for (var i = 0; i < FanlightColorSettings.PaletteSlotCount; i++)
             {
-                return false;
+                _paletteColors[i] = settings.GetSlot(i);
             }
 
-            return !_instanceColorsInitialized || _lastInstanceColorHash != color.GetStableHash();
+            properties.SetVectorArray(FanlightShaderIds.PaletteColors, _paletteColors);
+            properties.SetFloat(FanlightShaderIds.GlobalIntensity, settings.GetGlobalIntensity());
+            properties.SetFloat(FanlightShaderIds.RandomIntensity, settings.randomIntensity);
         }
 
         public void Dispose()
@@ -241,9 +227,7 @@ namespace PrismFanlight.Rendering
             _computeShader = null;
             _isInitialized = false;
             _animationInitialized = false;
-            _instanceColorsInitialized = false;
             _hasLastUpdateClock = false;
-            _lastInstanceColorHash = 0;
             _lastRandomHash = 0;
             _lastUpdateClock = 0.0f;
             _lastAnimationLocalToWorld = Matrix4x4.identity;

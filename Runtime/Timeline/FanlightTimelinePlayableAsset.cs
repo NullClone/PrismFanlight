@@ -20,6 +20,7 @@ namespace PrismFanlight.Timeline
         [HideInInspector]
         public bool _overrideAudience;
 
+        [HideInInspector]
         public FanlightColorSettings _colorSettings = FanlightColorSettings.Default();
         public FanlightMotionSettings _motionSettings = FanlightMotionSettings.Default();
         public FanlightTempoSettings _tempoSettings = FanlightTempoSettings.Default();
@@ -59,6 +60,18 @@ namespace PrismFanlight.Timeline
 
         internal FanlightAudienceSettings GetAudienceSettings() => _audienceSettings.Validated();
 
+        internal bool HasLegacyColorOverrides()
+        {
+            if (_overrideColor) return true;
+
+            foreach (var path in GetOverrides().Paths)
+            {
+                if (path.StartsWith("color.", System.StringComparison.Ordinal)) return true;
+            }
+
+            return false;
+        }
+
         internal void UpgradeLegacyOverrides()
         {
             EnsureOverrides();
@@ -67,7 +80,6 @@ namespace PrismFanlight.Timeline
 
             if (_usesPathOverrides) return;
 
-            if (_overrideColor) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Color), true);
             if (_overrideMotion) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Motion), true);
             if (_overrideTempo) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Tempo), true);
             if (_overrideAudience) _overrides.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Audience), true);
@@ -84,7 +96,6 @@ namespace PrismFanlight.Timeline
             if (_usesPathOverrides || _overrides.Paths.Count > 0) return _overrides;
 
             var legacy = new FanlightTimelineOverrideSelection();
-            if (_overrideColor) legacy.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Color), true);
             if (_overrideMotion) legacy.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Motion), true);
             if (_overrideTempo) legacy.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Tempo), true);
             if (_overrideAudience) legacy.SetAll(FanlightTimelineOverrideSchema.GetPaths(FanlightTimelineSettingsGroup.Audience), true);

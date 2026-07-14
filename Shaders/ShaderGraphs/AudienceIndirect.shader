@@ -55,6 +55,7 @@ Shader "Hidden/AudienceIndirect"
             #pragma target 4.5
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "../PrismFanlightColor.hlsl"
 
             struct AudiencePart
             {
@@ -64,11 +65,6 @@ Shader "Hidden/AudienceIndirect"
 
             StructuredBuffer<AudiencePart> _AudienceParts;
             StructuredBuffer<uint> _VisibleIndices;
-            StructuredBuffer<float4> _FanlightColors;
-
-            int _FanlightColorSource;
-            float4 _FanlightGlobalColor;
-            float _FanlightGlobalIntensity;
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _Color;
@@ -100,13 +96,7 @@ Shader "Hidden/AudienceIndirect"
 
             float4 SeatPenlightColor(uint seat)
             {
-                if (_FanlightColorSource == 0)
-                {
-                    return float4(_FanlightGlobalColor.rgb * _FanlightGlobalIntensity, _FanlightGlobalColor.a);
-                }
-                float4 c = _FanlightColors[seat];
-                c.rgb *= _FanlightGlobalIntensity;
-                return c;
+                return PrismFanlightSeatColor(seat);
             }
 
             float SdfCoverage(float d)

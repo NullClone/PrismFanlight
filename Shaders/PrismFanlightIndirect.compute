@@ -5,12 +5,10 @@
 #pragma kernel GenerateAllAnimation
 #pragma kernel GenerateVisibleFrameData
 #pragma kernel GenerateAllFrameData
-#pragma kernel GenerateAllColors
 
 #include "PrismFanlightComputeContext.hlsl"
 #include "PrismFanlightCulling.hlsl"
 #include "PrismFanlightMotion.hlsl"
-#include "PrismFanlightColor.hlsl"
 #include "PrismFanlightAudience.hlsl"
 
 [numthreads(1, 1, 1)]
@@ -158,15 +156,5 @@ void GenerateAllFrameData(uint3 dispatchId : SV_DispatchThreadID)
             PrismBuildAudienceParts(id, pose, arm);
         }
     }
-}
-
-[numthreads(128, 1, 1)]
-void GenerateAllColors(uint3 dispatchId : SV_DispatchThreadID)
-{
-    uint id = dispatchId.x;
-    if (id >= (uint)_InstanceCount) return;
-
-    FanlightSeatData seat = _Seats[id];
-    _FanlightColors[id] = PrismComputeColor(seat);
 }
 
