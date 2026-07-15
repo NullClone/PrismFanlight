@@ -2,6 +2,10 @@
 
 Unityのライブ用の観客ペンライトツール
 
+<p align="left">
+  <img width="60%" src="https://github.com/user-attachments/assets/cceb3440-762a-459a-b176-35b94c7fe74a">
+</p>
+
 ## 主な機能
 
 基本的なすべてのペンライトのシステムを実装してます！
