@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
+    [HelpURL("https://github.com/NullClone/PrismFanlight")]
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
     [ExecuteAlways]
     public sealed class PrismFanlight : MonoBehaviour
