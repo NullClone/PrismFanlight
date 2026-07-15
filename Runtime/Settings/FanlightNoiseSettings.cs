@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightNoiseSettings
     {
+        // Fields
+
         [Min(0f)]
         public float phaseIrregularity;
 
@@ -26,18 +28,18 @@ namespace PrismFanlight
         public float noiseDetail;
 
 
+        // Methods
+
         public FanlightNoiseSettings Validated()
         {
-            var uninitialized = noiseOctaves <= 0;
-
             return new FanlightNoiseSettings
             {
-                phaseIrregularity = uninitialized ? 1f : math.max(phaseIrregularity, 0f),
-                phaseIrregularitySpeed = uninitialized ? 0.27f : math.max(phaseIrregularitySpeed, 0f),
-                axisNoiseAmount = uninitialized ? 1f : math.max(axisNoiseAmount, 0f),
-                axisNoiseSpeed = uninitialized ? 0.23f : math.max(axisNoiseSpeed, 0f),
-                noiseOctaves = uninitialized ? 2 : math.clamp(noiseOctaves, 1, 4),
-                noiseDetail = uninitialized ? 0.5f : math.saturate(noiseDetail)
+                phaseIrregularity = math.max(phaseIrregularity, 0f),
+                phaseIrregularitySpeed = math.max(phaseIrregularitySpeed, 0f),
+                axisNoiseAmount = math.max(axisNoiseAmount, 0f),
+                axisNoiseSpeed = math.max(axisNoiseSpeed, 0f),
+                noiseOctaves = math.clamp(noiseOctaves, 1, 4),
+                noiseDetail = math.saturate(noiseDetail)
             };
         }
     }

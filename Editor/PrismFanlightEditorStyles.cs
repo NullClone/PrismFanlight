@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,12 +14,11 @@ namespace PrismFanlight.Editor
 
         private static GUIStyle Section => _section ??= CreateSection();
         private static GUIStyle SectionTitle => _sectionTitle ??= CreateSectionTitle();
-        private static GUIStyle SubGroupLabel => _subGroupLabel ??= CreateSubGroupLabel();
         private static GUIStyle StatLabel => _statLabel ??= CreateStatLabel();
         private static GUIStyle StatValue => _statValue ??= CreateStatValue();
 
 
-        public static void DrawSection(string title, System.Action draw)
+        public static void DrawSection(string title, Action draw)
         {
             EditorGUILayout.Space();
 
@@ -32,7 +32,7 @@ namespace PrismFanlight.Editor
 
         public static void DrawSubGroupLabel(string title)
         {
-            EditorGUILayout.LabelField(title, SubGroupLabel);
+            EditorGUILayout.LabelField(title);
         }
 
         public static void DrawStat(string label, string value)
@@ -42,6 +42,14 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.LabelField(label, StatLabel);
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.LabelField(value, StatValue, GUILayout.Width(110));
+            }
+        }
+
+        public static void DrawOverride(SerializedProperty property, GUIContent label, bool includeChildren = false)
+        {
+            using (new TimelineOverrideColorScope(true))
+            {
+                EditorGUILayout.PropertyField(property, label, includeChildren);
             }
         }
 
@@ -60,14 +68,6 @@ namespace PrismFanlight.Editor
             return new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 14
-            };
-        }
-
-        private static GUIStyle CreateSubGroupLabel()
-        {
-            return new GUIStyle(EditorStyles.boldLabel)
-            {
-                //margin = new RectOffset(0, 0, 6, 2)
             };
         }
 

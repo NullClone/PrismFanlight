@@ -3,12 +3,6 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
-    public enum FanlightGpuUpdateMode
-    {
-        EveryFrame,
-        FixedRate
-    }
-
     [Serializable]
     public struct FanlightGpuUpdateTiming
     {

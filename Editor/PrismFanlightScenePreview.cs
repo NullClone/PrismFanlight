@@ -63,7 +63,7 @@ namespace PrismFanlight.Editor
                     }
 
                     if (!Application.isPlaying && EditBlockTransforms
-                        && Handles.Button(center, transform.rotation, handleSize, handleSize, Handles.SphereHandleCap))
+                                               && Handles.Button(center, transform.rotation, handleSize, handleSize, Handles.SphereHandleCap))
                     {
                         SelectedBlockIndex = blockIndex;
                     }

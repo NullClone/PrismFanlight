@@ -138,19 +138,11 @@ namespace PrismFanlight.Editor
             if (!overridden)
             {
                 EditorGUILayout.PropertyField(property, label, includeChildren);
-                return;
             }
-
-            var height = EditorGUI.GetPropertyHeight(property, label, includeChildren);
-            var rect = EditorGUILayout.GetControlRect(true, height);
-            var tint = AnimationMode.animatedPropertyColor;
-            tint.a = 0.22f;
-            EditorGUI.DrawRect(rect, tint);
-
-            var previousColor = GUI.color;
-            GUI.color = Color.Lerp(previousColor, AnimationMode.animatedPropertyColor, 0.45f);
-            EditorGUI.PropertyField(rect, property, label, includeChildren);
-            GUI.color = previousColor;
+            else
+            {
+                PrismFanlightEditorStyles.DrawOverride(property, label, includeChildren);
+            }
         }
 
         private bool IsTimelineOverridden(params SerializedProperty[] properties)
@@ -165,26 +157,6 @@ namespace PrismFanlight.Editor
             return false;
         }
 
-        private readonly struct TimelineOverrideColorScope : IDisposable
-        {
-            private readonly Color _previousColor;
-
-
-            public TimelineOverrideColorScope(bool overridden)
-            {
-                _previousColor = GUI.color;
-
-                if (overridden)
-                {
-                    GUI.color = Color.Lerp(_previousColor, AnimationMode.animatedPropertyColor, 0.45f);
-                }
-            }
-
-            public void Dispose()
-            {
-                GUI.color = _previousColor;
-            }
-        }
 
         private void DrawGeneralSection()
         {
@@ -425,6 +397,7 @@ namespace PrismFanlight.Editor
 
             var armMinProp = swingProp.FindPropertyRelative("armLengthMin");
             var armMaxProp = swingProp.FindPropertyRelative("armLengthMax");
+
             using (new TimelineOverrideColorScope(IsTimelineOverridden(armMinProp, armMaxProp)))
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -451,6 +424,7 @@ namespace PrismFanlight.Editor
 
             var minAngleProp = swingProp.FindPropertyRelative("minAngle");
             var maxAngleProp = swingProp.FindPropertyRelative("maxAngle");
+
             using (new TimelineOverrideColorScope(IsTimelineOverridden(minAngleProp, maxAngleProp)))
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -582,31 +556,15 @@ namespace PrismFanlight.Editor
 
         private void DrawColorFields(SerializedProperty color)
         {
-            var mode = color.FindPropertyRelative("mode");
-            var colorMode = (FanlightColorMode)mode.enumValueIndex;
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Palette");
 
-            DrawPropertyField(mode, null);
-
-            switch (colorMode)
+            for (var i = 1; i <= FanlightColorSettings.PaletteSlotCount; i++)
             {
-                case FanlightColorMode.Single:
-                    DrawPropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Color"));
-                    DrawIntensityField(color);
-                    break;
-
-                case FanlightColorMode.Random:
-                    DrawPropertyField(color.FindPropertyRelative("paletteColors"), new GUIContent("Palette"), true);
-                    DrawIntensityField(color);
-                    DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-                    break;
-
-                case FanlightColorMode.Gradient:
-                    DrawPropertyField(color.FindPropertyRelative("primaryColor"), new GUIContent("Start Color"));
-                    DrawPropertyField(color.FindPropertyRelative("secondaryColor"), new GUIContent("End Color"));
-                    DrawIntensityField(color);
-                    DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
-                    break;
+                DrawPropertyField(color.FindPropertyRelative($"slot{i}"), new GUIContent($"Slot {i}"));
             }
+
+            DrawIntensityField(color);
+            DrawPropertyField(color.FindPropertyRelative("randomIntensity"), new GUIContent("Random Intensity"));
         }
 
         private void DrawIntensityField(SerializedProperty color)

@@ -93,13 +93,18 @@ namespace PrismFanlight.Editor
 
             foreach (var track in timeline.GetOutputTracks())
             {
-                if (track is FanlightTimelineTrack && _director.GetGenericBinding(track) == fanlight)
+                if (IsFanlightTrack(track) && _director.GetGenericBinding(track) == fanlight)
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool IsFanlightTrack(TrackAsset track)
+        {
+            return track is FanlightTimelineTrack or FanlightPaletteGradientTrack;
         }
 
         private static void ClearTargets()

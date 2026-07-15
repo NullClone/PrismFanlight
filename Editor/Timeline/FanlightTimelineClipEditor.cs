@@ -1,5 +1,6 @@
-﻿using PrismFanlight.Timeline;
+using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
+using UnityEngine;
 using UnityEngine.Timeline;
 
 namespace PrismFanlight.Editor.Timeline
@@ -7,12 +8,11 @@ namespace PrismFanlight.Editor.Timeline
     [CustomTimelineEditor(typeof(FanlightTimelinePlayableAsset))]
     public sealed class FanlightTimelineClipEditor : ClipEditor
     {
-        public override void OnCreate(TimelineClip clip, TrackAsset track, TimelineClip clonedFrom)
+        public override ClipDrawOptions GetClipOptions(TimelineClip clip)
         {
-            if (clonedFrom == null)
-            {
-                clip.displayName = "Fanlight Cue";
-            }
+            var options = base.GetClipOptions(clip);
+            options.highlightColor = Color.clear;
+            return options;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace PrismFanlight.Rendering
         public static readonly int AudienceSlots = Shader.PropertyToID("_AudienceSlots");
         public static readonly int PenlightArgs = Shader.PropertyToID("_PenlightArgs");
         public static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
-        public static readonly int Colors = Shader.PropertyToID("_FanlightColors");
+        public static readonly int ColorAssignments = Shader.PropertyToID("_FanlightColorAssignments");
         public static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
         public static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");
         public static readonly int AudienceArgs = Shader.PropertyToID("_AudienceArgs");
@@ -56,14 +56,8 @@ namespace PrismFanlight.Rendering
         public static readonly int AudienceUpperBody = Shader.PropertyToID("_AudienceUpperBody");
         public static readonly int AudienceMotionBody = Shader.PropertyToID("_AudienceMotionBody");
 
-        public static readonly int ColorMode = Shader.PropertyToID("_ColorMode");
-        public static readonly int ColorSource = Shader.PropertyToID("_FanlightColorSource");
-        public static readonly int GlobalColor = Shader.PropertyToID("_FanlightGlobalColor");
         public static readonly int GlobalIntensity = Shader.PropertyToID("_FanlightGlobalIntensity");
-        public static readonly int PrimaryColor = Shader.PropertyToID("_PrimaryColor");
-        public static readonly int SecondaryColor = Shader.PropertyToID("_SecondaryColor");
-        public static readonly int Brightness = Shader.PropertyToID("_Brightness");
+        public static readonly int RandomIntensity = Shader.PropertyToID("_FanlightRandomIntensity");
         public static readonly int PaletteColors = Shader.PropertyToID("_PaletteColors");
-        public static readonly int PaletteColorCount = Shader.PropertyToID("_PaletteColorCount");
     }
 }

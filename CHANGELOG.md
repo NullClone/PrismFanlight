@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [1.3.0] - 2026-07-13
+
+### Added
+- Timelineでオーバーライドしているパラメーターを強調
+- Timelineのクリップの見た目を強化
+- Gradient専用Timelineトラックを追加
+
+### Changed
+- すべてのコードでリファクタを実施
+
+### Fixed
+- チカチカする問題を修正
+
 ## [1.2.0] - 2026-07-12
 
 ### <b>Timelineを完全にサポートしました！！</b>

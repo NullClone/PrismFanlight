@@ -4,18 +4,11 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
-    public enum FanlightHandZone
-    {
-        Shoulder = 0,
-        Chest = 1,
-        Face = 2,
-        Overhead = 3,
-        High = 4
-    }
-
     [Serializable]
     public struct FanlightHandZoneSettings
     {
+        // Fields
+
         public FanlightHandZone zone;
 
         [Range(-1f, 1.5f)]
@@ -30,6 +23,8 @@ namespace PrismFanlight
         [Range(0f, 0.5f)]
         public float variation;
 
+
+        // Methods
 
         public static FanlightHandZoneSettings Default() => Preset(FanlightHandZone.Shoulder);
 

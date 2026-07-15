@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace PrismFanlight
 {
+    [HelpURL("https://github.com/NullClone/PrismFanlight")]
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
     [ExecuteAlways]
     public sealed class PrismFanlight : MonoBehaviour
@@ -73,7 +74,7 @@ namespace PrismFanlight
         private Transform _swingTarget = null;
 
         private readonly FanlightGpuRenderer _renderer = new();
-        private readonly Dictionary<FanlightTimelineMixerBehaviour, FanlightTimelineTrackContribution> _timelineContributions = new();
+        private readonly Dictionary<object, FanlightTimelineTrackContribution> _timelineContributions = new();
         private readonly List<FanlightTimelineTrackContribution> _sortedTimelineContributions = new();
         private SeatLayout _validatedSeatLayout;
         private bool _hasExternalResolvedStateOverride;
@@ -187,6 +188,7 @@ namespace PrismFanlight
         private void OnValidate()
         {
             _validatedSeatLayout = null;
+            _color = _color.Validated();
         }
 
         private float GetCurrentTime()
@@ -274,13 +276,13 @@ namespace PrismFanlight
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
-        internal void SetTimelineContribution(FanlightTimelineMixerBehaviour source, FanlightTimelineTrackContribution contribution)
+        internal void SetTimelineContribution(object source, FanlightTimelineTrackContribution contribution)
         {
             _timelineContributions[source] = contribution;
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
-        internal void ClearTimelineContribution(FanlightTimelineMixerBehaviour source)
+        internal void ClearTimelineContribution(object source)
         {
             if (!_timelineContributions.Remove(source)) return;
 

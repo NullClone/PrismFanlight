@@ -1,6 +1,8 @@
 #ifndef PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
 #define PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
 
+#include "PrismFanlightColor.hlsl"
+
 struct PrismFanlightAudiencePart
 {
     float4 p0HalfWidth;
@@ -9,10 +11,6 @@ struct PrismFanlightAudiencePart
 
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<PrismFanlightAudiencePart> _AudienceParts;
-StructuredBuffer<float4> _FanlightColors;
-int _FanlightColorSource;
-float4 _FanlightGlobalColor;
-float _FanlightGlobalIntensity;
 
 void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positionOS, out float partType, out float capT)
 {
@@ -107,16 +105,9 @@ void GetAudienceBodyShade_float(float2 uv, float depthFake, float2 lightDir2D, f
 
 void GetAudienceBodyColor_float(float instanceId, out float4 color)
 {
-    if (_FanlightColorSource == 0)
-    {
-        color = float4(_FanlightGlobalColor.rgb * _FanlightGlobalIntensity, _FanlightGlobalColor.a);
-        return;
-    }
-
     uint global = (uint)max(0.0, instanceId);
     uint seat = _VisibleIndices[global / 3u];
-    color = _FanlightColors[seat];
-    color.rgb *= _FanlightGlobalIntensity;
+    color = PrismFanlightSeatColor(seat);
 }
 
 #endif

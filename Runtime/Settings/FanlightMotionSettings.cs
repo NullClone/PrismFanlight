@@ -6,12 +6,16 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightMotionSettings
     {
+        // Fields
+
         public FanlightSwingSettings swing;
         public FanlightDirectionSettings direction;
         public FanlightNoiseSettings noise;
         public FanlightHumanSettings human;
         public FanlightBeatSyncSettings beatSync;
 
+
+        // Methods
 
         public static FanlightMotionSettings Default() => new()
         {

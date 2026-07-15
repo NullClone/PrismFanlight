@@ -9,7 +9,6 @@ namespace PrismFanlight.Rendering
         public readonly SeatLayout Layout;
         public readonly FanlightTempoState Tempo;
         public readonly FanlightMotionSettings Motion;
-        public readonly FanlightColorSettings Color;
         public readonly FanlightAudienceSettings Audience;
         public readonly FanlightLodSettings Lod;
         public readonly Vector3 SwingTargetWorldPos;
@@ -19,13 +18,13 @@ namespace PrismFanlight.Rendering
         public readonly float Time;
         public readonly Bounds WorldBounds;
 
+
         public FanlightGpuDispatchContext(
             Camera cullingCamera,
             bool enableCulling,
             SeatLayout layout,
             FanlightTempoState tempo,
             FanlightMotionSettings motion,
-            FanlightColorSettings color,
             FanlightAudienceSettings audience,
             FanlightLodSettings lod,
             Vector3 swingTargetWorldPos,
@@ -39,7 +38,6 @@ namespace PrismFanlight.Rendering
             Layout = layout;
             Tempo = tempo;
             Motion = motion;
-            Color = color;
             Audience = audience;
             Lod = lod;
             SwingTargetWorldPos = swingTargetWorldPos;

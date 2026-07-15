@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightSwingSettings
     {
+        // Fields
+
         [Range(0f, 1f)]
         public float randomPhase;
 
@@ -46,6 +48,8 @@ namespace PrismFanlight
         [Range(0f, 1.5f)]
         public float wristSwingAngle;
 
+
+        // Methods
 
         public FanlightSwingSettings Validated() => new()
         {

@@ -11,7 +11,6 @@ namespace PrismFanlight.Editor.Timeline
     {
         // Fields
 
-        private SerializedProperty _colorSettings;
         private SerializedProperty _motionSettings;
         private SerializedProperty _tempoSettings;
         private SerializedProperty _audienceSettings;
@@ -26,7 +25,6 @@ namespace PrismFanlight.Editor.Timeline
 
             serializedObject.Update();
 
-            _colorSettings = serializedObject.FindProperty(nameof(_colorSettings));
             _motionSettings = serializedObject.FindProperty(nameof(_motionSettings));
             _tempoSettings = serializedObject.FindProperty(nameof(_tempoSettings));
             _audienceSettings = serializedObject.FindProperty(nameof(_audienceSettings));
@@ -50,7 +48,6 @@ namespace PrismFanlight.Editor.Timeline
         {
             serializedObject.Update();
 
-            DrawGroup("| Color", FanlightTimelineSettingsGroup.Color, _colorSettings);
             DrawGroup("| Motion", FanlightTimelineSettingsGroup.Motion, _motionSettings);
             DrawGroup("| Tempo", FanlightTimelineSettingsGroup.Tempo, _tempoSettings);
             DrawGroup("| Audience", FanlightTimelineSettingsGroup.Audience, _audienceSettings);

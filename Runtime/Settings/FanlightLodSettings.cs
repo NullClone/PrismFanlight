@@ -6,11 +6,16 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightLodSettings
     {
+        // Fields
+
         public bool enableAudienceDistanceLod;
 
         public float audienceVisibleDistance;
 
         public float audienceFadeRange;
+
+
+        // Methods
 
         public static FanlightLodSettings Default() => new()
         {

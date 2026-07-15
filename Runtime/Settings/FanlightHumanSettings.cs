@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightHumanSettings
     {
+        // Fields
+
         [Range(0f, 2f)]
         public float enthusiasm;
 
@@ -49,6 +51,8 @@ namespace PrismFanlight
         [Range(0f, 1f)]
         public float restPhaseRandomness;
 
+
+        // Methods
 
         public FanlightHumanSettings Validated()
         {

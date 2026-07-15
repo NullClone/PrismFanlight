@@ -7,16 +7,15 @@ namespace PrismFanlight.Rendering
         private const int InstanceThreadGroupSize = 128;
         private const int BlockThreadGroupSize = 64;
 
-        private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.MaxPaletteColors];
         private readonly Plane[] _planes = new Plane[6];
         private readonly Vector4[] _frustumPlanes = new Vector4[6];
+
 
         private static Vector3 ComputeWorldDirection(FanlightMotionSettings motion)
         {
             var yaw = motion.direction.swingYaw * Mathf.Deg2Rad;
             return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
         }
-
 
         public void DispatchVisibility(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
         {
@@ -80,17 +79,6 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(motion.bodyBounce, motion.bodySway, motion.bodyMotionSpeed, motion.upperBodyLeanMotion));
         }
 
-        public void DispatchColors(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
-        {
-            SetCommonParams(shader, context, buffers, false);
-            SetColorParams(shader, context.Color);
-
-            shader.SetBuffer(kernels.GenerateAllColors, FanlightShaderIds.Seats, buffers.SeatBuffer);
-            shader.SetBuffer(kernels.GenerateAllColors, FanlightShaderIds.Randoms, buffers.RandomBuffer);
-            shader.SetBuffer(kernels.GenerateAllColors, FanlightShaderIds.Colors, buffers.ColorBuffer);
-            shader.Dispatch(kernels.GenerateAllColors, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
-        }
-
         private void SetCommonParams(ComputeShader shader, FanlightGpuDispatchContext context, FanlightGpuBuffers buffers, bool includeVisibilityParams)
         {
             var layout = context.Layout;
@@ -134,42 +122,6 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionBeat, new Vector4(0f, motion.beatSync.beatsPerSwing, motion.beatSync.beatPhaseOffset, motion.beatSync.downbeatAccent));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(motion.beatSync.beatReactionDelay, motion.beatSync.beatSeatJitter, motion.beatSync.beatBlockDelay.x, motion.beatSync.beatBlockDelay.y));
             shader.SetFloat(FanlightShaderIds.GripPivotY, buffers.MeshPivotY);
-        }
-
-        private void SetColorParams(ComputeShader shader, FanlightColorSettings color)
-        {
-            shader.SetInt(FanlightShaderIds.ColorMode, (int)color.mode);
-            shader.SetVector(FanlightShaderIds.PrimaryColor, color.primaryColor);
-            shader.SetVector(FanlightShaderIds.SecondaryColor, color.secondaryColor);
-            shader.SetVector(FanlightShaderIds.Brightness, new Vector4(color.intensity, color.randomIntensity, 0f, 0f));
-            shader.SetInt(FanlightShaderIds.PaletteColorCount, FillPalette(color));
-            shader.SetVectorArray(FanlightShaderIds.PaletteColors, _paletteColors);
-        }
-
-        private int FillPalette(FanlightColorSettings color)
-        {
-            var palette = color.paletteColors;
-            var count = Mathf.Clamp(palette?.Length ?? 0, 0, FanlightColorSettings.MaxPaletteColors);
-
-            if (count == 0)
-            {
-                _paletteColors[0] = color.primaryColor;
-                count = 1;
-            }
-            else
-            {
-                for (var i = 0; i < count; i++)
-                {
-                    _paletteColors[i] = palette[i];
-                }
-            }
-
-            for (var i = count; i < _paletteColors.Length; i++)
-            {
-                _paletteColors[i] = Color.black;
-            }
-
-            return count;
         }
 
         private void SetFrustumPlanes(ComputeShader shader, Camera cullingCamera, Bounds worldBounds)
