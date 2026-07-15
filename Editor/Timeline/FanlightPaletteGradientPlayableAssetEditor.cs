@@ -9,15 +9,20 @@ namespace PrismFanlight.Editor.Timeline
     [CustomEditor(typeof(FanlightPaletteGradientPlayableAsset))]
     public sealed class FanlightPaletteGradientPlayableAssetEditor : UnityEditor.Editor
     {
+        // Fields
+
         private static Gradient _copiedGradient;
 
         private SerializedProperty _slots;
         private readonly SerializedProperty[] _gradients = new SerializedProperty[FanlightColorSettings.PaletteSlotCount];
 
 
+        // Methods
+
         private void OnEnable()
         {
             _slots = serializedObject.FindProperty("_slots");
+
             for (var i = 0; i < _gradients.Length; i++)
             {
                 _gradients[i] = serializedObject.FindProperty($"_slot{i + 1}");
@@ -28,79 +33,19 @@ namespace PrismFanlight.Editor.Timeline
         {
             serializedObject.Update();
 
-            PrismFanlightEditorStyles.DrawSection("| Palette Gradient", () =>
+            EditorGUILayout.Space();
+            DrawBulkTools();
+            EditorGUILayout.Space();
+            DrawGradientSlots();
+
+            if (serializedObject.ApplyModifiedProperties())
             {
-                EditorGUILayout.HelpBox(
-                    "Each slot controls a fixed one-sixth group of the audience. Duplicate gradients to create the desired color count without changing seat assignments.",
-                    MessageType.Info);
-
-                EditorGUILayout.Space();
-                DrawDistributionTools();
-                EditorGUILayout.Space();
-                DrawBulkTools();
-                EditorGUILayout.Space();
-                DrawGradientSlots();
-            });
-
-            if (serializedObject.ApplyModifiedProperties()) RefreshTimelinePreview();
-        }
-
-        private void DrawDistributionTools()
-        {
-            EditorGUILayout.LabelField("Quick Distribution", EditorStyles.boldLabel);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField("Colors", GUILayout.Width(44));
-                for (var colorCount = 1; colorCount <= FanlightColorSettings.PaletteSlotCount; colorCount++)
-                {
-                    var count = colorCount;
-                    var tooltip = count == FanlightColorSettings.PaletteSlotCount
-                        ? "Enable all six independently editable gradients."
-                        : $"Distribute the first {count} gradient{(count == 1 ? string.Empty : "s")} across the six fixed audience groups.";
-
-                    if (GUILayout.Button(new GUIContent(count.ToString(), tooltip), EditorStyles.miniButton))
-                    {
-                        DistributeGradients(count);
-                    }
-                }
-            }
-        }
-
-        private void DrawBulkTools()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField("Override Slots", EditorStyles.boldLabel);
-                if (GUILayout.Button("All", EditorStyles.miniButtonLeft, GUILayout.Width(48)))
-                {
-                    _slots.intValue = (int)FanlightPaletteSlotMask.All;
-                }
-
-                if (GUILayout.Button("None", EditorStyles.miniButtonRight, GUILayout.Width(48)))
-                {
-                    _slots.intValue = (int)FanlightPaletteSlotMask.None;
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button(new GUIContent("Slot 1 To Enabled", "Copy Slot 1 to every enabled slot.")))
-                {
-                    Undo.RecordObjects(targets, "Copy Fanlight Gradient To Enabled Slots");
-                    CopyToEnabled(0);
-                }
-
-                if (GUILayout.Button(new GUIContent("Reverse Enabled", "Reverse the time direction of every enabled gradient.")))
-                {
-                    ReverseEnabled();
-                }
+                RefreshTimelinePreview();
             }
         }
 
         private void DrawGradientSlots()
         {
-            EditorGUILayout.LabelField("Gradients", EditorStyles.boldLabel);
-
             for (var i = 0; i < _gradients.Length; i++)
             {
                 var bit = 1 << i;
@@ -156,9 +101,6 @@ namespace PrismFanlight.Editor.Timeline
                 () => CopyToAll(slotIndex)));
 
             menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Reverse"), false, () => EditGradients(
-                "Reverse Fanlight Gradient",
-                () => SetGradient(slotIndex, ReverseGradient(GetGradient(slotIndex)))));
             menu.AddItem(new GUIContent("Make Constant/From Start"), false, () => EditGradients(
                 "Make Constant Fanlight Gradient",
                 () => SetConstantGradient(slotIndex, 0.0f)));
@@ -168,21 +110,21 @@ namespace PrismFanlight.Editor.Timeline
             menu.ShowAsContext();
         }
 
-        private void DistributeGradients(int colorCount)
+        private void DrawBulkTools()
         {
-            Undo.RecordObjects(targets, "Distribute Fanlight Gradients");
-
-            var sourceGradients = new Gradient[colorCount];
-            for (var i = 0; i < colorCount; i++)
+            using (new EditorGUILayout.HorizontalScope())
             {
-                sourceGradients[i] = CloneGradient(GetGradient(i));
-            }
+                EditorGUILayout.LabelField("Override Slots", EditorStyles.boldLabel);
 
-            _slots.intValue = (int)FanlightPaletteSlotMask.All;
-            for (var i = 0; i < FanlightColorSettings.PaletteSlotCount; i++)
-            {
-                var sourceIndex = Mathf.Min(i * colorCount / FanlightColorSettings.PaletteSlotCount, colorCount - 1);
-                SetGradient(i, sourceGradients[sourceIndex]);
+                if (GUILayout.Button("All", EditorStyles.miniButtonLeft, GUILayout.Width(48)))
+                {
+                    _slots.intValue = (int)FanlightPaletteSlotMask.All;
+                }
+
+                if (GUILayout.Button("None", EditorStyles.miniButtonRight, GUILayout.Width(48)))
+                {
+                    _slots.intValue = (int)FanlightPaletteSlotMask.None;
+                }
             }
         }
 
@@ -210,15 +152,6 @@ namespace PrismFanlight.Editor.Timeline
             }
 
             _slots.intValue = (int)FanlightPaletteSlotMask.All;
-        }
-
-        private void ReverseEnabled()
-        {
-            Undo.RecordObjects(targets, "Reverse Fanlight Gradients");
-            for (var i = 0; i < FanlightColorSettings.PaletteSlotCount; i++)
-            {
-                if ((_slots.intValue & (1 << i)) != 0) SetGradient(i, ReverseGradient(GetGradient(i)));
-            }
         }
 
         private void EditGradients(string undoName, Action edit)
@@ -258,33 +191,6 @@ namespace PrismFanlight.Editor.Timeline
             };
             clone.SetKeys(source.colorKeys, source.alphaKeys);
             return clone;
-        }
-
-        private static Gradient ReverseGradient(Gradient source)
-        {
-            var colorKeys = source.colorKeys;
-            var reversedColors = new GradientColorKey[colorKeys.Length];
-            for (var i = 0; i < colorKeys.Length; i++)
-            {
-                var sourceKey = colorKeys[colorKeys.Length - i - 1];
-                reversedColors[i] = new GradientColorKey(sourceKey.color, 1.0f - sourceKey.time);
-            }
-
-            var alphaKeys = source.alphaKeys;
-            var reversedAlpha = new GradientAlphaKey[alphaKeys.Length];
-            for (var i = 0; i < alphaKeys.Length; i++)
-            {
-                var sourceKey = alphaKeys[alphaKeys.Length - i - 1];
-                reversedAlpha[i] = new GradientAlphaKey(sourceKey.alpha, 1.0f - sourceKey.time);
-            }
-
-            var reversed = new Gradient
-            {
-                mode = source.mode,
-                colorSpace = source.colorSpace
-            };
-            reversed.SetKeys(reversedColors, reversedAlpha);
-            return reversed;
         }
 
         private static Gradient CreateConstantGradient(Color color, ColorSpace colorSpace)

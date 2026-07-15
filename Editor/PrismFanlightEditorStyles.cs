@@ -47,17 +47,9 @@ namespace PrismFanlight.Editor
 
         public static void DrawOverride(SerializedProperty property, GUIContent label, bool includeChildren = false)
         {
-            var previousColor = EditorStyles.label.normal.textColor;
-
-            try
+            using (new TimelineOverrideColorScope(true))
             {
-                EditorStyles.label.normal.textColor = new Color(0.540f, 0.850f, 1.000f, 1.000f);
-
                 EditorGUILayout.PropertyField(property, label, includeChildren);
-            }
-            finally
-            {
-                EditorStyles.label.normal.textColor = previousColor;
             }
         }
 

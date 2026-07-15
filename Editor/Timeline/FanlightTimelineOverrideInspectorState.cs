@@ -8,11 +8,15 @@ namespace PrismFanlight.Editor
 {
     internal static class FanlightTimelineOverrideInspectorState
     {
+        // Fields
+
         private static readonly HashSet<string> _activePaths = new();
         private static PrismFanlight _target;
         private static PlayableDirector _director;
         private static double _time;
 
+
+        // Methods
 
         public static void Update(PrismFanlight target)
         {
@@ -51,8 +55,7 @@ namespace PrismFanlight.Editor
 
             foreach (var track in timeline.GetOutputTracks())
             {
-                if ((track is FanlightTimelineTrack || track is FanlightPaletteGradientTrack)
-                    && director.GetGenericBinding(track) == target)
+                if ((track is FanlightTimelineTrack || track is FanlightPaletteGradientTrack) && director.GetGenericBinding(track) == target)
                 {
                     return true;
                 }
@@ -66,6 +69,7 @@ namespace PrismFanlight.Editor
             foreach (var clip in track.GetClips())
             {
                 if (time < clip.start || time >= clip.end) continue;
+
                 if (clip.asset is FanlightTimelinePlayableAsset asset)
                 {
                     foreach (var path in asset.OverridePaths) _activePaths.Add(path);

@@ -157,26 +157,6 @@ namespace PrismFanlight.Editor
             return false;
         }
 
-        private readonly struct TimelineOverrideColorScope : IDisposable
-        {
-            private readonly Color _previousColor;
-
-
-            public TimelineOverrideColorScope(bool overridden)
-            {
-                _previousColor = GUI.color;
-
-                if (overridden)
-                {
-                    GUI.color = Color.Lerp(_previousColor, AnimationMode.animatedPropertyColor, 0.45f);
-                }
-            }
-
-            public void Dispose()
-            {
-                GUI.color = _previousColor;
-            }
-        }
 
         private void DrawGeneralSection()
         {
@@ -417,6 +397,7 @@ namespace PrismFanlight.Editor
 
             var armMinProp = swingProp.FindPropertyRelative("armLengthMin");
             var armMaxProp = swingProp.FindPropertyRelative("armLengthMax");
+
             using (new TimelineOverrideColorScope(IsTimelineOverridden(armMinProp, armMaxProp)))
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -443,6 +424,7 @@ namespace PrismFanlight.Editor
 
             var minAngleProp = swingProp.FindPropertyRelative("minAngle");
             var maxAngleProp = swingProp.FindPropertyRelative("maxAngle");
+
             using (new TimelineOverrideColorScope(IsTimelineOverridden(minAngleProp, maxAngleProp)))
             using (new EditorGUILayout.HorizontalScope())
             {

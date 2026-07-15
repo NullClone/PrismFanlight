@@ -24,6 +24,7 @@ namespace PrismFanlight.Editor.Timeline
         public override void DrawBackground(TimelineClip clip, ClipBackgroundRegion region)
         {
             base.DrawBackground(clip, region);
+
             if (clip.asset is not FanlightPaletteGradientPlayableAsset asset) return;
 
             var texture = GetTexture(asset);
