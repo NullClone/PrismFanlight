@@ -42,28 +42,36 @@ namespace PrismFanlight.Editor
             }
 
             var director = TimelineEditor.inspectedDirector;
+            if (director == null)
+            {
+                Reset();
 
-            if (_director != director || _playableAsset != director?.playableAsset)
+                return;
+            }
+
+            var playableAsset = director.playableAsset;
+
+            if (_director != director || _playableAsset != playableAsset)
             {
                 ClearTargets();
 
                 _director = director;
-                _playableAsset = director != null ? director.playableAsset : null;
+                _playableAsset = playableAsset;
                 _hasTime = false;
             }
 
-            if (_director == null || _director.playableAsset == null) return;
+            if (playableAsset == null) return;
 
-            var time = _director.time;
+            var time = director.time;
 
             if (_hasTime && Math.Abs(time - _time) <= TimeEpsilon) return;
 
             _time = time;
             _hasTime = true;
 
-            if (_director.state == PlayState.Playing) return;
+            if (director.state == PlayState.Playing) return;
 
-            _director.Evaluate();
+            director.Evaluate();
 
             RequestRender();
         }
