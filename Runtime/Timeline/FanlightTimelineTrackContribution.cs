@@ -52,8 +52,6 @@ namespace PrismFanlight.Timeline
                 Add(descriptor, GetRootValue(behaviour, descriptor.Group), weight);
             }
 
-            // Old Fanlight Cue assets can still play after the color system upgrade,
-            // but newly-authored cues expose color only through the palette track.
             if (behaviour.HasLegacyColorOverrides())
             {
                 var color = behaviour.GetColor();

@@ -3,19 +3,6 @@
 
 #include "PrismFanlightMotion.hlsl"
 
-// Builds three billboard parts for each audience seat:
-//   part 0: body ribbon, feet -> neck
-//   part 1: arm ribbon, shoulder -> hand
-//   part 2: head billboard, center + radius
-//
-// Body/head are the parent pose for the arm. The penlight matrix is generated
-// from the same shoulder point, so the light reads as held by the audience.
-//
-//   _AudienceShape      = (bodyHeight, heightJitter, shoulderHeightRatio, bodyHalfWidth)
-//   _AudienceArm        = (armHalfWidth, shoulderOffset, headHalfSize, armLengthLimit)
-//   _AudienceUpperBody  = (upperBodyLean, upperBodyLeanMax, worldScale, _)
-//   _AudienceMotionBody = (bodyBounce, bodySway, bodyMotionSpeed, upperBodyLeanMotion)
-
 FanlightAudiencePart PrismMakeAudiencePart(float3 p0, float3 p1, float halfWidth, float type)
 {
     FanlightAudiencePart part;

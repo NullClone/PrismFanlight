@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightBeatSyncSettings
     {
+        // Fields
+
         [Min(0.001f)]
         public float beatsPerSwing;
 
@@ -23,6 +25,8 @@ namespace PrismFanlight
 
         public Vector2 beatBlockDelay;
 
+
+        // Methods
 
         public FanlightBeatSyncSettings Validated() => new()
         {

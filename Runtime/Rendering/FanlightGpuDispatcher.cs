@@ -10,12 +10,12 @@ namespace PrismFanlight.Rendering
         private readonly Plane[] _planes = new Plane[6];
         private readonly Vector4[] _frustumPlanes = new Vector4[6];
 
+
         private static Vector3 ComputeWorldDirection(FanlightMotionSettings motion)
         {
             var yaw = motion.direction.swingYaw * Mathf.Deg2Rad;
             return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
         }
-
 
         public void DispatchVisibility(ComputeShader shader, FanlightGpuKernels kernels, FanlightGpuBuffers buffers, FanlightGpuDispatchContext context)
         {

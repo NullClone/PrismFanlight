@@ -45,6 +45,7 @@ namespace PrismFanlight.Timeline
                 isTimeJump);
         }
 
+
         private static object GetRoot(FanlightTimelineSettingsGroup group, object color, object motion, object tempo, object audience)
         {
             return group switch

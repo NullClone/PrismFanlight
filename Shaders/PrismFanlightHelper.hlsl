@@ -18,9 +18,6 @@ uint PrismFanlightSeatIndex(float instanceId)
 
 float3 PrismStabilizeFanlightRadius(float3 positionOS, uint seatIndex)
 {
-    // Thin, moving geometry can cover less than one pixel at a distance. Expanding
-    // only its screen-facing radius keeps the penlight from temporally aliasing,
-    // without changing its length or its hand position.
     const float minRadiusPixels = 0.75;
 
     float3 positionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0)).xyz;

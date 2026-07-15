@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -22,6 +24,7 @@ namespace PrismFanlight.Timeline
 
         [HideInInspector]
         public FanlightColorSettings _colorSettings = FanlightColorSettings.Default();
+
         public FanlightMotionSettings _motionSettings = FanlightMotionSettings.Default();
         public FanlightTempoSettings _tempoSettings = FanlightTempoSettings.Default();
         public FanlightAudienceSettings _audienceSettings = FanlightAudienceSettings.Default();
@@ -34,7 +37,7 @@ namespace PrismFanlight.Timeline
 
         public ClipCaps clipCaps => ClipCaps.Blending;
 
-        public System.Collections.Generic.IReadOnlyList<string> OverridePaths => GetOverrides().Paths;
+        public IReadOnlyList<string> OverridePaths => GetOverrides().Paths;
 
 
         // Methods
@@ -66,7 +69,7 @@ namespace PrismFanlight.Timeline
 
             foreach (var path in GetOverrides().Paths)
             {
-                if (path.StartsWith("color.", System.StringComparison.Ordinal)) return true;
+                if (path.StartsWith("color.", StringComparison.Ordinal)) return true;
             }
 
             return false;

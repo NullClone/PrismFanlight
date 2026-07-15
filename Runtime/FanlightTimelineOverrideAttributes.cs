@@ -9,13 +9,9 @@ namespace PrismFanlight
         Discrete
     }
 
-    /// <summary>Excludes a settings field from Timeline cue overrides.</summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class FanlightTimelineIgnoreAttribute : Attribute
-    {
-    }
+    public sealed class FanlightTimelineIgnoreAttribute : Attribute { }
 
-    /// <summary>Overrides the automatic blend mode inferred from a field type.</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class FanlightTimelineBlendAttribute : Attribute
     {

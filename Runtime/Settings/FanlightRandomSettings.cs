@@ -5,9 +5,14 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightRandomSettings
     {
+        // Fields
+
         public uint globalSeed;
 
         public bool deterministic;
+
+
+        // Methods
 
         public static FanlightRandomSettings Default() => new()
         {

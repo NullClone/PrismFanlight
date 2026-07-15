@@ -11,8 +11,6 @@ namespace PrismFanlight
 
         public const int PaletteSlotCount = 6;
 
-        private const int CurrentSerializationVersion = 1;
-
 
         [ColorUsage(false, true)]
         public Color slot1;
@@ -38,29 +36,11 @@ namespace PrismFanlight
         [Range(0.0f, 1.0f)]
         public float randomIntensity;
 
-        [SerializeField, HideInInspector]
-        private int _serializationVersion;
-
-        // Retained so existing components and preset assets can be upgraded without
-        // losing their serialized color data. New code uses the six fixed slots.
-        [Obsolete("Use the fixed palette slots instead."), FanlightTimelineIgnore, HideInInspector]
-        public FanlightColorMode mode;
-
-        [Obsolete("Use slot1 instead."), FanlightTimelineIgnore, HideInInspector]
-        public Color primaryColor;
-
-        [Obsolete("Use the fixed palette slots instead."), FanlightTimelineIgnore, HideInInspector]
-        public Color secondaryColor;
-
-        [Obsolete("Use the fixed palette slots instead."), FanlightTimelineIgnore, HideInInspector]
-        public Color[] paletteColors;
-
 
         // Methods
 
         public static FanlightColorSettings Default()
         {
-#pragma warning disable CS0618
             return new FanlightColorSettings
             {
                 slot1 = Color.white,
@@ -71,24 +51,14 @@ namespace PrismFanlight
                 slot6 = Color.white,
                 intensity = 20.0f,
                 randomIntensity = 0.0f,
-                _serializationVersion = CurrentSerializationVersion,
-                mode = FanlightColorMode.Single,
-                primaryColor = Color.white,
-                secondaryColor = Color.cyan
             };
-#pragma warning restore CS0618
         }
 
         public FanlightColorSettings Validated()
         {
-            var result = _serializationVersion < CurrentSerializationVersion
-                ? UpgradeLegacy()
-                : this;
-
-            result.intensity = math.max(result.intensity, 0.0f);
-            result.randomIntensity = math.saturate(result.randomIntensity);
-            result._serializationVersion = CurrentSerializationVersion;
-            return result;
+            intensity = math.max(intensity, 0.0f);
+            randomIntensity = math.saturate(randomIntensity);
+            return this;
         }
 
         public Color GetSlot(int index)
@@ -142,46 +112,6 @@ namespace PrismFanlight
                 hash = hash * 31 + settings.randomIntensity.GetHashCode();
                 return hash;
             }
-        }
-
-        [Obsolete("Use GetSlot(0) instead.")]
-        public Color GetGlobalColor() => Validated().slot1;
-
-        private FanlightColorSettings UpgradeLegacy()
-        {
-            var result = this;
-
-#pragma warning disable CS0618
-            switch (mode)
-            {
-                case FanlightColorMode.Random when paletteColors is { Length: > 0 }:
-                    for (var i = 0; i < PaletteSlotCount; i++)
-                    {
-                        var paletteIndex = PaletteSlotCount <= 1
-                            ? 0
-                            : Mathf.RoundToInt((float)i * (paletteColors.Length - 1) / (PaletteSlotCount - 1));
-                        result = result.SetSlotUnchecked(i, paletteColors[Mathf.Clamp(paletteIndex, 0, paletteColors.Length - 1)]);
-                    }
-                    break;
-
-                case FanlightColorMode.Gradient:
-                    for (var i = 0; i < PaletteSlotCount; i++)
-                    {
-                        result = result.SetSlotUnchecked(i, Color.Lerp(primaryColor, secondaryColor, (float)i / (PaletteSlotCount - 1)));
-                    }
-                    break;
-
-                default:
-                    for (var i = 0; i < PaletteSlotCount; i++)
-                    {
-                        result = result.SetSlotUnchecked(i, primaryColor);
-                    }
-                    break;
-            }
-#pragma warning restore CS0618
-
-            result._serializationVersion = CurrentSerializationVersion;
-            return result;
         }
 
         private FanlightColorSettings SetSlotUnchecked(int index, Color color)

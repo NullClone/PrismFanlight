@@ -6,8 +6,13 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightBlockTransform : IEquatable<FanlightBlockTransform>
     {
+        // Fields
+
         public Vector3 position;
         public Vector3 eulerRotation;
+
+
+        // Properties
 
         public static FanlightBlockTransform Identity => new()
         {
@@ -16,6 +21,9 @@ namespace PrismFanlight
         };
 
         public Quaternion Rotation => Quaternion.Euler(eulerRotation);
+
+
+        // Methods
 
         public bool Equals(FanlightBlockTransform other)
         {

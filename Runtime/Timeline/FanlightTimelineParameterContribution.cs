@@ -1,3 +1,5 @@
+using System;
+
 namespace PrismFanlight.Timeline
 {
     internal sealed class FanlightTimelineParameterContribution
@@ -50,7 +52,7 @@ namespace PrismFanlight.Timeline
                 Value = Descriptor.Blend(Value, incoming, weight / (Weight + weight));
             }
 
-            _strongestWeight = System.Math.Max(_strongestWeight, weight);
+            _strongestWeight = Math.Max(_strongestWeight, weight);
             Weight += weight;
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace PrismFanlight.Rendering
@@ -31,7 +32,6 @@ namespace PrismFanlight.Rendering
         public GraphicsBuffer AudienceArgsBuffer { get; private set; }
 
         public bool HasAudience => AudiencePartBuffer != null;
-
 
         public int SeatCount { get; private set; }
 
@@ -82,7 +82,7 @@ namespace PrismFanlight.Rendering
         {
             if (RandomBuffer == null || ColorAssignmentBuffer == null || SeatCount <= 0) return;
 
-            var seed = random.deterministic ? random.globalSeed : (uint)System.Environment.TickCount;
+            var seed = random.deterministic ? random.globalSeed : (uint)Environment.TickCount;
             RandomBuffer.SetData(BuildRandomData(SeatCount, seed));
             ColorAssignmentBuffer.SetData(BuildColorAssignments(SeatCount, seed));
         }

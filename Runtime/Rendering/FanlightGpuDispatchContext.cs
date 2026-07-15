@@ -18,6 +18,7 @@ namespace PrismFanlight.Rendering
         public readonly float Time;
         public readonly Bounds WorldBounds;
 
+
         public FanlightGpuDispatchContext(
             Camera cullingCamera,
             bool enableCulling,

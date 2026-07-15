@@ -5,6 +5,8 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightPaletteGradientMixerBehaviour : PlayableBehaviour
     {
+        // Fields
+
         private const float WeightEpsilon = 0.0001f;
 
         private PrismFanlight _lastTarget;
@@ -13,6 +15,8 @@ namespace PrismFanlight.Timeline
         private readonly FanlightTimelineTrackContribution _contribution = new();
 
 
+        // Methods
+
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
             var fanlight = playerData as PrismFanlight;
@@ -20,6 +24,7 @@ namespace PrismFanlight.Timeline
             if (_lastTarget != fanlight)
             {
                 if (_lastTarget != null) _lastTarget.ClearTimelineContribution(this);
+
                 _hasActiveCue = false;
             }
 

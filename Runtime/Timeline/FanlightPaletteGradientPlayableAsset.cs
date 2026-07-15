@@ -7,6 +7,8 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightPaletteGradientPlayableAsset : PlayableAsset, ITimelineClipAsset
     {
+        // Fields
+
         [SerializeField]
         private FanlightPaletteSlotMask _slots = FanlightPaletteSlotMask.All;
 
@@ -28,6 +30,7 @@ namespace PrismFanlight.Timeline
         [SerializeField, GradientUsage(true)]
         private Gradient _slot6 = null;
 
+
         private static readonly string[] SlotPaths =
         {
             "color.slot1",
@@ -38,14 +41,20 @@ namespace PrismFanlight.Timeline
             "color.slot6"
         };
 
+
+        // Properties
+
         public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.ClipIn | ClipCaps.SpeedMultiplier;
 
         public FanlightPaletteSlotMask Slots => _slots;
 
 
+        // Methods
+
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
             EnsureGradients();
+
             var playable = ScriptPlayable<FanlightPaletteGradientPlayableBehaviour>.Create(graph);
             playable.GetBehaviour().Asset = this;
             return playable;

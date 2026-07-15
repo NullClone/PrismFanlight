@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightAudienceSettings
     {
+        // Fields
+
         public bool enabled;
 
         [Min(0.1f)]
@@ -44,6 +46,8 @@ namespace PrismFanlight
         public FanlightAudienceMotionSettings motion;
 
 
+        // Methods
+
         public static FanlightAudienceSettings Default() => new()
         {
             enabled = true,
@@ -67,7 +71,6 @@ namespace PrismFanlight
             bodyHeight = math.max(0.1f, bodyHeight),
             bodyHeightJitter = math.saturate(bodyHeightJitter),
             bodyWidth = math.max(0.01f, bodyWidth),
-            // Migration guard: older serialized body settings can read as zero.
             headSize = headSize > 0f ? math.max(0.01f, headSize) : 0.28f,
             shoulderHeight = math.saturate(shoulderHeight),
             shoulderOffset = math.clamp(shoulderOffset, -1f, 1f),

@@ -12,6 +12,7 @@ namespace PrismFanlight.Rendering
         public readonly int GenerateVisibleFrameData;
         public readonly int GenerateAllFrameData;
 
+
         public FanlightGpuKernels(ComputeShader shader)
         {
             ClearIndirectArgs = shader.FindKernel("ClearIndirectArgs");

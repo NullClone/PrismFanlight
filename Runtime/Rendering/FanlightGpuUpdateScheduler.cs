@@ -56,11 +56,13 @@ namespace PrismFanlight.Rendering
             return timing.Mode == FanlightGpuUpdateMode.EveryFrame ? 0.0f : 1.0f / timing.TargetFrameRate;
         }
 
+
         private struct UpdateLane
         {
             public bool HasUpdated { get; private set; }
 
             public float NextUpdateTime { get; private set; }
+
 
             public void MarkUpdated(float clock, float interval)
             {

@@ -1,4 +1,3 @@
-using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
@@ -10,6 +9,7 @@ namespace PrismFanlight.Timeline
         internal FanlightColorSettings Evaluate(float normalizedTime)
         {
             var result = FanlightColorSettings.Default();
+
             if (Asset == null) return result;
 
             for (var i = 0; i < FanlightColorSettings.PaletteSlotCount; i++)

@@ -7,6 +7,8 @@ namespace PrismFanlight
     [Serializable]
     public struct FanlightDirectionSettings
     {
+        // Fields
+
         public FanlightSwingMode swingMode;
 
         [Range(0f, 360f)]
@@ -19,6 +21,8 @@ namespace PrismFanlight
         [Range(0f, 1f)]
         public float aimStrength;
 
+
+        // Methods
 
         public FanlightDirectionSettings Validated() => new()
         {
