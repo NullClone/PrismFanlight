@@ -1,13 +1,12 @@
 {
-    "name": "PrismFanlight.Editor",
-    "rootNamespace": "",
+    "name": "PrismFanlight.Editor.Tests",
+    "rootNamespace": "PrismFanlight.Tests",
     "references": [
         "PrismFanlight.Core",
         "PrismFanlight.Authoring",
         "PrismFanlight.Runtime",
-        "Unity.Mathematics",
-        "Unity.Timeline",
-        "Unity.Timeline.Editor"
+        "PrismFanlight.Editor",
+        "Unity.Mathematics"
     ],
     "includePlatforms": [
         "Editor"
@@ -18,6 +17,9 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

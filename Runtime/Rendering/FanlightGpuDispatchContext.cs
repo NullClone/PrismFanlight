@@ -6,7 +6,7 @@ namespace PrismFanlight.Rendering
     {
         public readonly Camera CullingCamera;
         public readonly bool EnableCulling;
-        public readonly SeatLayout Layout;
+        public readonly FanlightRuntimeLayout Layout;
         public readonly FanlightTempoState Tempo;
         public readonly FanlightMotionSettings Motion;
         public readonly FanlightAudienceSettings Audience;
@@ -22,7 +22,7 @@ namespace PrismFanlight.Rendering
         public FanlightGpuDispatchContext(
             Camera cullingCamera,
             bool enableCulling,
-            SeatLayout layout,
+            FanlightRuntimeLayout layout,
             FanlightTempoState tempo,
             FanlightMotionSettings motion,
             FanlightAudienceSettings audience,

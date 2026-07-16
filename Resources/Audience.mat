@@ -113,14 +113,14 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
-    - _PenlightRimTint: 0.1
+    - _PenlightRimTint: 0.01
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RimIntensity: 3
-    - _RimPower: 7.76
+    - _RimPower: 1
     - _RimSmoothness: 0.05
-    - _RimStrength: 0.05
+    - _RimStrength: 0.1
     - _RimThickness: 0.3
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0

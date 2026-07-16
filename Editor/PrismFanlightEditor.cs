@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Authoring;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
@@ -24,6 +25,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _tempo;
         private SerializedProperty _cullingCamera;
         private SerializedProperty _seatLayout;
+        private SerializedProperty _layoutAsset;
         private SerializedProperty _motionPreset;
         private SerializedProperty _motion;
         private SerializedProperty _swingTarget;
@@ -34,6 +36,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _random;
 
         private bool _enableGizmos = true;
+        private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
 
 
         private void OnEnable()
@@ -53,6 +56,7 @@ namespace PrismFanlight.Editor
             _tempo = serializedObject.FindProperty(nameof(_tempo));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
             _seatLayout = serializedObject.FindProperty(nameof(_seatLayout));
+            _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _motionPreset = serializedObject.FindProperty(nameof(_motionPreset));
             _motion = serializedObject.FindProperty(nameof(_motion));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
@@ -69,7 +73,8 @@ namespace PrismFanlight.Editor
 
             if (target is PrismFanlight fanlight)
             {
-                new PrismFanlightScenePreview().Draw(fanlight);
+                if (fanlight.LayoutAsset != null) _layoutScenePreview.Draw(fanlight);
+                else new PrismFanlightScenePreview().Draw(fanlight);
             }
         }
 
@@ -226,6 +231,27 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection("| Layout", () =>
             {
+                EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+                if (_layoutAsset.hasMultipleDifferentValues)
+                {
+                    EditorGUILayout.HelpBox("Layout editing is unavailable while the selected objects use different layout sources.", MessageType.Info);
+                    return;
+                }
+                var asset = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
+
+                if (asset != null)
+                {
+                    DrawLayoutAssetSection(asset);
+                    return;
+                }
+
+                EditorGUILayout.HelpBox("Legacy embedded layout. Existing scenes remain compatible, but stable IDs and partial GPU preview are available only through a new Layout Asset.", MessageType.Info);
+                using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                {
+                    if (GUILayout.Button("Create New Layout Asset...")) FanlightLayoutCreationWindow.ShowFor(_instance);
+                }
+
+                EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Blocks", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
                 EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
@@ -324,6 +350,85 @@ namespace PrismFanlight.Editor
                     }
                 }
             });
+        }
+
+        private void DrawLayoutAssetSection(FanlightLayoutAsset layout)
+        {
+            EditorGUILayout.Space();
+            if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+            {
+                _instance.SetEditorLayoutBlocked(true);
+                EditorGUILayout.HelpBox("Duplicate layout ID detected. Rendering and baking are disabled for this asset.", MessageType.Error);
+                return;
+            }
+            _instance.SetEditorLayoutBlocked(false);
+
+            if (!layout.IsInitialized)
+            {
+                EditorGUILayout.HelpBox("The layout asset is not initialized.", MessageType.Error);
+                return;
+            }
+
+            EditorGUILayout.LabelField("Stable Layout", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Layout ID", layout.LayoutId.Value);
+            EditorGUILayout.LabelField("Layout Version", layout.LayoutVersion.ToString());
+            EditorGUILayout.LabelField("Blocks", $"{layout.BlockCount.x} × {layout.BlockCount.y}");
+            EditorGUILayout.LabelField("Seats Per Block", $"{layout.SeatPerBlock.x} × {layout.SeatPerBlock.y}");
+            EditorGUILayout.LabelField("Total Seats", layout.TotalSeatCount.ToString("N0"));
+            EditorGUILayout.HelpBox("Topology is locked. Seat add, delete, split, merge and asset duplication remain disabled until PF-OPEN-006 is resolved.", MessageType.None);
+
+            var session = FanlightLayoutEditSession.Get(layout);
+            if (session == null) return;
+            if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+            {
+                _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+            }
+            EditorGUILayout.Space();
+            _layoutScenePreview.EditTransforms = EditorGUILayout.Toggle(
+                new GUIContent("Edit In Scene View", "Select a visible block, then move and rotate it with Unity handles."),
+                _layoutScenePreview.EditTransforms);
+            EditorGUILayout.LabelField("Bake Status", session.DirtyBlockCount == 0 && layout.HasCompatibleBake ? "Current" : "Dirty");
+            EditorGUILayout.LabelField("Dirty Reason", session.DirtyReason.ToString());
+            EditorGUILayout.LabelField("Dirty Blocks", session.DirtyBlockCount.ToString("N0"));
+            EditorGUILayout.LabelField("Dirty Seat Upload", EditorUtility.FormatBytes(session.EstimatedDirtySeatBytes));
+            if (layout.ActiveBake != null)
+            {
+                EditorGUILayout.LabelField("Bake Format", layout.ActiveBake.FormatVersion.ToString());
+                EditorGUILayout.LabelField("Baked Layout Version", layout.ActiveBake.SourceLayoutVersion.ToString());
+            }
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                if (GUILayout.Button("Bake Dirty Blocks...")) session.BakeWithSaveDialog();
+            }
+
+            var selected = _layoutScenePreview.GetSelectedBlockIndex(layout);
+            EditorGUILayout.Space();
+            if (selected < 0)
+            {
+                EditorGUILayout.LabelField("Selected Block", "None");
+                return;
+            }
+
+            var coordinates = layout.GetBlockCoordinates(selected);
+            var placement = layout.GetBlock(selected).Placement;
+            EditorGUILayout.LabelField("Selected Block", $"{coordinates.x}, {coordinates.y}");
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                EditorGUI.BeginChangeCheck();
+                var position = EditorGUILayout.Vector3Field("Position", placement.position);
+                var rotation = EditorGUILayout.Vector3Field("Rotation", placement.eulerRotation);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    session.SetBlockPlacement(selected, new FanlightBlockPlacement
+                    {
+                        position = position,
+                        eulerRotation = rotation
+                    }, "Edit Fanlight Block Placement");
+                }
+
+                if (GUILayout.Button("Reset Selected")) _layoutScenePreview.ResetSelected(layout);
+            }
         }
 
         private void DrawTempoSection()
@@ -687,9 +792,13 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Diagnostics", EditorStyles.boldLabel);
                 PrismFanlightEditorStyles.DrawStat("GPU Ready", diagnostics.IsGpuReady ? "Yes" : "No");
+                PrismFanlightEditorStyles.DrawStat("Layout", diagnostics.LayoutStatus.ToString());
                 PrismFanlightEditorStyles.DrawStat("Total Seats", diagnostics.TotalSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Visible Seats", diagnostics.VisibleSeatCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Blocks", diagnostics.BlockCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Layout Allocations", diagnostics.LayoutBufferAllocationCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Partial Layout Uploads", diagnostics.PartialLayoutUploadCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Last Layout Upload Seats", diagnostics.LastLayoutUploadSeatCount.ToString("N0"));
             });
         }
 

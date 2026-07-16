@@ -93,8 +93,8 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.Beat, new Vector4(tempo.SongTime, tempo.Beat, tempo.BeatPhase, tempo.BarPhase));
             shader.SetVector(FanlightShaderIds.Tempo, new Vector4(tempo.Enable ? 1f : 0f, tempo.Bpm, tempo.BeatsPerBar, 0f));
 
-            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.seatPitch.x, layout.seatPitch.y, 0f, 0f));
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.blockCount.x, layout.blockCount.y, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.SeatPitch.x, layout.SeatPitch.y, 0f, 0f));
+            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.BlockCount2D.x, layout.BlockCount2D.y, 0f, 0f));
 
             if (includeVisibilityParams)
             {

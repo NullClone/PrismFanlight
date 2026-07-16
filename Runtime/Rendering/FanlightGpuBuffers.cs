@@ -5,6 +5,8 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightGpuBuffers
     {
+        private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
+
         // Properties
 
         public ComputeBuffer SeatBuffer { get; private set; }
@@ -44,13 +46,13 @@ namespace PrismFanlight.Rendering
 
         // Methods
 
-        public void Allocate(Mesh mesh, SeatLayout layout, bool allocateAudience, FanlightRandomSettings random)
+        public void Allocate(Mesh mesh, FanlightRuntimeLayout layout, bool allocateAudience, FanlightRandomSettings random)
         {
             Release();
 
-            SeatCount = layout.TotalSeatCount;
-            BlockCount = layout.blockCount.x * layout.blockCount.y;
-            LocalBounds = FanlightGeometryBuilder.BuildBounds(layout, mesh);
+            SeatCount = layout.SeatCount;
+            BlockCount = layout.BlockCount;
+            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
             MeshPivotY = mesh.bounds.min.y;
 
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
@@ -65,8 +67,8 @@ namespace PrismFanlight.Rendering
             PenlightArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
             AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
 
-            SeatBuffer.SetData(FanlightGeometryBuilder.BuildSeatData(layout));
-            BlockBuffer.SetData(FanlightGeometryBuilder.BuildBlockData(layout, mesh));
+            SeatBuffer.SetData(layout.Seats);
+            BlockBuffer.SetData(BuildBlockData(layout, mesh));
             UpdateRandomData(random);
 
             ResetArgs(PenlightArgsBuffer, mesh);
@@ -76,6 +78,54 @@ namespace PrismFanlight.Rendering
             {
                 AudiencePartBuffer = new ComputeBuffer(SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, ComputeBufferType.Structured);
             }
+        }
+
+        public void UpdateStaticData(Mesh mesh, FanlightRuntimeLayout layout)
+        {
+            if (SeatBuffer == null || BlockBuffer == null
+                                   || layout.SeatCount != SeatCount
+                                   || layout.BlockCount != BlockCount)
+            {
+                throw new InvalidOperationException("Static layout topology does not match allocated GPU buffers.");
+            }
+
+            SeatBuffer.SetData(layout.Seats);
+            BlockBuffer.SetData(BuildBlockData(layout, mesh));
+            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
+        }
+
+        public void UpdateBlock(Mesh mesh, FanlightRuntimeLayout layout, int blockIndex)
+        {
+            if (SeatBuffer == null || BlockBuffer == null || blockIndex < 0 || blockIndex >= layout.BlockCount) return;
+
+            var block = layout.Blocks[blockIndex];
+            if (block.count > 0)
+            {
+                SeatBuffer.SetData(layout.Seats, block.startIndex, block.startIndex, block.count);
+            }
+
+            _singleBlockUpload[0] = ToBlockData(block, mesh);
+            BlockBuffer.SetData(_singleBlockUpload, 0, blockIndex, 1);
+            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
+        }
+
+        private static FanlightBlockData[] BuildBlockData(FanlightRuntimeLayout layout, Mesh mesh)
+        {
+            var data = new FanlightBlockData[layout.BlockCount];
+            for (var i = 0; i < data.Length; i++) data[i] = ToBlockData(layout.Blocks[i], mesh);
+            return data;
+        }
+
+        private static FanlightBlockData ToBlockData(FanlightBakedBlockData block, Mesh mesh)
+        {
+            var meshPadding = mesh.bounds.size.magnitude + 4.0f;
+            return new FanlightBlockData(block.localCenter, block.radius + meshPadding, block.startIndex, block.count);
+        }
+
+        private static Bounds ExpandBounds(Bounds bounds, Mesh mesh)
+        {
+            bounds.Expand(mesh.bounds.size.magnitude + 4.0f);
+            return bounds;
         }
 
         public void UpdateRandomData(FanlightRandomSettings random)

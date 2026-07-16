@@ -1,0 +1,143 @@
+using System;
+using System.Collections.Generic;
+using PrismFanlight.Authoring;
+using UnityEditor;
+using UnityEngine;
+
+namespace PrismFanlight.Editor
+{
+    internal sealed class FanlightLayoutScenePreview
+    {
+        private static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
+        private static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
+        private static readonly Dictionary<string, string> SelectedBlockIds = new(StringComparer.Ordinal);
+
+        private readonly List<int> _visibleBlocks = new();
+        private readonly Plane[] _planes = new Plane[6];
+
+        public bool EditTransforms { get; set; } = true;
+
+        public int GetSelectedBlockIndex(FanlightLayoutAsset layout)
+        {
+            if (layout == null || !SelectedBlockIds.TryGetValue(layout.LayoutId.Value, out var blockId)) return -1;
+            for (var i = 0; i < layout.TotalBlockCount; i++)
+            {
+                if (string.Equals(layout.GetBlock(i).BlockId, blockId, StringComparison.Ordinal)) return i;
+            }
+            return -1;
+        }
+
+        public void Draw(PrismFanlight fanlight)
+        {
+            var layout = fanlight?.LayoutAsset;
+            if (layout == null || !layout.IsInitialized) return;
+            if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+            {
+                fanlight.SetEditorLayoutBlocked(true);
+                return;
+            }
+            fanlight.SetEditorLayoutBlocked(false);
+            var session = FanlightLayoutEditSession.Get(layout);
+            if (session == null) return;
+
+            if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+            {
+                fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+                EditorApplication.QueuePlayerLoopUpdate();
+            }
+            var sceneView = SceneView.currentDrawingSceneView;
+            var camera = sceneView != null ? sceneView.camera : null;
+            if (camera != null)
+            {
+                GeometryUtility.CalculateFrustumPlanes(camera, _planes);
+                session.QueryVisible(_planes, fanlight.transform.localToWorldMatrix, _visibleBlocks);
+            }
+            else
+            {
+                _visibleBlocks.Clear();
+                for (var i = 0; i < layout.TotalBlockCount; i++) _visibleBlocks.Add(i);
+            }
+
+            var selected = GetSelectedBlockIndex(layout);
+            var transform = fanlight.transform;
+            for (var i = 0; i < _visibleBlocks.Count; i++)
+            {
+                var blockIndex = _visibleBlocks[i];
+                var corners = session.GetCorners(blockIndex);
+                var p0 = transform.TransformPoint(corners[0]);
+                var p1 = transform.TransformPoint(corners[1]);
+                var p2 = transform.TransformPoint(corners[2]);
+                var p3 = transform.TransformPoint(corners[3]);
+                var isSelected = blockIndex == selected;
+                Handles.color = isSelected ? SelectedColor : BlockColor;
+                Handles.DrawAAPolyLine(isSelected ? 4f : 2f, p0, p1, p2, p3, p0);
+
+                var center = transform.TransformPoint(session.GetBlockBounds(blockIndex).center);
+                var size = HandleUtility.GetHandleSize(center) * 0.08f;
+                if (!Application.isPlaying && EditTransforms
+                                           && Handles.Button(center, transform.rotation, size, size, Handles.SphereHandleCap))
+                {
+                    SelectedBlockIds[layout.LayoutId.Value] = layout.GetBlock(blockIndex).BlockId;
+                    selected = blockIndex;
+                }
+
+                if (isSelected) Handles.Label(center, $"Block {layout.GetBlockCoordinates(blockIndex).x}, {layout.GetBlockCoordinates(blockIndex).y}");
+            }
+
+            if (selected >= 0)
+            {
+                DrawSelectedSeatDots(transform, session, selected);
+                DrawTransformHandle(fanlight, layout, session, selected);
+            }
+        }
+
+        public void ResetSelected(FanlightLayoutAsset layout)
+        {
+            var index = GetSelectedBlockIndex(layout);
+            if (index < 0) return;
+            FanlightLayoutEditSession.Get(layout)?.SetBlockPlacement(index, FanlightBlockPlacement.Identity, "Reset Fanlight Block Placement");
+        }
+
+        private static void DrawTransformHandle(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            int blockIndex)
+        {
+            if (Application.isPlaying) return;
+            var block = layout.GetBlockCoordinates(blockIndex);
+            var placement = layout.GetBlock(blockIndex).Placement;
+            var baseCenter = layout.GetBlockBaseCenterLocal(block);
+            var worldCenter = fanlight.transform.TransformPoint(baseCenter + placement.position);
+            var worldRotation = fanlight.transform.rotation * placement.Rotation;
+
+            EditorGUI.BeginChangeCheck();
+            var nextCenter = Handles.PositionHandle(worldCenter, worldRotation);
+            var nextRotation = Handles.RotationHandle(worldRotation, nextCenter);
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            var next = new FanlightBlockPlacement
+            {
+                position = fanlight.transform.InverseTransformPoint(nextCenter) - baseCenter,
+                eulerRotation = (Quaternion.Inverse(fanlight.transform.rotation) * nextRotation).eulerAngles
+            };
+            session.SetBlockPlacement(blockIndex, next, "Edit Fanlight Block Placement");
+        }
+
+        private static void DrawSelectedSeatDots(Transform transform, FanlightLayoutEditSession session, int blockIndex)
+        {
+            var block = session.RuntimeLayout.Blocks[blockIndex];
+            var end = block.startIndex + block.count;
+            var color = SelectedColor;
+            color.a = 0.7f;
+            Handles.color = color;
+            for (var i = block.startIndex; i < end; i++)
+            {
+                var packed = session.RuntimeLayout.Seats[i].localPositionSeed;
+                var world = transform.TransformPoint(new Vector3(packed.x, packed.y, packed.z));
+                var size = HandleUtility.GetHandleSize(world) * 0.025f;
+                Handles.DotHandleCap(0, world, Quaternion.identity, size, EventType.Repaint);
+            }
+        }
+    }
+}

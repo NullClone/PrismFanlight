@@ -16,7 +16,10 @@ namespace PrismFanlight.Rendering
         private MaterialPropertyBlock _properties;
         private MaterialPropertyBlock _audienceProperties;
         private FanlightGpuKernels _kernels;
-        private SeatLayout _layout;
+        private FanlightRuntimeLayout _layout;
+        private SeatLayout _legacySource;
+        private FanlightRuntimeLayout _legacyRuntimeLayout;
+        private int _legacyAuthoringHash;
         private Mesh _mesh;
         private ComputeShader _computeShader;
         private bool _audienceAllocated;
@@ -26,6 +29,9 @@ namespace PrismFanlight.Rendering
         private int _lastRandomHash;
         private float _lastUpdateClock;
         private Matrix4x4 _lastAnimationLocalToWorld;
+        private int _layoutBufferAllocationCount;
+        private int _partialLayoutUploadCount;
+        private int _lastLayoutUploadSeatCount;
 
 
         // Properties
@@ -33,6 +39,12 @@ namespace PrismFanlight.Rendering
         public bool IsReady => _isInitialized;
 
         public int VisibleSeatCount => _visibilityReadback.VisibleSeatCount;
+
+        public int LayoutBufferAllocationCount => _layoutBufferAllocationCount;
+
+        public int PartialLayoutUploadCount => _partialLayoutUploadCount;
+
+        public int LastLayoutUploadSeatCount => _lastLayoutUploadSeatCount;
 
 
         // Methods
@@ -47,6 +59,48 @@ namespace PrismFanlight.Rendering
             FanlightGpuUpdateTiming visibilityUpdate,
             FanlightGpuUpdateTiming animationUpdate,
             SeatLayout layout,
+            Material audienceMaterial,
+            FanlightResolvedState state,
+            bool isTimeJump,
+            Vector3 lodCameraWorldPos)
+        {
+            var authoringHash = layout?.AuthoringHash ?? 0;
+            if (_legacyRuntimeLayout == null || _legacySource != layout || _legacyAuthoringHash != authoringHash)
+            {
+                _legacySource = layout;
+                _legacyAuthoringHash = authoringHash;
+                _legacyRuntimeLayout = FanlightRuntimeLayout.FromLegacy(layout);
+            }
+            var runtimeLayout = _legacyRuntimeLayout;
+            Render(
+                mesh,
+                material,
+                computeShader,
+                renderingLayerMask,
+                cullingCamera,
+                enableCulling,
+                visibilityUpdate,
+                animationUpdate,
+                runtimeLayout,
+                audienceMaterial,
+                state,
+                isTimeJump,
+                lodCameraWorldPos);
+            _legacySource = layout;
+            _legacyAuthoringHash = authoringHash;
+            _legacyRuntimeLayout = runtimeLayout;
+        }
+
+        internal void Render(
+            Mesh mesh,
+            Material material,
+            ComputeShader computeShader,
+            uint renderingLayerMask,
+            Camera cullingCamera,
+            bool enableCulling,
+            FanlightGpuUpdateTiming visibilityUpdate,
+            FanlightGpuUpdateTiming animationUpdate,
+            FanlightRuntimeLayout layout,
             Material audienceMaterial,
             FanlightResolvedState state,
             bool isTimeJump,
@@ -145,14 +199,13 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, SeatLayout layout)
+        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, FanlightRuntimeLayout layout)
         {
             return mesh != null
                    && material != null
                    && computeShader != null
                    && layout != null
-                   && layout.TotalSeatCount > 0
-                   && layout.BlockSeatCount > 0;
+                   && layout.HasValidTopology;
         }
 
         private void DrawAudience(Material audienceMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
@@ -178,15 +231,22 @@ namespace PrismFanlight.Rendering
             Profiler.EndSample();
         }
 
-        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, SeatLayout layout, bool allocateAudience, FanlightRandomSettings random)
+        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, FanlightRuntimeLayout layout, bool allocateAudience, FanlightRandomSettings random)
         {
             if (_isInitialized
                 && _mesh == mesh
                 && _computeShader == computeShader
                 && _audienceAllocated == allocateAudience
-                && _buffers.SeatCount == layout.TotalSeatCount
-                && layout.Equals(_layout))
+                && layout.HasSameTopology(_layout))
             {
+                if (_layout.ContentHash != layout.ContentHash)
+                {
+                    _buffers.UpdateStaticData(mesh, layout);
+                    _lastLayoutUploadSeatCount = layout.SeatCount;
+                    _layout = layout;
+                    _animationInitialized = false;
+                    _scheduler.Reset();
+                }
                 return;
             }
 
@@ -198,9 +258,33 @@ namespace PrismFanlight.Rendering
             _kernels = new FanlightGpuKernels(computeShader);
             _properties = new MaterialPropertyBlock();
             _buffers.Allocate(mesh, layout, allocateAudience, random);
+            _layoutBufferAllocationCount++;
+            _lastLayoutUploadSeatCount = layout.SeatCount;
             _audienceAllocated = allocateAudience;
             _lastRandomHash = random.GetStableHash();
             _isInitialized = true;
+        }
+
+        internal bool ApplyEditorLayoutPreview(FanlightRuntimeLayout layout, int changedBlockIndex)
+        {
+            if (!_isInitialized || !layout.HasSameTopology(_layout)) return false;
+
+            if (changedBlockIndex >= 0)
+            {
+                _buffers.UpdateBlock(_mesh, layout, changedBlockIndex);
+                _partialLayoutUploadCount++;
+                _lastLayoutUploadSeatCount = layout.Blocks[changedBlockIndex].count;
+            }
+            else
+            {
+                _buffers.UpdateStaticData(_mesh, layout);
+                _lastLayoutUploadSeatCount = layout.SeatCount;
+            }
+
+            _layout = layout;
+            _animationInitialized = false;
+            _scheduler.Reset();
+            return true;
         }
 
         private void SetColorProperties(MaterialPropertyBlock properties, FanlightColorSettings color)
@@ -225,6 +309,10 @@ namespace PrismFanlight.Rendering
             _audienceAllocated = false;
             _mesh = null;
             _computeShader = null;
+            _layout = null;
+            _legacySource = null;
+            _legacyRuntimeLayout = null;
+            _legacyAuthoringHash = 0;
             _isInitialized = false;
             _animationInitialized = false;
             _hasLastUpdateClock = false;

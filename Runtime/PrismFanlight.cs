@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PrismFanlight.Authoring;
 using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 #if UNITY_EDITOR
@@ -47,6 +48,9 @@ namespace PrismFanlight
         private SeatLayout _seatLayout = SeatLayout.Default();
 
         [SerializeField]
+        private FanlightLayoutAsset _layoutAsset = null;
+
+        [SerializeField]
         private FanlightMotionPreset _motionPreset = null;
 
         [SerializeField]
@@ -77,6 +81,12 @@ namespace PrismFanlight
         private readonly Dictionary<object, FanlightTimelineTrackContribution> _timelineContributions = new();
         private readonly List<FanlightTimelineTrackContribution> _sortedTimelineContributions = new();
         private SeatLayout _validatedSeatLayout;
+        private FanlightRuntimeLayout _legacyRuntimeLayout;
+        private FanlightRuntimeLayout _assetRuntimeLayout;
+#if UNITY_EDITOR
+        private FanlightRuntimeLayout _editorPreviewLayout;
+        private bool _editorLayoutBlocked;
+#endif
         private bool _hasExternalResolvedStateOverride;
         private bool _externalOverrideTimeJumpPending;
         private FanlightResolvedState _externalResolvedStateOverride;
@@ -115,6 +125,8 @@ namespace PrismFanlight
         public FanlightTempoSettings Tempo => _tempo.Validated();
 
         public FanlightMotionPreset MotionPreset => _motionPreset;
+
+        public FanlightLayoutAsset LayoutAsset => _layoutAsset;
 
         public FanlightColorPreset ColorPreset => _colorPreset;
 
@@ -188,6 +200,12 @@ namespace PrismFanlight
         private void OnValidate()
         {
             _validatedSeatLayout = null;
+            _legacyRuntimeLayout = null;
+            _assetRuntimeLayout = null;
+#if UNITY_EDITOR
+            _editorPreviewLayout = null;
+            _editorLayoutBlocked = false;
+#endif
             _color = _color.Validated();
         }
 
@@ -219,6 +237,13 @@ namespace PrismFanlight
 
             var cameraPosition = _cullingCamera != null ? _cullingCamera.transform.position : transform.position;
 
+            var runtimeLayout = GetRuntimeLayout();
+            if (runtimeLayout == null)
+            {
+                _renderer.Dispose();
+                return;
+            }
+
             _renderer.Render(
                 _mesh,
                 _material,
@@ -228,7 +253,7 @@ namespace PrismFanlight
                 IsCullingEnabled,
                 VisibilityUpdate,
                 AnimationUpdate,
-                GetValidatedSeatLayout(),
+                runtimeLayout,
                 _audienceMaterial,
                 state,
                 isTimeJump,
@@ -242,6 +267,8 @@ namespace PrismFanlight
 
 
         public SeatLayout GetSeatLayout() => GetValidatedSeatLayout();
+
+        public bool UsesLayoutAsset => _layoutAsset != null;
 
         public FanlightMotionSettings GetMotionSettings() => (_motionPreset != null ? _motionPreset.Settings : _motion).Validated();
 
@@ -257,14 +284,26 @@ namespace PrismFanlight
 
         public FanlightDiagnostics GetDiagnostics()
         {
-            var layout = GetSeatLayout();
-            var blockCount = layout.blockCount.x * layout.blockCount.y;
+            var layout = GetRuntimeLayout();
+            var seatCount = layout?.SeatCount ?? 0;
+            var blockCount = layout?.BlockCount ?? 0;
+            var layoutStatus = _layoutAsset == null
+                ? FanlightLayoutStatus.Legacy
+                : !_layoutAsset.IsInitialized
+                    ? FanlightLayoutStatus.Invalid
+                    : _layoutAsset.HasCompatibleBake
+                        ? FanlightLayoutStatus.Ready
+                        : FanlightLayoutStatus.BakeRequired;
 
             return new FanlightDiagnostics(
                 _renderer.IsReady,
-                layout.TotalSeatCount,
+                seatCount,
                 _renderer.VisibleSeatCount,
-                blockCount);
+                blockCount,
+                layoutStatus,
+                _renderer.LayoutBufferAllocationCount,
+                _renderer.PartialLayoutUploadCount,
+                _renderer.LastLayoutUploadSeatCount);
         }
 
 
@@ -396,9 +435,33 @@ namespace PrismFanlight
                 return;
             }
 
+            if (_layoutAsset != null)
+            {
+                Debug.LogWarning("SetSeatLayout targets only the legacy embedded layout. Clear the Layout Asset reference before using this compatibility API.");
+                return;
+            }
+
             _seatLayout = (layout ?? SeatLayout.Default()).Validated();
             _validatedSeatLayout = _seatLayout;
+            _legacyRuntimeLayout = null;
 
+            Dispose();
+        }
+
+        internal void SetLayoutAssetForEditor(FanlightLayoutAsset layoutAsset)
+        {
+            if (Application.isPlaying)
+            {
+                Debug.LogWarning("Layout asset changes are authoring-only. Assign and bake the layout before entering Play mode.");
+                return;
+            }
+
+            _layoutAsset = layoutAsset;
+            _assetRuntimeLayout = null;
+#if UNITY_EDITOR
+            _editorPreviewLayout = null;
+            _editorLayoutBlocked = false;
+#endif
             Dispose();
         }
 
@@ -455,6 +518,12 @@ namespace PrismFanlight
         {
             if (Application.isPlaying) return;
 
+            if (_layoutAsset != null)
+            {
+                Debug.LogWarning("Use the Layout Asset 'Bake Dirty Blocks' command for asset-backed layouts.");
+                return;
+            }
+
             var layout = GetSeatLayout();
             layout.SetBakedGeometry(
                 FanlightGeometryBuilder.BuildSeatData(layout, false),
@@ -467,9 +536,66 @@ namespace PrismFanlight
             Dispose();
         }
 
+        internal void SetEditorLayoutPreview(FanlightRuntimeLayout preview, int changedBlockIndex)
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying) return;
+            if (preview == null)
+            {
+                _editorPreviewLayout = null;
+                Dispose();
+                return;
+            }
+            _editorLayoutBlocked = false;
+            _editorPreviewLayout = preview;
+            _renderer.ApplyEditorLayoutPreview(preview, changedBlockIndex);
+#endif
+        }
+
+        internal ulong EditorPreviewContentHash
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return _editorPreviewLayout?.ContentHash ?? 0UL;
+#else
+                return 0UL;
+#endif
+            }
+        }
+
+        internal void SetEditorLayoutBlocked(bool blocked)
+        {
+#if UNITY_EDITOR
+            if (_editorLayoutBlocked == blocked) return;
+            _editorLayoutBlocked = blocked;
+            if (blocked)
+            {
+                _editorPreviewLayout = null;
+                Dispose();
+            }
+#endif
+        }
+
+        internal void ClearEditorLayoutPreview()
+        {
+#if UNITY_EDITOR
+            _editorPreviewLayout = null;
+            _editorLayoutBlocked = false;
+            _assetRuntimeLayout = null;
+            Dispose();
+#endif
+        }
+
         public void ClearSeatLayoutBakeForEditor()
         {
             if (Application.isPlaying) return;
+
+            if (_layoutAsset != null)
+            {
+                Debug.LogWarning("The legacy bake cannot be cleared while a Layout Asset is assigned.");
+                return;
+            }
 
             _seatLayout = GetSeatLayout();
             _seatLayout.ClearBakedGeometry();
@@ -487,6 +613,27 @@ namespace PrismFanlight
             }
 
             return _validatedSeatLayout;
+        }
+
+        private FanlightRuntimeLayout GetRuntimeLayout()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying && _editorLayoutBlocked) return null;
+            if (!Application.isPlaying && _editorPreviewLayout != null) return _editorPreviewLayout;
+#endif
+            if (_layoutAsset != null)
+            {
+                if (_assetRuntimeLayout == null
+                    || _assetRuntimeLayout.LayoutVersion != _layoutAsset.LayoutVersion
+                    || (_layoutAsset.ActiveBake != null && _assetRuntimeLayout.ContentHash != _layoutAsset.ActiveBake.ContentHash))
+                {
+                    _assetRuntimeLayout = FanlightRuntimeLayout.FromArtifact(_layoutAsset);
+                }
+
+                return _assetRuntimeLayout;
+            }
+
+            return _legacyRuntimeLayout ??= FanlightRuntimeLayout.FromLegacy(GetValidatedSeatLayout());
         }
     }
 }
