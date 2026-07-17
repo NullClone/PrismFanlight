@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
+using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace PrismFanlight.Rendering
 {
-    public sealed class FanlightGpuRenderer
+    public sealed class FanlightGpuRenderer : IFanlightRenderBackend
     {
         // Fields
 
@@ -12,6 +15,7 @@ namespace PrismFanlight.Rendering
         private readonly FanlightGpuVisibilityReadback _visibilityReadback = new();
         private readonly FanlightGpuUpdateScheduler _scheduler = new();
         private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.PaletteSlotCount];
+        private readonly Dictionary<string, FanlightCameraContext> _contractCameras = new(StringComparer.Ordinal);
 
         private MaterialPropertyBlock _properties;
         private MaterialPropertyBlock _audienceProperties;
@@ -32,6 +36,17 @@ namespace PrismFanlight.Rendering
         private int _layoutBufferAllocationCount;
         private int _partialLayoutUploadCount;
         private int _lastLayoutUploadSeatCount;
+        private FanlightRendererStatus _contractStatus;
+        private string _contractLayoutId = string.Empty;
+        private int _contractLayoutVersion;
+        private int _contractSeatCount;
+        private int _contractBlockCount;
+        private long _lastShowSampleSequence;
+        private double _lastAnimationSampleSeconds;
+        private int _drawCountThisFrame;
+        private int _dispatchCountThisFrame;
+        private long _lastPreparedFrame = -1;
+        private bool _diagnosticReadbackRequested;
 
 
         // Properties
@@ -45,6 +60,19 @@ namespace PrismFanlight.Rendering
         public int PartialLayoutUploadCount => _partialLayoutUploadCount;
 
         public int LastLayoutUploadSeatCount => _lastLayoutUploadSeatCount;
+
+        public string BackendId => "legacy.matrix.compatibility";
+
+        public FanlightRendererStatus Status => _isInitialized ? FanlightRendererStatus.Ready : _contractStatus;
+
+        public FanlightRenderBackendCapabilities Capabilities => new(
+            SystemInfo.supportsComputeShaders,
+            true,
+            SystemInfo.supportsAsyncGPUReadback,
+            false,
+            true,
+            true,
+            1);
 
 
         // Methods
@@ -64,6 +92,8 @@ namespace PrismFanlight.Rendering
             bool isTimeJump,
             Vector3 lodCameraWorldPos)
         {
+            _drawCountThisFrame = 0;
+            _dispatchCountThisFrame = 0;
             var authoringHash = layout?.AuthoringHash ?? 0;
             if (_legacyRuntimeLayout == null || _legacySource != layout || _legacyAuthoringHash != authoringHash)
             {
@@ -157,7 +187,12 @@ namespace PrismFanlight.Rendering
             {
                 Profiler.BeginSample("Prism Fanlight GPU Visibility");
                 _dispatcher.DispatchVisibility(computeShader, _kernels, _buffers, context);
-                _visibilityReadback.Request(_buffers.PenlightArgsBuffer, _buffers.SeatCount);
+                _dispatchCountThisFrame += 3;
+                if (_diagnosticReadbackRequested)
+                {
+                    _visibilityReadback.Request(_buffers.PenlightArgsBuffer, _buffers.SeatCount);
+                }
+                _diagnosticReadbackRequested = false;
                 Profiler.EndSample();
             }
 
@@ -165,6 +200,7 @@ namespace PrismFanlight.Rendering
             {
                 Profiler.BeginSample("Prism Fanlight GPU Animation");
                 _dispatcher.DispatchAnimation(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
+                _dispatchCountThisFrame++;
                 _animationInitialized = true;
                 _lastAnimationLocalToWorld = state.LocalToWorld;
                 Profiler.EndSample();
@@ -189,6 +225,7 @@ namespace PrismFanlight.Rendering
             };
 
             Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.PenlightArgsBuffer);
+            _drawCountThisFrame++;
             Profiler.EndSample();
 
             if (audienceEnabled)
@@ -196,6 +233,7 @@ namespace PrismFanlight.Rendering
                 var audienceBounds = worldBounds;
                 audienceBounds.Expand(2.0f);
                 DrawAudience(audienceMaterial, renderingLayerMask, audienceBounds, state.Color);
+                _drawCountThisFrame++;
             }
         }
 
@@ -263,6 +301,200 @@ namespace PrismFanlight.Rendering
             _audienceAllocated = allocateAudience;
             _lastRandomHash = random.GetStableHash();
             _isInitialized = true;
+            _contractStatus = FanlightRendererStatus.Ready;
+        }
+
+        public void LoadStaticData(
+            FanlightLayoutRuntimeData layout,
+            FanlightPersonaRuntimeData persona,
+            FanlightGestureRuntimeData gestureLibrary)
+        {
+            if (string.IsNullOrWhiteSpace(layout.LayoutId))
+            {
+                throw new ArgumentException("LayoutId must be non-empty.", nameof(layout));
+            }
+            if (layout.LayoutVersion <= 0 || layout.BakeVersion <= 0 || layout.Seats.Length == 0 || layout.Blocks.Length == 0)
+            {
+                throw new ArgumentException("Layout versions, seats, and blocks must be present.", nameof(layout));
+            }
+            if (string.IsNullOrWhiteSpace(persona.PersonaProfileId) || persona.PersonaSchemaVersion <= 0)
+            {
+                throw new ArgumentException("Persona profile ID and schema version are required.", nameof(persona));
+            }
+            if (string.IsNullOrWhiteSpace(gestureLibrary.GestureLibraryId) || gestureLibrary.GestureLibraryVersion <= 0)
+            {
+                throw new ArgumentException("Gesture library ID and version are required.", nameof(gestureLibrary));
+            }
+            if (layout.Seats.Length != persona.PackedPersonas.Length
+                && persona.Encoding == FanlightPersonaEncoding.Packed16Bytes)
+            {
+                throw new ArgumentException("Packed persona count must match seat count.", nameof(persona));
+            }
+            if (persona.Encoding == FanlightPersonaEncoding.IntegerHash && persona.PackedPersonas.Length != 0)
+            {
+                throw new ArgumentException("Integer-hash persona data must not include packed records.", nameof(persona));
+            }
+            ValidateStaticLayout(layout);
+
+            _contractLayoutId = layout.LayoutId;
+            _contractLayoutVersion = layout.LayoutVersion;
+            _contractSeatCount = layout.Seats.Length;
+            _contractBlockCount = layout.Blocks.Length;
+            _contractStatus = FanlightRendererStatus.Degraded;
+        }
+
+        private static void ValidateStaticLayout(in FanlightLayoutRuntimeData layout)
+        {
+            var seatIds = new HashSet<ulong>();
+            var seats = layout.Seats.Span;
+            for (var i = 0; i < seats.Length; i++)
+            {
+                if (seats[i].StableSeatId == 0UL || !seatIds.Add(seats[i].StableSeatId))
+                    throw new ArgumentException("Stable seat IDs must be non-zero and unique.", nameof(layout));
+                if (seats[i].BlockIndex < 0 || seats[i].BlockIndex >= layout.Blocks.Length)
+                    throw new ArgumentException("Seat block index is outside the block table.", nameof(layout));
+            }
+
+            var blocks = layout.Blocks.Span;
+            for (var i = 0; i < blocks.Length; i++)
+            {
+                var block = blocks[i];
+                var contiguous = block.ContiguousSeatCount > 0;
+                var indexed = block.SeatIndexTableCount > 0;
+                if (contiguous == indexed)
+                    throw new ArgumentException("A block must use exactly one seat range representation.", nameof(layout));
+                if (contiguous && (block.ContiguousSeatStart < 0 || (long)block.ContiguousSeatStart + block.ContiguousSeatCount > seats.Length))
+                    throw new ArgumentException("Contiguous block seat range is invalid.", nameof(layout));
+                if (indexed && (block.SeatIndexTableOffset < 0
+                                || (long)block.SeatIndexTableOffset + block.SeatIndexTableCount > layout.BlockSeatIndexTable.Length))
+                    throw new ArgumentException("Indexed block seat range is invalid.", nameof(layout));
+            }
+        }
+
+        public void UnloadStaticData()
+        {
+            ReleaseResources();
+            _contractLayoutId = string.Empty;
+            _contractLayoutVersion = 0;
+            _contractSeatCount = 0;
+            _contractBlockCount = 0;
+            _contractStatus = FanlightRendererStatus.Uninitialized;
+        }
+
+        public void ApplyShowSample(in FanlightShowSample sample)
+        {
+            if (!sample.IsComplete)
+            {
+                throw new ArgumentException("Renderer accepts only complete show samples.", nameof(sample));
+            }
+            _lastShowSampleSequence = sample.SampleSequence;
+        }
+
+        public void PrepareFrame(in FanlightFrameContext frame)
+        {
+            _lastPreparedFrame = frame.UnityFrameIndex;
+            _lastAnimationSampleSeconds = frame.AnimationSampleSeconds;
+            _drawCountThisFrame = 0;
+            _dispatchCountThisFrame = 0;
+        }
+
+        public void RegisterCamera(in FanlightCameraContext camera)
+        {
+            ValidateCamera(camera);
+            if (!_contractCameras.ContainsKey(camera.CameraId) && _contractCameras.Count >= Capabilities.MaximumResidentCameras)
+            {
+                _contractStatus = FanlightRendererStatus.Degraded;
+                throw new InvalidOperationException("The compatibility backend supports one resident camera.");
+            }
+            _contractCameras[camera.CameraId] = camera;
+        }
+
+        public void UnregisterCamera(string cameraId)
+        {
+            if (!string.IsNullOrWhiteSpace(cameraId))
+            {
+                _contractCameras.Remove(cameraId);
+            }
+        }
+
+        public void PrepareCamera(in FanlightCameraContext camera)
+        {
+            ValidateCamera(camera);
+            if (!_contractCameras.ContainsKey(camera.CameraId))
+            {
+                RegisterCamera(camera);
+            }
+            else
+            {
+                _contractCameras[camera.CameraId] = camera;
+            }
+        }
+
+        public void RenderCamera(in FanlightCameraContext camera)
+        {
+            ValidateCamera(camera);
+            if (!_contractCameras.ContainsKey(camera.CameraId))
+            {
+                throw new InvalidOperationException("Camera must be registered before rendering.");
+            }
+
+            // Stage 1 keeps the matrix backend on its existing Render(...) entry point.
+            // This method deliberately performs no second draw.
+        }
+
+        public FanlightGpuDiagnostics CaptureDiagnostics(bool requestReadback)
+        {
+            if (requestReadback) _diagnosticReadbackRequested = true;
+            var diagnosticCameraId = _contractCameras.Count == 1
+                ? System.Linq.Enumerable.First(_contractCameras.Keys)
+                : string.Empty;
+            var bufferDiagnostics = _buffers.CaptureDiagnostics(diagnosticCameraId);
+            var cameraDiagnostics = new FanlightCameraDiagnostic[_contractCameras.Count];
+            var index = 0;
+            foreach (var pair in _contractCameras)
+            {
+                cameraDiagnostics[index++] = new FanlightCameraDiagnostic(
+                    pair.Key,
+                    0,
+                    VisibleSeatCount,
+                    0,
+                    0,
+                    0,
+                    _lastPreparedFrame,
+                    _isInitialized);
+            }
+
+            return new FanlightGpuDiagnostics(
+                BackendId,
+                Status,
+                _contractLayoutId,
+                _contractLayoutVersion,
+                _contractSeatCount > 0 ? _contractSeatCount : _layout?.SeatCount ?? 0,
+                _contractBlockCount > 0 ? _contractBlockCount : _layout?.BlockCount ?? 0,
+                _contractCameras.Count,
+                _buffers.TotalCapacityBytes,
+                _dispatchCountThisFrame,
+                _drawCountThisFrame,
+                _lastShowSampleSequence,
+                _lastAnimationSampleSeconds,
+                default,
+                _buffers.InitialStaticUploadBytes,
+                0,
+                _visibilityReadback.RequestCount,
+                _layoutBufferAllocationCount,
+                _layoutBufferAllocationCount > 0 ? "Legacy layout initialization" : string.Empty,
+                _visibilityReadback.IsPending,
+                _visibilityReadback.LastSuccessfulFrame,
+                bufferDiagnostics,
+                cameraDiagnostics);
+        }
+
+        private static void ValidateCamera(in FanlightCameraContext camera)
+        {
+            if (string.IsNullOrWhiteSpace(camera.CameraId))
+            {
+                throw new ArgumentException("CameraId must be non-empty.", nameof(camera));
+            }
         }
 
         internal bool ApplyEditorLayoutPreview(FanlightRuntimeLayout layout, int changedBlockIndex)
@@ -301,6 +533,13 @@ namespace PrismFanlight.Rendering
         }
 
         public void Dispose()
+        {
+            ReleaseResources();
+            _contractCameras.Clear();
+            _contractStatus = FanlightRendererStatus.Disposed;
+        }
+
+        private void ReleaseResources()
         {
             _buffers.Release();
             _visibilityReadback.Reset();

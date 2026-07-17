@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
+using PrismFanlight.Core;
+using PrismFanlight.Live;
 using PrismFanlight.Rendering;
-using PrismFanlight.Timeline;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+using PrismFanlight.Time;
 using UnityEngine;
 
 namespace PrismFanlight
@@ -13,6 +12,7 @@ namespace PrismFanlight
     [HelpURL("https://github.com/NullClone/PrismFanlight")]
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
     [ExecuteAlways]
+    [RequireComponent(typeof(ShowTimeCoordinatorBehaviour))]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
@@ -77,9 +77,29 @@ namespace PrismFanlight
         [SerializeField]
         private Transform _swingTarget = null;
 
+        [SerializeField]
+        private ShowTimeCoordinatorBehaviour _timeCoordinator = null;
+
+        [SerializeField]
+        private string _showId = "show.compatibility";
+
+        [SerializeField, Min(1)]
+        private int _showVersion = 1;
+
+        [SerializeField, HideInInspector]
+        private string _sessionId = string.Empty;
+
+        [SerializeField, HideInInspector]
+        private string _primaryCameraId = string.Empty;
+
         private readonly FanlightGpuRenderer _renderer = new();
-        private readonly Dictionary<object, FanlightTimelineTrackContribution> _timelineContributions = new();
-        private readonly List<FanlightTimelineTrackContribution> _sortedTimelineContributions = new();
+        private readonly Dictionary<object, FanlightSingleContributionSource> _scheduledContributions = new();
+        private readonly List<IFanlightCueSession> _cueSessions = new();
+        private readonly FanlightShowEvaluator _showEvaluator = new();
+        private FanlightShowSession _showSession;
+        private FanlightSingleContributionSource _externalContribution;
+        private FanlightShowSample _lastShowSample;
+        private bool _hasLastShowSample;
         private SeatLayout _validatedSeatLayout;
         private FanlightRuntimeLayout _legacyRuntimeLayout;
         private FanlightRuntimeLayout _assetRuntimeLayout;
@@ -134,7 +154,20 @@ namespace PrismFanlight
 
         public FanlightRandomSettings Random => _random.Validated();
 
-        internal bool HasResolvedStateOverride => _hasExternalResolvedStateOverride || _timelineContributions.Count > 0;
+        internal bool HasResolvedStateOverride => _hasExternalResolvedStateOverride || _scheduledContributions.Count > 0;
+
+        public ShowTimeCoordinatorBehaviour TimeCoordinator => _timeCoordinator;
+
+        public bool TryGetLastShowSample(out FanlightShowSample sample)
+        {
+            sample = _lastShowSample;
+            return _hasLastShowSample;
+        }
+
+        public FanlightResolvedIntent BaseIntent => FanlightLegacyIntentAdapter.ToIntent(
+            _motionPreset != null ? _motionPreset.Settings : _motion,
+            _colorPreset != null ? _colorPreset.Settings : _color,
+            _audienceSettings);
 
         internal static event Action<PrismFanlight> ResolvedStateOverrideChanged;
 
@@ -156,44 +189,78 @@ namespace PrismFanlight
             {
                 _cullingCamera = Camera.main;
             }
+
+            EnsureShowPipeline();
         }
 
         private void LateUpdate()
         {
             if (!Enable) return;
-
-            if (_timelineContributions.Count > 0 && TryResolveTimelineState(out var timelineState))
+            EnsureShowPipeline();
+            if (_timeCoordinator == null)
             {
-                Render(timelineState);
-
+                _hasLastShowSample = false;
+                Dispose();
                 return;
             }
 
-            if (_hasExternalResolvedStateOverride)
+            var tempo = Tempo;
+            _timeCoordinator.ConfigureCompatibilityTempo(
+                tempo.bpm,
+                tempo.beatsPerBar,
+                tempo.offsetSeconds - tempo.latencyCompensationSeconds);
+            var evaluationId = Application.isPlaying
+                ? UnityEngine.Time.frameCount
+                : (long)Math.Floor(UnityEngine.Time.realtimeSinceStartupAsDouble * 1000d);
+            if (!_timeCoordinator.TrySample(evaluationId, out var time, out _))
             {
-                Render(_externalResolvedStateOverride, _externalOverrideTimeJumpPending);
-                _externalOverrideTimeJumpPending = false;
-
+                _hasLastShowSample = false;
+                Dispose();
                 return;
             }
 
-            var context = FanlightEvaluationContext.Runtime(GetCurrentTime(), GetCurrentUpdateClock());
-            var state = ResolveState(context);
-
-            Render(state);
+            var template = CreateLegacyTemplate(time);
+            var snapshot = CreateSnapshot(template);
+            _lastShowSample = _showSession.Evaluate(
+                time,
+                snapshot,
+                _showEvaluator,
+                new FanlightEvaluationOptions(
+                    AnimationUpdate.Mode == FanlightGpuUpdateMode.FixedRate ? AnimationUpdate.TargetFrameRate : 0d,
+                    1e-6d,
+                    0.5f,
+                    FanlightColorBlendSpace.LinearRgb));
+            _hasLastShowSample = true;
+            _renderer.ApplyShowSample(_lastShowSample);
+            _renderer.PrepareFrame(new FanlightFrameContext(
+                evaluationId,
+                time.Seconds,
+                _lastShowSample.AnimationSampleSeconds,
+                time.Discontinuity != FanlightTimeDiscontinuity.None));
+            var state = FanlightLegacyIntentAdapter.ToLegacyState(_lastShowSample, template);
+            Render(state, state.IsTimeJump || _externalOverrideTimeJumpPending);
+            if (_renderer.IsReady)
+            {
+                var camera = CreateCameraContext();
+                _renderer.PrepareCamera(camera);
+                _renderer.RenderCamera(camera);
+            }
+            _externalOverrideTimeJumpPending = false;
         }
 
         private void OnDisable()
         {
-            ClearTimelineContributions();
+            ClearScheduledContributions();
             ClearResolvedStateOverride();
+            _hasLastShowSample = false;
             Dispose();
         }
 
         private void OnDestroy()
         {
-            ClearTimelineContributions();
+            ClearScheduledContributions();
             ClearResolvedStateOverride();
+            _hasLastShowSample = false;
             Dispose();
         }
 
@@ -207,22 +274,19 @@ namespace PrismFanlight
             _editorLayoutBlocked = false;
 #endif
             _color = _color.Validated();
-        }
-
-        private float GetCurrentTime()
-        {
+            _showVersion = Math.Max(1, _showVersion);
+            if (string.IsNullOrWhiteSpace(_sessionId)) _sessionId = Guid.NewGuid().ToString("N");
+            if (string.IsNullOrWhiteSpace(_primaryCameraId)) _primaryCameraId = Guid.NewGuid().ToString("N");
 #if UNITY_EDITOR
-            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
+            foreach (var other in FindObjectsByType<PrismFanlight>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (other == this) continue;
+                if (string.Equals(other._sessionId, _sessionId, StringComparison.Ordinal)) _sessionId = Guid.NewGuid().ToString("N");
+                if (string.Equals(other._primaryCameraId, _primaryCameraId, StringComparison.Ordinal)) _primaryCameraId = Guid.NewGuid().ToString("N");
+            }
 #endif
-            return Time.time;
-        }
-
-        private float GetCurrentUpdateClock()
-        {
-#if UNITY_EDITOR
-            if (!Application.isPlaying) return (float)EditorApplication.timeSinceStartup;
-#endif
-            return Time.unscaledTime;
+            if (_timeCoordinator == null) _timeCoordinator = GetComponent<ShowTimeCoordinatorBehaviour>();
+            _showSession = null;
         }
 
 
@@ -280,7 +344,11 @@ namespace PrismFanlight
 
         public FanlightRandomSettings GetRandomSettings() => _random.Validated();
 
-        public FanlightTempoState GetTempoState() => Tempo.Evaluate(Time.time);
+        public FanlightTempoState GetTempoState() => _hasLastShowSample
+            ? FanlightTempoState.FromMusicalPosition(
+                _lastShowSample.ClockStatus is FanlightClockStatus.Ready or FanlightClockStatus.Holding,
+                _lastShowSample.MusicalPosition)
+            : FanlightTempoState.FromSongTime(false, 0f, Tempo.bpm, Tempo.beatsPerBar);
 
         public FanlightDiagnostics GetDiagnostics()
         {
@@ -306,58 +374,111 @@ namespace PrismFanlight
                 _renderer.LastLayoutUploadSeatCount);
         }
 
+        public FanlightGpuDiagnostics GetGpuDiagnostics(bool requestReadback = false) =>
+            _renderer.CaptureDiagnostics(requestReadback);
+
 
         public void SetResolvedStateOverride(FanlightResolvedState state)
         {
             _externalResolvedStateOverride = state;
             _hasExternalResolvedStateOverride = true;
             _externalOverrideTimeJumpPending = state.IsTimeJump;
-            ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        internal void SetTimelineContribution(object source, FanlightTimelineTrackContribution contribution)
-        {
-            _timelineContributions[source] = contribution;
-            ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        internal void ClearTimelineContribution(object source)
-        {
-            if (!_timelineContributions.Remove(source)) return;
-
-            ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        internal void ClearTimelineContributions()
-        {
-            if (_timelineContributions.Count == 0) return;
-
-            _timelineContributions.Clear();
-            _sortedTimelineContributions.Clear();
-            ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        internal FanlightResolvedState ResolveState(FanlightEvaluationContext context)
-        {
-            var tempo = Tempo;
-            if (context.Source == FanlightEvaluationSource.Timeline)
+            EnsureShowPipeline();
+            var contribution = new FanlightContribution(
+                "legacy.external.override",
+                "legacy.external",
+                FanlightContributionLayer.Live,
+                100,
+                double.MinValue,
+                double.MaxValue,
+                0d,
+                0d,
+                1f,
+                FanlightBlendProfile.Linear,
+                FanlightReleasePolicy.RestoreUnderlying,
+                FanlightLegacyIntentAdapter.ToFullPatch(state));
+            if (_externalContribution == null)
             {
-                tempo.clockSource = FanlightTempoClockSource.ManualTime;
-                tempo.manualTime = Mathf.Max(0.0f, context.Time);
+                _externalContribution = new FanlightSingleContributionSource(contribution);
+                _showSession?.RegisterSource(_externalContribution);
             }
+            else
+            {
+                _externalContribution.Set(contribution);
+            }
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
 
-            return new FanlightResolvedState(
-                tempo.Evaluate(context.Time),
-                _motionPreset != null ? _motionPreset.Settings : _motion,
-                _colorPreset != null ? _colorPreset.Settings : _color,
-                _audienceSettings,
-                _lod,
-                _random,
-                _swingTarget != null ? _swingTarget.position : Vector3.zero,
-                transform.localToWorldMatrix,
-                context.Time,
-                context.UpdateClock,
-                context.IsTimeJump);
+        public void SetScheduledContribution(object sourceToken, in FanlightContribution contribution)
+        {
+            if (sourceToken == null) throw new ArgumentNullException(nameof(sourceToken));
+            if (contribution.Layer != FanlightContributionLayer.Scheduled)
+                throw new ArgumentException("Timeline and scheduled adapters must submit Scheduled contributions.", nameof(contribution));
+            EnsureShowPipeline();
+            if (!_scheduledContributions.TryGetValue(sourceToken, out var source))
+            {
+                source = new FanlightSingleContributionSource(contribution);
+                _scheduledContributions.Add(sourceToken, source);
+                _showSession.RegisterSource(source);
+            }
+            else
+            {
+                source.Set(contribution);
+            }
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        public void ClearScheduledContribution(object sourceToken)
+        {
+            if (sourceToken == null || !_scheduledContributions.TryGetValue(sourceToken, out var source)) return;
+            _showSession?.UnregisterSource(source);
+            _scheduledContributions.Remove(sourceToken);
+
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        public void ClearScheduledContributions()
+        {
+            if (_scheduledContributions.Count == 0) return;
+            if (_showSession != null)
+            {
+                foreach (var source in _scheduledContributions.Values) _showSession.UnregisterSource(source);
+            }
+            _scheduledContributions.Clear();
+            ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        internal void ClearScheduledContributionsBySourcePrefix(string sourcePrefix)
+        {
+            if (string.IsNullOrEmpty(sourcePrefix) || _scheduledContributions.Count == 0) return;
+            var tokens = new List<object>();
+            foreach (var pair in _scheduledContributions)
+            {
+                if (pair.Value.SourceId.StartsWith(sourcePrefix, StringComparison.Ordinal)) tokens.Add(pair.Key);
+            }
+            for (var i = 0; i < tokens.Count; i++)
+            {
+                if (!_scheduledContributions.TryGetValue(tokens[i], out var source)) continue;
+                _showSession?.UnregisterSource(source);
+                _scheduledContributions.Remove(tokens[i]);
+            }
+            if (tokens.Count > 0) ResolvedStateOverrideChanged?.Invoke(this);
+        }
+
+        public void RegisterCueSession(IFanlightCueSession session)
+        {
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (_cueSessions.Contains(session)) return;
+            _cueSessions.Add(session);
+            EnsureShowPipeline();
+            _showSession.RegisterCueSession(session);
+        }
+
+        public void UnregisterCueSession(IFanlightCueSession session)
+        {
+            if (session == null) return;
+            _cueSessions.Remove(session);
+            _showSession?.UnregisterCueSession(session);
         }
 
         public void ClearResolvedStateOverride()
@@ -367,48 +488,12 @@ namespace PrismFanlight
             _hasExternalResolvedStateOverride = false;
             _externalOverrideTimeJumpPending = false;
             _externalResolvedStateOverride = default;
+            if (_externalContribution != null)
+            {
+                _showSession?.UnregisterSource(_externalContribution);
+                _externalContribution = null;
+            }
             ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        private bool TryResolveTimelineState(out FanlightResolvedState state)
-        {
-            _sortedTimelineContributions.Clear();
-            foreach (var contribution in _timelineContributions.Values)
-            {
-                _sortedTimelineContributions.Add(contribution);
-            }
-
-            if (_sortedTimelineContributions.Count == 0)
-            {
-                state = default;
-                return false;
-            }
-
-            _sortedTimelineContributions.Sort(FanlightTimelineContributionComparer.Instance);
-
-            var time = _sortedTimelineContributions[_sortedTimelineContributions.Count - 1].Time;
-            var isTimeJump = false;
-            for (var i = 0; i < _sortedTimelineContributions.Count; i++)
-            {
-                isTimeJump |= _sortedTimelineContributions[i].IsTimeJump;
-            }
-
-            var context = FanlightEvaluationContext.Timeline(time, isTimeJump);
-            var baseState = ResolveState(context);
-            state = FanlightTimelineStateComposer.Compose(baseState, Tempo, _sortedTimelineContributions, time, isTimeJump);
-            return true;
-        }
-
-        private sealed class FanlightTimelineContributionComparer : IComparer<FanlightTimelineTrackContribution>
-        {
-            public static readonly FanlightTimelineContributionComparer Instance = new();
-
-            public int Compare(FanlightTimelineTrackContribution x, FanlightTimelineTrackContribution y)
-            {
-                // Timeline returns output tracks from top to bottom. Applying the
-                // later entry last gives the visually lower track precedence.
-                return x.SortOrder.CompareTo(y.SortOrder);
-            }
         }
 
 
@@ -604,6 +689,89 @@ namespace PrismFanlight
             Dispose();
         }
 #endif
+
+        private void EnsureShowPipeline()
+        {
+            if (_timeCoordinator == null) _timeCoordinator = GetComponent<ShowTimeCoordinatorBehaviour>();
+            if (_timeCoordinator == null) _timeCoordinator = gameObject.AddComponent<ShowTimeCoordinatorBehaviour>();
+            _timeCoordinator.ConfigureCompatibilityIdentity(
+                string.IsNullOrWhiteSpace(_sessionId) ? $"time:{_showId}" : $"time:{_sessionId}");
+            if (_showSession != null) return;
+            _showSession = new FanlightShowSession(
+                string.IsNullOrEmpty(_showId) ? "show.compatibility" : _showId,
+                string.IsNullOrWhiteSpace(_sessionId) ? $"session:{_showId}" : _sessionId);
+            foreach (var source in _scheduledContributions.Values) _showSession.RegisterSource(source);
+            if (_externalContribution != null) _showSession.RegisterSource(_externalContribution);
+            for (var i = 0; i < _cueSessions.Count; i++) _showSession.RegisterCueSession(_cueSessions[i]);
+        }
+
+        private FanlightResolvedState CreateLegacyTemplate(in FanlightShowTimeSample time)
+        {
+            return new FanlightResolvedState(
+                FanlightTempoState.FromMusicalPosition(
+                    time.Status is FanlightClockStatus.Ready or FanlightClockStatus.Holding,
+                    time.MusicalPosition),
+                _motionPreset != null ? _motionPreset.Settings : _motion,
+                _colorPreset != null ? _colorPreset.Settings : _color,
+                _audienceSettings,
+                _lod,
+                _random,
+                _swingTarget != null ? _swingTarget.position : Vector3.zero,
+                transform.localToWorldMatrix,
+                (float)time.Seconds,
+                (float)time.Seconds,
+                time.Discontinuity != FanlightTimeDiscontinuity.None);
+        }
+
+        private FanlightCameraContext CreateCameraContext()
+        {
+            var camera = _cullingCamera;
+            return new FanlightCameraContext(
+                string.IsNullOrWhiteSpace(_primaryCameraId) ? $"camera:{_sessionId}" : _primaryCameraId,
+                camera,
+                camera != null ? camera.worldToCameraMatrix : Matrix4x4.identity,
+                camera != null ? camera.projectionMatrix : Matrix4x4.identity,
+                camera != null ? camera.transform.position : transform.position,
+                _renderingLayerMask,
+                IsCullingEnabled,
+                true);
+        }
+
+        private FanlightShowSnapshot CreateSnapshot(in FanlightResolvedState template)
+        {
+            var layoutId = _layoutAsset != null && _layoutAsset.LayoutId.IsValid
+                ? _layoutAsset.LayoutId.Value
+                : "layout.legacy";
+            var layoutVersion = _layoutAsset != null ? _layoutAsset.LayoutVersion : 1;
+            return new FanlightShowSnapshot(
+                string.IsNullOrEmpty(_showId) ? "show.compatibility" : _showId,
+                Math.Max(1, _showVersion),
+                layoutId,
+                Math.Max(1, layoutVersion),
+                "persona.compatibility",
+                1,
+                "gesture.compatibility",
+                1,
+                "cue.compatibility",
+                1,
+                template.Random.globalSeed,
+                FanlightLegacyIntentAdapter.ToIntent(template.Motion, template.Color, template.Audience));
+        }
+
+        private sealed class FanlightSingleContributionSource : IFanlightContributionSource
+        {
+            private FanlightContribution _contribution;
+
+            public FanlightSingleContributionSource(in FanlightContribution contribution) => Set(contribution);
+
+            public string SourceId => _contribution.SourceId;
+            public FanlightContributionLayer Layer => _contribution.Layer;
+            public int Priority => _contribution.Priority;
+
+            public void Set(in FanlightContribution contribution) => _contribution = contribution;
+
+            public void Collect(double seconds, FanlightContributionBuffer destination) => destination.Add(_contribution);
+        }
 
         private SeatLayout GetValidatedSeatLayout()
         {

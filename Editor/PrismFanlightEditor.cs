@@ -23,6 +23,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _visibilityUpdate;
         private SerializedProperty _animationUpdate;
         private SerializedProperty _tempo;
+        private SerializedProperty _timeCoordinator;
         private SerializedProperty _cullingCamera;
         private SerializedProperty _seatLayout;
         private SerializedProperty _layoutAsset;
@@ -54,6 +55,7 @@ namespace PrismFanlight.Editor
             _visibilityUpdate = serializedObject.FindProperty(nameof(_visibilityUpdate));
             _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
             _tempo = serializedObject.FindProperty(nameof(_tempo));
+            _timeCoordinator = serializedObject.FindProperty(nameof(_timeCoordinator));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
             _seatLayout = serializedObject.FindProperty(nameof(_seatLayout));
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
@@ -117,6 +119,7 @@ namespace PrismFanlight.Editor
             }
 
             DrawGeneralSection();
+            DrawTimeSection();
             DrawLayoutSection();
             DrawMotionSection();
             DrawAudienceSection();
@@ -350,6 +353,25 @@ namespace PrismFanlight.Editor
                     }
                 }
             });
+        }
+
+        private void DrawTimeSection()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Show Time", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
+            if (_timeCoordinator.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "A ShowTimeCoordinatorBehaviour is required. Prism Fanlight does not evaluate its own fallback clock.",
+                    MessageType.Error);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    "The co-located coordinator is the 1.x compatibility composition path. Configure Provider and Tempo Map on ShowTimeCoordinatorBehaviour.",
+                    MessageType.Info);
+            }
         }
 
         private void DrawLayoutAssetSection(FanlightLayoutAsset layout)

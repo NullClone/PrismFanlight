@@ -1,21 +1,17 @@
-﻿using UnityEditor.Callbacks;
-
 namespace PrismFanlight
 {
     public static class PrismFanlightInfo
     {
         public static string Name => "Prism Fanlight";
 
-        public static string Version { get; private set; }
+        public static string Version { get; } = ResolveVersion();
 
-
-        [DidReloadScripts]
-        private static void Initialize()
+        private static string ResolveVersion()
         {
             var assembly = typeof(PrismFanlightInfo).Assembly;
             var version = assembly.GetName().Version.ToString();
             var index = version.LastIndexOf('.');
-            Version = version[..index];
+            return index > 0 ? version[..index] : version;
         }
     }
 }

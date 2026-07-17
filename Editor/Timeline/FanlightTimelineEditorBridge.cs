@@ -127,7 +127,7 @@ namespace PrismFanlight.Editor
             {
                 if (fanlight != null)
                 {
-                    fanlight.ClearTimelineContributions();
+                    fanlight.ClearScheduledContributionsBySourcePrefix("timeline:");
                 }
             }
 

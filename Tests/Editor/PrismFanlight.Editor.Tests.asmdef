@@ -4,7 +4,11 @@
     "references": [
         "PrismFanlight.Core",
         "PrismFanlight.Authoring",
+        "PrismFanlight.Time",
+        "PrismFanlight.Live",
+        "PrismFanlight.Rendering",
         "PrismFanlight.Runtime",
+        "PrismFanlight.Timeline",
         "PrismFanlight.Editor",
         "Unity.Mathematics"
     ],

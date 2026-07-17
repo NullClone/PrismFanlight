@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using PrismFanlight.Core;
 
 namespace PrismFanlight.Timeline
 {
@@ -10,7 +11,9 @@ namespace PrismFanlight.Timeline
 
         private readonly Dictionary<string, FanlightTimelineParameterContribution> _parameters = new();
         private readonly List<FanlightTimelineParameterContribution> _activeParameters = new();
+        private readonly List<string> _unsupportedPaths = new();
         private int _version;
+        private int _mappedParameterCount;
 
 
         // Properties
@@ -24,6 +27,31 @@ namespace PrismFanlight.Timeline
         public IReadOnlyList<FanlightTimelineParameterContribution> Parameters => _activeParameters;
 
         public bool HasOverrides => _activeParameters.Count > 0;
+        public IReadOnlyList<string> UnsupportedPaths => _unsupportedPaths;
+        public bool HasMappedOverrides => _mappedParameterCount > 0;
+
+        public FanlightIntentPatch BuildPatch(FanlightResolvedIntent baseIntent)
+        {
+            _mappedParameterCount = 0;
+            var builder = new FanlightIntentPatchBuilder();
+            for (var i = 0; i < _activeParameters.Count; i++)
+            {
+                var parameter = _activeParameters[i];
+                if (!FanlightLegacyIntentAdapter.TryAddLegacyParameter(
+                    builder,
+                    parameter.Descriptor.Path,
+                    parameter.Value,
+                    baseIntent))
+                {
+                    _unsupportedPaths.Add(parameter.Descriptor.Path);
+                }
+                else
+                {
+                    _mappedParameterCount++;
+                }
+            }
+            return builder.Build();
+        }
 
 
         // Methods
@@ -35,6 +63,7 @@ namespace PrismFanlight.Timeline
             IsTimeJump = isTimeJump;
             SortOrder = sortOrder;
             _activeParameters.Clear();
+            _unsupportedPaths.Clear();
         }
 
         public void Add(FanlightTimelinePlayableBehaviour behaviour, float weight)

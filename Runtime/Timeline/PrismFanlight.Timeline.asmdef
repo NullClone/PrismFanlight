@@ -1,13 +1,11 @@
 {
-    "name": "PrismFanlight.Runtime",
-    "rootNamespace": "",
+    "name": "PrismFanlight.Timeline",
+    "rootNamespace": "PrismFanlight.Timeline",
     "references": [
         "PrismFanlight.Core",
-        "PrismFanlight.Authoring",
         "PrismFanlight.Time",
-        "PrismFanlight.Live",
-        "PrismFanlight.Rendering",
-        "Unity.Mathematics"
+        "PrismFanlight.Runtime",
+        "Unity.Timeline"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

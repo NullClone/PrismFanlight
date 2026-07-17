@@ -1,3 +1,4 @@
+using PrismFanlight.Core;
 using Unity.Mathematics;
 
 namespace PrismFanlight
@@ -50,6 +51,18 @@ namespace PrismFanlight
                 beat,
                 beatPhase,
                 barPhase);
+        }
+
+        public static FanlightTempoState FromMusicalPosition(bool enable, FanlightMusicalPosition position)
+        {
+            return new FanlightTempoState(
+                enable,
+                (float)position.Seconds,
+                (float)position.Bpm,
+                position.BeatsPerBar,
+                (float)position.Beat,
+                (float)position.BeatPhase,
+                (float)position.BarPhase);
         }
     }
 }

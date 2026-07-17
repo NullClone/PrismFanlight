@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using PrismFanlight.Core;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
@@ -11,8 +13,10 @@ namespace PrismFanlight.Timeline
 
         private PrismFanlight _lastTarget;
         private bool _hasActiveCue;
-        private int _sortOrder;
+        private string _sourceId = "timeline.palette.unconfigured";
+        private int _priority;
         private readonly FanlightTimelineTrackContribution _contribution = new();
+        private readonly HashSet<string> _reportedUnsupportedPaths = new(StringComparer.Ordinal);
 
 
         // Methods
@@ -23,7 +27,7 @@ namespace PrismFanlight.Timeline
 
             if (_lastTarget != fanlight)
             {
-                if (_lastTarget != null) _lastTarget.ClearTimelineContribution(this);
+                if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
 
                 _hasActiveCue = false;
             }
@@ -33,7 +37,7 @@ namespace PrismFanlight.Timeline
 
             var time = (float)playable.GetTime();
             var isTimeJump = IsTimeJump(playable, info);
-            _contribution.Begin(time, !_hasActiveCue || isTimeJump, _sortOrder);
+            _contribution.Begin(time, !_hasActiveCue || isTimeJump, _priority);
 
             for (var i = 0; i < playable.GetInputCount(); i++)
             {
@@ -51,18 +55,40 @@ namespace PrismFanlight.Timeline
 
             if (!_contribution.HasOverrides)
             {
-                fanlight.ClearTimelineContribution(this);
+                fanlight.ClearScheduledContribution(this);
                 _hasActiveCue = false;
                 return;
             }
 
-            fanlight.SetTimelineContribution(this, _contribution);
+            var patch = _contribution.BuildPatch(fanlight.BaseIntent);
+            ReportUnsupportedPaths();
+            if (!_contribution.HasMappedOverrides)
+            {
+                fanlight.ClearScheduledContribution(this);
+                _hasActiveCue = false;
+                return;
+            }
+            var contribution = new FanlightContribution(
+                $"{_sourceId}:active",
+                _sourceId,
+                FanlightContributionLayer.Scheduled,
+                _priority,
+                double.MinValue,
+                double.MaxValue,
+                0d,
+                0d,
+                1f,
+                FanlightBlendProfile.Linear,
+                FanlightReleasePolicy.RestoreUnderlying,
+                patch);
+            fanlight.SetScheduledContribution(this, contribution);
             _hasActiveCue = true;
         }
 
-        public void Configure(int sortOrder)
+        public void Configure(string sourceId, int priority)
         {
-            _sortOrder = sortOrder;
+            _sourceId = sourceId;
+            _priority = priority;
         }
 
         public override void OnGraphStop(Playable playable)
@@ -77,9 +103,19 @@ namespace PrismFanlight.Timeline
 
         private void ClearContribution()
         {
-            if (_lastTarget != null) _lastTarget.ClearTimelineContribution(this);
+            if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
             _lastTarget = null;
             _hasActiveCue = false;
+        }
+
+        private void ReportUnsupportedPaths()
+        {
+            for (var i = 0; i < _contribution.UnsupportedPaths.Count; i++)
+            {
+                var path = _contribution.UnsupportedPaths[i];
+                if (!_reportedUnsupportedPaths.Add(path)) continue;
+                UnityEngine.Debug.LogWarning($"Prism Fanlight palette Timeline override '{path}' has no Stage 1 palette mapping.");
+            }
         }
 
         private static bool IsTimeJump(Playable playable, FrameData info)

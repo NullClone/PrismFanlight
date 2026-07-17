@@ -43,6 +43,17 @@ namespace PrismFanlight.Rendering
 
         public float MeshPivotY { get; private set; }
 
+        public long TotalCapacityBytes =>
+            (long)SeatCount * (FanlightSeatData.Stride + sizeof(uint) * 4 + sizeof(float) * 16 + FanlightRandomData.Stride)
+            + (long)BlockCount * (FanlightBlockData.Stride + sizeof(uint))
+            + (HasAudience ? (long)SeatCount * FanlightAudiencePart.PartsPerSeat * FanlightAudiencePart.Stride : 0L)
+            + sizeof(uint) * 10L;
+
+        public long InitialStaticUploadBytes =>
+            (long)SeatCount * (FanlightSeatData.Stride + FanlightRandomData.Stride + sizeof(uint))
+            + (long)BlockCount * FanlightBlockData.Stride
+            + sizeof(uint) * 10L;
+
 
         // Methods
 
@@ -107,6 +118,39 @@ namespace PrismFanlight.Rendering
             _singleBlockUpload[0] = ToBlockData(block, mesh);
             BlockBuffer.SetData(_singleBlockUpload, 0, blockIndex, 1);
             LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
+        }
+
+        public FanlightGpuBufferDiagnostic[] CaptureDiagnostics(string cameraId)
+        {
+            if (SeatBuffer == null) return Array.Empty<FanlightGpuBufferDiagnostic>();
+            var result = new FanlightGpuBufferDiagnostic[HasAudience ? 12 : 11];
+            var index = 0;
+            Add("layout.seats", string.Empty, SeatCount, FanlightSeatData.Stride, "Static");
+            Add("layout.blocks", string.Empty, BlockCount, FanlightBlockData.Stride, "Static");
+            Add("visibility.blocks", cameraId, BlockCount, sizeof(uint), "Camera");
+            Add("visibility.penlights", cameraId, SeatCount, sizeof(uint), "Camera");
+            Add("visibility.audience", cameraId, SeatCount, sizeof(uint), "Camera");
+            Add("visibility.audience-slots", cameraId, SeatCount, sizeof(uint), "Camera");
+            Add("pose.matrices", string.Empty, SeatCount, sizeof(float) * 16, "ShowFrame");
+            Add("palette.assignments", string.Empty, SeatCount, sizeof(uint), "Static");
+            Add("persona.legacy-random", string.Empty, SeatCount, FanlightRandomData.Stride, "Static");
+            Add("draw.penlight-args", cameraId, 1, sizeof(uint) * 5, "Camera");
+            Add("draw.audience-args", cameraId, 1, sizeof(uint) * 5, "Camera");
+            if (HasAudience)
+                Add("pose.audience-parts", string.Empty, SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, "ShowFrame");
+            return result;
+
+            void Add(string bufferId, string bufferCameraId, int count, int stride, string lifetime)
+            {
+                result[index++] = new FanlightGpuBufferDiagnostic(
+                    bufferId,
+                    "legacy.matrix.compatibility",
+                    bufferCameraId,
+                    count,
+                    stride,
+                    (long)count * stride,
+                    lifetime);
+            }
         }
 
         private static FanlightBlockData[] BuildBlockData(FanlightRuntimeLayout layout, Mesh mesh)
