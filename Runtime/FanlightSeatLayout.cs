@@ -10,6 +10,7 @@ namespace PrismFanlight
     {
         private const int AuthoringHashVersion = 2;
 
+
         // Fields
 
         public int2 seatPerBlock;
@@ -17,6 +18,7 @@ namespace PrismFanlight
         public int2 blockCount;
         public float2 aisleWidth;
         public FanlightBlockTransform[] blockTransforms;
+
 
         [SerializeField]
         private int _bakedAuthoringHash;
@@ -33,15 +35,6 @@ namespace PrismFanlight
 
         // Properties
 
-        public static SeatLayout Default() => new()
-        {
-            seatPerBlock = math.int2(8, 12),
-            seatPitch = math.float2(0.4f, 0.8f),
-            blockCount = math.int2(7, 3),
-            aisleWidth = math.float2(0.7f, 1.2f),
-            blockTransforms = Array.Empty<FanlightBlockTransform>()
-        };
-
         public int BlockSeatCount => seatPerBlock.x * seatPerBlock.y;
 
         public int TotalBlockCount => blockCount.x * blockCount.y;
@@ -56,6 +49,37 @@ namespace PrismFanlight
 
 
         // Methods
+
+        public override bool Equals(object obj)
+        {
+            return obj is SeatLayout other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 31 + AuthoringHashVersion;
+                hash = hash * 31 + seatPerBlock.GetHashCode();
+                hash = hash * 31 + seatPitch.GetHashCode();
+                hash = hash * 31 + blockCount.GetHashCode();
+                hash = hash * 31 + aisleWidth.GetHashCode();
+                hash = hash * 31 + HashBlockTransforms(blockTransforms);
+                hash = hash * 31 + _bakedAuthoringHash;
+                return hash;
+            }
+        }
+
+
+        public static SeatLayout Default() => new()
+        {
+            seatPerBlock = math.int2(8, 12),
+            seatPitch = math.float2(0.4f, 0.8f),
+            blockCount = math.int2(7, 3),
+            aisleWidth = math.float2(0.7f, 1.2f),
+            blockTransforms = Array.Empty<FanlightBlockTransform>()
+        };
 
         public SeatLayout Validated()
         {
@@ -107,27 +131,6 @@ namespace PrismFanlight
                    && _bakedAuthoringHash == other._bakedAuthoringHash;
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is SeatLayout other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hash = 17;
-                hash = hash * 31 + AuthoringHashVersion;
-                hash = hash * 31 + seatPerBlock.GetHashCode();
-                hash = hash * 31 + seatPitch.GetHashCode();
-                hash = hash * 31 + blockCount.GetHashCode();
-                hash = hash * 31 + aisleWidth.GetHashCode();
-                hash = hash * 31 + HashBlockTransforms(blockTransforms);
-                hash = hash * 31 + _bakedAuthoringHash;
-                return hash;
-            }
-        }
-
         public (int2 block, int2 seat) GetCoordinatesFromIndex(int i)
         {
             var si = i / BlockSeatCount;
@@ -162,6 +165,7 @@ namespace PrismFanlight
         public FanlightBlockTransform GetBlockTransform(int2 block)
         {
             var index = GetBlockIndex(block);
+
             return blockTransforms != null && index >= 0 && index < blockTransforms.Length
                 ? blockTransforms[index]
                 : FanlightBlockTransform.Identity;
@@ -227,6 +231,7 @@ namespace PrismFanlight
             bounds = HasValidBake ? _bakedBounds : default;
             return HasValidBake;
         }
+
 
         private bool IsBakedDataValid()
         {

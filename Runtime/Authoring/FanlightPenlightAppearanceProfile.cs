@@ -3,43 +3,11 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [Serializable]
-    public struct FanlightPenlightVariant
-    {
-        [SerializeField, Min(1)]
-        private uint _stableVariantId;
-
-        [SerializeField]
-        private Mesh _mesh;
-
-        [SerializeField]
-        private bool _useMeshBoundsMinimumAsGrip;
-
-        [SerializeField]
-        private float _gripPivotY;
-
-        public uint StableVariantId => _stableVariantId;
-
-        public Mesh Mesh => _mesh;
-
-        public bool UseMeshBoundsMinimumAsGrip => _useMeshBoundsMinimumAsGrip;
-
-        public float GripPivotY => _mesh != null && _useMeshBoundsMinimumAsGrip
-            ? _mesh.bounds.min.y
-            : _gripPivotY;
-
-        internal FanlightPenlightVariant(uint stableVariantId, Mesh mesh, bool useMeshBoundsMinimumAsGrip, float gripPivotY)
-        {
-            _stableVariantId = stableVariantId;
-            _mesh = mesh;
-            _useMeshBoundsMinimumAsGrip = useMeshBoundsMinimumAsGrip;
-            _gripPivotY = gripPivotY;
-        }
-    }
-
     [CreateAssetMenu(fileName = "Penlight Appearance", menuName = "Prism Fanlight/Penlight Appearance Profile")]
     public sealed class FanlightPenlightAppearanceProfile : ScriptableObject
     {
+        // Fields
+
         public const int CurrentAssignmentSchemaVersion = 1;
         public const int MaximumVariantCount = 4;
 
@@ -61,6 +29,9 @@ namespace PrismFanlight.Authoring
             new(1u, null, true, 0f)
         };
 
+
+        // Properties
+
         public string ProfileId => _profileId ?? string.Empty;
 
         public int ProfileVersion => _profileVersion;
@@ -70,6 +41,9 @@ namespace PrismFanlight.Authoring
         public uint AssignmentSeed => _assignmentSeed;
 
         public int VariantCount => _variants?.Length ?? 0;
+
+
+        // Methods
 
         public FanlightPenlightVariant GetVariant(int index) => _variants[index];
 
@@ -192,20 +166,6 @@ namespace PrismFanlight.Authoring
                 hash ^= value;
                 hash *= 1099511628211UL;
             }
-        }
-
-        internal void InitializeForTests(
-            string profileId,
-            int profileVersion,
-            int assignmentSchemaVersion,
-            uint assignmentSeed,
-            FanlightPenlightVariant[] variants)
-        {
-            _profileId = profileId ?? string.Empty;
-            _profileVersion = profileVersion;
-            _assignmentSchemaVersion = assignmentSchemaVersion;
-            _assignmentSeed = assignmentSeed;
-            _variants = variants ?? Array.Empty<FanlightPenlightVariant>();
         }
 
         private void Reset()

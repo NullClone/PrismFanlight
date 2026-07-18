@@ -3,4 +3,3 @@ using System.Runtime.CompilerServices;
 
 [assembly: AssemblyVersion("1.3.0")]
 [assembly: InternalsVisibleTo("PrismFanlight.Editor")]
-[assembly: InternalsVisibleTo("PrismFanlight.Editor.Tests")]

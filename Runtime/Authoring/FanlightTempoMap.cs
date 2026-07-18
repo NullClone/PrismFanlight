@@ -3,68 +3,11 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [Serializable]
-    public struct FanlightTempoSegment
-    {
-        [SerializeField]
-        private string _segmentId;
-
-        [SerializeField]
-        private double _startSeconds;
-
-        [SerializeField]
-        private double _startBeat;
-
-        [SerializeField]
-        private double _bpm;
-
-        [SerializeField]
-        private int _beatsPerBar;
-
-        [SerializeField]
-        private int _beatUnit;
-
-        [SerializeField]
-        private long _startBar;
-
-        public FanlightTempoSegment(
-            string segmentId,
-            double startSeconds,
-            double startBeat,
-            double bpm,
-            int beatsPerBar,
-            int beatUnit,
-            long startBar)
-        {
-            _segmentId = segmentId ?? string.Empty;
-            _startSeconds = startSeconds;
-            _startBeat = startBeat;
-            _bpm = bpm;
-            _beatsPerBar = beatsPerBar;
-            _beatUnit = beatUnit;
-            _startBar = startBar;
-        }
-
-        public string SegmentId => _segmentId ?? string.Empty;
-        public double StartSeconds => _startSeconds;
-        public double StartBeat => _startBeat;
-        public double Bpm => _bpm;
-        public int BeatsPerBar => _beatsPerBar;
-        public int BeatUnit => _beatUnit;
-        public long StartBar => _startBar;
-
-        public bool IsValid =>
-            !string.IsNullOrEmpty(SegmentId)
-            && !double.IsNaN(StartSeconds) && !double.IsInfinity(StartSeconds)
-            && !double.IsNaN(StartBeat) && !double.IsInfinity(StartBeat)
-            && Bpm > 0d && !double.IsInfinity(Bpm)
-            && BeatsPerBar >= 1
-            && BeatUnit is 1 or 2 or 4 or 8 or 16;
-    }
-
     [CreateAssetMenu(fileName = "FanlightTempoMap", menuName = "Prism Fanlight/Tempo Map")]
     public sealed class FanlightTempoMap : ScriptableObject
     {
+        // Fields
+
         [SerializeField]
         private string _tempoMapId = string.Empty;
 
@@ -77,9 +20,17 @@ namespace PrismFanlight.Authoring
             new("tempo.default", 0d, 0d, 120d, 4, 4, 1)
         };
 
+
+        // Properties
+
         public string TempoMapId => _tempoMapId ?? string.Empty;
+
         public int Version => Math.Max(1, _version);
+
         public ReadOnlyMemory<FanlightTempoSegment> Segments => _segments ?? Array.Empty<FanlightTempoSegment>();
+
+
+        // Methods
 
         public bool Validate(out string error)
         {

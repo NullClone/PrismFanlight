@@ -51,24 +51,7 @@ namespace PrismFanlight.Rendering
 
         public uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
 
-        public int[] PenlightVariantSeatCounts { get; private set; } = Array.Empty<int>();
-
         public Vector4 PenlightVariantGripPivotYs { get; private set; }
-
-        public ulong PenlightAssignmentHash { get; private set; }
-
-        public long TotalCapacityBytes =>
-            (long)SeatCount * (FanlightSeatData.Stride + sizeof(uint) * 5 + sizeof(float) * 16 + FanlightRandomData.Stride)
-            + (long)BlockCount * (FanlightBlockData.Stride + sizeof(uint))
-            + (HasAudience ? (long)SeatCount * FanlightAudiencePart.PartsPerSeat * FanlightAudiencePart.Stride : 0L)
-            + (long)PenlightVariantCount * (sizeof(uint) + GraphicsBuffer.IndirectDrawIndexedArgs.size)
-            + GraphicsBuffer.IndirectDrawIndexedArgs.size;
-
-        public long InitialStaticUploadBytes =>
-            (long)SeatCount * (FanlightSeatData.Stride + FanlightRandomData.Stride + sizeof(uint) * 2L)
-            + (long)BlockCount * FanlightBlockData.Stride
-            + (long)PenlightVariantCount * (sizeof(uint) + GraphicsBuffer.IndirectDrawIndexedArgs.size)
-            + GraphicsBuffer.IndirectDrawIndexedArgs.size;
 
 
         // Methods
@@ -88,9 +71,7 @@ namespace PrismFanlight.Rendering
             MeshPivotY = appearance.GripPivotYs[0];
             PenlightVariantGripPivotYs = BuildGripPivotVector(appearance.GripPivotYs);
 
-            var assignments = BuildVariantAssignments(layout, appearance, out var counts, out var assignmentHash);
-            PenlightVariantSeatCounts = counts;
-            PenlightAssignmentHash = assignmentHash;
+            var assignments = BuildVariantAssignments(layout, appearance, out var counts);
             PenlightVariantOffsets = BuildVariantOffsets(counts);
 
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
@@ -157,41 +138,6 @@ namespace PrismFanlight.Rendering
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
         }
 
-        public FanlightGpuBufferDiagnostic[] CaptureDiagnostics(string cameraId)
-        {
-            if (SeatBuffer == null) return Array.Empty<FanlightGpuBufferDiagnostic>();
-            var result = new FanlightGpuBufferDiagnostic[HasAudience ? 14 : 13];
-            var index = 0;
-            Add("layout.seats", string.Empty, SeatCount, FanlightSeatData.Stride, "Static");
-            Add("layout.blocks", string.Empty, BlockCount, FanlightBlockData.Stride, "Static");
-            Add("visibility.blocks", cameraId, BlockCount, sizeof(uint), "Camera");
-            Add("visibility.penlights", cameraId, SeatCount, sizeof(uint), "Camera");
-            Add("appearance.assignments", string.Empty, SeatCount, sizeof(uint), "Static");
-            Add("appearance.variant-offsets", string.Empty, PenlightVariantCount, sizeof(uint), "Static");
-            Add("visibility.audience", cameraId, SeatCount, sizeof(uint), "Camera");
-            Add("visibility.audience-slots", cameraId, SeatCount, sizeof(uint), "Camera");
-            Add("pose.matrices", string.Empty, SeatCount, sizeof(float) * 16, "ShowFrame");
-            Add("palette.assignments", string.Empty, SeatCount, sizeof(uint), "Static");
-            Add("persona.legacy-random", string.Empty, SeatCount, FanlightRandomData.Stride, "Static");
-            Add("draw.penlight-args", cameraId, PenlightVariantCount, GraphicsBuffer.IndirectDrawIndexedArgs.size, "Camera");
-            Add("draw.audience-args", cameraId, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size, "Camera");
-            if (HasAudience)
-                Add("pose.audience-parts", string.Empty, SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, "ShowFrame");
-            return result;
-
-            void Add(string bufferId, string bufferCameraId, int count, int stride, string lifetime)
-            {
-                result[index++] = new FanlightGpuBufferDiagnostic(
-                    bufferId,
-                    "legacy.matrix.compatibility",
-                    bufferCameraId,
-                    count,
-                    stride,
-                    (long)count * stride,
-                    lifetime);
-            }
-        }
-
         private static FanlightBlockData[] BuildBlockData(FanlightRuntimeLayout layout, float boundsPadding)
         {
             var data = new FanlightBlockData[layout.BlockCount];
@@ -256,12 +202,10 @@ namespace PrismFanlight.Rendering
         private static uint[] BuildVariantAssignments(
             FanlightRuntimeLayout layout,
             FanlightPenlightRuntimeAppearance appearance,
-            out int[] counts,
-            out ulong assignmentHash)
+            out int[] counts)
         {
             var assignments = new uint[layout.SeatCount];
             counts = new int[appearance.VariantCount];
-            var hash = 14695981039346656037UL;
 
             for (var i = 0; i < assignments.Length; i++)
             {
@@ -278,28 +222,9 @@ namespace PrismFanlight.Rendering
 
                 assignments[i] = (uint)variantIndex;
                 counts[variantIndex]++;
-                AddULong(stableSeatId);
-                AddUInt(appearance.StableVariantIds[variantIndex]);
             }
 
-            assignmentHash = hash == 0UL ? 1UL : hash;
             return assignments;
-
-            void AddUInt(uint value)
-            {
-                for (var byteIndex = 0; byteIndex < 4; byteIndex++) AddByte((byte)(value >> (byteIndex * 8)));
-            }
-
-            void AddULong(ulong value)
-            {
-                for (var byteIndex = 0; byteIndex < 8; byteIndex++) AddByte((byte)(value >> (byteIndex * 8)));
-            }
-
-            void AddByte(byte value)
-            {
-                hash ^= value;
-                hash *= 1099511628211UL;
-            }
         }
 
         private static uint[] BuildVariantOffsets(int[] counts)
@@ -423,9 +348,7 @@ namespace PrismFanlight.Rendering
             MeshPivotY = 0f;
             PenlightVariantCount = 0;
             PenlightVariantOffsets = Array.Empty<uint>();
-            PenlightVariantSeatCounts = Array.Empty<int>();
             PenlightVariantGripPivotYs = default;
-            PenlightAssignmentHash = 0UL;
         }
     }
 }

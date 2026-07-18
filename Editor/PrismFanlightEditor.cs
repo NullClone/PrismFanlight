@@ -152,7 +152,7 @@ namespace PrismFanlight.Editor
             DrawColorSection();
             DrawTempoSection();
             DrawRandomSection();
-            DrawDebugSection();
+            DrawPreviewSection();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -827,11 +827,9 @@ namespace PrismFanlight.Editor
             handZone.FindPropertyRelative("variation").floatValue = preset.variation;
         }
 
-        private void DrawDebugSection()
+        private void DrawPreviewSection()
         {
-            var diagnostics = _instance.GetDiagnostics();
-
-            PrismFanlightEditorStyles.DrawSection("| Debug", () =>
+            PrismFanlightEditorStyles.DrawSection("| Preview", () =>
             {
                 if (!SystemInfo.supportsComputeShaders)
                 {
@@ -839,22 +837,6 @@ namespace PrismFanlight.Editor
                 }
 
                 _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Diagnostics", EditorStyles.boldLabel);
-                PrismFanlightEditorStyles.DrawStat("GPU Ready", diagnostics.IsGpuReady ? "Yes" : "No");
-                PrismFanlightEditorStyles.DrawStat("Layout", diagnostics.LayoutStatus.ToString());
-                PrismFanlightEditorStyles.DrawStat("Total Seats", diagnostics.TotalSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Visible Seats", diagnostics.VisibleSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Blocks", diagnostics.BlockCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Layout Allocations", diagnostics.LayoutBufferAllocationCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Partial Layout Uploads", diagnostics.PartialLayoutUploadCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Last Layout Upload Seats", diagnostics.LastLayoutUploadSeatCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Penlight Appearance", diagnostics.AppearanceStatus.ToString());
-                PrismFanlightEditorStyles.DrawStat("Penlight Variants", diagnostics.PenlightVariantCount.ToString("N0"));
-                PrismFanlightEditorStyles.DrawStat("Appearance Profile", string.IsNullOrEmpty(diagnostics.AppearanceProfileId)
-                    ? "None"
-                    : $"{diagnostics.AppearanceProfileId} v{diagnostics.AppearanceProfileVersion}");
-                PrismFanlightEditorStyles.DrawStat("Assignment Hash", diagnostics.PenlightAssignmentHash.ToString("X16"));
             });
         }
 

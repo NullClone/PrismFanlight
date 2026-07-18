@@ -2,11 +2,11 @@ using System;
 
 namespace PrismFanlight.Rendering
 {
-    public static class FanlightPenlightAssignment
+    internal static class FanlightPenlightAssignment
     {
-        public const int SchemaVersion = 1;
+        internal const int SchemaVersion = 1;
 
-        public static int SelectVariantIndex(
+        internal static int SelectVariantIndex(
             ulong stableSeatId,
             uint assignmentSeed,
             int assignmentSchemaVersion,
@@ -43,7 +43,7 @@ namespace PrismFanlight.Rendering
             return selectedIndex;
         }
 
-        public static ulong Score(
+        private static ulong Score(
             ulong stableSeatId,
             uint assignmentSeed,
             int assignmentSchemaVersion,

@@ -127,12 +127,6 @@ namespace PrismFanlight.Live
 
         public void UnregisterSource(IFanlightContributionSource source) => _sources.Remove(source);
 
-        public void RegisterCueSession(IFanlightCueSession session)
-        {
-            if (session == null) throw new ArgumentNullException(nameof(session));
-            if (!_cueSessions.Contains(session)) _cueSessions.Add(session);
-        }
-
         public void UnregisterCueSession(IFanlightCueSession session) => _cueSessions.Remove(session);
 
         public FanlightShowSample Evaluate(

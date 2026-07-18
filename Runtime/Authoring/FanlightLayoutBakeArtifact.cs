@@ -28,6 +28,8 @@ namespace PrismFanlight.Authoring
     [PreferBinarySerialization]
     public sealed class FanlightLayoutBakeArtifact : ScriptableObject
     {
+        // Fields
+
         public const int CurrentFormatVersion = 1;
 
         [SerializeField]
@@ -51,6 +53,9 @@ namespace PrismFanlight.Authoring
         [SerializeField]
         private FanlightBakedBlockRecord[] _blocks = Array.Empty<FanlightBakedBlockRecord>();
 
+
+        // Properties
+
         public int FormatVersion => _formatVersion;
 
         public string LayoutId => _layoutId ?? string.Empty;
@@ -69,6 +74,9 @@ namespace PrismFanlight.Authoring
 
         public ReadOnlySpan<FanlightBakedBlockRecord> Blocks => _blocks;
 
+
+        // Methods
+
         public FanlightBakedSeatRecord GetSeat(int index) => _seats[index];
 
         public FanlightBakedBlockRecord GetBlock(int index) => _blocks[index];
@@ -76,6 +84,7 @@ namespace PrismFanlight.Authoring
         public bool Matches(FanlightLayoutAsset layout)
         {
             if (layout == null || !layout.IsInitialized) return false;
+
             if (_formatVersion != CurrentFormatVersion
                 || !string.Equals(LayoutId, layout.LayoutId.Value, StringComparison.Ordinal)
                 || _sourceLayoutVersion != layout.LayoutVersion

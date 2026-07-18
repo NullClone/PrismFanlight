@@ -16,6 +16,7 @@ namespace PrismFanlight
         public readonly float UpdateClock;
         public readonly bool IsTimeJump;
 
+
         public FanlightResolvedState(
             FanlightTempoState tempo,
             FanlightMotionSettings motion,

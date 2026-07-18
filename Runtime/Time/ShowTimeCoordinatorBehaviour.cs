@@ -16,6 +16,8 @@ namespace PrismFanlight.Time
     [AddComponentMenu("Prism Fanlight/Show Time Coordinator")]
     public sealed class ShowTimeCoordinatorBehaviour : MonoBehaviour, IShowTimeCoordinator
     {
+        // Fields
+
         [SerializeField]
         private string _timeDomainId = string.Empty;
 
@@ -49,6 +51,7 @@ namespace PrismFanlight.Time
         [SerializeField]
         private double _compatibilityOffsetSeconds;
 
+
         private readonly UnityUnscaledTimeSource _unityTime = new();
         private ShowTimeCoordinator _coordinator;
         private UnityTimeProvider _unityProvider;
@@ -57,74 +60,25 @@ namespace PrismFanlight.Time
         private FanlightShowTimeFault _lastFault;
         private string _lastFailureCode = string.Empty;
 
+
+        // Properties
+
         public string TimeDomainId => _timeDomainId ?? string.Empty;
+
         public int TimeDomainVersion => Math.Max(1, _timeDomainVersion);
+
         public ShowNegativeTimePolicy NegativeTimePolicy => _negativeTimePolicy;
+
         public bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
+
         public bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
+
         public FanlightShowTimeFault LastFault => _lastFault;
+
         public string LastFailureCode => _lastFailureCode;
 
-        public bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
-        {
-            EnsureCoordinator();
-            if (_coordinator == null)
-            {
-                sample = default;
-                fault = _lastFault == FanlightShowTimeFault.None
-                    ? FanlightShowTimeFault.CoordinatorUnavailable
-                    : _lastFault;
-                _lastFault = fault;
-                return false;
-            }
 
-            var success = _coordinator.TrySample(evaluationId, out sample, out fault);
-            _lastFault = fault;
-            return success;
-        }
-
-        public bool TryRequestPrimaryReacquire(out string failureCode)
-        {
-            EnsureCoordinator();
-            if (_coordinator == null)
-            {
-                failureCode = "CoordinatorUnavailable";
-                _lastFailureCode = failureCode;
-                return false;
-            }
-
-            var result = _coordinator.TryRequestPrimaryReacquire(out failureCode);
-            _lastFailureCode = failureCode;
-            return result;
-        }
-
-        public void ConfigureCompatibilityTempo(double bpm, int beatsPerBar, double offsetSeconds)
-        {
-            if (_tempoMap != null) return;
-            var validatedBpm = Math.Max(1e-6d, bpm);
-            var validatedBeats = Math.Max(1, beatsPerBar);
-            if (Math.Abs(_compatibilityBpm - validatedBpm) <= 1e-9
-                && _compatibilityBeatsPerBar == validatedBeats
-                && Math.Abs(_compatibilityOffsetSeconds - offsetSeconds) <= 1e-9) return;
-            _compatibilityBpm = validatedBpm;
-            _compatibilityBeatsPerBar = validatedBeats;
-            _compatibilityOffsetSeconds = offsetSeconds;
-            _coordinator = null;
-        }
-
-        public void ConfigureCompatibilityIdentity(string timeDomainId)
-        {
-            if (!string.IsNullOrEmpty(TimeDomainId) || string.IsNullOrWhiteSpace(timeDomainId)) return;
-            _timeDomainId = timeDomainId;
-            _coordinator = null;
-        }
-
-        public void SetManualTime(double seconds, double rate = 0d)
-        {
-            _manualSeconds = seconds;
-            _manualRate = rate;
-            _manualProvider?.Set(seconds, rate);
-        }
+        // Methods
 
         private void OnEnable() => EnsureCoordinator();
 
@@ -147,11 +101,83 @@ namespace PrismFanlight.Time
             _coordinator = null;
         }
 
+
+        public bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
+        {
+            EnsureCoordinator();
+
+            if (_coordinator == null)
+            {
+                sample = default;
+                fault = _lastFault == FanlightShowTimeFault.None
+                    ? FanlightShowTimeFault.CoordinatorUnavailable
+                    : _lastFault;
+                _lastFault = fault;
+
+                return false;
+            }
+
+            var success = _coordinator.TrySample(evaluationId, out sample, out fault);
+            _lastFault = fault;
+            return success;
+        }
+
+        public bool TryRequestPrimaryReacquire(out string failureCode)
+        {
+            EnsureCoordinator();
+
+            if (_coordinator == null)
+            {
+                failureCode = "CoordinatorUnavailable";
+                _lastFailureCode = failureCode;
+                return false;
+            }
+
+            var result = _coordinator.TryRequestPrimaryReacquire(out failureCode);
+            _lastFailureCode = failureCode;
+            return result;
+        }
+
+        public void ConfigureCompatibilityTempo(double bpm, int beatsPerBar, double offsetSeconds)
+        {
+            if (_tempoMap != null) return;
+
+            var validatedBpm = Math.Max(1e-6d, bpm);
+            var validatedBeats = Math.Max(1, beatsPerBar);
+
+            if (Math.Abs(_compatibilityBpm - validatedBpm) <= 1e-9
+                && _compatibilityBeatsPerBar == validatedBeats
+                && Math.Abs(_compatibilityOffsetSeconds - offsetSeconds) <= 1e-9) return;
+
+            _compatibilityBpm = validatedBpm;
+            _compatibilityBeatsPerBar = validatedBeats;
+            _compatibilityOffsetSeconds = offsetSeconds;
+            _coordinator = null;
+        }
+
+        public void ConfigureCompatibilityIdentity(string timeDomainId)
+        {
+            if (!string.IsNullOrEmpty(TimeDomainId) || string.IsNullOrWhiteSpace(timeDomainId)) return;
+            _timeDomainId = timeDomainId;
+            _coordinator = null;
+        }
+
+        public void SetManualTime(double seconds, double rate = 0d)
+        {
+            _manualSeconds = seconds;
+            _manualRate = rate;
+            _manualProvider?.Set(seconds, rate);
+        }
+
+
         private void EnsureCoordinator()
         {
             var hash = ComputeConfigurationHash();
+
             if (_coordinator != null && hash == _configurationHash) return;
+
             _configurationHash = hash;
+
             if (string.IsNullOrEmpty(TimeDomainId))
             {
                 _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
@@ -161,6 +187,7 @@ namespace PrismFanlight.Time
             }
 
             var provider = ResolveProvider();
+
             if (provider == null)
             {
                 _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
@@ -170,6 +197,7 @@ namespace PrismFanlight.Time
             }
 
             IShowTempoMapResolver tempo;
+
             try
             {
                 tempo = _tempoMap != null
@@ -197,6 +225,7 @@ namespace PrismFanlight.Time
                 provider,
                 tempo,
                 _unityTime);
+
             _lastFault = FanlightShowTimeFault.None;
             _lastFailureCode = string.Empty;
         }
@@ -248,56 +277,5 @@ namespace PrismFanlight.Time
                 return hash == 0 ? 1 : hash;
             }
         }
-    }
-
-    internal sealed class UnityUnscaledTimeSource : IUnscaledTimeSource
-    {
-        public double Seconds => UnityEngine.Time.unscaledTimeAsDouble;
-    }
-
-    internal sealed class UnityTimeProvider : IShowTimeProvider
-    {
-        private readonly IUnscaledTimeSource _time;
-        private long _sequence;
-
-        public UnityTimeProvider(string providerId, IUnscaledTimeSource time)
-        {
-            ProviderId = providerId;
-            _time = time;
-        }
-
-        public string ProviderId { get; }
-
-        public ShowTimeProviderSample Sample() => new(
-            ProviderId,
-            _time.Seconds,
-            1d,
-            FanlightClockStatus.Ready,
-            FanlightTimeDiscontinuity.None,
-            ++_sequence);
-    }
-
-    internal sealed class ManualTimeProvider : IShowTimeProvider
-    {
-        private double _seconds;
-        private double _rate;
-        private long _sequence;
-
-        public ManualTimeProvider(string providerId) => ProviderId = providerId;
-        public string ProviderId { get; }
-
-        public void Set(double seconds, double rate)
-        {
-            _seconds = seconds;
-            _rate = rate;
-        }
-
-        public ShowTimeProviderSample Sample() => new(
-            ProviderId,
-            _seconds,
-            _rate,
-            _rate == 0d ? FanlightClockStatus.Holding : FanlightClockStatus.Ready,
-            FanlightTimeDiscontinuity.None,
-            ++_sequence);
     }
 }

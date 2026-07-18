@@ -6,73 +6,11 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [Flags]
-    public enum FanlightLayoutDirtyReason
-    {
-        None = 0,
-        BlockPlacement = 1 << 0,
-        GlobalGeometry = 1 << 1,
-        Topology = 1 << 2,
-        StableIdentity = 1 << 3,
-        BakeSchema = 1 << 4
-    }
-
-    [Serializable]
-    public struct FanlightBlockPlacement : IEquatable<FanlightBlockPlacement>
-    {
-        public Vector3 position;
-        public Vector3 eulerRotation;
-
-        public static FanlightBlockPlacement Identity => new()
-        {
-            position = Vector3.zero,
-            eulerRotation = Vector3.zero
-        };
-
-        public Quaternion Rotation => Quaternion.Euler(eulerRotation);
-
-        public bool Equals(FanlightBlockPlacement other)
-        {
-            return position.Equals(other.position) && eulerRotation.Equals(other.eulerRotation);
-        }
-    }
-
-    [Serializable]
-    public struct FanlightLayoutBlock
-    {
-        [SerializeField]
-        private string _blockId;
-
-        [SerializeField]
-        private FanlightBlockPlacement _placement;
-
-        [SerializeField]
-        private int _authoringRevision;
-
-        public string BlockId => _blockId ?? string.Empty;
-
-        public FanlightBlockPlacement Placement => _placement;
-
-        public int AuthoringRevision => _authoringRevision;
-
-        internal FanlightLayoutBlock(string blockId)
-        {
-            _blockId = blockId;
-            _placement = FanlightBlockPlacement.Identity;
-            _authoringRevision = 1;
-        }
-
-        internal void SetPlacement(FanlightBlockPlacement placement)
-        {
-            if (_authoringRevision == int.MaxValue) throw new InvalidOperationException("Block authoring revision is exhausted.");
-            _placement = placement;
-            _authoringRevision++;
-        }
-    }
-
     [PreferBinarySerialization]
     public sealed class FanlightLayoutAsset : ScriptableObject
     {
+        // Fields
+
         public const int CurrentSchemaVersion = 1;
 
         [SerializeField]
@@ -104,6 +42,9 @@ namespace PrismFanlight.Authoring
 
         [SerializeField]
         private FanlightLayoutBakeArtifact _activeBake;
+
+
+        // Properties
 
         public int SchemaVersion => _schemaVersion;
 
@@ -137,6 +78,9 @@ namespace PrismFanlight.Authoring
 
         public bool HasCompatibleBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
 
+
+        // Methods
+
         public FanlightLayoutBlock GetBlock(int blockIndex) => _blocks[blockIndex];
 
         public ulong GetStableSeatId(int seatIndex) => _stableSeatIds[seatIndex];
@@ -146,8 +90,6 @@ namespace PrismFanlight.Authoring
             var y = blockIndex / _blockCount.x;
             return math.int2(blockIndex - y * _blockCount.x, y);
         }
-
-        public int GetBlockIndex(int2 block) => block.y * _blockCount.x + block.x;
 
         public float2 GetPositionOnPlane(int2 block, int2 seat)
         {
@@ -172,6 +114,7 @@ namespace PrismFanlight.Authoring
             var placement = _blocks[blockIndex].Placement;
             return baseCenter + placement.position + placement.Rotation * (point - baseCenter);
         }
+
 
         internal void Initialize(
             string layoutId,

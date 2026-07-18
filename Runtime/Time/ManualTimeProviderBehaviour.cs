@@ -7,6 +7,8 @@ namespace PrismFanlight.Time
     [AddComponentMenu("Prism Fanlight/Time Providers/Manual Time Provider")]
     public sealed class ManualTimeProviderBehaviour : MonoBehaviour, IShowTimeProvider
     {
+        // Fields
+
         [SerializeField]
         private string _providerId = string.Empty;
 
@@ -24,7 +26,13 @@ namespace PrismFanlight.Time
 
         private long _sequence;
 
+
+        // Properties
+
         public string ProviderId => _providerId ?? string.Empty;
+
+
+        // Methods
 
         public void SetTime(double seconds, double rate, FanlightTimeDiscontinuity discontinuity = FanlightTimeDiscontinuity.Seek)
         {
@@ -40,8 +48,10 @@ namespace PrismFanlight.Time
         {
             var discontinuity = _nextDiscontinuity;
             _nextDiscontinuity = FanlightTimeDiscontinuity.None;
+
             return new ShowTimeProviderSample(ProviderId, _seconds, _rate, _status, discontinuity, ++_sequence);
         }
+
 
 #if UNITY_EDITOR
         private void OnValidate()

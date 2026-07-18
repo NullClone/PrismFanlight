@@ -10,6 +10,7 @@ namespace PrismFanlight
 
         public FanlightMotionSettings Settings => _settings;
 
+
         public void SetSettings(FanlightMotionSettings settings)
         {
             _settings = settings;
