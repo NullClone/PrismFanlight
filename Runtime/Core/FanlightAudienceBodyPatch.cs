@@ -6,11 +6,23 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightAudienceBodyPatch
     {
-        [SerializeField] private FanlightAudienceBodyFields _fields;
-        [SerializeField] private FanlightAudienceBodyState _value;
+        // Fields
+
+        [SerializeField]
+        private FanlightAudienceBodyFields _fields;
+
+        [SerializeField]
+        private FanlightAudienceBodyState _value;
+
+
+        // Properties
 
         internal FanlightAudienceBodyFields Fields => _fields;
+
         internal FanlightAudienceBodyState Value => _value;
+
+
+        // Methods
 
         internal FanlightAudienceBodyPatch(FanlightAudienceBodyFields fields, FanlightAudienceBodyState value)
         {

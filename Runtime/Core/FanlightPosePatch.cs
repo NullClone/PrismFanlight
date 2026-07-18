@@ -6,11 +6,23 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightPosePatch
     {
-        [SerializeField] private FanlightPoseFields _fields;
-        [SerializeField] private FanlightPoseState _value;
+        // Fields
+
+        [SerializeField]
+        private FanlightPoseFields _fields;
+
+        [SerializeField]
+        private FanlightPoseState _value;
+
+
+        // Properties
 
         internal FanlightPoseFields Fields => _fields;
+
         internal FanlightPoseState Value => _value;
+
+
+        // Methods
 
         internal FanlightPosePatch(FanlightPoseFields fields, FanlightPoseState value)
         {

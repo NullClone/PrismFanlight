@@ -6,35 +6,83 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightAudienceBodyState
     {
-        [SerializeField] private float _height;
-        [SerializeField] private float _heightVariation;
-        [SerializeField] private float _width;
-        [SerializeField] private float _headSize;
-        [SerializeField] private float _shoulderHeightRatio;
-        [SerializeField] private float _shoulderSideOffset;
-        [SerializeField] private float _armWidth;
-        [SerializeField] private float _armLengthLimit;
-        [SerializeField] private float _upperBodyLeanMaximumRadians;
-        [SerializeField] private float _upperBodyLean;
-        [SerializeField] private float _bounce;
-        [SerializeField] private float _sway;
-        [SerializeField] private float _motionSpeed;
-        [SerializeField] private float _leanMotion;
+        // Fields
+
+        [SerializeField]
+        private float _height;
+
+        [SerializeField]
+        private float _heightVariation;
+
+        [SerializeField]
+        private float _width;
+
+        [SerializeField]
+        private float _headSize;
+
+        [SerializeField]
+        private float _shoulderHeightRatio;
+
+        [SerializeField]
+        private float _shoulderSideOffset;
+
+        [SerializeField]
+        private float _armWidth;
+
+        [SerializeField]
+        private float _armLengthLimit;
+
+        [SerializeField]
+        private float _upperBodyLeanMaximumRadians;
+
+        [SerializeField]
+        private float _upperBodyLean;
+
+        [SerializeField]
+        private float _bounce;
+
+        [SerializeField]
+        private float _sway;
+
+        [SerializeField]
+        private float _motionSpeed;
+
+        [SerializeField]
+        private float _leanMotion;
+
+
+        // Properties
 
         internal float Height => _height;
+
         internal float HeightVariation => _heightVariation;
+
         internal float Width => _width;
+
         internal float HeadSize => _headSize;
+
         internal float ShoulderHeightRatio => _shoulderHeightRatio;
+
         internal float ShoulderSideOffset => _shoulderSideOffset;
+
         internal float ArmWidth => _armWidth;
+
         internal float ArmLengthLimit => _armLengthLimit;
+
         internal float UpperBodyLeanMaximumRadians => _upperBodyLeanMaximumRadians;
+
         internal float UpperBodyLean => _upperBodyLean;
+
         internal float Bounce => _bounce;
+
         internal float Sway => _sway;
+
         internal float MotionSpeed => _motionSpeed;
+
         internal float LeanMotion => _leanMotion;
+
+
+        // Methods
 
         internal FanlightAudienceBodyState(
             float height,

@@ -4,8 +4,14 @@ namespace PrismFanlight.Core
 {
     internal readonly struct FanlightEvaluationOptions
     {
+        // Properties
+
         internal double AnimationSampleRate { get; }
+
         internal double QuantizationEpsilon { get; }
+
+
+        // Methods
 
         internal FanlightEvaluationOptions(double animationSampleRate, double quantizationEpsilon)
         {

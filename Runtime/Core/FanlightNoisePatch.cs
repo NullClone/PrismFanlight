@@ -6,11 +6,23 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightNoisePatch
     {
-        [SerializeField] private FanlightNoiseFields _fields;
-        [SerializeField] private FanlightNoiseState _value;
+        // Fields
+
+        [SerializeField]
+        private FanlightNoiseFields _fields;
+
+        [SerializeField]
+        private FanlightNoiseState _value;
+
+
+        // Properties
 
         internal FanlightNoiseFields Fields => _fields;
+
         internal FanlightNoiseState Value => _value;
+
+
+        // Methods
 
         internal FanlightNoisePatch(FanlightNoiseFields fields, FanlightNoiseState value)
         {

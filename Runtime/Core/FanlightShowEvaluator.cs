@@ -5,30 +5,48 @@ namespace PrismFanlight.Core
 {
     internal sealed class FanlightShowEvaluator
     {
+        // Fields
+
         private const int DefaultContributionCapacity = 32;
 
         private FanlightShowContribution[] _activeContributions;
         private readonly HashSet<string> _activeSourceIds;
 
+
+        // Properties
+
         internal FanlightShowEvaluator(int initialContributionCapacity = DefaultContributionCapacity)
         {
-            if (initialContributionCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialContributionCapacity));
+            if (initialContributionCapacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(initialContributionCapacity));
+            }
+
             _activeContributions = initialContributionCapacity == 0
                 ? Array.Empty<FanlightShowContribution>()
                 : new FanlightShowContribution[initialContributionCapacity];
+
             _activeSourceIds = new HashSet<string>(initialContributionCapacity, StringComparer.Ordinal);
         }
 
         internal FanlightShowSample Evaluate(in FanlightShowEvaluationRequest request)
         {
-            if (!request.Time.IsComplete) throw new ArgumentException("A complete time sample is required.", nameof(request));
+            if (!request.Time.IsComplete)
+            {
+                throw new ArgumentException("A complete time sample is required.", nameof(request));
+            }
+
             var state = FanlightShowStatePatcher.Validate(request.BaseState);
             var activeCount = 0;
+
             try
             {
                 activeCount = CollectActive(request.Contributions.Span, request.Time.Seconds);
+
                 Array.Sort(_activeContributions, 0, activeCount, ContributionComparer.Instance);
+
                 ValidateUniqueSources(activeCount);
+
                 for (var i = 0; i < activeCount; i++)
                 {
                     var contribution = _activeContributions[i];
@@ -37,6 +55,7 @@ namespace PrismFanlight.Core
 
                 state = FanlightShowStatePatcher.Validate(state);
                 var animationSeconds = Quantize(request.Time.Seconds, request.Options);
+
                 return new FanlightShowSample(
                     request.Time.Sequence,
                     request.Time.Seconds,
@@ -47,7 +66,11 @@ namespace PrismFanlight.Core
             }
             finally
             {
-                if (activeCount > 0) Array.Clear(_activeContributions, 0, activeCount);
+                if (activeCount > 0)
+                {
+                    Array.Clear(_activeContributions, 0, activeCount);
+                }
+
                 _activeSourceIds.Clear();
             }
         }
@@ -55,16 +78,21 @@ namespace PrismFanlight.Core
         private int CollectActive(ReadOnlySpan<FanlightShowContribution> contributions, double seconds)
         {
             var count = 0;
+
             for (var i = 0; i < contributions.Length; i++)
             {
                 if (contributions[i].IsActive(seconds)) count++;
             }
 
             EnsureContributionCapacity(count);
+
             var destination = 0;
             for (var i = 0; i < contributions.Length; i++)
             {
-                if (contributions[i].IsActive(seconds)) _activeContributions[destination++] = contributions[i];
+                if (contributions[i].IsActive(seconds))
+                {
+                    _activeContributions[destination++] = contributions[i];
+                }
             }
 
             return count;

@@ -56,6 +56,5 @@ namespace PrismFanlight.Editor
                 fontSize = 14
             };
         }
-
     }
 }

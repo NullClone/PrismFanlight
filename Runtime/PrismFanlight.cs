@@ -468,7 +468,6 @@ namespace PrismFanlight
                 string.IsNullOrWhiteSpace(_sessionId) ? $"session:{_showId}" : _sessionId);
 
             foreach (var source in _scheduledContributions.Values) _showSession.RegisterSource(source);
-
         }
 
         private FanlightResolvedState CreateLegacyTemplate(in FanlightShowTimeSample time)

@@ -6,11 +6,23 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightVisibilityPatch
     {
-        [SerializeField] private FanlightVisibilityFields _fields;
-        [SerializeField] private FanlightVisibilityState _value;
+        // Fields
+
+        [SerializeField]
+        private FanlightVisibilityFields _fields;
+
+        [SerializeField]
+        private FanlightVisibilityState _value;
+
+
+        // Properties
 
         internal FanlightVisibilityFields Fields => _fields;
+
         internal FanlightVisibilityState Value => _value;
+
+
+        // Methods
 
         internal FanlightVisibilityPatch(FanlightVisibilityFields fields, FanlightVisibilityState value)
         {

@@ -6,31 +6,73 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightPoseState
     {
-        [SerializeField] private FanlightHandZone _handZone;
-        [SerializeField] private float _handHeightOffset;
-        [SerializeField] private float _handForwardOffset;
-        [SerializeField] private float _handReachScale;
-        [SerializeField] private float _armLengthMinimum;
-        [SerializeField] private float _armLengthMaximum;
-        [SerializeField] private float _angleMinimumRadians;
-        [SerializeField] private float _angleMaximumRadians;
-        [SerializeField] private float _horizontalRatio;
-        [SerializeField] private float _wristFrequencyMultiplier;
-        [SerializeField] private float _wristAngleRadians;
-        [SerializeField] private float _bodyLean;
+        // Fields\
+
+        [SerializeField]
+        private FanlightHandZone _handZone;
+
+        [SerializeField]
+        private float _handHeightOffset;
+
+        [SerializeField]
+        private float _handForwardOffset;
+
+        [SerializeField]
+        private float _handReachScale;
+
+        [SerializeField]
+        private float _armLengthMinimum;
+
+        [SerializeField]
+        private float _armLengthMaximum;
+
+        [SerializeField]
+        private float _angleMinimumRadians;
+
+        [SerializeField]
+        private float _angleMaximumRadians;
+
+        [SerializeField]
+        private float _horizontalRatio;
+
+        [SerializeField]
+        private float _wristFrequencyMultiplier;
+
+        [SerializeField]
+        private float _wristAngleRadians;
+
+        [SerializeField]
+        private float _bodyLean;
+
+
+        // Properties
 
         internal FanlightHandZone HandZone => _handZone;
+
         internal float HandHeightOffset => _handHeightOffset;
+
         internal float HandForwardOffset => _handForwardOffset;
+
         internal float HandReachScale => _handReachScale;
+
         internal float ArmLengthMinimum => _armLengthMinimum;
+
         internal float ArmLengthMaximum => _armLengthMaximum;
+
         internal float AngleMinimumRadians => _angleMinimumRadians;
+
         internal float AngleMaximumRadians => _angleMaximumRadians;
+
         internal float HorizontalRatio => _horizontalRatio;
+
         internal float WristFrequencyMultiplier => _wristFrequencyMultiplier;
+
         internal float WristAngleRadians => _wristAngleRadians;
+
         internal float BodyLean => _bodyLean;
+
+
+        // Methods
 
         internal FanlightPoseState(
             FanlightHandZone handZone,
@@ -46,7 +88,11 @@ namespace PrismFanlight.Core
             float wristAngleRadians,
             float bodyLean)
         {
-            if (handZone is < FanlightHandZone.Shoulder or > FanlightHandZone.High) throw new ArgumentOutOfRangeException(nameof(handZone));
+            if (handZone is < FanlightHandZone.Shoulder or > FanlightHandZone.High)
+            {
+                throw new ArgumentOutOfRangeException(nameof(handZone));
+            }
+
             _handZone = handZone;
             _handHeightOffset = FanlightStateValidation.RequireRange(handHeightOffset, -1f, 1.5f, nameof(handHeightOffset));
             _handForwardOffset = FanlightStateValidation.RequireRange(handForwardOffset, -1f, 1f, nameof(handForwardOffset));

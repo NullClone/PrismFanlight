@@ -4,13 +4,24 @@ namespace PrismFanlight.Core
 {
     internal readonly struct FanlightShowContribution
     {
+        // Properties
+
         internal string SourceId { get; }
+
         internal FanlightContributionLayer Layer { get; }
+
         internal int Priority { get; }
+
         internal double StartSeconds { get; }
+
         internal double EndSeconds { get; }
+
         internal float Weight { get; }
+
         internal FanlightShowPatch Patch { get; }
+
+
+        // Methods
 
         internal FanlightShowContribution(
             string sourceId,
@@ -21,17 +32,32 @@ namespace PrismFanlight.Core
             float weight,
             FanlightShowPatch patch)
         {
-            if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("Stable source ID is required.", nameof(sourceId));
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                throw new ArgumentException("Stable source ID is required.", nameof(sourceId));
+            }
+
             if (layer is not FanlightContributionLayer.Base
                 and not FanlightContributionLayer.Timeline
                 and not FanlightContributionLayer.Cue
                 and not FanlightContributionLayer.Live
                 and not FanlightContributionLayer.Safety)
+            {
                 throw new ArgumentOutOfRangeException(nameof(layer));
+            }
+
             FanlightStateValidation.RequireFinite(startSeconds, nameof(startSeconds));
+
             if (double.IsNaN(endSeconds) || double.IsNegativeInfinity(endSeconds) || endSeconds <= startSeconds)
+            {
                 throw new ArgumentOutOfRangeException(nameof(endSeconds));
-            if (!FanlightStateValidation.IsFinite(weight)) throw new ArgumentOutOfRangeException(nameof(weight));
+            }
+
+            if (!FanlightStateValidation.IsFinite(weight))
+            {
+                throw new ArgumentOutOfRangeException(nameof(weight));
+            }
+
             SourceId = sourceId;
             Layer = layer;
             Priority = priority;

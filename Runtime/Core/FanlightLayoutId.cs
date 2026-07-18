@@ -5,12 +5,12 @@ namespace PrismFanlight.Core
     [Serializable]
     public readonly struct FanlightLayoutId : IEquatable<FanlightLayoutId>
     {
+        // Fields
+
         private readonly string _value;
 
-        public FanlightLayoutId(string value)
-        {
-            _value = Normalize(value);
-        }
+
+        // Properties
 
         public string Value => _value ?? string.Empty;
 
@@ -30,6 +30,14 @@ namespace PrismFanlight.Core
             }
         }
 
+
+        // Methods
+
+        public FanlightLayoutId(string value)
+        {
+            _value = Normalize(value);
+        }
+
         public bool Equals(FanlightLayoutId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
 
         public override bool Equals(object obj) => obj is FanlightLayoutId other && Equals(other);
@@ -44,26 +52,5 @@ namespace PrismFanlight.Core
                 ? string.Empty
                 : value.Replace("-", string.Empty).Trim().ToLowerInvariant();
         }
-    }
-
-    [Serializable]
-    public readonly struct FanlightSeatId : IEquatable<FanlightSeatId>
-    {
-        public FanlightSeatId(ulong value)
-        {
-            Value = value;
-        }
-
-        public ulong Value { get; }
-
-        public bool IsValid => Value != 0UL;
-
-        public bool Equals(FanlightSeatId other) => Value == other.Value;
-
-        public override bool Equals(object obj) => obj is FanlightSeatId other && Equals(other);
-
-        public override int GetHashCode() => Value.GetHashCode();
-
-        public override string ToString() => Value.ToString("X16");
     }
 }

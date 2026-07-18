@@ -6,19 +6,43 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightNoiseState
     {
-        [SerializeField] private float _phaseAmount;
-        [SerializeField] private float _phaseSpeed;
-        [SerializeField] private float _axisAmount;
-        [SerializeField] private float _axisSpeed;
-        [SerializeField] private int _octaves;
-        [SerializeField] private float _persistence;
+        // Fields
+
+        [SerializeField]
+        private float _phaseAmount;
+
+        [SerializeField]
+        private float _phaseSpeed;
+
+        [SerializeField]
+        private float _axisAmount;
+
+        [SerializeField]
+        private float _axisSpeed;
+
+        [SerializeField]
+        private int _octaves;
+
+        [SerializeField]
+        private float _persistence;
+
+
+        // Properties
 
         internal float PhaseAmount => _phaseAmount;
+
         internal float PhaseSpeed => _phaseSpeed;
+
         internal float AxisAmount => _axisAmount;
+
         internal float AxisSpeed => _axisSpeed;
+
         internal int Octaves => _octaves;
+
         internal float Persistence => _persistence;
+
+
+        // Methods
 
         internal FanlightNoiseState(float phaseAmount, float phaseSpeed, float axisAmount, float axisSpeed, int octaves, float persistence)
         {

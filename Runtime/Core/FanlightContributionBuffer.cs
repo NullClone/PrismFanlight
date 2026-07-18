@@ -4,9 +4,17 @@ namespace PrismFanlight.Core
 {
     internal sealed class FanlightContributionBuffer
     {
+        // Fields
+
         private FanlightShowContribution[] _items;
 
-        internal int Count { get; private set; }
+
+        // Properties
+
+        private int Count { get; set; }
+
+
+        // Methods
 
         internal FanlightContributionBuffer(int capacity)
         {
@@ -19,7 +27,11 @@ namespace PrismFanlight.Core
             _items[Count++] = contribution;
         }
 
-        internal void Clear() => Count = 0;
+        internal void Clear()
+        {
+            if (Count > 0) Array.Clear(_items, 0, Count);
+            Count = 0;
+        }
 
         internal FanlightShowContribution GetAt(int index)
         {

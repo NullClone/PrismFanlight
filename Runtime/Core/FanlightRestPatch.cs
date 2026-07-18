@@ -6,11 +6,23 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightRestPatch
     {
-        [SerializeField] private FanlightRestFields _fields;
-        [SerializeField] private FanlightRestState _value;
+        // Fields
+
+        [SerializeField]
+        private FanlightRestFields _fields;
+
+        [SerializeField]
+        private FanlightRestState _value;
+
+
+        // Properties
 
         internal FanlightRestFields Fields => _fields;
+
         internal FanlightRestState Value => _value;
+
+
+        // Methods
 
         internal FanlightRestPatch(FanlightRestFields fields, FanlightRestState value)
         {

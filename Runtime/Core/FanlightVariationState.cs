@@ -6,33 +6,78 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightVariationState
     {
-        [SerializeField] private float _seatPosition;
-        [SerializeField] private float _bodyHeight;
-        [SerializeField] private float _armLength;
-        [SerializeField] private float _angle;
-        [SerializeField] private float _directionSpread;
-        [SerializeField] private float _reactionDelaySeconds;
-        [SerializeField] private float _beatJitter;
-        [SerializeField] private float _blockDelayXBeats;
-        [SerializeField] private float _blockDelayYBeats;
-        [SerializeField] private float _energyResponse;
-        [SerializeField] private float _speed;
-        [SerializeField] private float _beatReactionDelaySeconds;
-        [SerializeField] private float _handZone;
+        // Fields
+
+        [SerializeField]
+        private float _seatPosition;
+
+        [SerializeField]
+        private float _bodyHeight;
+
+        [SerializeField]
+        private float _armLength;
+
+        [SerializeField]
+        private float _angle;
+
+        [SerializeField]
+        private float _directionSpread;
+
+        [SerializeField]
+        private float _reactionDelaySeconds;
+
+        [SerializeField]
+        private float _beatJitter;
+
+        [SerializeField]
+        private float _blockDelayXBeats;
+
+        [SerializeField]
+        private float _blockDelayYBeats;
+
+        [SerializeField]
+        private float _energyResponse;
+
+        [SerializeField]
+        private float _speed;
+
+        [SerializeField]
+        private float _beatReactionDelaySeconds;
+
+        [SerializeField]
+        private float _handZone;
+
+
+        // Properties
 
         internal float SeatPosition => _seatPosition;
+
         internal float BodyHeight => _bodyHeight;
+
         internal float ArmLength => _armLength;
+
         internal float Angle => _angle;
+
         internal float DirectionSpread => _directionSpread;
+
         internal float ReactionDelaySeconds => _reactionDelaySeconds;
+
         internal float BeatJitter => _beatJitter;
+
         internal float BlockDelayXBeats => _blockDelayXBeats;
+
         internal float BlockDelayYBeats => _blockDelayYBeats;
+
         internal float EnergyResponse => _energyResponse;
+
         internal float Speed => _speed;
+
         internal float BeatReactionDelaySeconds => _beatReactionDelaySeconds;
+
         internal float HandZone => _handZone;
+
+
+        // Methods
 
         internal FanlightVariationState(
             float seatPosition,

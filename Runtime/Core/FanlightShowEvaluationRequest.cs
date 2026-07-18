@@ -4,10 +4,18 @@ namespace PrismFanlight.Core
 {
     internal readonly struct FanlightShowEvaluationRequest
     {
+        // Properties
+
         internal FanlightShowTimeSample Time { get; }
+
         internal FanlightShowState BaseState { get; }
+
         internal ReadOnlyMemory<FanlightShowContribution> Contributions { get; }
+
         internal FanlightEvaluationOptions Options { get; }
+
+
+        // Methods
 
         internal FanlightShowEvaluationRequest(
             FanlightShowTimeSample time,

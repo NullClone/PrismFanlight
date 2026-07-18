@@ -2,6 +2,8 @@ namespace PrismFanlight.Core
 {
     internal sealed class FanlightShowPatchBuilder
     {
+        // Fields
+
         private FanlightIntentState _intent;
         private FanlightIntentFields _intentFields;
         private FanlightGestureState _gesture;
@@ -22,6 +24,9 @@ namespace PrismFanlight.Core
         private FanlightPaletteFields _paletteFields;
         private FanlightVisibilityState _visibility;
         private FanlightVisibilityFields _visibilityFields;
+
+
+        // Methods
 
         internal FanlightShowPatchBuilder(FanlightShowState baseState)
         {

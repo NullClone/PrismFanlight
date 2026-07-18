@@ -8,6 +8,7 @@ namespace PrismFanlight.Core
         internal static FanlightShowState Apply(FanlightShowState state, FanlightShowPatch patch, float weight)
         {
             weight = Mathf.Clamp01(weight);
+
             return new FanlightShowState(
                 Apply(state.Intent, patch.Intent, weight),
                 Apply(state.Gesture, patch.Gesture, weight),
@@ -32,6 +33,7 @@ namespace PrismFanlight.Core
                 throw new InvalidOperationException("Minimum pose angle must not exceed maximum pose angle.");
             if (state.Rest.DurationSeconds > state.Rest.CycleSeconds)
                 throw new InvalidOperationException("Rest duration must not exceed its cycle.");
+
             return new FanlightShowState(
                 Apply(state.Intent, new FanlightIntentPatch(FanlightIntentFields.All, state.Intent), 1f),
                 Apply(state.Gesture, new FanlightGesturePatch(FanlightGestureFields.All, state.Gesture), 1f),
@@ -49,6 +51,7 @@ namespace PrismFanlight.Core
         internal static FanlightIntentState Apply(FanlightIntentState current, FanlightIntentPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightIntentFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightIntentState(
                 Has(patch.Fields, FanlightIntentFields.Energy) ? Lerp(current.Energy, value.Energy, weight) : current.Energy,
@@ -61,6 +64,7 @@ namespace PrismFanlight.Core
         internal static FanlightGestureState Apply(FanlightGestureState current, FanlightGesturePatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightGestureFields.All, nameof(patch));
+
             var value = patch.Value;
             var discrete = weight >= 0.5f;
             return new FanlightGestureState(
@@ -78,6 +82,7 @@ namespace PrismFanlight.Core
         internal static FanlightPoseState Apply(FanlightPoseState current, FanlightPosePatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightPoseFields.All, nameof(patch));
+
             var value = patch.Value;
             var discrete = weight >= 0.5f;
             return new FanlightPoseState(
@@ -98,6 +103,7 @@ namespace PrismFanlight.Core
         internal static FanlightVariationState Apply(FanlightVariationState current, FanlightVariationPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightVariationFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightVariationState(
                 Has(patch.Fields, FanlightVariationFields.SeatPosition) ? Lerp(current.SeatPosition, value.SeatPosition, weight) : current.SeatPosition,
@@ -118,6 +124,7 @@ namespace PrismFanlight.Core
         internal static FanlightNoiseState Apply(FanlightNoiseState current, FanlightNoisePatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightNoiseFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightNoiseState(
                 Has(patch.Fields, FanlightNoiseFields.PhaseAmount) ? Lerp(current.PhaseAmount, value.PhaseAmount, weight) : current.PhaseAmount,
@@ -131,6 +138,7 @@ namespace PrismFanlight.Core
         internal static FanlightRestState Apply(FanlightRestState current, FanlightRestPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightRestFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightRestState(
                 Has(patch.Fields, FanlightRestFields.Probability) ? Lerp(current.Probability, value.Probability, weight) : current.Probability,
@@ -144,6 +152,7 @@ namespace PrismFanlight.Core
         internal static FanlightAudienceBodyState Apply(FanlightAudienceBodyState current, FanlightAudienceBodyPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightAudienceBodyFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightAudienceBodyState(
                 Has(patch.Fields, FanlightAudienceBodyFields.Height) ? Lerp(current.Height, value.Height, weight) : current.Height,
@@ -165,6 +174,7 @@ namespace PrismFanlight.Core
         internal static FanlightDirectionState Apply(FanlightDirectionState current, FanlightDirectionPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightDirectionFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightDirectionState(
                 Has(patch.Fields, FanlightDirectionFields.Mode) && weight >= 0.5f ? value.Mode : current.Mode,
@@ -175,6 +185,7 @@ namespace PrismFanlight.Core
         internal static FanlightPaletteState Apply(FanlightPaletteState current, FanlightPalettePatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightPaletteFields.All, nameof(patch));
+
             var value = patch.Value;
             return new FanlightPaletteState(
                 Has(patch.Fields, FanlightPaletteFields.Slot1) ? Color.LerpUnclamped(current.Slot1, value.Slot1, weight) : current.Slot1,
@@ -190,6 +201,7 @@ namespace PrismFanlight.Core
         internal static FanlightVisibilityState Apply(FanlightVisibilityState current, FanlightVisibilityPatch patch, float weight)
         {
             ValidateMask((int)patch.Fields, (int)FanlightVisibilityFields.All, nameof(patch));
+
             var value = patch.Value;
             var discrete = weight >= 0.5f;
             return new FanlightVisibilityState(
@@ -197,16 +209,27 @@ namespace PrismFanlight.Core
                 Has(patch.Fields, FanlightVisibilityFields.AudienceBodiesEnabled) && discrete ? value.AudienceBodiesEnabled : current.AudienceBodiesEnabled);
         }
 
+
         private static bool Has(FanlightIntentFields fields, FanlightIntentFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightGestureFields fields, FanlightGestureFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightPoseFields fields, FanlightPoseFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightVariationFields fields, FanlightVariationFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightNoiseFields fields, FanlightNoiseFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightRestFields fields, FanlightRestFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightAudienceBodyFields fields, FanlightAudienceBodyFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightDirectionFields fields, FanlightDirectionFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightPaletteFields fields, FanlightPaletteFields field) => (fields & field) != 0;
+
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
+
 
         private static void ValidateMask(int fields, int all, string name)
         {

@@ -6,17 +6,38 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightIntentState
     {
-        [SerializeField] private float _energy;
-        [SerializeField] private float _participation;
-        [SerializeField] private float _synchronization;
-        [SerializeField] private float _realism;
-        [SerializeField] private float _reach;
+        // Fields
+
+        [SerializeField]
+        private float _energy;
+
+        [SerializeField]
+        private float _participation;
+
+        [SerializeField]
+        private float _synchronization;
+
+        [SerializeField]
+        private float _realism;
+
+        [SerializeField]
+        private float _reach;
+
+
+        // Properties
 
         internal float Energy => _energy;
+
         internal float Participation => _participation;
+
         internal float Synchronization => _synchronization;
+
         internal float Realism => _realism;
+
         internal float Reach => _reach;
+
+
+        // Methods
 
         internal FanlightIntentState(float energy, float participation, float synchronization, float realism, float reach)
         {

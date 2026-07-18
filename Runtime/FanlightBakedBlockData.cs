@@ -11,7 +11,7 @@ namespace PrismFanlight
         public int startIndex;
         public int count;
 
-        
+
         public FanlightBakedBlockData(Vector3 localCenter, float radius, int startIndex, int count)
         {
             this.localCenter = localCenter;
