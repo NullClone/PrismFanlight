@@ -27,8 +27,7 @@ namespace PrismFanlight
 
         public bool Equals(FanlightBlockTransform other)
         {
-            return position.Equals(other.position)
-                   && eulerRotation.Equals(other.eulerRotation);
+            return position.Equals(other.position) && eulerRotation.Equals(other.eulerRotation);
         }
 
         public override bool Equals(object obj)

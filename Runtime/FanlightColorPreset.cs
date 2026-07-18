@@ -5,10 +5,15 @@ namespace PrismFanlight
     [CreateAssetMenu(menuName = "Prism Fanlight/Color Preset", fileName = "Fanlight Color Preset")]
     public sealed class FanlightColorPreset : ScriptableObject
     {
+        // Fields
+
         [SerializeField]
         private FanlightColorSettings _settings = FanlightColorSettings.Default();
 
         public FanlightColorSettings Settings => _settings.Validated();
+
+
+        // Methods
 
         private void OnValidate()
         {

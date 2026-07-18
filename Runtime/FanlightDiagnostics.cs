@@ -19,9 +19,6 @@ namespace PrismFanlight
 
     public readonly struct FanlightDiagnostics
     {
-        public FanlightDiagnostics(bool isGpuReady, int totalSeatCount, int visibleSeatCount, int blockCount)
-            : this(isGpuReady, totalSeatCount, visibleSeatCount, blockCount, FanlightLayoutStatus.Legacy) { }
-
         public FanlightDiagnostics(
             bool isGpuReady,
             int totalSeatCount,
@@ -51,6 +48,7 @@ namespace PrismFanlight
             PenlightVariantCount = penlightVariantCount;
             PenlightAssignmentHash = penlightAssignmentHash;
         }
+
 
         public bool IsGpuReady { get; }
 
