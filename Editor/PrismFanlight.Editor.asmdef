@@ -2,7 +2,6 @@
     "name": "PrismFanlight.Editor",
     "rootNamespace": "",
     "references": [
-        "PrismFanlight.Rendering",
         "PrismFanlight.Runtime",
         "Unity.Mathematics",
         "Unity.Timeline",

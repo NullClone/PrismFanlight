@@ -6,6 +6,8 @@ namespace PrismFanlight.Live
 {
     internal sealed class FanlightShowSession
     {
+        // Fields
+
         private const int DefaultStateCapacity = 16;
 
         private readonly List<IFanlightContributionSource> _timelineSources = new();
@@ -18,10 +20,19 @@ namespace PrismFanlight.Live
         private readonly FanlightShowEventLog _eventLog;
         private string _requestedTimeProviderId = string.Empty;
 
+
+        // Properties
+
         internal string ShowId { get; }
+
         internal string SessionId { get; }
+
         internal FanlightShowEventLog EventLog => _eventLog;
+
         internal string RequestedTimeProviderId => _requestedTimeProviderId;
+
+
+        // Methods
 
         internal FanlightShowSession(
             string showId,
@@ -30,8 +41,16 @@ namespace PrismFanlight.Live
             FanlightShowEventLog eventLog = null,
             int contributionCapacity = 32)
         {
-            if (string.IsNullOrWhiteSpace(showId)) throw new ArgumentException("Show ID is required.", nameof(showId));
-            if (string.IsNullOrWhiteSpace(sessionId)) throw new ArgumentException("Session ID is required.", nameof(sessionId));
+            if (string.IsNullOrWhiteSpace(showId))
+            {
+                throw new ArgumentException("Show ID is required.", nameof(showId));
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionId))
+            {
+                throw new ArgumentException("Session ID is required.", nameof(sessionId));
+            }
+
             ShowId = showId;
             SessionId = sessionId;
             _buffer = new FanlightContributionBuffer(contributionCapacity);
@@ -41,24 +60,39 @@ namespace PrismFanlight.Live
             _cueStates = new Dictionary<string, CueRuntimeState>(DefaultStateCapacity, StringComparer.Ordinal);
             _liveStates = new Dictionary<string, LiveRuntimeState>(DefaultStateCapacity, StringComparer.Ordinal);
             _safetyStates = new Dictionary<string, SafetyRuntimeState>(DefaultStateCapacity, StringComparer.Ordinal);
+
             if (cueDefinitions != null)
             {
                 foreach (var definition in cueDefinitions)
                 {
                     definition.Validate();
+
                     if (!_cueDefinitions.TryAdd(definition.CueId, definition))
+                    {
                         throw new ArgumentException($"Duplicate cue ID: {definition.CueId}", nameof(cueDefinitions));
+                    }
+
                     _cueSourceIds.Add(definition.CueId, $"cue:{definition.CueId}");
                 }
             }
 
-            for (var i = 0; i < _eventLog.Count; i++) ValidateCommand(_eventLog.GetAt(i).Command);
+            for (var i = 0; i < _eventLog.Count; i++)
+            {
+                ValidateCommand(_eventLog.GetAt(i).Command);
+            }
         }
 
         internal void RegisterSource(IFanlightContributionSource source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (!_timelineSources.Contains(source)) _timelineSources.Add(source);
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (!_timelineSources.Contains(source))
+            {
+                _timelineSources.Add(source);
+            }
         }
 
         internal void UnregisterSource(IFanlightContributionSource source) => _timelineSources.Remove(source);
@@ -68,8 +102,13 @@ namespace PrismFanlight.Live
             string stableEventId,
             FanlightShowCommand command)
         {
-            if (!time.IsComplete) throw new ArgumentException("A complete time sample is required.", nameof(time));
+            if (!time.IsComplete)
+            {
+                throw new ArgumentException("A complete time sample is required.", nameof(time));
+            }
+
             ValidateCommand(command);
+
             return _eventLog.Append(time.Seconds, stableEventId, command);
         }
 
@@ -79,14 +118,29 @@ namespace PrismFanlight.Live
             FanlightShowEvaluator evaluator,
             FanlightEvaluationOptions options)
         {
-            if (!time.IsComplete) throw new ArgumentException("A complete time sample is required.", nameof(time));
-            if (evaluator == null) throw new ArgumentNullException(nameof(evaluator));
+            if (!time.IsComplete)
+            {
+                throw new ArgumentException("A complete time sample is required.", nameof(time));
+            }
+
+            if (evaluator == null)
+            {
+                throw new ArgumentNullException(nameof(evaluator));
+            }
+
             RebuildEventState(time.Seconds);
+
             _buffer.Clear();
-            for (var i = 0; i < _timelineSources.Count; i++) _timelineSources[i].Collect(time.Seconds, _buffer);
+
+            for (var i = 0; i < _timelineSources.Count; i++)
+            {
+                _timelineSources[i].Collect(time.Seconds, _buffer);
+            }
+
             AddCueContributions(time.Seconds);
             AddLiveContributions(time.Seconds);
             AddSafetyContributions();
+
             var request = new FanlightShowEvaluationRequest(time, baseState, _buffer.AsMemory(), options);
             return evaluator.Evaluate(request);
         }
@@ -94,14 +148,18 @@ namespace PrismFanlight.Live
         private void ValidateCommand(FanlightShowCommand command)
         {
             command.Validate();
+
             var cueId = command.Kind switch
             {
                 FanlightShowCommandKind.TriggerCue => command.TriggerCueCommand.CueId,
                 FanlightShowCommandKind.CancelCue => command.CancelCueCommand.CueId,
                 _ => string.Empty
             };
+
             if (cueId.Length > 0 && !_cueDefinitions.ContainsKey(cueId))
+            {
                 throw new InvalidOperationException($"Unknown cue ID: {cueId}");
+            }
         }
 
         private void RebuildEventState(double showSeconds)
@@ -110,6 +168,7 @@ namespace PrismFanlight.Live
             _liveStates.Clear();
             _safetyStates.Clear();
             _requestedTimeProviderId = string.Empty;
+
             for (var i = 0; i < _eventLog.Count; i++)
             {
                 var entry = _eventLog.GetAt(i);
@@ -166,7 +225,9 @@ namespace PrismFanlight.Live
         private void ApplyClearLive(double showSeconds, FanlightClearLivePatchCommand command)
         {
             if (!_liveStates.TryGetValue(command.SourceId, out var state)) return;
+
             var clearStartWeight = EvaluateLiveWeight(state, showSeconds);
+
             _liveStates[command.SourceId] = new LiveRuntimeState(
                 state.SetSeconds,
                 state.SetTransitionSeconds,
@@ -181,18 +242,23 @@ namespace PrismFanlight.Live
         private void ApplyTriggerCue(double showSeconds, string cueId)
         {
             var definition = _cueDefinitions[cueId];
+
             if (_cueStates.TryGetValue(cueId, out var state)
                 && definition.RetriggerMode == FanlightCueRetriggerMode.IgnoreWhileActive
                 && IsCueActive(definition, state, showSeconds))
                 return;
+
             _cueStates[cueId] = new CueRuntimeState(showSeconds, false, 0d, 0f);
         }
 
         private void ApplyCancelCue(double showSeconds, string cueId)
         {
             if (!_cueStates.TryGetValue(cueId, out var state)) return;
+
             var definition = _cueDefinitions[cueId];
+
             if (!IsCueActive(definition, state, showSeconds)) return;
+
             var cancelStartWeight = EvaluateCueWeight(definition, state, showSeconds);
             _cueStates[cueId] = new CueRuntimeState(state.TriggerSeconds, true, showSeconds, cancelStartWeight);
         }
@@ -204,8 +270,10 @@ namespace PrismFanlight.Live
                 var definition = _cueDefinitions[pair.Key];
                 var state = pair.Value;
                 var endSeconds = ResolveCueEnd(definition, state);
+
                 if (endSeconds <= state.TriggerSeconds || showSeconds < state.TriggerSeconds || showSeconds >= endSeconds)
                     continue;
+
                 _buffer.Add(new FanlightShowContribution(
                     _cueSourceIds[pair.Key],
                     FanlightContributionLayer.Cue,
@@ -225,8 +293,10 @@ namespace PrismFanlight.Live
                 var endSeconds = state.IsClearing
                     ? AddSeconds(state.ClearSeconds, state.ClearTransitionSeconds)
                     : double.PositiveInfinity;
+
                 if (endSeconds <= state.SetSeconds || showSeconds < state.SetSeconds || showSeconds >= endSeconds)
                     continue;
+
                 _buffer.Add(new FanlightShowContribution(
                     pair.Key,
                     FanlightContributionLayer.Live,
@@ -265,12 +335,14 @@ namespace PrismFanlight.Live
             var automaticRelease = double.IsPositiveInfinity(definition.HoldSeconds)
                 ? double.PositiveInfinity
                 : AddSeconds(AddSeconds(state.TriggerSeconds, definition.AttackSeconds), definition.HoldSeconds);
+
             return state.IsCancelled ? Math.Min(automaticRelease, state.CancelSeconds) : automaticRelease;
         }
 
         private static double ResolveCueEnd(FanlightCueDefinition definition, CueRuntimeState state)
         {
             var releaseStart = ResolveCueReleaseStart(definition, state);
+
             return double.IsPositiveInfinity(releaseStart)
                 ? double.PositiveInfinity
                 : AddSeconds(releaseStart, definition.ReleaseSeconds);
@@ -282,9 +354,13 @@ namespace PrismFanlight.Live
                 ? 1f
                 : Clamp01((showSeconds - state.TriggerSeconds) / definition.AttackSeconds);
             var releaseStart = ResolveCueReleaseStart(definition, state);
+
             if (double.IsPositiveInfinity(releaseStart) || showSeconds < releaseStart) return attackWeight;
+
             if (definition.ReleaseSeconds <= 0d) return 0f;
+
             var releaseWeight = Clamp01((ResolveCueEnd(definition, state) - showSeconds) / definition.ReleaseSeconds);
+
             return IsCancellationRelease(definition, state)
                 ? state.CancelStartWeight * releaseWeight
                 : releaseWeight;
@@ -293,10 +369,13 @@ namespace PrismFanlight.Live
         private static bool IsCancellationRelease(FanlightCueDefinition definition, CueRuntimeState state)
         {
             if (!state.IsCancelled) return false;
+
             if (double.IsPositiveInfinity(definition.HoldSeconds)) return true;
+
             var automaticRelease = AddSeconds(
                 AddSeconds(state.TriggerSeconds, definition.AttackSeconds),
                 definition.HoldSeconds);
+
             return state.CancelSeconds < automaticRelease;
         }
 
@@ -305,20 +384,27 @@ namespace PrismFanlight.Live
             var attackWeight = state.SetTransitionSeconds <= 0d
                 ? 1f
                 : Clamp01((showSeconds - state.SetSeconds) / state.SetTransitionSeconds);
+
             if (!state.IsClearing) return attackWeight;
+
             if (state.ClearTransitionSeconds <= 0d) return 0f;
+
             var releaseWeight = 1f - Clamp01((showSeconds - state.ClearSeconds) / state.ClearTransitionSeconds);
+
             return state.ClearStartWeight * releaseWeight;
         }
 
         private static double AddSeconds(double start, double duration)
         {
             if (double.IsPositiveInfinity(start) || double.IsPositiveInfinity(duration)) return double.PositiveInfinity;
+
             var value = start + duration;
+
             return double.IsPositiveInfinity(value) ? double.PositiveInfinity : value;
         }
 
         private static float Clamp01(double value) => value <= 0d ? 0f : value >= 1d ? 1f : (float)value;
+
 
         private readonly struct CueRuntimeState
         {

@@ -5,13 +5,21 @@ namespace PrismFanlight.Live
     internal readonly struct FanlightShowCommand
     {
         internal FanlightShowCommandKind Kind { get; }
+
         internal FanlightSetLivePatchCommand SetLivePatchCommand { get; }
+
         internal FanlightClearLivePatchCommand ClearLivePatchCommand { get; }
+
         internal FanlightTriggerCueCommand TriggerCueCommand { get; }
+
         internal FanlightCancelCueCommand CancelCueCommand { get; }
+
         internal FanlightSetSafetyPatchCommand SetSafetyPatchCommand { get; }
+
         internal FanlightClearSafetyPatchCommand ClearSafetyPatchCommand { get; }
+
         internal FanlightSelectTimeProviderCommand SelectTimeProviderCommand { get; }
+
 
         private FanlightShowCommand(
             FanlightShowCommandKind kind,
@@ -33,6 +41,7 @@ namespace PrismFanlight.Live
             SelectTimeProviderCommand = selectTimeProviderCommand;
         }
 
+
         internal static FanlightShowCommand From(FanlightSetLivePatchCommand command) =>
             new(FanlightShowCommandKind.SetLivePatch, command, default, default, default, default, default, default);
 
@@ -53,6 +62,7 @@ namespace PrismFanlight.Live
 
         internal static FanlightShowCommand From(FanlightSelectTimeProviderCommand command) =>
             new(FanlightShowCommandKind.SelectTimeProvider, default, default, default, default, default, default, command);
+
 
         internal void Validate()
         {

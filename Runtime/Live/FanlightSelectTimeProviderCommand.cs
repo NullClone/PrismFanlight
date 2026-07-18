@@ -6,9 +6,14 @@ namespace PrismFanlight.Live
     {
         internal string ProviderId { get; }
 
+
         internal FanlightSelectTimeProviderCommand(string providerId)
         {
-            if (string.IsNullOrWhiteSpace(providerId)) throw new ArgumentException("Provider ID is required.", nameof(providerId));
+            if (string.IsNullOrWhiteSpace(providerId))
+            {
+                throw new ArgumentException("Provider ID is required.", nameof(providerId));
+            }
+
             ProviderId = providerId;
         }
     }

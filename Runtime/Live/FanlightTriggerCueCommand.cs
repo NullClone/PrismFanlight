@@ -6,9 +6,14 @@ namespace PrismFanlight.Live
     {
         internal string CueId { get; }
 
+
         internal FanlightTriggerCueCommand(string cueId)
         {
-            if (string.IsNullOrWhiteSpace(cueId)) throw new ArgumentException("Cue ID is required.", nameof(cueId));
+            if (string.IsNullOrWhiteSpace(cueId))
+            {
+                throw new ArgumentException("Cue ID is required.", nameof(cueId));
+            }
+
             CueId = cueId;
         }
     }

@@ -31,15 +31,6 @@ namespace PrismFanlight.Editor
             EditorGUILayout.LabelField(title);
         }
 
-        public static void DrawOverride(SerializedProperty property, GUIContent label, bool includeChildren = false)
-        {
-            using (new TimelineOverrideColorScope(true))
-            {
-                EditorGUILayout.PropertyField(property, label, includeChildren);
-            }
-        }
-
-
         private static GUIStyle CreateSection()
         {
             return new GUIStyle(EditorStyles.helpBox)

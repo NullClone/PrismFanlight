@@ -6,9 +6,14 @@ namespace PrismFanlight.Live
     {
         internal string SourceId { get; }
 
+
         internal FanlightClearSafetyPatchCommand(string sourceId)
         {
-            if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("Source ID is required.", nameof(sourceId));
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                throw new ArgumentException("Source ID is required.", nameof(sourceId));
+            }
+
             SourceId = sourceId;
         }
     }

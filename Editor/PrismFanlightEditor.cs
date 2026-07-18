@@ -88,8 +88,6 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            FanlightTimelineOverrideInspectorState.Update(_instance);
-
             using (new EditorGUI.DisabledScope(true))
             {
                 EditorGUILayout.PropertyField(_computeShader, new GUIContent("Compute Shader"));
@@ -157,37 +155,10 @@ namespace PrismFanlight.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        public override bool RequiresConstantRepaint()
-        {
-            return _instance != null && FanlightTimelineOverrideInspectorState.IsInspecting(_instance);
-        }
-
         private void DrawPropertyField(SerializedProperty property, GUIContent label, bool includeChildren = false)
         {
             if (property == null) return;
-
-            var overridden = IsTimelineOverridden(property);
-
-            if (!overridden)
-            {
-                EditorGUILayout.PropertyField(property, label, includeChildren);
-            }
-            else
-            {
-                PrismFanlightEditorStyles.DrawOverride(property, label, includeChildren);
-            }
-        }
-
-        private bool IsTimelineOverridden(params SerializedProperty[] properties)
-        {
-            if (serializedObject.isEditingMultipleObjects) return false;
-
-            foreach (var property in properties)
-            {
-                if (property != null && FanlightTimelineOverrideInspectorState.IsOverridden(property.propertyPath)) return true;
-            }
-
-            return false;
+            EditorGUILayout.PropertyField(property, label, includeChildren);
         }
 
 
@@ -553,7 +524,6 @@ namespace PrismFanlight.Editor
             var armMinProp = swingProp.FindPropertyRelative("armLengthMin");
             var armMaxProp = swingProp.FindPropertyRelative("armLengthMax");
 
-            using (new TimelineOverrideColorScope(IsTimelineOverridden(armMinProp, armMaxProp)))
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.PrefixLabel("Arm Length");
@@ -580,7 +550,6 @@ namespace PrismFanlight.Editor
             var minAngleProp = swingProp.FindPropertyRelative("minAngle");
             var maxAngleProp = swingProp.FindPropertyRelative("maxAngle");
 
-            using (new TimelineOverrideColorScope(IsTimelineOverridden(minAngleProp, maxAngleProp)))
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.PrefixLabel("Angle Range");

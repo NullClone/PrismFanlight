@@ -5,7 +5,7 @@ namespace PrismFanlight.Live
 {
     internal sealed class FanlightShowEventLog
     {
-        internal const int FormatVersion = 1;
+        // Fields
 
         private const int DefaultCapacity = 32;
 
@@ -13,7 +13,13 @@ namespace PrismFanlight.Live
         private readonly HashSet<string> _stableEventIds;
         private ulong _lastSequence;
 
+
+        // Properties
+
         internal int Count => _entries.Count;
+
+
+        // Methods
 
         internal FanlightShowEventLog(int initialCapacity = DefaultCapacity)
         {
@@ -22,14 +28,16 @@ namespace PrismFanlight.Live
             _stableEventIds = new HashSet<string>(initialCapacity, StringComparer.Ordinal);
         }
 
-        internal FanlightShowEventLog(ReadOnlySpan<FanlightShowEventLogEntry> entries)
-            : this(entries.Length)
+        internal FanlightShowEventLog(ReadOnlySpan<FanlightShowEventLogEntry> entries) : this(entries.Length)
         {
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
                 if (entry.Sequence <= _lastSequence)
+                {
                     throw new ArgumentException("Event sequences must be strictly increasing.", nameof(entries));
+                }
+
                 AddExisting(entry);
             }
         }
@@ -39,13 +47,19 @@ namespace PrismFanlight.Live
             string stableEventId,
             FanlightShowCommand command)
         {
-            if (_lastSequence == ulong.MaxValue) throw new InvalidOperationException("Event sequence exhausted.");
+            if (_lastSequence == ulong.MaxValue)
+            {
+                throw new InvalidOperationException("Event sequence exhausted.");
+            }
+
             var entry = new FanlightShowEventLogEntry(
                 _lastSequence + 1UL,
                 showSeconds,
                 stableEventId,
                 command);
+
             AddExisting(entry);
+
             return entry;
         }
 
@@ -54,9 +68,14 @@ namespace PrismFanlight.Live
         private void AddExisting(FanlightShowEventLogEntry entry)
         {
             if (!_stableEventIds.Add(entry.StableEventId))
+            {
                 throw new InvalidOperationException($"Duplicate stable event ID: {entry.StableEventId}");
+            }
+
             var index = _entries.BinarySearch(entry, EntryComparer.Instance);
+
             if (index < 0) index = ~index;
+
             _entries.Insert(index, entry);
             _lastSequence = entry.Sequence;
         }

@@ -1,27 +1,36 @@
+using PrismFanlight.Core;
+using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
 {
-    public sealed class FanlightTimelinePlayableBehaviour : PlayableBehaviour
+    internal sealed class FanlightTimelinePlayableBehaviour : PlayableBehaviour
     {
-        public FanlightTimelinePlayableAsset Asset;
-        public FanlightColorSettings Color;
-        public FanlightMotionSettings Motion;
-        public FanlightTempoSettings Tempo;
-        public FanlightAudienceSettings Audience;
-        public FanlightTimelineOverrideSelection Overrides;
+        internal string StableClipId { get; private set; }
+        internal FanlightShowPatch Patch { get; private set; }
+        internal AnimationCurve LocalWeightCurve { get; private set; }
+        internal int Priority { get; private set; }
+        internal FanlightTimelineHoldMode HoldMode { get; private set; }
 
+        internal void Configure(
+            string stableClipId,
+            FanlightShowPatch patch,
+            AnimationCurve localWeightCurve,
+            int priority,
+            FanlightTimelineHoldMode holdMode)
+        {
+            StableClipId = stableClipId;
+            Patch = patch;
+            LocalWeightCurve = localWeightCurve;
+            Priority = priority;
+            HoldMode = holdMode;
+        }
 
-        public FanlightColorSettings GetColor() => Asset != null ? Asset.GetColorSettings() : Color;
-
-        public FanlightMotionSettings GetMotion() => Asset != null ? Asset.GetMotionSettings() : Motion;
-
-        public FanlightTempoSettings GetTempo() => Asset != null ? Asset.GetTempoSettings() : Tempo;
-
-        public FanlightAudienceSettings GetAudience() => Asset != null ? Asset.GetAudienceSettings() : Audience;
-
-        public bool HasLegacyColorOverrides() => Asset != null && Asset.HasLegacyColorOverrides();
-
-        public FanlightTimelineOverrideSelection GetOverrides() => Asset != null ? Asset.GetTimelineOverrides() : Overrides;
+        internal float EvaluateLocalWeight(float normalizedTime)
+        {
+            if (LocalWeightCurve == null) return 1f;
+            var weight = LocalWeightCurve.Evaluate(Mathf.Clamp01(normalizedTime));
+            return float.IsNaN(weight) || float.IsInfinity(weight) ? 0f : Mathf.Max(0f, weight);
+        }
     }
 }

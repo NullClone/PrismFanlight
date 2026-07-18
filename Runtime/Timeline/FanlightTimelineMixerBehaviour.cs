@@ -1,136 +1,143 @@
 using System;
 using System.Collections.Generic;
 using PrismFanlight.Core;
-using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
 {
-    public sealed class FanlightTimelineMixerBehaviour : PlayableBehaviour
+    internal sealed class FanlightTimelineMixerBehaviour : PlayableBehaviour
     {
-        // Fields
-
         private const float WeightEpsilon = 0.0001f;
 
         private PrismFanlight _lastTarget;
-        private bool _hasActiveCue;
         private string _sourceId = "timeline.unconfigured";
-        private int _priority;
-
-        private readonly FanlightTimelineTrackContribution _contribution = new();
-        private readonly HashSet<string> _reportedUnsupportedPaths = new(StringComparer.Ordinal);
-
-
-        // Methods
+        private FanlightTimelinePatchKind _patchKind;
+        private FanlightTimelineClipRange[] _ranges = Array.Empty<FanlightTimelineClipRange>();
+        private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
-            var fanlight = playerData as PrismFanlight;
-
-            if (_lastTarget != fanlight)
+            var target = playerData as PrismFanlight;
+            if (_lastTarget != target)
             {
-                if (_lastTarget != null)
+                if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
+                _lastTarget = target;
+            }
+
+            if (target == null) return;
+            var inputCount = playable.GetInputCount();
+            EnsureSampleCapacity(inputCount);
+            var sampleCount = 0;
+            var priority = int.MinValue;
+            var timelineSeconds = playable.GetTime();
+
+            for (var i = 0; i < inputCount; i++)
+            {
+                var inputPlayable = playable.GetInput(i);
+                var input = (ScriptPlayable<FanlightTimelinePlayableBehaviour>)inputPlayable;
+                var behaviour = input.GetBehaviour();
+                var timelineWeight = playable.GetInputWeight(i);
+                var held = false;
+                if (timelineWeight <= WeightEpsilon
+                    && behaviour.HoldMode == FanlightTimelineHoldMode.HoldLast
+                    && i < _ranges.Length
+                    && timelineSeconds >= _ranges[i].EndSeconds
+                    && timelineSeconds < _ranges[i].HoldEndSeconds)
                 {
-                    _lastTarget.ClearScheduledContribution(this);
+                    timelineWeight = 1f;
+                    held = true;
                 }
 
-                _hasActiveCue = false;
+                if (float.IsNaN(timelineWeight) || float.IsInfinity(timelineWeight) || timelineWeight <= WeightEpsilon)
+                    continue;
+                var duration = inputPlayable.GetDuration();
+                var normalizedTime = held || duration <= 0d || double.IsInfinity(duration)
+                    ? held ? 1f : 0f
+                    : (float)(inputPlayable.GetTime() / duration);
+                var weight = timelineWeight * behaviour.EvaluateLocalWeight(normalizedTime);
+                if (float.IsNaN(weight) || float.IsInfinity(weight) || weight <= WeightEpsilon) continue;
+                if (!FanlightTimelinePatchMixer.HasFields(_patchKind, behaviour.Patch)) continue;
+                var stableClipId = i < _ranges.Length && !string.IsNullOrWhiteSpace(_ranges[i].StableClipId)
+                    ? _ranges[i].StableClipId
+                    : behaviour.StableClipId;
+                _samples[sampleCount++] = new FanlightTimelineClipSample(
+                    stableClipId,
+                    behaviour.Patch,
+                    weight,
+                    behaviour.Priority);
+                priority = Math.Max(priority, behaviour.Priority);
             }
 
-            _lastTarget = fanlight;
-
-            if (fanlight == null) return;
-
-            var time = (float)playable.GetTime();
-            var isTimeJump = IsTimeJump(playable, info);
-
-            _contribution.Begin(time, !_hasActiveCue || isTimeJump, _priority);
-
-            for (var i = 0; i < playable.GetInputCount(); i++)
+            if (sampleCount == 0)
             {
-                var weight = playable.GetInputWeight(i);
-                if (weight <= WeightEpsilon) continue;
-
-                var input = (ScriptPlayable<FanlightTimelinePlayableBehaviour>)playable.GetInput(i);
-                _contribution.Add(input.GetBehaviour(), weight);
-            }
-
-            if (!_contribution.HasOverrides)
-            {
-                fanlight.ClearScheduledContribution(this);
-                _hasActiveCue = false;
+                target.ClearScheduledContribution(this);
                 return;
             }
 
-            var patch = _contribution.BuildPatch(fanlight.BaseState);
-            ReportUnsupportedPaths();
-            if (!_contribution.HasMappedOverrides)
+            Array.Sort(_samples, 0, sampleCount, SampleComparer.Instance);
+            try
             {
-                fanlight.ClearScheduledContribution(this);
-                _hasActiveCue = false;
-                return;
-            }
+                if (!FanlightTimelinePatchMixer.TryBlend(_patchKind, _samples.AsSpan(0, sampleCount), out var patch))
+                {
+                    target.ClearScheduledContribution(this);
+                    return;
+                }
 
-            var contribution = new FanlightShowContribution(
-                _sourceId,
-                FanlightContributionLayer.Timeline,
-                _priority,
-                double.MinValue,
-                double.MaxValue,
-                1f,
-                patch);
-            fanlight.SetScheduledContribution(this, contribution);
-            _hasActiveCue = true;
+                target.SetScheduledContribution(
+                    this,
+                    new FanlightShowContribution(
+                        _sourceId,
+                        FanlightContributionLayer.Timeline,
+                        priority,
+                        double.MinValue,
+                        double.MaxValue,
+                        1f,
+                        patch));
+            }
+            finally
+            {
+                ClearSamples(sampleCount);
+            }
         }
 
-        public void Configure(string sourceId, int priority)
+        public override void OnGraphStop(Playable playable) => ClearContribution();
+
+        public override void OnPlayableDestroy(Playable playable) => ClearContribution();
+
+        internal void Configure(
+            string sourceId,
+            FanlightTimelinePatchKind patchKind,
+            FanlightTimelineClipRange[] ranges)
         {
+            if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("Source ID is required.", nameof(sourceId));
             _sourceId = sourceId;
-            _priority = priority;
+            _patchKind = patchKind;
+            _ranges = ranges ?? Array.Empty<FanlightTimelineClipRange>();
         }
 
-        private void ReportUnsupportedPaths()
+        private void EnsureSampleCapacity(int capacity)
         {
-            for (var i = 0; i < _contribution.UnsupportedPaths.Count; i++)
-            {
-                var path = _contribution.UnsupportedPaths[i];
-                if (!_reportedUnsupportedPaths.Add(path)) continue;
-                Debug.LogWarning(
-                    $"Prism Fanlight Timeline override '{path}' has no typed state mapping. " +
-                    "Tempo overrides must be converted to a FanlightTempoMap.");
-            }
+            if (_samples.Length >= capacity) return;
+            Array.Resize(ref _samples, Math.Max(4, capacity));
         }
 
-        private static bool IsTimeJump(Playable playable, FrameData info)
+        private void ClearSamples(int count)
         {
-            if (info.seekOccurred || info.timeLooped || info.evaluationType == FrameData.EvaluationType.Evaluate) return true;
-
-            var actualDelta = playable.GetTime() - playable.GetPreviousTime();
-            var expectedDelta = info.deltaTime * info.effectiveSpeed;
-
-            return Math.Abs(actualDelta - expectedDelta) > 0.000001;
+            if (count > 0) Array.Clear(_samples, 0, count);
         }
 
-        public override void OnGraphStop(Playable playable)
+        private void ClearContribution()
         {
-            if (_lastTarget != null)
-            {
-                _lastTarget.ClearScheduledContribution(this);
-            }
-
+            if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
             _lastTarget = null;
-            _hasActiveCue = false;
         }
 
-        public override void OnPlayableDestroy(Playable playable)
+        private sealed class SampleComparer : IComparer<FanlightTimelineClipSample>
         {
-            if (_lastTarget != null)
-            {
-                _lastTarget.ClearScheduledContribution(this);
-            }
+            internal static readonly SampleComparer Instance = new();
 
-            _lastTarget = null;
-            _hasActiveCue = false;
+            public int Compare(FanlightTimelineClipSample left, FanlightTimelineClipSample right) =>
+                string.Compare(left.StableClipId, right.StableClipId, StringComparison.Ordinal);
         }
     }
 }
