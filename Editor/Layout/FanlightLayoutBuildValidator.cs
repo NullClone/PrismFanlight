@@ -32,10 +32,12 @@ namespace PrismFanlight.Editor
             {
                 throw new BuildFailedException($"Fanlight layout is not initialized: {path}");
             }
+
             if (FanlightLayoutIdRegistry.IsDuplicate(layout))
             {
                 throw new BuildFailedException($"Fanlight layout ID is duplicated: {path}");
             }
+
             if (!layout.HasCompatibleBake)
             {
                 throw new BuildFailedException($"Fanlight layout requires a compatible bake: {path}");

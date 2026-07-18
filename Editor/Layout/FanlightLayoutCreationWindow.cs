@@ -5,6 +5,7 @@ using PrismFanlight.Authoring;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -101,8 +102,10 @@ namespace PrismFanlight.Editor
                     random.GetBytes(bytes);
                     value = BitConverter.ToUInt64(bytes, 0);
                 } while (value == 0UL || !used.Add(value));
+
                 values[i] = value;
             }
+
             return values;
         }
     }
@@ -172,6 +175,7 @@ namespace PrismFanlight.Editor
                 Counts.TryGetValue(layout.LayoutId.Value, out var count);
                 Counts[layout.LayoutId.Value] = count + 1;
             }
+
             _valid = true;
         }
 
@@ -183,7 +187,7 @@ namespace PrismFanlight.Editor
 
         private static void ValidateSceneInstances()
         {
-            foreach (var fanlight in UnityEngine.Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 var layout = fanlight.LayoutAsset;
                 fanlight.SetEditorLayoutBlocked(layout != null && IsDuplicate(layout));

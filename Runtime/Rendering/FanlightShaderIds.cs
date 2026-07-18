@@ -9,6 +9,8 @@ namespace PrismFanlight.Rendering
         public static readonly int BlockVisibility = Shader.PropertyToID("_BlockVisibility");
         public static readonly int VisibleIndices = Shader.PropertyToID("_VisibleIndices");
         public static readonly int PenlightVisibleIndices = Shader.PropertyToID("_PenlightVisibleIndices");
+        public static readonly int PenlightVariantAssignments = Shader.PropertyToID("_PenlightVariantAssignments");
+        public static readonly int PenlightVariantOffsets = Shader.PropertyToID("_PenlightVariantOffsets");
         public static readonly int AudienceVisibleIndices = Shader.PropertyToID("_AudienceVisibleIndices");
         public static readonly int AudienceSlots = Shader.PropertyToID("_AudienceSlots");
         public static readonly int PenlightArgs = Shader.PropertyToID("_PenlightArgs");
@@ -19,6 +21,9 @@ namespace PrismFanlight.Rendering
         public static readonly int AudienceArgs = Shader.PropertyToID("_AudienceArgs");
 
         public static readonly int InstanceCount = Shader.PropertyToID("_InstanceCount");
+        public static readonly int PenlightVariantCount = Shader.PropertyToID("_PenlightVariantCount");
+        public static readonly int PenlightVariantGripPivotYs = Shader.PropertyToID("_PenlightVariantGripPivotYs");
+        public static readonly int VisibleIndexBase = Shader.PropertyToID("_VisibleIndexBase");
         public static readonly int BlockCountValue = Shader.PropertyToID("_BlockCountValue");
         public static readonly int LocalToWorld = Shader.PropertyToID("_LocalToWorld");
         public static readonly int Time = Shader.PropertyToID("_FanlightTime");

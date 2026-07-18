@@ -24,6 +24,7 @@ namespace PrismFanlight.Editor
             {
                 if (string.Equals(layout.GetBlock(i).BlockId, blockId, StringComparison.Ordinal)) return i;
             }
+
             return -1;
         }
 
@@ -36,6 +37,7 @@ namespace PrismFanlight.Editor
                 fanlight.SetEditorLayoutBlocked(true);
                 return;
             }
+
             fanlight.SetEditorLayoutBlocked(false);
             var session = FanlightLayoutEditSession.Get(layout);
             if (session == null) return;
@@ -45,6 +47,7 @@ namespace PrismFanlight.Editor
                 fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
                 EditorApplication.QueuePlayerLoopUpdate();
             }
+
             var sceneView = SceneView.currentDrawingSceneView;
             var camera = sceneView != null ? sceneView.camera : null;
             if (camera != null)

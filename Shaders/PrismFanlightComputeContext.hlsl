@@ -8,12 +8,14 @@ StructuredBuffer<FanlightBlockData> _Blocks;
 StructuredBuffer<FanlightRandomData> _FanlightRandoms;
 RWStructuredBuffer<uint> _BlockVisibility;
 RWStructuredBuffer<uint> _PenlightVisibleIndices;
+StructuredBuffer<uint> _PenlightVariantAssignments;
+StructuredBuffer<uint> _PenlightVariantOffsets;
 RWStructuredBuffer<uint> _AudienceVisibleIndices;
 RWStructuredBuffer<uint> _AudienceSlots;
-RWStructuredBuffer<uint> _PenlightArgs;
+RWStructuredBuffer<FanlightIndirectDrawIndexedArgs> _PenlightArgs;
 RWStructuredBuffer<float4x4> _FanlightMatrices;
 RWStructuredBuffer<FanlightAudiencePart> _AudienceParts;
-RWStructuredBuffer<uint> _AudienceArgs;
+RWStructuredBuffer<FanlightIndirectDrawIndexedArgs> _AudienceArgs;
 
 int _InstanceCount;
 int _BlockCountValue;
@@ -46,6 +48,17 @@ float4 _MotionRestTiming;
 float4 _MotionBeat;
 float4 _MotionBeatSpread;
 float _GripPivotY;
+int _PenlightVariantCount;
+float4 _PenlightVariantGripPivotYs;
+
+float PrismPenlightGripPivotY(uint seatIndex)
+{
+    uint variantIndex = min(_PenlightVariantAssignments[seatIndex], 3u);
+    if (variantIndex == 0u) return _PenlightVariantGripPivotYs.x;
+    if (variantIndex == 1u) return _PenlightVariantGripPivotYs.y;
+    if (variantIndex == 2u) return _PenlightVariantGripPivotYs.z;
+    return _PenlightVariantGripPivotYs.w;
+}
 float4 _AudienceShape;
 float4 _AudienceArm;
 float4 _HandZone;

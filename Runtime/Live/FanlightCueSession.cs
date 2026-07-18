@@ -86,9 +86,7 @@ namespace PrismFanlight.Live
                 string.Empty,
                 string.Empty,
                 FanlightCueSafetyClassification.Normal,
-                1)
-        {
-        }
+                1) { }
 
         public FanlightCueDefinition(
             string cueId,
@@ -145,9 +143,7 @@ namespace PrismFanlight.Live
             string replacementCueId,
             double showSeconds,
             long sequence)
-            : this(commandId, sourceId, type, cueId, replacementCueId, showSeconds, sequence, sourceId, string.Empty)
-        {
-        }
+            : this(commandId, sourceId, type, cueId, replacementCueId, showSeconds, sequence, sourceId, string.Empty) { }
 
         public FanlightCueCommand(
             string commandId,
@@ -257,6 +253,7 @@ namespace PrismFanlight.Live
                 if (!string.Equals(command.SafetyConfirmationId, activeStopId, StringComparison.Ordinal))
                     throw new InvalidOperationException("Safety resume confirmation does not match the active stop.");
             }
+
             var liveEvent = ToEvent(command);
             try
             {
@@ -266,6 +263,7 @@ namespace PrismFanlight.Live
             {
                 HasLoggingFault = true;
             }
+
             _commandIds.Add(command.CommandId);
             var index = _commands.BinarySearch(command, CommandComparer.Instance);
             if (index < 0) index = ~index;
@@ -326,17 +324,20 @@ namespace PrismFanlight.Live
                 state = new FanlightCueRuntimeState(cueId, FanlightCueState.Faulted, double.NaN, double.NaN, 0f, "CueMissing");
                 return false;
             }
+
             if (!TryResolve(definition, showSeconds, out var start, out var release, out var aborted))
             {
                 var idleState = IsArmed(cueId, showSeconds) ? FanlightCueState.Armed : FanlightCueState.Idle;
                 state = new FanlightCueRuntimeState(cueId, idleState, double.NaN, double.NaN, 0f, string.Empty);
                 return true;
             }
+
             if (aborted)
             {
                 state = new FanlightCueRuntimeState(cueId, FanlightCueState.Aborted, start, release, 0f, string.Empty);
                 return true;
             }
+
             var end = ResolveEnd(definition, start, release);
             var weight = EvaluateWeight(definition, start, end, showSeconds);
             var cueState = showSeconds > end ? FanlightCueState.Completed
@@ -366,6 +367,7 @@ namespace PrismFanlight.Live
                     release = double.NaN;
                     aborted = false;
                 }
+
                 if (double.IsNaN(start)) continue;
                 if (command.Type == FanlightCueCommandType.ClearLayer)
                 {
@@ -373,6 +375,7 @@ namespace PrismFanlight.Live
                     aborted = true;
                     continue;
                 }
+
                 if (command.CueId != definition.CueId) continue;
                 if (command.Type is FanlightCueCommandType.Release or FanlightCueCommandType.Replace)
                     release = command.ShowSeconds;
@@ -382,6 +385,7 @@ namespace PrismFanlight.Live
                     aborted = true;
                 }
             }
+
             return !double.IsNaN(start);
         }
 
@@ -397,12 +401,14 @@ namespace PrismFanlight.Live
                     armed = false;
                     continue;
                 }
+
                 if (command.Type == FanlightCueCommandType.Arm && command.CueId == cueId) armed = true;
                 if ((command.Type == FanlightCueCommandType.Go && command.CueId == cueId)
                     || (command.Type == FanlightCueCommandType.Replace && command.ReplacementCueId == cueId)
                     || (command.Type == FanlightCueCommandType.Abort && command.CueId == cueId))
                     armed = false;
             }
+
             return armed;
         }
 
@@ -425,6 +431,7 @@ namespace PrismFanlight.Live
                     startSeconds = double.NaN;
                 }
             }
+
             return active;
         }
 
@@ -448,6 +455,7 @@ namespace PrismFanlight.Live
                 if (command.Type == FanlightCueCommandType.SafetyStop) commandId = command.CommandId;
                 else if (command.Type == FanlightCueCommandType.Resume) commandId = string.Empty;
             }
+
             return commandId.Length > 0;
         }
 
@@ -490,6 +498,7 @@ namespace PrismFanlight.Live
         private sealed class CommandComparer : IComparer<FanlightCueCommand>
         {
             public static readonly CommandComparer Instance = new();
+
             public int Compare(FanlightCueCommand left, FanlightCueCommand right)
             {
                 var time = left.ShowSeconds.CompareTo(right.ShowSeconds);

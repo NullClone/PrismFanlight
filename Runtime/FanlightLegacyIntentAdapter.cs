@@ -105,30 +105,68 @@ namespace PrismFanlight
             if (builder == null || string.IsNullOrEmpty(path) || value == null) return false;
             switch (path)
             {
-                case "color.slot1": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot1); return true;
-                case "color.slot2": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot2); return true;
-                case "color.slot3": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot3); return true;
-                case "color.slot4": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot4); return true;
-                case "color.slot5": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot5); return true;
-                case "color.slot6": MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot6); return true;
-                case "color.intensity": MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.GlobalIntensity); return true;
-                case "color.randomIntensity": MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.RandomIntensity); return true;
-                case "motion.swing.randomPhase": builder.SetSynchronization(1f - (float)value); return true;
-                case "motion.human.enthusiasm": builder.SetEnergy((float)value * 0.5f); return true;
-                case "motion.human.lazyFanRatio": builder.SetParticipation(1f - (float)value); return true;
+                case "color.slot1":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot1);
+                    return true;
+                case "color.slot2":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot2);
+                    return true;
+                case "color.slot3":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot3);
+                    return true;
+                case "color.slot4":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot4);
+                    return true;
+                case "color.slot5":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot5);
+                    return true;
+                case "color.slot6":
+                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot6);
+                    return true;
+                case "color.intensity":
+                    MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.GlobalIntensity);
+                    return true;
+                case "color.randomIntensity":
+                    MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.RandomIntensity);
+                    return true;
+                case "motion.swing.randomPhase":
+                    builder.SetSynchronization(1f - (float)value);
+                    return true;
+                case "motion.human.enthusiasm":
+                    builder.SetEnergy((float)value * 0.5f);
+                    return true;
+                case "motion.human.lazyFanRatio":
+                    builder.SetParticipation(1f - (float)value);
+                    return true;
                 case "motion.beatSync.beatBlockDelay":
                     var blockDelay = (Vector2)value;
                     builder.SetExpert(F(FanlightExpertParameterId.VariationBlockDelayXBeats, blockDelay.x));
                     builder.SetExpert(F(FanlightExpertParameterId.VariationBlockDelayYBeats, blockDelay.y));
                     return true;
-                case "motion.direction.swingYaw": builder.SetDirection(WithYaw(baseIntent.Direction, (float)value)); return true;
-                case "motion.direction.aimStrength": builder.SetDirection(WithAim(baseIntent.Direction, (float)value)); return true;
-                case "motion.direction.swingMode": builder.SetDirection(WithMode(baseIntent.Direction, (FanlightSwingMode)value)); return true;
-                case "audience.enabled": builder.SetAudienceBodiesEnabled((bool)value); return true;
-                case "audience.handZone.zone": builder.SetHandZone(WithZone(baseIntent.HandZone, (FanlightHandZone)value)); return true;
-                case "audience.handZone.heightOffset": builder.SetHandZone(WithHeight(baseIntent.HandZone, (float)value)); return true;
-                case "audience.handZone.forwardOffset": builder.SetHandZone(WithForward(baseIntent.HandZone, (float)value)); return true;
-                case "audience.handZone.reachScale": builder.SetReach(Mathf.Clamp01((float)value / 1.28f)); return true;
+                case "motion.direction.swingYaw":
+                    builder.SetDirection(WithYaw(baseIntent.Direction, (float)value));
+                    return true;
+                case "motion.direction.aimStrength":
+                    builder.SetDirection(WithAim(baseIntent.Direction, (float)value));
+                    return true;
+                case "motion.direction.swingMode":
+                    builder.SetDirection(WithMode(baseIntent.Direction, (FanlightSwingMode)value));
+                    return true;
+                case "audience.enabled":
+                    builder.SetAudienceBodiesEnabled((bool)value);
+                    return true;
+                case "audience.handZone.zone":
+                    builder.SetHandZone(WithZone(baseIntent.HandZone, (FanlightHandZone)value));
+                    return true;
+                case "audience.handZone.heightOffset":
+                    builder.SetHandZone(WithHeight(baseIntent.HandZone, (float)value));
+                    return true;
+                case "audience.handZone.forwardOffset":
+                    builder.SetHandZone(WithForward(baseIntent.HandZone, (float)value));
+                    return true;
+                case "audience.handZone.reachScale":
+                    builder.SetReach(Mathf.Clamp01((float)value / 1.28f));
+                    return true;
             }
 
             if (!TryMapExpert(path, value, out var expert)) return false;
@@ -371,6 +409,7 @@ namespace PrismFanlight
                 expert = default;
                 return false;
             }
+
             expert = value is int integer ? I(mapped, integer) : F(mapped, Convert.ToSingle(value));
             return true;
         }

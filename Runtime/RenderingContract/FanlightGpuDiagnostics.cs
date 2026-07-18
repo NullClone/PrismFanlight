@@ -90,6 +90,12 @@ namespace PrismFanlight.Rendering
         public long LastSuccessfulReadbackFrame { get; }
         public ReadOnlyMemory<FanlightGpuBufferDiagnostic> Buffers { get; }
         public ReadOnlyMemory<FanlightCameraDiagnostic> Cameras { get; }
+        public string AppearanceProfileId { get; }
+        public int AppearanceProfileVersion { get; }
+        public int PenlightVariantCount { get; }
+        public ulong PenlightAssignmentHash { get; }
+        public ReadOnlyMemory<int> PenlightAssignedVariantCounts { get; }
+        public ReadOnlyMemory<int> PenlightVisibleVariantCounts { get; }
 
         public FanlightGpuDiagnostics(
             string backendId, FanlightRendererStatus status, string layoutId, int layoutVersion,
@@ -98,7 +104,11 @@ namespace PrismFanlight.Rendering
             double lastAnimationSampleSeconds, FanlightGpuTimingSummary timing, long staticUploadBytes,
             long dynamicUploadBytesThisFrame, long readbackRequestCount, long resourceAllocationCount,
             string lastAllocationReason, bool hasStaleReadback, long lastSuccessfulReadbackFrame,
-            ReadOnlyMemory<FanlightGpuBufferDiagnostic> buffers, ReadOnlyMemory<FanlightCameraDiagnostic> cameras)
+            ReadOnlyMemory<FanlightGpuBufferDiagnostic> buffers, ReadOnlyMemory<FanlightCameraDiagnostic> cameras,
+            string appearanceProfileId = "", int appearanceProfileVersion = 0,
+            int penlightVariantCount = 0, ulong penlightAssignmentHash = 0UL,
+            ReadOnlyMemory<int> penlightAssignedVariantCounts = default,
+            ReadOnlyMemory<int> penlightVisibleVariantCounts = default)
         {
             BackendId = backendId;
             Status = status;
@@ -122,6 +132,12 @@ namespace PrismFanlight.Rendering
             LastSuccessfulReadbackFrame = lastSuccessfulReadbackFrame;
             Buffers = buffers;
             Cameras = cameras;
+            AppearanceProfileId = appearanceProfileId ?? string.Empty;
+            AppearanceProfileVersion = appearanceProfileVersion;
+            PenlightVariantCount = penlightVariantCount;
+            PenlightAssignmentHash = penlightAssignmentHash;
+            PenlightAssignedVariantCounts = penlightAssignedVariantCounts;
+            PenlightVisibleVariantCounts = penlightVisibleVariantCounts;
         }
     }
 }

@@ -15,6 +15,7 @@ namespace PrismFanlight.Editor
         private PrismFanlight _instance;
 
         private SerializedProperty _mesh;
+        private SerializedProperty _penlightAppearanceProfile;
         private SerializedProperty _material;
         private SerializedProperty _audienceMaterial;
         private SerializedProperty _computeShader;
@@ -47,6 +48,7 @@ namespace PrismFanlight.Editor
             if (!_instance) return;
 
             _mesh = serializedObject.FindProperty(nameof(_mesh));
+            _penlightAppearanceProfile = serializedObject.FindProperty(nameof(_penlightAppearanceProfile));
             _material = serializedObject.FindProperty(nameof(_material));
             _audienceMaterial = serializedObject.FindProperty(nameof(_audienceMaterial));
             _computeShader = serializedObject.FindProperty(nameof(_computeShader));
@@ -99,11 +101,34 @@ namespace PrismFanlight.Editor
             }
 
             EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(_mesh, new GUIContent("Mesh"));
+            EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Appearance", "Experimental deterministic multi-mesh appearance profile."));
 
-            if (_mesh.objectReferenceValue == null)
+            var appearance = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAppearanceProfile;
+            using (new EditorGUI.DisabledScope(appearance != null))
+            {
+                EditorGUILayout.PropertyField(_mesh, new GUIContent("Legacy Mesh"));
+            }
+
+            if (appearance == null && _mesh.objectReferenceValue == null)
             {
                 EditorGUILayout.HelpBox("Stick Mesh is required.", MessageType.Error);
+            }
+            else if (appearance != null)
+            {
+                if (!appearance.TryValidate(out var appearanceError))
+                {
+                    EditorGUILayout.HelpBox(appearanceError, MessageType.Error);
+                }
+                else if (appearance.VariantCount > 1 && _layoutAsset.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Multiple penlight variants require a baked FanlightLayoutAsset with stable seat IDs.", MessageType.Error);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(
+                        $"Experimental appearance profile: {appearance.VariantCount} variant(s), deterministic stable-seat assignment.",
+                        MessageType.Info);
+                }
             }
 
             if (_material.objectReferenceValue == null)
@@ -240,6 +265,7 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.HelpBox("Layout editing is unavailable while the selected objects use different layout sources.", MessageType.Info);
                     return;
                 }
+
                 var asset = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
 
                 if (asset != null)
@@ -383,6 +409,7 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.HelpBox("Duplicate layout ID detected. Rendering and baking are disabled for this asset.", MessageType.Error);
                 return;
             }
+
             _instance.SetEditorLayoutBlocked(false);
 
             if (!layout.IsInitialized)
@@ -405,6 +432,7 @@ namespace PrismFanlight.Editor
             {
                 _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
             }
+
             EditorGUILayout.Space();
             _layoutScenePreview.EditTransforms = EditorGUILayout.Toggle(
                 new GUIContent("Edit In Scene View", "Select a visible block, then move and rotate it with Unity handles."),
@@ -821,6 +849,12 @@ namespace PrismFanlight.Editor
                 PrismFanlightEditorStyles.DrawStat("Layout Allocations", diagnostics.LayoutBufferAllocationCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Partial Layout Uploads", diagnostics.PartialLayoutUploadCount.ToString("N0"));
                 PrismFanlightEditorStyles.DrawStat("Last Layout Upload Seats", diagnostics.LastLayoutUploadSeatCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Penlight Appearance", diagnostics.AppearanceStatus.ToString());
+                PrismFanlightEditorStyles.DrawStat("Penlight Variants", diagnostics.PenlightVariantCount.ToString("N0"));
+                PrismFanlightEditorStyles.DrawStat("Appearance Profile", string.IsNullOrEmpty(diagnostics.AppearanceProfileId)
+                    ? "None"
+                    : $"{diagnostics.AppearanceProfileId} v{diagnostics.AppearanceProfileVersion}");
+                PrismFanlightEditorStyles.DrawStat("Assignment Hash", diagnostics.PenlightAssignmentHash.ToString("X16"));
             });
         }
 

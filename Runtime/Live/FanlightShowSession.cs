@@ -72,6 +72,7 @@ namespace PrismFanlight.Live
                 else if (value.EventType is FanlightLiveEventType.LiveOverrideCreated or FanlightLiveEventType.LiveOverrideUpdated)
                     _active[value.TargetId] = value;
             }
+
             foreach (var pair in _active)
             {
                 var value = pair.Value;
@@ -157,10 +158,12 @@ namespace PrismFanlight.Live
                         throw new InvalidOperationException($"Contribution source contract mismatch: {_sources[i].SourceId}");
                 }
             }
+
             for (var i = 0; i < _cueSessions.Count; i++)
             {
                 _cueSessions[i].CollectContributions(time.Seconds, _buffer);
             }
+
             var request = new FanlightShowEvaluationRequest(snapshot, time, _buffer, _eventLog, evaluator.SchemaVersion, options);
             return evaluator.Evaluate(request);
         }

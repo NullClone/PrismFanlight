@@ -17,6 +17,7 @@ namespace PrismFanlight.Rendering
             int2 blockCount,
             Bounds localBounds,
             FanlightSeatData[] seats,
+            ulong[] stableSeatIds,
             FanlightBakedBlockData[] blocks)
         {
             LayoutKey = layoutKey ?? string.Empty;
@@ -28,7 +29,9 @@ namespace PrismFanlight.Rendering
             BlockCount2D = blockCount;
             LocalBounds = localBounds;
             Seats = seats ?? Array.Empty<FanlightSeatData>();
+            StableSeatIds = stableSeatIds ?? Array.Empty<ulong>();
             Blocks = blocks ?? Array.Empty<FanlightBakedBlockData>();
+            StableSeatIdHash = ComputeStableSeatIdHash(StableSeatIds);
         }
 
         public string LayoutKey { get; }
@@ -49,6 +52,10 @@ namespace PrismFanlight.Rendering
 
         public FanlightSeatData[] Seats { get; }
 
+        public ulong[] StableSeatIds { get; }
+
+        public ulong StableSeatIdHash { get; }
+
         public FanlightBakedBlockData[] Blocks { get; }
 
         public int SeatCount => Seats.Length;
@@ -56,6 +63,8 @@ namespace PrismFanlight.Rendering
         public int BlockCount => Blocks.Length;
 
         public int BlockSeatCount => SeatPerBlock.x * SeatPerBlock.y;
+
+        public bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
 
         public bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0;
 
@@ -83,6 +92,7 @@ namespace PrismFanlight.Rendering
                 layout.blockCount,
                 layout.TryGetBakedBounds(out var bounds) ? bounds : FanlightGeometryBuilder.BuildAuthoringBounds(layout),
                 FanlightGeometryBuilder.BuildSeatData(layout),
+                Array.Empty<ulong>(),
                 layout.TryGetBakedBlocks(out var blocks) ? blocks : FanlightGeometryBuilder.BuildBakedBlockData(layout));
         }
 
@@ -91,12 +101,14 @@ namespace PrismFanlight.Rendering
             if (layout == null || !layout.HasCompatibleBake) return null;
             var artifact = layout.ActiveBake;
             var seats = new FanlightSeatData[artifact.SeatCount];
+            var stableSeatIds = new ulong[artifact.SeatCount];
             var blocks = new FanlightBakedBlockData[artifact.BlockCount];
 
             for (var i = 0; i < seats.Length; i++)
             {
                 var source = artifact.GetSeat(i);
                 seats[i] = new FanlightSeatData(source.localPosition, source.planePosition, source.blockCoordinates, (uint)i);
+                stableSeatIds[i] = source.stableSeatId;
             }
 
             for (var i = 0; i < blocks.Length; i++)
@@ -119,7 +131,26 @@ namespace PrismFanlight.Rendering
                 layout.BlockCount,
                 artifact.LocalBounds,
                 seats,
+                stableSeatIds,
                 blocks);
+        }
+
+        private static ulong ComputeStableSeatIdHash(ulong[] stableSeatIds)
+        {
+            if (stableSeatIds == null || stableSeatIds.Length == 0) return 0UL;
+            var hash = 14695981039346656037UL;
+            for (var i = 0; i < stableSeatIds.Length; i++)
+            {
+                var value = stableSeatIds[i];
+                if (value == 0UL) return 0UL;
+                for (var byteIndex = 0; byteIndex < 8; byteIndex++)
+                {
+                    hash ^= (byte)(value >> (byteIndex * 8));
+                    hash *= 1099511628211UL;
+                }
+            }
+
+            return hash == 0UL ? 1UL : hash;
         }
     }
 }

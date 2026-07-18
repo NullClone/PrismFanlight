@@ -16,17 +16,38 @@ namespace PrismFanlight.Time
     [AddComponentMenu("Prism Fanlight/Show Time Coordinator")]
     public sealed class ShowTimeCoordinatorBehaviour : MonoBehaviour, IShowTimeCoordinator
     {
-        [SerializeField] private string _timeDomainId = string.Empty;
-        [SerializeField, Min(1)] private int _timeDomainVersion = 1;
-        [SerializeField] private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
-        [SerializeField] private ShowTimePrimaryMode _primaryMode = ShowTimePrimaryMode.UnityTime;
-        [SerializeField] private MonoBehaviour _primaryProvider;
-        [SerializeField] private double _manualSeconds;
-        [SerializeField] private double _manualRate;
-        [SerializeField] private FanlightTempoMap _tempoMap;
-        [SerializeField, Min(1e-6f)] private double _compatibilityBpm = 120d;
-        [SerializeField, Min(1)] private int _compatibilityBeatsPerBar = 4;
-        [SerializeField] private double _compatibilityOffsetSeconds;
+        [SerializeField]
+        private string _timeDomainId = string.Empty;
+
+        [SerializeField, Min(1)]
+        private int _timeDomainVersion = 1;
+
+        [SerializeField]
+        private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
+
+        [SerializeField]
+        private ShowTimePrimaryMode _primaryMode = ShowTimePrimaryMode.UnityTime;
+
+        [SerializeField]
+        private MonoBehaviour _primaryProvider;
+
+        [SerializeField]
+        private double _manualSeconds;
+
+        [SerializeField]
+        private double _manualRate;
+
+        [SerializeField]
+        private FanlightTempoMap _tempoMap;
+
+        [SerializeField, Min(1e-6f)]
+        private double _compatibilityBpm = 120d;
+
+        [SerializeField, Min(1)]
+        private int _compatibilityBeatsPerBar = 4;
+
+        [SerializeField]
+        private double _compatibilityOffsetSeconds;
 
         private readonly UnityUnscaledTimeSource _unityTime = new();
         private ShowTimeCoordinator _coordinator;
@@ -56,6 +77,7 @@ namespace PrismFanlight.Time
                 _lastFault = fault;
                 return false;
             }
+
             var success = _coordinator.TrySample(evaluationId, out sample, out fault);
             _lastFault = fault;
             return success;
@@ -70,6 +92,7 @@ namespace PrismFanlight.Time
                 _lastFailureCode = failureCode;
                 return false;
             }
+
             var result = _coordinator.TryRequestPrimaryReacquire(out failureCode);
             _lastFailureCode = failureCode;
             return result;
@@ -244,6 +267,7 @@ namespace PrismFanlight.Time
         }
 
         public string ProviderId { get; }
+
         public ShowTimeProviderSample Sample() => new(
             ProviderId,
             _time.Seconds,
@@ -261,7 +285,13 @@ namespace PrismFanlight.Time
 
         public ManualTimeProvider(string providerId) => ProviderId = providerId;
         public string ProviderId { get; }
-        public void Set(double seconds, double rate) { _seconds = seconds; _rate = rate; }
+
+        public void Set(double seconds, double rate)
+        {
+            _seconds = seconds;
+            _rate = rate;
+        }
+
         public ShowTimeProviderSample Sample() => new(
             ProviderId,
             _seconds,

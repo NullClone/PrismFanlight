@@ -19,6 +19,15 @@ struct FanlightAudiencePart
     float4 p1Type;
 };
 
+struct FanlightIndirectDrawIndexedArgs
+{
+    uint indexCountPerInstance;
+    uint instanceCount;
+    uint startIndex;
+    uint baseVertexIndex;
+    uint startInstance;
+};
+
 struct FanlightRandomData
 {
     float4 random0;

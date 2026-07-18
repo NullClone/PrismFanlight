@@ -400,15 +400,69 @@ namespace PrismFanlight.Core
         private bool _audienceBodiesEnabled;
         private bool _hasAudienceBodiesEnabled;
 
-        public FanlightIntentPatchBuilder SetGesture(string value) { _gestureId = value; _hasGestureId = true; return this; }
-        public FanlightIntentPatchBuilder SetHandZone(FanlightHandZoneIntent value) { _handZone = value; _hasHandZone = true; return this; }
-        public FanlightIntentPatchBuilder SetEnergy(float value) { _energy = value; _hasEnergy = true; return this; }
-        public FanlightIntentPatchBuilder SetParticipation(float value) { _participation = value; _hasParticipation = true; return this; }
-        public FanlightIntentPatchBuilder SetSynchronization(float value) { _synchronization = value; _hasSynchronization = true; return this; }
-        public FanlightIntentPatchBuilder SetRealism(float value) { _realism = value; _hasRealism = true; return this; }
-        public FanlightIntentPatchBuilder SetReach(float value) { _reach = value; _hasReach = true; return this; }
-        public FanlightIntentPatchBuilder SetDirection(FanlightDirectionIntent value) { _direction = value; _hasDirection = true; return this; }
-        public FanlightIntentPatchBuilder SetPalette(FanlightPalettePatch value) { _palette = value; _hasPalette = true; return this; }
+        public FanlightIntentPatchBuilder SetGesture(string value)
+        {
+            _gestureId = value;
+            _hasGestureId = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetHandZone(FanlightHandZoneIntent value)
+        {
+            _handZone = value;
+            _hasHandZone = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetEnergy(float value)
+        {
+            _energy = value;
+            _hasEnergy = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetParticipation(float value)
+        {
+            _participation = value;
+            _hasParticipation = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetSynchronization(float value)
+        {
+            _synchronization = value;
+            _hasSynchronization = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetRealism(float value)
+        {
+            _realism = value;
+            _hasRealism = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetReach(float value)
+        {
+            _reach = value;
+            _hasReach = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetDirection(FanlightDirectionIntent value)
+        {
+            _direction = value;
+            _hasDirection = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetPalette(FanlightPalettePatch value)
+        {
+            _palette = value;
+            _hasPalette = true;
+            return this;
+        }
+
         public FanlightIntentPatchBuilder MergePalette(FanlightPalettePatch value)
         {
             if (!_hasPalette) return SetPalette(value);
@@ -427,8 +481,20 @@ namespace PrismFanlight.Core
             _palette = new FanlightPalettePatch(merged, _palette.Fields | mask);
             return this;
         }
-        public FanlightIntentPatchBuilder SetPenlightsEnabled(bool value) { _penlightsEnabled = value; _hasPenlightsEnabled = true; return this; }
-        public FanlightIntentPatchBuilder SetAudienceBodiesEnabled(bool value) { _audienceBodiesEnabled = value; _hasAudienceBodiesEnabled = true; return this; }
+
+        public FanlightIntentPatchBuilder SetPenlightsEnabled(bool value)
+        {
+            _penlightsEnabled = value;
+            _hasPenlightsEnabled = true;
+            return this;
+        }
+
+        public FanlightIntentPatchBuilder SetAudienceBodiesEnabled(bool value)
+        {
+            _audienceBodiesEnabled = value;
+            _hasAudienceBodiesEnabled = true;
+            return this;
+        }
 
         public FanlightIntentPatchBuilder SetExpert(FanlightExpertParameterValue value)
         {
@@ -439,6 +505,7 @@ namespace PrismFanlight.Core
                 _expert[i] = value;
                 return this;
             }
+
             _expert.Add(value);
             return this;
         }

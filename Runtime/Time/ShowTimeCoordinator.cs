@@ -56,6 +56,7 @@ namespace PrismFanlight.Time
                 fault = _cachedFault;
                 return _cachedSuccess;
             }
+
             if (_hasCachedResult && evaluationId < _lastEvaluationId)
             {
                 sample = default;
@@ -80,6 +81,7 @@ namespace PrismFanlight.Time
                     FanlightTimeDiscontinuity.None,
                     0L);
             }
+
             var primaryValid = primarySample.IsValid;
 
             try
@@ -161,11 +163,13 @@ namespace PrismFanlight.Time
                 failureCode = "ReacquirePending";
                 return false;
             }
+
             if (!_fallbackActive)
             {
                 failureCode = "NotFallbackActive";
                 return false;
             }
+
             if (!_primaryAvailable || !_availablePrimary.IsValid)
             {
                 failureCode = "PrimaryUnavailable";

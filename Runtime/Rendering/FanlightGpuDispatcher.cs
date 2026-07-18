@@ -32,6 +32,8 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.BlockVisibility, buffers.BlockVisibilityBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightVisibleIndices, buffers.PenlightVisibleIndexBuffer);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
+            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightVariantOffsets, buffers.PenlightVariantOffsetBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.AudienceVisibleIndices, buffers.AudienceVisibleIndexBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.AudienceSlots, buffers.AudienceSlotBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
@@ -51,6 +53,8 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Randoms, buffers.RandomBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVisibleIndices, buffers.PenlightVisibleIndexBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantOffsets, buffers.PenlightVariantOffsetBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.AudienceVisibleIndices, buffers.AudienceVisibleIndexBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.AudienceSlots, buffers.AudienceSlotBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
@@ -86,6 +90,8 @@ namespace PrismFanlight.Rendering
             var motion = context.Motion;
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
+            shader.SetInt(FanlightShaderIds.PenlightVariantCount, buffers.PenlightVariantCount);
+            shader.SetVector(FanlightShaderIds.PenlightVariantGripPivotYs, buffers.PenlightVariantGripPivotYs);
             shader.SetInt(FanlightShaderIds.BlockCountValue, buffers.BlockCount);
             shader.SetMatrix(FanlightShaderIds.LocalToWorld, context.LocalToWorld);
             shader.SetMatrix(FanlightShaderIds.WorldToLocal, context.WorldToLocal);

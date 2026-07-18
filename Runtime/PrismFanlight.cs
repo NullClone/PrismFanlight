@@ -21,6 +21,9 @@ namespace PrismFanlight
         private Mesh _mesh = null;
 
         [SerializeField]
+        private FanlightPenlightAppearanceProfile _penlightAppearanceProfile = null;
+
+        [SerializeField]
         private Material _material = null;
 
         [SerializeField]
@@ -118,6 +121,12 @@ namespace PrismFanlight
         {
             get => _mesh;
             set => _mesh = value;
+        }
+
+        public FanlightPenlightAppearanceProfile PenlightAppearanceProfile
+        {
+            get => _penlightAppearanceProfile;
+            set => _penlightAppearanceProfile = value;
         }
 
         public Camera CullingCamera
@@ -245,6 +254,7 @@ namespace PrismFanlight
                 _renderer.PrepareCamera(camera);
                 _renderer.RenderCamera(camera);
             }
+
             _externalOverrideTimeJumpPending = false;
         }
 
@@ -310,6 +320,7 @@ namespace PrismFanlight
 
             _renderer.Render(
                 _mesh,
+                _penlightAppearanceProfile,
                 _material,
                 _computeShader,
                 _renderingLayerMask,
@@ -371,7 +382,12 @@ namespace PrismFanlight
                 layoutStatus,
                 _renderer.LayoutBufferAllocationCount,
                 _renderer.PartialLayoutUploadCount,
-                _renderer.LastLayoutUploadSeatCount);
+                _renderer.LastLayoutUploadSeatCount,
+                _renderer.AppearanceStatus,
+                _renderer.AppearanceProfileId,
+                _renderer.AppearanceProfileVersion,
+                _renderer.PenlightVariantCount,
+                _renderer.PenlightAssignmentHash);
         }
 
         public FanlightGpuDiagnostics GetGpuDiagnostics(bool requestReadback = false) =>
@@ -406,6 +422,7 @@ namespace PrismFanlight
             {
                 _externalContribution.Set(contribution);
             }
+
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
@@ -425,6 +442,7 @@ namespace PrismFanlight
             {
                 source.Set(contribution);
             }
+
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
@@ -444,6 +462,7 @@ namespace PrismFanlight
             {
                 foreach (var source in _scheduledContributions.Values) _showSession.UnregisterSource(source);
             }
+
             _scheduledContributions.Clear();
             ResolvedStateOverrideChanged?.Invoke(this);
         }
@@ -456,12 +475,14 @@ namespace PrismFanlight
             {
                 if (pair.Value.SourceId.StartsWith(sourcePrefix, StringComparison.Ordinal)) tokens.Add(pair.Key);
             }
+
             for (var i = 0; i < tokens.Count; i++)
             {
                 if (!_scheduledContributions.TryGetValue(tokens[i], out var source)) continue;
                 _showSession?.UnregisterSource(source);
                 _scheduledContributions.Remove(tokens[i]);
             }
+
             if (tokens.Count > 0) ResolvedStateOverrideChanged?.Invoke(this);
         }
 
@@ -493,6 +514,7 @@ namespace PrismFanlight
                 _showSession?.UnregisterSource(_externalContribution);
                 _externalContribution = null;
             }
+
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
@@ -631,6 +653,7 @@ namespace PrismFanlight
                 Dispose();
                 return;
             }
+
             _editorLayoutBlocked = false;
             _editorPreviewLayout = preview;
             _renderer.ApplyEditorLayoutPreview(preview, changedBlockIndex);

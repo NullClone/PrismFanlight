@@ -13,6 +13,7 @@ namespace PrismFanlight.Rendering
         private int _lastReadbackFrame = -1;
         private bool _readbackPending;
         private int _seatCountForReadback;
+        private int _variantCountForReadback;
 
 
         // Properties
@@ -21,6 +22,8 @@ namespace PrismFanlight.Rendering
         public long RequestCount { get; private set; }
         public long LastSuccessfulFrame { get; private set; } = -1;
         public bool IsPending => _readbackPending;
+
+        public int[] VisibleVariantCounts { get; private set; } = Array.Empty<int>();
 
 
         public FanlightGpuVisibilityReadback()
@@ -38,9 +41,10 @@ namespace PrismFanlight.Rendering
             VisibleSeatCount = 0;
             RequestCount = 0;
             LastSuccessfulFrame = -1;
+            VisibleVariantCounts = Array.Empty<int>();
         }
 
-        public void Request(GraphicsBuffer argsBuffer, int seatCount)
+        public void Request(GraphicsBuffer argsBuffer, int seatCount, int variantCount)
         {
             if (argsBuffer == null || _readbackPending) return;
             if (UnityEngine.Time.frameCount == _lastReadbackFrame) return;
@@ -48,6 +52,7 @@ namespace PrismFanlight.Rendering
             _readbackPending = true;
             _lastReadbackFrame = UnityEngine.Time.frameCount;
             _seatCountForReadback = seatCount;
+            _variantCountForReadback = Math.Max(1, variantCount);
             RequestCount++;
 
             AsyncGPUReadback.Request(argsBuffer, _onReadback);
@@ -59,10 +64,20 @@ namespace PrismFanlight.Rendering
 
             if (request.hasError) return;
 
-            var args = request.GetData<uint>();
-            if (args.Length > 1)
+            var args = request.GetData<GraphicsBuffer.IndirectDrawIndexedArgs>();
+            if (args.Length > 0)
             {
-                VisibleSeatCount = (int)math.min(args[1], (uint)_seatCountForReadback);
+                var visible = 0u;
+                if (VisibleVariantCounts.Length != _variantCountForReadback)
+                    VisibleVariantCounts = new int[_variantCountForReadback];
+                for (var i = 0; i < _variantCountForReadback; i++)
+                {
+                    var count = i < args.Length ? args[i].instanceCount : 0u;
+                    VisibleVariantCounts[i] = (int)count;
+                    visible += count;
+                }
+
+                VisibleSeatCount = (int)math.min(visible, (uint)_seatCountForReadback);
                 LastSuccessfulFrame = UnityEngine.Time.frameCount;
             }
         }

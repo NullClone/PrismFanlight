@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PrismFanlight.Core;
+using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
@@ -68,6 +69,7 @@ namespace PrismFanlight.Timeline
                 _hasActiveCue = false;
                 return;
             }
+
             var contribution = new FanlightContribution(
                 $"{_sourceId}:active",
                 _sourceId,
@@ -114,7 +116,7 @@ namespace PrismFanlight.Timeline
             {
                 var path = _contribution.UnsupportedPaths[i];
                 if (!_reportedUnsupportedPaths.Add(path)) continue;
-                UnityEngine.Debug.LogWarning($"Prism Fanlight palette Timeline override '{path}' has no Stage 1 palette mapping.");
+                Debug.LogWarning($"Prism Fanlight palette Timeline override '{path}' has no Stage 1 palette mapping.");
             }
         }
 

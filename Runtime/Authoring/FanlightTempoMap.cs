@@ -1,5 +1,4 @@
 using System;
-using PrismFanlight.Core;
 using UnityEngine;
 
 namespace PrismFanlight.Authoring
@@ -7,13 +6,26 @@ namespace PrismFanlight.Authoring
     [Serializable]
     public struct FanlightTempoSegment
     {
-        [SerializeField] private string _segmentId;
-        [SerializeField] private double _startSeconds;
-        [SerializeField] private double _startBeat;
-        [SerializeField] private double _bpm;
-        [SerializeField] private int _beatsPerBar;
-        [SerializeField] private int _beatUnit;
-        [SerializeField] private long _startBar;
+        [SerializeField]
+        private string _segmentId;
+
+        [SerializeField]
+        private double _startSeconds;
+
+        [SerializeField]
+        private double _startBeat;
+
+        [SerializeField]
+        private double _bpm;
+
+        [SerializeField]
+        private int _beatsPerBar;
+
+        [SerializeField]
+        private int _beatUnit;
+
+        [SerializeField]
+        private long _startBar;
 
         public FanlightTempoSegment(
             string segmentId,
@@ -53,9 +65,14 @@ namespace PrismFanlight.Authoring
     [CreateAssetMenu(fileName = "FanlightTempoMap", menuName = "Prism Fanlight/Tempo Map")]
     public sealed class FanlightTempoMap : ScriptableObject
     {
-        [SerializeField] private string _tempoMapId = string.Empty;
-        [SerializeField, Min(1)] private int _version = 1;
-        [SerializeField] private FanlightTempoSegment[] _segments =
+        [SerializeField]
+        private string _tempoMapId = string.Empty;
+
+        [SerializeField, Min(1)]
+        private int _version = 1;
+
+        [SerializeField]
+        private FanlightTempoSegment[] _segments =
         {
             new("tempo.default", 0d, 0d, 120d, 4, 4, 1)
         };
@@ -71,11 +88,13 @@ namespace PrismFanlight.Authoring
                 error = "Tempo Map ID is missing.";
                 return false;
             }
+
             if (_segments == null || _segments.Length == 0)
             {
                 error = "At least one tempo segment is required.";
                 return false;
             }
+
             for (var i = 0; i < _segments.Length; i++)
             {
                 if (!_segments[i].IsValid)
@@ -83,11 +102,13 @@ namespace PrismFanlight.Authoring
                     error = $"Tempo segment {i} is invalid.";
                     return false;
                 }
+
                 if (i > 0 && _segments[i].StartSeconds <= _segments[i - 1].StartSeconds)
                 {
                     error = "Tempo segments must be strictly ordered by start seconds.";
                     return false;
                 }
+
                 if (i > 0)
                 {
                     var previous = _segments[i - 1];
@@ -100,6 +121,7 @@ namespace PrismFanlight.Authoring
                     }
                 }
             }
+
             error = string.Empty;
             return true;
         }

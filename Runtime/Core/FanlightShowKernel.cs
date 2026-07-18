@@ -444,6 +444,7 @@ namespace PrismFanlight.Core
                     _order[j + 1] = _order[j];
                     j--;
                 }
+
                 _order[j + 1] = key;
             }
         }
@@ -487,6 +488,7 @@ namespace PrismFanlight.Core
             {
                 weight *= Shape((float)((contribution.EndSeconds - seconds) / contribution.FadeOutSeconds), contribution.BlendProfile);
             }
+
             return Clamp01(weight);
         }
 
@@ -612,6 +614,7 @@ namespace PrismFanlight.Core
                 if (comparison < 0) low = middle + 1;
                 else high = middle - 1;
             }
+
             return ~low;
         }
 
@@ -628,6 +631,7 @@ namespace PrismFanlight.Core
                     intent.Synchronization, intent.Realism, intent.Reach, intent.Direction, intent.Palette,
                     intent.PenlightsEnabled, intent.AudienceBodiesEnabled, FanlightExpertPatch.Empty);
             }
+
             var copy = new FanlightExpertParameterValue[_expertCount];
             Array.Copy(_expert, copy, _expertCount);
             return new FanlightResolvedIntent(intent.GestureId, intent.HandZone, intent.Energy, intent.Participation,
@@ -678,16 +682,22 @@ namespace PrismFanlight.Core
 
         private static void ValidatePalette(FanlightPaletteIntent palette)
         {
-            ValidateColor(palette.Slot1); ValidateColor(palette.Slot2); ValidateColor(palette.Slot3);
-            ValidateColor(palette.Slot4); ValidateColor(palette.Slot5); ValidateColor(palette.Slot6);
+            ValidateColor(palette.Slot1);
+            ValidateColor(palette.Slot2);
+            ValidateColor(palette.Slot3);
+            ValidateColor(palette.Slot4);
+            ValidateColor(palette.Slot5);
+            ValidateColor(palette.Slot6);
             ValidateFinite(palette.GlobalIntensity, nameof(palette.GlobalIntensity));
             ValidateFinite(palette.RandomIntensity, nameof(palette.RandomIntensity));
         }
 
         private static void ValidateColor(Color value)
         {
-            ValidateFinite(value.r, "Color.r"); ValidateFinite(value.g, "Color.g");
-            ValidateFinite(value.b, "Color.b"); ValidateFinite(value.a, "Color.a");
+            ValidateFinite(value.r, "Color.r");
+            ValidateFinite(value.g, "Color.g");
+            ValidateFinite(value.b, "Color.b");
+            ValidateFinite(value.a, "Color.a");
         }
 
         private static void ValidateFinite(float value, string name)
@@ -705,13 +715,20 @@ namespace PrismFanlight.Core
             var hash = new StableHash64();
             hash.Add(SchemaVersion);
             hash.Add(FanlightExpertSchema.Version);
-            hash.Add(request.Snapshot.ShowId); hash.Add(request.Snapshot.ShowVersion);
-            hash.Add(request.Snapshot.LayoutId); hash.Add(request.Snapshot.LayoutVersion);
-            hash.Add(request.Snapshot.PersonaProfileId); hash.Add(request.Snapshot.PersonaSchemaVersion);
-            hash.Add(request.Snapshot.GestureLibraryId); hash.Add(request.Snapshot.GestureLibraryVersion);
-            hash.Add(request.Snapshot.CueLibraryId); hash.Add(request.Snapshot.CueLibraryVersion);
-            hash.Add(request.Time.TimeDomainId); hash.Add(request.Time.TimeDomainVersion);
-            hash.Add(request.Time.TempoMapId); hash.Add(request.Time.TempoMapVersion);
+            hash.Add(request.Snapshot.ShowId);
+            hash.Add(request.Snapshot.ShowVersion);
+            hash.Add(request.Snapshot.LayoutId);
+            hash.Add(request.Snapshot.LayoutVersion);
+            hash.Add(request.Snapshot.PersonaProfileId);
+            hash.Add(request.Snapshot.PersonaSchemaVersion);
+            hash.Add(request.Snapshot.GestureLibraryId);
+            hash.Add(request.Snapshot.GestureLibraryVersion);
+            hash.Add(request.Snapshot.CueLibraryId);
+            hash.Add(request.Snapshot.CueLibraryVersion);
+            hash.Add(request.Time.TimeDomainId);
+            hash.Add(request.Time.TimeDomainVersion);
+            hash.Add(request.Time.TempoMapId);
+            hash.Add(request.Time.TempoMapVersion);
             hash.Add(request.Snapshot.GlobalSeed);
             hash.AddQuantized(request.Time.Seconds, options.QuantizationEpsilon);
             AddMusical(ref hash, request.Time.MusicalPosition, options.QuantizationEpsilon);
@@ -725,6 +742,7 @@ namespace PrismFanlight.Core
                 hash.Add(contribution.SourceId);
                 hash.AddQuantized(weight, options.QuantizationEpsilon);
             }
+
             return hash.Value;
         }
 
@@ -762,12 +780,16 @@ namespace PrismFanlight.Core
             hash.AddQuantized(value.Direction.TargetWorldPosition.z, epsilon);
             hash.Add(value.Direction.TargetBindingId);
             hash.AddQuantized(value.Direction.AimStrength, epsilon);
-            AddColor(ref hash, value.Palette.Slot1, epsilon); AddColor(ref hash, value.Palette.Slot2, epsilon);
-            AddColor(ref hash, value.Palette.Slot3, epsilon); AddColor(ref hash, value.Palette.Slot4, epsilon);
-            AddColor(ref hash, value.Palette.Slot5, epsilon); AddColor(ref hash, value.Palette.Slot6, epsilon);
+            AddColor(ref hash, value.Palette.Slot1, epsilon);
+            AddColor(ref hash, value.Palette.Slot2, epsilon);
+            AddColor(ref hash, value.Palette.Slot3, epsilon);
+            AddColor(ref hash, value.Palette.Slot4, epsilon);
+            AddColor(ref hash, value.Palette.Slot5, epsilon);
+            AddColor(ref hash, value.Palette.Slot6, epsilon);
             hash.AddQuantized(value.Palette.GlobalIntensity, epsilon);
             hash.AddQuantized(value.Palette.RandomIntensity, epsilon);
-            hash.Add(value.PenlightsEnabled); hash.Add(value.AudienceBodiesEnabled);
+            hash.Add(value.PenlightsEnabled);
+            hash.Add(value.AudienceBodiesEnabled);
             var expert = value.Expert.Values.Span;
             for (var i = 0; i < expert.Length; i++)
             {
@@ -780,8 +802,10 @@ namespace PrismFanlight.Core
 
         private static void AddColor(ref StableHash64 hash, Color value, double epsilon)
         {
-            hash.AddQuantized(value.r, epsilon); hash.AddQuantized(value.g, epsilon);
-            hash.AddQuantized(value.b, epsilon); hash.AddQuantized(value.a, epsilon);
+            hash.AddQuantized(value.r, epsilon);
+            hash.AddQuantized(value.g, epsilon);
+            hash.AddQuantized(value.b, epsilon);
+            hash.AddQuantized(value.a, epsilon);
         }
 
         private static FanlightHandZoneIntent Lerp(FanlightHandZoneIntent left, FanlightHandZoneIntent right, float weight) =>
@@ -811,11 +835,13 @@ namespace PrismFanlight.Core
             (int)Math.Round(BlendFloat(current, incoming, mode, weight), MidpointRounding.AwayFromZero);
 
         private static float Lerp(float left, float right, float weight) => left + (right - left) * weight;
+
         private static float LerpAngle(float left, float right, float weight)
         {
             var delta = ((right - left + 540f) % 360f) - 180f;
             return left + delta * weight;
         }
+
         private static float Clamp01(float value) => value < 0f ? 0f : value > 1f ? 1f : value;
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 
@@ -825,21 +851,43 @@ namespace PrismFanlight.Core
             private const ulong Prime = 1099511628211UL;
             private ulong _value;
             public ulong Value => _value == 0UL ? Offset : _value;
-            private void Byte(byte value) { if (_value == 0UL) _value = Offset; _value ^= value; _value *= Prime; }
+
+            private void Byte(byte value)
+            {
+                if (_value == 0UL) _value = Offset;
+                _value ^= value;
+                _value *= Prime;
+            }
+
             public void Add(bool value) => Byte(value ? (byte)1 : (byte)0);
             public void Add(int value) => Add((long)value);
             public void Add(uint value) => Add((ulong)value);
             public void Add(long value) => Add(unchecked((ulong)value));
-            public void Add(ulong value) { for (var i = 0; i < 8; i++) Byte((byte)(value >> (i * 8))); }
+
+            public void Add(ulong value)
+            {
+                for (var i = 0; i < 8; i++) Byte((byte)(value >> (i * 8)));
+            }
+
             public void Add(string value)
             {
                 value ??= string.Empty;
                 Add(value.Length);
-                for (var i = 0; i < value.Length; i++) { Byte((byte)value[i]); Byte((byte)(value[i] >> 8)); }
+                for (var i = 0; i < value.Length; i++)
+                {
+                    Byte((byte)value[i]);
+                    Byte((byte)(value[i] >> 8));
+                }
             }
+
             public void AddQuantized(double value, double epsilon)
             {
-                if (!IsFinite(value)) { Add(BitConverter.DoubleToInt64Bits(value)); return; }
+                if (!IsFinite(value))
+                {
+                    Add(BitConverter.DoubleToInt64Bits(value));
+                    return;
+                }
+
                 var scaled = value / epsilon;
                 if (scaled >= long.MaxValue || scaled <= long.MinValue) Add(BitConverter.DoubleToInt64Bits(value));
                 else Add((long)Math.Round(scaled, MidpointRounding.AwayFromZero));

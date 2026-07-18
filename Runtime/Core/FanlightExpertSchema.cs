@@ -62,6 +62,7 @@ namespace PrismFanlight.Core
     public static class FanlightExpertSchema
     {
         public const int Version = 1;
+
         private static readonly FanlightExpertParameterId[] OrderedIds =
         {
             FanlightExpertParameterId.GestureBeatsPerCycle,

@@ -17,6 +17,10 @@ namespace PrismFanlight.Rendering
 
         public ComputeBuffer PenlightVisibleIndexBuffer { get; private set; }
 
+        public ComputeBuffer PenlightVariantAssignmentBuffer { get; private set; }
+
+        public ComputeBuffer PenlightVariantOffsetBuffer { get; private set; }
+
         public ComputeBuffer AudienceVisibleIndexBuffer { get; private set; }
 
         public ComputeBuffer AudienceSlotBuffer { get; private set; }
@@ -43,46 +47,79 @@ namespace PrismFanlight.Rendering
 
         public float MeshPivotY { get; private set; }
 
+        public int PenlightVariantCount { get; private set; }
+
+        public uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
+
+        public int[] PenlightVariantSeatCounts { get; private set; } = Array.Empty<int>();
+
+        public Vector4 PenlightVariantGripPivotYs { get; private set; }
+
+        public ulong PenlightAssignmentHash { get; private set; }
+
         public long TotalCapacityBytes =>
-            (long)SeatCount * (FanlightSeatData.Stride + sizeof(uint) * 4 + sizeof(float) * 16 + FanlightRandomData.Stride)
+            (long)SeatCount * (FanlightSeatData.Stride + sizeof(uint) * 5 + sizeof(float) * 16 + FanlightRandomData.Stride)
             + (long)BlockCount * (FanlightBlockData.Stride + sizeof(uint))
             + (HasAudience ? (long)SeatCount * FanlightAudiencePart.PartsPerSeat * FanlightAudiencePart.Stride : 0L)
-            + sizeof(uint) * 10L;
+            + (long)PenlightVariantCount * (sizeof(uint) + GraphicsBuffer.IndirectDrawIndexedArgs.size)
+            + GraphicsBuffer.IndirectDrawIndexedArgs.size;
 
         public long InitialStaticUploadBytes =>
-            (long)SeatCount * (FanlightSeatData.Stride + FanlightRandomData.Stride + sizeof(uint))
+            (long)SeatCount * (FanlightSeatData.Stride + FanlightRandomData.Stride + sizeof(uint) * 2L)
             + (long)BlockCount * FanlightBlockData.Stride
-            + sizeof(uint) * 10L;
+            + (long)PenlightVariantCount * (sizeof(uint) + GraphicsBuffer.IndirectDrawIndexedArgs.size)
+            + GraphicsBuffer.IndirectDrawIndexedArgs.size;
 
 
         // Methods
 
-        public void Allocate(Mesh mesh, FanlightRuntimeLayout layout, bool allocateAudience, FanlightRandomSettings random)
+        public void Allocate(
+            FanlightPenlightRuntimeAppearance appearance,
+            FanlightRuntimeLayout layout,
+            bool allocateAudience,
+            FanlightRandomSettings random)
         {
             Release();
 
             SeatCount = layout.SeatCount;
             BlockCount = layout.BlockCount;
-            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
-            MeshPivotY = mesh.bounds.min.y;
+            PenlightVariantCount = appearance.VariantCount;
+            LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
+            MeshPivotY = appearance.GripPivotYs[0];
+            PenlightVariantGripPivotYs = BuildGripPivotVector(appearance.GripPivotYs);
+
+            var assignments = BuildVariantAssignments(layout, appearance, out var counts, out var assignmentHash);
+            PenlightVariantSeatCounts = counts;
+            PenlightAssignmentHash = assignmentHash;
+            PenlightVariantOffsets = BuildVariantOffsets(counts);
 
             SeatBuffer = new ComputeBuffer(SeatCount, FanlightSeatData.Stride, ComputeBufferType.Structured);
             BlockBuffer = new ComputeBuffer(BlockCount, FanlightBlockData.Stride, ComputeBufferType.Structured);
             BlockVisibilityBuffer = new ComputeBuffer(BlockCount, sizeof(uint), ComputeBufferType.Structured);
             PenlightVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            PenlightVariantAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            PenlightVariantOffsetBuffer = new ComputeBuffer(PenlightVariantCount, sizeof(uint), ComputeBufferType.Structured);
             AudienceVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             AudienceSlotBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
             ColorAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
-            PenlightArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
-            AudienceArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * 5);
+            PenlightArgsBuffer = new GraphicsBuffer(
+                GraphicsBuffer.Target.IndirectArguments,
+                PenlightVariantCount,
+                GraphicsBuffer.IndirectDrawIndexedArgs.size);
+            AudienceArgsBuffer = new GraphicsBuffer(
+                GraphicsBuffer.Target.IndirectArguments,
+                1,
+                GraphicsBuffer.IndirectDrawIndexedArgs.size);
 
             SeatBuffer.SetData(layout.Seats);
-            BlockBuffer.SetData(BuildBlockData(layout, mesh));
+            BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
+            PenlightVariantAssignmentBuffer.SetData(assignments);
+            PenlightVariantOffsetBuffer.SetData(PenlightVariantOffsets);
             UpdateRandomData(random);
 
-            ResetArgs(PenlightArgsBuffer, mesh);
+            ResetPenlightArgs(PenlightArgsBuffer, appearance.Meshes);
             ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
 
             if (allocateAudience)
@@ -91,7 +128,7 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        public void UpdateStaticData(Mesh mesh, FanlightRuntimeLayout layout)
+        public void UpdateStaticData(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout)
         {
             if (SeatBuffer == null || BlockBuffer == null
                                    || layout.SeatCount != SeatCount
@@ -101,11 +138,11 @@ namespace PrismFanlight.Rendering
             }
 
             SeatBuffer.SetData(layout.Seats);
-            BlockBuffer.SetData(BuildBlockData(layout, mesh));
-            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
+            BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
+            LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
         }
 
-        public void UpdateBlock(Mesh mesh, FanlightRuntimeLayout layout, int blockIndex)
+        public void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
         {
             if (SeatBuffer == null || BlockBuffer == null || blockIndex < 0 || blockIndex >= layout.BlockCount) return;
 
@@ -115,27 +152,29 @@ namespace PrismFanlight.Rendering
                 SeatBuffer.SetData(layout.Seats, block.startIndex, block.startIndex, block.count);
             }
 
-            _singleBlockUpload[0] = ToBlockData(block, mesh);
+            _singleBlockUpload[0] = ToBlockData(block, appearance.BoundsPadding);
             BlockBuffer.SetData(_singleBlockUpload, 0, blockIndex, 1);
-            LocalBounds = ExpandBounds(layout.LocalBounds, mesh);
+            LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
         }
 
         public FanlightGpuBufferDiagnostic[] CaptureDiagnostics(string cameraId)
         {
             if (SeatBuffer == null) return Array.Empty<FanlightGpuBufferDiagnostic>();
-            var result = new FanlightGpuBufferDiagnostic[HasAudience ? 12 : 11];
+            var result = new FanlightGpuBufferDiagnostic[HasAudience ? 14 : 13];
             var index = 0;
             Add("layout.seats", string.Empty, SeatCount, FanlightSeatData.Stride, "Static");
             Add("layout.blocks", string.Empty, BlockCount, FanlightBlockData.Stride, "Static");
             Add("visibility.blocks", cameraId, BlockCount, sizeof(uint), "Camera");
             Add("visibility.penlights", cameraId, SeatCount, sizeof(uint), "Camera");
+            Add("appearance.assignments", string.Empty, SeatCount, sizeof(uint), "Static");
+            Add("appearance.variant-offsets", string.Empty, PenlightVariantCount, sizeof(uint), "Static");
             Add("visibility.audience", cameraId, SeatCount, sizeof(uint), "Camera");
             Add("visibility.audience-slots", cameraId, SeatCount, sizeof(uint), "Camera");
             Add("pose.matrices", string.Empty, SeatCount, sizeof(float) * 16, "ShowFrame");
             Add("palette.assignments", string.Empty, SeatCount, sizeof(uint), "Static");
             Add("persona.legacy-random", string.Empty, SeatCount, FanlightRandomData.Stride, "Static");
-            Add("draw.penlight-args", cameraId, 1, sizeof(uint) * 5, "Camera");
-            Add("draw.audience-args", cameraId, 1, sizeof(uint) * 5, "Camera");
+            Add("draw.penlight-args", cameraId, PenlightVariantCount, GraphicsBuffer.IndirectDrawIndexedArgs.size, "Camera");
+            Add("draw.audience-args", cameraId, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size, "Camera");
             if (HasAudience)
                 Add("pose.audience-parts", string.Empty, SeatCount * FanlightAudiencePart.PartsPerSeat, FanlightAudiencePart.Stride, "ShowFrame");
             return result;
@@ -153,22 +192,21 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        private static FanlightBlockData[] BuildBlockData(FanlightRuntimeLayout layout, Mesh mesh)
+        private static FanlightBlockData[] BuildBlockData(FanlightRuntimeLayout layout, float boundsPadding)
         {
             var data = new FanlightBlockData[layout.BlockCount];
-            for (var i = 0; i < data.Length; i++) data[i] = ToBlockData(layout.Blocks[i], mesh);
+            for (var i = 0; i < data.Length; i++) data[i] = ToBlockData(layout.Blocks[i], boundsPadding);
             return data;
         }
 
-        private static FanlightBlockData ToBlockData(FanlightBakedBlockData block, Mesh mesh)
+        private static FanlightBlockData ToBlockData(FanlightBakedBlockData block, float boundsPadding)
         {
-            var meshPadding = mesh.bounds.size.magnitude + 4.0f;
-            return new FanlightBlockData(block.localCenter, block.radius + meshPadding, block.startIndex, block.count);
+            return new FanlightBlockData(block.localCenter, block.radius + boundsPadding, block.startIndex, block.count);
         }
 
-        private static Bounds ExpandBounds(Bounds bounds, Mesh mesh)
+        private static Bounds ExpandBounds(Bounds bounds, float boundsPadding)
         {
-            bounds.Expand(mesh.bounds.size.magnitude + 4.0f);
+            bounds.Expand(boundsPadding * 2f);
             return bounds;
         }
 
@@ -185,12 +223,105 @@ namespace PrismFanlight.Rendering
         {
             argsBuffer.SetData(new[]
             {
-                mesh.GetIndexCount(0),
-                0u,
-                mesh.GetIndexStart(0),
-                mesh.GetBaseVertex(0),
-                0u
+                new GraphicsBuffer.IndirectDrawIndexedArgs
+                {
+                    indexCountPerInstance = mesh.GetIndexCount(0),
+                    instanceCount = 0u,
+                    startIndex = mesh.GetIndexStart(0),
+                    baseVertexIndex = mesh.GetBaseVertex(0),
+                    startInstance = 0u
+                }
             });
+        }
+
+        private static void ResetPenlightArgs(GraphicsBuffer argsBuffer, Mesh[] meshes)
+        {
+            var args = new GraphicsBuffer.IndirectDrawIndexedArgs[meshes.Length];
+            for (var i = 0; i < meshes.Length; i++)
+            {
+                var mesh = meshes[i];
+                args[i] = new GraphicsBuffer.IndirectDrawIndexedArgs
+                {
+                    indexCountPerInstance = mesh.GetIndexCount(0),
+                    instanceCount = 0u,
+                    startIndex = mesh.GetIndexStart(0),
+                    baseVertexIndex = mesh.GetBaseVertex(0),
+                    startInstance = 0u
+                };
+            }
+
+            argsBuffer.SetData(args);
+        }
+
+        private static uint[] BuildVariantAssignments(
+            FanlightRuntimeLayout layout,
+            FanlightPenlightRuntimeAppearance appearance,
+            out int[] counts,
+            out ulong assignmentHash)
+        {
+            var assignments = new uint[layout.SeatCount];
+            counts = new int[appearance.VariantCount];
+            var hash = 14695981039346656037UL;
+
+            for (var i = 0; i < assignments.Length; i++)
+            {
+                var variantIndex = 0;
+                var stableSeatId = layout.HasStableSeatIds ? layout.StableSeatIds[i] : (ulong)i + 1UL;
+                if (appearance.VariantCount > 1)
+                {
+                    variantIndex = FanlightPenlightAssignment.SelectVariantIndex(
+                        stableSeatId,
+                        appearance.AssignmentSeed,
+                        appearance.AssignmentSchemaVersion,
+                        appearance.StableVariantIds);
+                }
+
+                assignments[i] = (uint)variantIndex;
+                counts[variantIndex]++;
+                AddULong(stableSeatId);
+                AddUInt(appearance.StableVariantIds[variantIndex]);
+            }
+
+            assignmentHash = hash == 0UL ? 1UL : hash;
+            return assignments;
+
+            void AddUInt(uint value)
+            {
+                for (var byteIndex = 0; byteIndex < 4; byteIndex++) AddByte((byte)(value >> (byteIndex * 8)));
+            }
+
+            void AddULong(ulong value)
+            {
+                for (var byteIndex = 0; byteIndex < 8; byteIndex++) AddByte((byte)(value >> (byteIndex * 8)));
+            }
+
+            void AddByte(byte value)
+            {
+                hash ^= value;
+                hash *= 1099511628211UL;
+            }
+        }
+
+        private static uint[] BuildVariantOffsets(int[] counts)
+        {
+            var offsets = new uint[counts.Length];
+            var offset = 0u;
+            for (var i = 0; i < counts.Length; i++)
+            {
+                offsets[i] = offset;
+                offset += (uint)counts[i];
+            }
+
+            return offsets;
+        }
+
+        private static Vector4 BuildGripPivotVector(float[] pivots)
+        {
+            return new Vector4(
+                pivots.Length > 0 ? pivots[0] : 0f,
+                pivots.Length > 1 ? pivots[1] : 0f,
+                pivots.Length > 2 ? pivots[2] : 0f,
+                pivots.Length > 3 ? pivots[3] : 0f);
         }
 
         private static FanlightRandomData[] BuildRandomData(int seatCount, uint seed)
@@ -261,6 +392,8 @@ namespace PrismFanlight.Rendering
             BlockBuffer?.Release();
             BlockVisibilityBuffer?.Release();
             PenlightVisibleIndexBuffer?.Release();
+            PenlightVariantAssignmentBuffer?.Release();
+            PenlightVariantOffsetBuffer?.Release();
             AudienceVisibleIndexBuffer?.Release();
             AudienceSlotBuffer?.Release();
             MatrixBuffer?.Release();
@@ -274,6 +407,8 @@ namespace PrismFanlight.Rendering
             BlockBuffer = null;
             BlockVisibilityBuffer = null;
             PenlightVisibleIndexBuffer = null;
+            PenlightVariantAssignmentBuffer = null;
+            PenlightVariantOffsetBuffer = null;
             AudienceVisibleIndexBuffer = null;
             AudienceSlotBuffer = null;
             MatrixBuffer = null;
@@ -286,6 +421,11 @@ namespace PrismFanlight.Rendering
             BlockCount = 0;
             LocalBounds = default;
             MeshPivotY = 0f;
+            PenlightVariantCount = 0;
+            PenlightVariantOffsets = Array.Empty<uint>();
+            PenlightVariantSeatCounts = Array.Empty<int>();
+            PenlightVariantGripPivotYs = default;
+            PenlightAssignmentHash = 0UL;
         }
     }
 }

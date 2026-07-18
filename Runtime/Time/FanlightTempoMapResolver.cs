@@ -51,6 +51,7 @@ namespace PrismFanlight.Time
                 if (_segments[middle].StartSeconds <= seconds) low = middle + 1;
                 else high = middle - 1;
             }
+
             return Math.Max(0, high);
         }
 

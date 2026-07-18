@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -24,7 +26,11 @@ namespace PrismFanlight.Rendering
         private SeatLayout _legacySource;
         private FanlightRuntimeLayout _legacyRuntimeLayout;
         private int _legacyAuthoringHash;
-        private Mesh _mesh;
+        private FanlightPenlightRuntimeAppearance _appearance;
+        private FanlightPenlightRuntimeAppearance _resolvedAppearance;
+        private FanlightPenlightAppearanceProfile _resolvedAppearanceProfile;
+        private Mesh _resolvedFallbackMesh;
+        private ulong _resolvedAppearanceHash;
         private ComputeShader _computeShader;
         private bool _audienceAllocated;
         private bool _isInitialized;
@@ -60,6 +66,16 @@ namespace PrismFanlight.Rendering
         public int PartialLayoutUploadCount => _partialLayoutUploadCount;
 
         public int LastLayoutUploadSeatCount => _lastLayoutUploadSeatCount;
+
+        public FanlightPenlightAppearanceStatus AppearanceStatus { get; private set; } = FanlightPenlightAppearanceStatus.MissingResource;
+
+        public string AppearanceProfileId => _appearance?.ProfileId ?? _resolvedAppearance?.ProfileId ?? string.Empty;
+
+        public int AppearanceProfileVersion => _appearance?.ProfileVersion ?? _resolvedAppearance?.ProfileVersion ?? 0;
+
+        public int PenlightVariantCount => _buffers.PenlightVariantCount;
+
+        public ulong PenlightAssignmentHash => _buffers.PenlightAssignmentHash;
 
         public string BackendId => "legacy.matrix.compatibility";
 
@@ -101,9 +117,11 @@ namespace PrismFanlight.Rendering
                 _legacyAuthoringHash = authoringHash;
                 _legacyRuntimeLayout = FanlightRuntimeLayout.FromLegacy(layout);
             }
+
             var runtimeLayout = _legacyRuntimeLayout;
             Render(
                 mesh,
+                null,
                 material,
                 computeShader,
                 renderingLayerMask,
@@ -122,7 +140,8 @@ namespace PrismFanlight.Rendering
         }
 
         internal void Render(
-            Mesh mesh,
+            Mesh fallbackMesh,
+            FanlightPenlightAppearanceProfile appearanceProfile,
             Material material,
             ComputeShader computeShader,
             uint renderingLayerMask,
@@ -136,15 +155,23 @@ namespace PrismFanlight.Rendering
             bool isTimeJump,
             Vector3 lodCameraWorldPos)
         {
-            if (!CanRender(mesh, material, computeShader, layout))
+            if (material == null || computeShader == null || layout == null || !layout.HasValidTopology)
             {
-                Dispose();
+                ReleaseResources();
+                AppearanceStatus = FanlightPenlightAppearanceStatus.MissingResource;
+                return;
+            }
+
+            if (!TryResolveAppearance(fallbackMesh, appearanceProfile, layout, out var appearance))
+            {
+                ReleaseResources();
+                _contractStatus = FanlightRendererStatus.Faulted;
                 return;
             }
 
             var audienceEnabled = state.Audience.enabled && audienceMaterial != null;
 
-            EnsureInitialized(mesh, computeShader, layout, audienceEnabled, state.Random);
+            EnsureInitialized(appearance, computeShader, layout, audienceEnabled, state.Random);
 
             var randomHash = state.Random.GetStableHash();
             if (_lastRandomHash != randomHash)
@@ -190,8 +217,9 @@ namespace PrismFanlight.Rendering
                 _dispatchCountThisFrame += 3;
                 if (_diagnosticReadbackRequested)
                 {
-                    _visibilityReadback.Request(_buffers.PenlightArgsBuffer, _buffers.SeatCount);
+                    _visibilityReadback.Request(_buffers.PenlightArgsBuffer, _buffers.SeatCount, _buffers.PenlightVariantCount);
                 }
+
                 _diagnosticReadbackRequested = false;
                 Profiler.EndSample();
             }
@@ -216,16 +244,26 @@ namespace PrismFanlight.Rendering
             _properties.SetBuffer(FanlightShaderIds.PenlightVisibleIndices, _buffers.PenlightVisibleIndexBuffer);
             SetColorProperties(_properties, state.Color);
 
-            var renderParams = new RenderParams(material)
+            for (var variantIndex = 0; variantIndex < appearance.VariantCount; variantIndex++)
             {
-                renderingLayerMask = renderingLayerMask,
-                receiveShadows = false,
-                worldBounds = worldBounds,
-                matProps = _properties
-            };
+                _properties.SetInt(FanlightShaderIds.VisibleIndexBase, (int)_buffers.PenlightVariantOffsets[variantIndex]);
+                var renderParams = new RenderParams(material)
+                {
+                    renderingLayerMask = renderingLayerMask,
+                    receiveShadows = false,
+                    worldBounds = worldBounds,
+                    matProps = _properties
+                };
 
-            Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.PenlightArgsBuffer);
-            _drawCountThisFrame++;
+                Graphics.RenderMeshIndirect(
+                    renderParams,
+                    appearance.Meshes[variantIndex],
+                    _buffers.PenlightArgsBuffer,
+                    1,
+                    variantIndex);
+                _drawCountThisFrame++;
+            }
+
             Profiler.EndSample();
 
             if (audienceEnabled)
@@ -237,13 +275,63 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, FanlightRuntimeLayout layout)
+        private bool TryResolveAppearance(
+            Mesh fallbackMesh,
+            FanlightPenlightAppearanceProfile profile,
+            FanlightRuntimeLayout layout,
+            out FanlightPenlightRuntimeAppearance appearance)
         {
-            return mesh != null
-                   && material != null
-                   && computeShader != null
-                   && layout != null
-                   && layout.HasValidTopology;
+            appearance = null;
+            if (profile == null)
+            {
+                if (fallbackMesh == null)
+                {
+                    AppearanceStatus = FanlightPenlightAppearanceStatus.MissingResource;
+                    return false;
+                }
+
+                var hash = unchecked((ulong)(uint)fallbackMesh.GetInstanceID()) | 1UL;
+                if (_resolvedAppearance == null || _resolvedAppearanceProfile != null
+                                                || _resolvedFallbackMesh != fallbackMesh
+                                                || _resolvedAppearanceHash != hash)
+                {
+                    _resolvedAppearance = FanlightPenlightRuntimeAppearance.CreateLegacy(fallbackMesh);
+                    _resolvedAppearanceProfile = null;
+                    _resolvedFallbackMesh = fallbackMesh;
+                    _resolvedAppearanceHash = hash;
+                }
+
+                appearance = _resolvedAppearance;
+                AppearanceStatus = FanlightPenlightAppearanceStatus.LegacySingleMesh;
+                return appearance != null;
+            }
+
+            if (!profile.TryValidate(out _))
+            {
+                AppearanceStatus = FanlightPenlightAppearanceStatus.InvalidProfile;
+                return false;
+            }
+
+            if (profile.VariantCount > 1 && !layout.HasStableSeatIds)
+            {
+                AppearanceStatus = FanlightPenlightAppearanceStatus.StableSeatIdsRequired;
+                return false;
+            }
+
+            var contentHash = profile.GetRuntimeContentHash();
+            if (_resolvedAppearance == null || _resolvedAppearanceProfile != profile || _resolvedAppearanceHash != contentHash)
+            {
+                _resolvedAppearance = FanlightPenlightRuntimeAppearance.Create(profile);
+                _resolvedAppearanceProfile = profile;
+                _resolvedFallbackMesh = null;
+                _resolvedAppearanceHash = contentHash;
+            }
+
+            appearance = _resolvedAppearance;
+            AppearanceStatus = appearance != null
+                ? FanlightPenlightAppearanceStatus.Ready
+                : FanlightPenlightAppearanceStatus.InvalidProfile;
+            return appearance != null;
         }
 
         private void DrawAudience(Material audienceMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
@@ -269,33 +357,41 @@ namespace PrismFanlight.Rendering
             Profiler.EndSample();
         }
 
-        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, FanlightRuntimeLayout layout, bool allocateAudience, FanlightRandomSettings random)
+        private void EnsureInitialized(
+            FanlightPenlightRuntimeAppearance appearance,
+            ComputeShader computeShader,
+            FanlightRuntimeLayout layout,
+            bool allocateAudience,
+            FanlightRandomSettings random)
         {
             if (_isInitialized
-                && _mesh == mesh
+                && _appearance != null
+                && _appearance.ContentHash == appearance.ContentHash
                 && _computeShader == computeShader
                 && _audienceAllocated == allocateAudience
-                && layout.HasSameTopology(_layout))
+                && layout.HasSameTopology(_layout)
+                && layout.StableSeatIdHash == _layout.StableSeatIdHash)
             {
                 if (_layout.ContentHash != layout.ContentHash)
                 {
-                    _buffers.UpdateStaticData(mesh, layout);
+                    _buffers.UpdateStaticData(appearance, layout);
                     _lastLayoutUploadSeatCount = layout.SeatCount;
                     _layout = layout;
                     _animationInitialized = false;
                     _scheduler.Reset();
                 }
+
                 return;
             }
 
             Dispose();
 
-            _mesh = mesh;
+            _appearance = appearance;
             _computeShader = computeShader;
             _layout = layout;
             _kernels = new FanlightGpuKernels(computeShader);
             _properties = new MaterialPropertyBlock();
-            _buffers.Allocate(mesh, layout, allocateAudience, random);
+            _buffers.Allocate(appearance, layout, allocateAudience, random);
             _layoutBufferAllocationCount++;
             _lastLayoutUploadSeatCount = layout.SeatCount;
             _audienceAllocated = allocateAudience;
@@ -313,27 +409,33 @@ namespace PrismFanlight.Rendering
             {
                 throw new ArgumentException("LayoutId must be non-empty.", nameof(layout));
             }
+
             if (layout.LayoutVersion <= 0 || layout.BakeVersion <= 0 || layout.Seats.Length == 0 || layout.Blocks.Length == 0)
             {
                 throw new ArgumentException("Layout versions, seats, and blocks must be present.", nameof(layout));
             }
+
             if (string.IsNullOrWhiteSpace(persona.PersonaProfileId) || persona.PersonaSchemaVersion <= 0)
             {
                 throw new ArgumentException("Persona profile ID and schema version are required.", nameof(persona));
             }
+
             if (string.IsNullOrWhiteSpace(gestureLibrary.GestureLibraryId) || gestureLibrary.GestureLibraryVersion <= 0)
             {
                 throw new ArgumentException("Gesture library ID and version are required.", nameof(gestureLibrary));
             }
+
             if (layout.Seats.Length != persona.PackedPersonas.Length
                 && persona.Encoding == FanlightPersonaEncoding.Packed16Bytes)
             {
                 throw new ArgumentException("Packed persona count must match seat count.", nameof(persona));
             }
+
             if (persona.Encoding == FanlightPersonaEncoding.IntegerHash && persona.PackedPersonas.Length != 0)
             {
                 throw new ArgumentException("Integer-hash persona data must not include packed records.", nameof(persona));
             }
+
             ValidateStaticLayout(layout);
 
             _contractLayoutId = layout.LayoutId;
@@ -387,6 +489,7 @@ namespace PrismFanlight.Rendering
             {
                 throw new ArgumentException("Renderer accepts only complete show samples.", nameof(sample));
             }
+
             _lastShowSampleSequence = sample.SampleSequence;
         }
 
@@ -406,6 +509,7 @@ namespace PrismFanlight.Rendering
                 _contractStatus = FanlightRendererStatus.Degraded;
                 throw new InvalidOperationException("The compatibility backend supports one resident camera.");
             }
+
             _contractCameras[camera.CameraId] = camera;
         }
 
@@ -446,7 +550,7 @@ namespace PrismFanlight.Rendering
         {
             if (requestReadback) _diagnosticReadbackRequested = true;
             var diagnosticCameraId = _contractCameras.Count == 1
-                ? System.Linq.Enumerable.First(_contractCameras.Keys)
+                ? Enumerable.First(_contractCameras.Keys)
                 : string.Empty;
             var bufferDiagnostics = _buffers.CaptureDiagnostics(diagnosticCameraId);
             var cameraDiagnostics = new FanlightCameraDiagnostic[_contractCameras.Count];
@@ -486,7 +590,13 @@ namespace PrismFanlight.Rendering
                 _visibilityReadback.IsPending,
                 _visibilityReadback.LastSuccessfulFrame,
                 bufferDiagnostics,
-                cameraDiagnostics);
+                cameraDiagnostics,
+                AppearanceProfileId,
+                AppearanceProfileVersion,
+                PenlightVariantCount,
+                PenlightAssignmentHash,
+                _buffers.PenlightVariantSeatCounts,
+                _visibilityReadback.VisibleVariantCounts);
         }
 
         private static void ValidateCamera(in FanlightCameraContext camera)
@@ -503,13 +613,13 @@ namespace PrismFanlight.Rendering
 
             if (changedBlockIndex >= 0)
             {
-                _buffers.UpdateBlock(_mesh, layout, changedBlockIndex);
+                _buffers.UpdateBlock(_appearance, layout, changedBlockIndex);
                 _partialLayoutUploadCount++;
                 _lastLayoutUploadSeatCount = layout.Blocks[changedBlockIndex].count;
             }
             else
             {
-                _buffers.UpdateStaticData(_mesh, layout);
+                _buffers.UpdateStaticData(_appearance, layout);
                 _lastLayoutUploadSeatCount = layout.SeatCount;
             }
 
@@ -546,7 +656,7 @@ namespace PrismFanlight.Rendering
             _properties = null;
             _audienceProperties = null;
             _audienceAllocated = false;
-            _mesh = null;
+            _appearance = null;
             _computeShader = null;
             _layout = null;
             _legacySource = null;

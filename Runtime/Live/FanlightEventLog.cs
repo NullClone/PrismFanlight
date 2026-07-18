@@ -45,6 +45,7 @@ namespace PrismFanlight.Live
         private sealed class EventComparer : IComparer<FanlightLiveEvent>
         {
             public static readonly EventComparer Instance = new();
+
             public int Compare(FanlightLiveEvent left, FanlightLiveEvent right)
             {
                 var time = left.ShowSeconds.CompareTo(right.ShowSeconds);
@@ -88,6 +89,7 @@ namespace PrismFanlight.Live
                     "FallbackActivated",
                     1));
             }
+
             var type = sample.Discontinuity switch
             {
                 FanlightTimeDiscontinuity.Reconnected => FanlightLiveEventType.ClockReconnected,
@@ -115,6 +117,7 @@ namespace PrismFanlight.Live
                     note,
                     1));
             }
+
             _lastSequence = sample.Sequence;
             _lastProviderId = sample.ProviderId;
             _lastFallback = sample.IsFallbackActive;

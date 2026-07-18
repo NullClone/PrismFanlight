@@ -195,11 +195,13 @@ namespace PrismFanlight.Authoring
             {
                 throw new ArgumentOutOfRangeException(nameof(blockCount), "Layout topology exceeds the supported 32-bit artifact range.");
             }
+
             var totalSeats64 = totalBlocks64 * blockSeats64;
             if (totalSeats64 > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(blockCount), "Layout topology exceeds the supported 32-bit artifact range.");
             }
+
             var totalBlocks = (int)totalBlocks64;
             var totalSeats = (int)totalSeats64;
             if (blockIds == null || blockIds.Length != totalBlocks) throw new ArgumentException("Block ID count does not match topology.", nameof(blockIds));

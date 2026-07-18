@@ -120,7 +120,7 @@ Material:
     - _RimIntensity: 3
     - _RimPower: 1
     - _RimSmoothness: 0.05
-    - _RimStrength: 0.1
+    - _RimStrength: 0.05
     - _RimThickness: 0.3
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0

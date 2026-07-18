@@ -9,9 +9,15 @@ namespace PrismFanlight.Timeline
     [AddComponentMenu("Prism Fanlight/Time Providers/Timeline Time Provider")]
     public sealed class TimelineTimeProvider : MonoBehaviour, IShowTimeProvider
     {
-        [SerializeField] private string _providerId = string.Empty;
-        [SerializeField] private PlayableDirector _director;
-        [SerializeField, Min(1e-9f)] private double _seekTolerance = 1e-5d;
+        [SerializeField]
+        private string _providerId = string.Empty;
+
+        [SerializeField]
+        private PlayableDirector _director;
+
+        [SerializeField, Min(1e-9f)]
+        private double _seekTolerance = 1e-5d;
+
         private bool _hasPrevious;
         private double _previousSeconds;
         private double _previousUnitySeconds;
@@ -46,6 +52,7 @@ namespace PrismFanlight.Timeline
                 else if (IsForwardLoop(actual, rate)) discontinuity = FanlightTimeDiscontinuity.Loop;
                 else if (Math.Abs(actual - expected) > _seekTolerance) discontinuity = FanlightTimeDiscontinuity.Seek;
             }
+
             _hasPrevious = true;
             _previousSeconds = seconds;
             _previousUnitySeconds = unitySeconds;

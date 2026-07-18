@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using PrismFanlight.Rendering;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -15,6 +17,7 @@ namespace PrismFanlight.Editor
 
         private readonly FanlightCompiledLayout _compiled;
         private readonly FanlightSeatData[] _gpuSeats;
+        private readonly ulong[] _stableSeatIds;
         private readonly FanlightBakedBlockData[] _gpuBlocks;
         private readonly FanlightBoundsTree _boundsTree;
         private readonly FanlightHashTree _hashTree;
@@ -36,6 +39,7 @@ namespace PrismFanlight.Editor
             Source = source;
             _compiled = new FanlightCompiledLayout(source);
             _gpuSeats = new FanlightSeatData[source.TotalSeatCount];
+            _stableSeatIds = new ulong[source.TotalSeatCount];
             _gpuBlocks = new FanlightBakedBlockData[source.TotalBlockCount];
             _boundsTree = new FanlightBoundsTree(source.TotalBlockCount);
             _hashTree = new FanlightHashTree(source.TotalBlockCount);
@@ -82,6 +86,7 @@ namespace PrismFanlight.Editor
                 session = new FanlightLayoutEditSession(source);
                 Sessions[key] = session;
             }
+
             return session;
         }
 
@@ -89,7 +94,7 @@ namespace PrismFanlight.Editor
         {
             Sessions.Clear();
             if (Application.isPlaying) return;
-            foreach (var fanlight in UnityEngine.Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 fanlight.ClearEditorLayoutPreview();
             }
@@ -120,6 +125,7 @@ namespace PrismFanlight.Editor
                 _dirtyBlocks[blockIndex] = true;
                 _dirtyBlockCount++;
             }
+
             _dirtyReason |= FanlightLayoutDirtyReason.BlockPlacement;
             _knownLayoutVersion = Source.LayoutVersion;
             RefreshRuntimeLayout();
@@ -171,10 +177,11 @@ namespace PrismFanlight.Editor
 
         public void ApplyPreviewToAllInstances(int changedBlockIndex)
         {
-            foreach (var fanlight in UnityEngine.Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 if (fanlight.LayoutAsset == Source) fanlight.SetEditorLayoutPreview(_runtimeLayout, changedBlockIndex);
             }
+
             EditorApplication.QueuePlayerLoopUpdate();
             SceneView.RepaintAll();
         }
@@ -197,7 +204,9 @@ namespace PrismFanlight.Editor
             {
                 var seat = _compiled.Seats[i];
                 _gpuSeats[i] = new FanlightSeatData(seat.localPosition, seat.planePosition, seat.blockCoordinates, (uint)i);
+                _stableSeatIds[i] = seat.stableSeatId;
             }
+
             _gpuBlocks[blockIndex] = new FanlightBakedBlockData(
                 block.localBounds.center,
                 block.localBounds.extents.magnitude,
@@ -219,6 +228,7 @@ namespace PrismFanlight.Editor
                 Source.BlockCount,
                 _boundsTree.Root,
                 _gpuSeats,
+                _stableSeatIds,
                 _gpuBlocks);
         }
 
@@ -241,8 +251,8 @@ namespace PrismFanlight.Editor
         private void WriteCorners(int blockIndex, Vector3[] corners)
         {
             var block = Source.GetBlockCoordinates(blockIndex);
-            var min = Source.GetPositionOnPlane(block, new Unity.Mathematics.int2(0, 0)) - Source.SeatPitch * 0.5f;
-            var max = Source.GetPositionOnPlane(block, Source.SeatPerBlock - new Unity.Mathematics.int2(1, 1)) + Source.SeatPitch * 0.5f;
+            var min = Source.GetPositionOnPlane(block, new int2(0, 0)) - Source.SeatPitch * 0.5f;
+            var max = Source.GetPositionOnPlane(block, Source.SeatPerBlock - new int2(1, 1)) + Source.SeatPitch * 0.5f;
             corners[0] = Source.TransformBlockPoint(blockIndex, new Vector3(min.x, 0f, min.y));
             corners[1] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, min.y));
             corners[2] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, max.y));
@@ -321,6 +331,7 @@ namespace PrismFanlight.Editor
                 if (index < _count) results.Add(index);
                 return;
             }
+
             QueryNode(node * 2, planes, localToWorld, results);
             QueryNode(node * 2 + 1, planes, localToWorld, results);
         }
@@ -334,18 +345,21 @@ namespace PrismFanlight.Editor
                 _valid[node] = false;
                 return;
             }
+
             if (!_valid[right])
             {
                 _nodes[node] = _nodes[left];
                 _valid[node] = true;
                 return;
             }
+
             if (!_valid[left])
             {
                 _nodes[node] = _nodes[right];
                 _valid[node] = true;
                 return;
             }
+
             var bounds = _nodes[left];
             bounds.Encapsulate(_nodes[right].min);
             bounds.Encapsulate(_nodes[right].max);

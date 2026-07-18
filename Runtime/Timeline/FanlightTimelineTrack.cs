@@ -10,9 +10,14 @@ namespace PrismFanlight.Timeline
     [TrackColor(0.25f, 0.6f, 1.0f)]
     public sealed class FanlightTimelineTrack : TrackAsset
     {
-        [SerializeField, HideInInspector] private string _stableId = string.Empty;
-        [SerializeField] private int _priority;
-        [SerializeField, HideInInspector] private bool _priorityInitialized;
+        [SerializeField, HideInInspector]
+        private string _stableId = string.Empty;
+
+        [SerializeField]
+        private int _priority;
+
+        [SerializeField, HideInInspector]
+        private bool _priorityInitialized;
 
         public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
         {
@@ -42,6 +47,7 @@ namespace PrismFanlight.Timeline
                 if (track is FanlightTimelineTrack other
                     && string.Equals(other._stableId, _stableId, StringComparison.Ordinal)) return true;
             }
+
             return false;
         }
 

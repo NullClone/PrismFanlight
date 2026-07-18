@@ -38,10 +38,10 @@ namespace PrismFanlight.Timeline
             {
                 var parameter = _activeParameters[i];
                 if (!FanlightLegacyIntentAdapter.TryAddLegacyParameter(
-                    builder,
-                    parameter.Descriptor.Path,
-                    parameter.Value,
-                    baseIntent))
+                        builder,
+                        parameter.Descriptor.Path,
+                        parameter.Value,
+                        baseIntent))
                 {
                     _unsupportedPaths.Add(parameter.Descriptor.Path);
                 }
@@ -50,6 +50,7 @@ namespace PrismFanlight.Timeline
                     _mappedParameterCount++;
                 }
             }
+
             return builder.Build();
         }
 

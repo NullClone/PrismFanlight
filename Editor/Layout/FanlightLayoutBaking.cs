@@ -190,6 +190,7 @@ namespace PrismFanlight.Editor
                 hash = AddByte(hash, (byte)c);
                 hash = AddByte(hash, (byte)(c >> 8));
             }
+
             return hash;
         }
 
@@ -276,11 +277,12 @@ namespace PrismFanlight.Editor
                     contentHash = reader.ReadUInt64()
                 };
                 if (block.contiguousSeatStart < 0 || block.contiguousSeatCount <= 0
-                    || block.contiguousSeatCount > seatCount
-                    || block.contiguousSeatStart > seatCount - block.contiguousSeatCount)
+                                                  || block.contiguousSeatCount > seatCount
+                                                  || block.contiguousSeatStart > seatCount - block.contiguousSeatCount)
                 {
                     throw new InvalidDataException($"Invalid seat range in block {blockIndex}.");
                 }
+
                 data.Blocks[blockIndex] = block;
                 var end = block.contiguousSeatStart + block.contiguousSeatCount;
                 var blockHash = FanlightStableHash.Begin();
@@ -293,11 +295,13 @@ namespace PrismFanlight.Editor
                     {
                         throw new InvalidDataException($"Invalid or duplicate stable seat ID at seat {seatIndex}.");
                     }
+
                     if (seat.blockIndex != blockIndex) throw new InvalidDataException($"Seat {seatIndex} references the wrong block.");
                     data.Seats[seatIndex] = seat;
                     blockHash = FanlightStableHash.Add(blockHash, seat.stableSeatId);
                     blockHash = FanlightStableHash.Add(blockHash, seat.localPosition);
                 }
+
                 blockHash = FanlightStableHash.Add(blockHash, block.localBounds.center);
                 blockHash = FanlightStableHash.Add(blockHash, block.localBounds.size);
                 blockHash = FanlightStableHash.Finish(blockHash);
@@ -309,6 +313,7 @@ namespace PrismFanlight.Editor
             {
                 if (!assignedSeats[i]) throw new InvalidDataException($"Seat {i} is not owned by a block.");
             }
+
             var layoutHash = FanlightStableHash.Begin();
             layoutHash = FanlightStableHash.Add(layoutHash, data.LayoutId);
             layoutHash = FanlightStableHash.Add(layoutHash, data.SourceLayoutVersion);
