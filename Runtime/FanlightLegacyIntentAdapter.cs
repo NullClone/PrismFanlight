@@ -1,82 +1,183 @@
 using System;
-using System.Collections.Generic;
 using PrismFanlight.Core;
 using UnityEngine;
 
 namespace PrismFanlight
 {
-    public static class FanlightLegacyIntentAdapter
+    internal static class FanlightLegacyIntentAdapter
     {
-        public static FanlightResolvedIntent ToIntent(
+        internal static FanlightShowState ToShowState(
             FanlightMotionSettings motion,
             FanlightColorSettings color,
-            FanlightAudienceSettings audience)
+            FanlightAudienceSettings audience,
+            uint globalSeed)
         {
             motion = motion.Validated();
             color = color.Validated();
             audience = audience.Validated();
-            var palette = ToPalette(color);
-            var direction = ToDirection(motion.direction);
-            var handZone = ToHandZone(audience.handZone);
-            return new FanlightResolvedIntent(
-                "Wave",
-                handZone,
-                Mathf.Clamp01(motion.human.enthusiasm * 0.5f),
-                1f - motion.human.lazyFanRatio,
-                1f - motion.swing.randomPhase,
-                1f,
-                Mathf.Clamp01(audience.handZone.reachScale / 1.28f),
-                direction,
-                palette,
-                true,
-                audience.enabled,
-                new FanlightExpertPatch(CreateExpertValues(motion, audience)));
+            var cycleSeconds = Mathf.Clamp(motion.human.restCycleDuration, 0f, 3600f);
+            return new FanlightShowState(
+                new FanlightIntentState(
+                    Mathf.Clamp01(motion.human.enthusiasm * 0.5f),
+                    1f - motion.human.lazyFanRatio,
+                    1f - motion.swing.randomPhase,
+                    1f,
+                    Mathf.Clamp01(audience.handZone.reachScale / 1.28f)),
+                new FanlightGestureState(
+                    "Wave",
+                    Mathf.Clamp(motion.beatSync.beatsPerSwing, 0.001f, 64f),
+                    Mathf.Clamp(motion.beatSync.beatPhaseOffset, -64f, 64f),
+                    0.25f,
+                    motion.swing.peakHold,
+                    0.75f,
+                    motion.swing.crispness,
+                    motion.swing.followThrough,
+                    Mathf.Clamp(motion.beatSync.downbeatAccent, 0f, 4f)),
+                new FanlightPoseState(
+                    audience.handZone.zone,
+                    Mathf.Clamp(audience.handZone.heightOffset, -1f, 1.5f),
+                    Mathf.Clamp(audience.handZone.forwardOffset, -1f, 1f),
+                    Mathf.Max(0.01f, audience.handZone.reachScale),
+                    Mathf.Clamp(motion.swing.armLengthMin, 0f, 5f),
+                    Mathf.Clamp(motion.swing.armLengthMax, 0f, 5f),
+                    Mathf.Clamp(motion.swing.minAngle, 0f, Mathf.PI * 2f),
+                    Mathf.Clamp(motion.swing.maxAngle, 0f, Mathf.PI * 2f),
+                    motion.swing.horizontalRatio,
+                    Mathf.Clamp(motion.swing.wristSwingSpeed, 1f, 64f),
+                    Mathf.Clamp(motion.swing.wristSwingAngle, 0f, Mathf.PI),
+                    motion.swing.lean),
+                new FanlightVariationState(
+                    motion.human.seatJitter,
+                    Mathf.Clamp01(motion.human.heightJitter),
+                    motion.human.armLengthJitter,
+                    motion.swing.angleNoise,
+                    motion.direction.directionSpread,
+                    Mathf.Clamp(motion.human.reactionDelay, 0f, 10f),
+                    Mathf.Clamp(motion.beatSync.beatSeatJitter, 0f, 8f),
+                    Mathf.Clamp(motion.beatSync.beatBlockDelay.x, -64f, 64f),
+                    Mathf.Clamp(motion.beatSync.beatBlockDelay.y, -64f, 64f),
+                    motion.human.enthusiasmVariation,
+                    Mathf.Clamp(motion.human.speedVariation, 0f, 4f),
+                    Mathf.Clamp(motion.beatSync.beatReactionDelay, 0f, 10f),
+                    Mathf.Clamp(audience.handZone.variation, 0f, 0.5f)),
+                new FanlightNoiseState(
+                    Mathf.Clamp(motion.noise.phaseIrregularity, 0f, 4f),
+                    Mathf.Clamp(motion.noise.phaseIrregularitySpeed, 0f, 16f),
+                    Mathf.Clamp(motion.noise.axisNoiseAmount, 0f, 4f),
+                    Mathf.Clamp(motion.noise.axisNoiseSpeed, 0f, 16f),
+                    motion.noise.noiseOctaves,
+                    motion.noise.noiseDetail),
+                new FanlightRestState(
+                    motion.human.restProbability,
+                    motion.human.restMotionLevel,
+                    cycleSeconds,
+                    Mathf.Clamp(motion.human.restDuration, 0f, cycleSeconds),
+                    Mathf.Clamp(motion.human.restFadeDuration, 0f, 60f),
+                    motion.human.restPhaseRandomness),
+                new FanlightAudienceBodyState(
+                    Mathf.Clamp(audience.bodyHeight, 0.1f, 3f),
+                    audience.bodyHeightJitter,
+                    Mathf.Clamp(audience.bodyWidth, 0.01f, 3f),
+                    Mathf.Clamp(audience.headSize, 0.01f, 1f),
+                    audience.shoulderHeight,
+                    audience.shoulderOffset,
+                    Mathf.Clamp(audience.armWidth, 0.01f, 1f),
+                    Mathf.Clamp(audience.armLengthLimit, 0.01f, 3f),
+                    Mathf.Clamp(audience.upperBodyLeanMax, 0f, Mathf.PI * 0.5f),
+                    audience.upperBodyLean,
+                    Mathf.Clamp01(audience.motion.bodyBounce),
+                    Mathf.Clamp01(audience.motion.bodySway),
+                    Mathf.Clamp(audience.motion.bodyMotionSpeed, 0.01f, 16f),
+                    audience.motion.upperBodyLeanMotion),
+                new FanlightDirectionState(
+                    motion.direction.swingMode == FanlightSwingMode.WorldDirection
+                        ? FanlightDirectionMode.WorldDirection
+                        : FanlightDirectionMode.Target,
+                    motion.direction.swingYaw,
+                    motion.direction.aimStrength),
+                ToPalette(color),
+                new FanlightVisibilityState(true, audience.enabled),
+                globalSeed);
         }
 
-        public static FanlightIntentPatch ToFullPatch(FanlightResolvedState state)
+        internal static FanlightResolvedState ToLegacyState(in FanlightShowSample sample, in FanlightResolvedState template)
         {
-            var intent = ToIntent(state.Motion, state.Color, state.Audience);
-            var builder = new FanlightIntentPatchBuilder()
-                .SetGesture(intent.GestureId)
-                .SetHandZone(intent.HandZone)
-                .SetEnergy(intent.Energy)
-                .SetParticipation(intent.Participation)
-                .SetSynchronization(intent.Synchronization)
-                .SetRealism(intent.Realism)
-                .SetReach(intent.Reach)
-                .SetDirection(intent.Direction)
-                .SetPalette(new FanlightPalettePatch(intent.Palette, FanlightPaletteFieldMask.All))
-                .SetPenlightsEnabled(intent.PenlightsEnabled)
-                .SetAudienceBodiesEnabled(intent.AudienceBodiesEnabled);
-            var expert = intent.Expert.Values.Span;
-            for (var i = 0; i < expert.Length; i++) builder.SetExpert(expert[i]);
-            return builder.Build();
-        }
-
-        public static FanlightResolvedState ToLegacyState(in FanlightShowSample sample, in FanlightResolvedState template)
-        {
+            var state = sample.State;
             var motion = template.Motion.Validated();
             var audience = template.Audience.Validated();
-            var color = ToColor(sample.Intent.Palette);
+            var color = ToColor(state.Palette);
 
-            motion.human.enthusiasm = sample.Intent.Energy * 2f;
-            motion.human.lazyFanRatio = 1f - sample.Intent.Participation;
-            motion.swing.randomPhase = 1f - sample.Intent.Synchronization;
-            motion.direction.swingMode = sample.Intent.Direction.Mode == FanlightDirectionMode.WorldDirection
+            motion.human.enthusiasm = state.Intent.Energy * 2f;
+            motion.human.lazyFanRatio = 1f - state.Intent.Participation;
+            motion.swing.randomPhase = 1f - state.Intent.Synchronization;
+            motion.beatSync.beatsPerSwing = state.Gesture.BeatsPerCycle;
+            motion.beatSync.beatPhaseOffset = state.Gesture.PhaseOffsetBeats;
+            motion.swing.peakHold = state.Gesture.HoldRatio;
+            motion.swing.crispness = state.Gesture.Crispness;
+            motion.swing.followThrough = state.Gesture.FollowThrough;
+            motion.beatSync.downbeatAccent = state.Gesture.DownbeatAccent;
+            audience.handZone.zone = state.Pose.HandZone;
+            audience.handZone.heightOffset = state.Pose.HandHeightOffset;
+            audience.handZone.forwardOffset = state.Pose.HandForwardOffset;
+            audience.handZone.reachScale = state.Pose.HandReachScale;
+            motion.swing.armLengthMin = state.Pose.ArmLengthMinimum;
+            motion.swing.armLengthMax = state.Pose.ArmLengthMaximum;
+            motion.swing.minAngle = state.Pose.AngleMinimumRadians;
+            motion.swing.maxAngle = state.Pose.AngleMaximumRadians;
+            motion.swing.horizontalRatio = state.Pose.HorizontalRatio;
+            motion.swing.wristSwingSpeed = state.Pose.WristFrequencyMultiplier;
+            motion.swing.wristSwingAngle = state.Pose.WristAngleRadians;
+            motion.swing.lean = state.Pose.BodyLean;
+            motion.human.seatJitter = state.Variation.SeatPosition;
+            motion.human.heightJitter = state.Variation.BodyHeight;
+            motion.human.armLengthJitter = state.Variation.ArmLength;
+            motion.swing.angleNoise = state.Variation.Angle;
+            motion.direction.directionSpread = state.Variation.DirectionSpread;
+            motion.human.reactionDelay = state.Variation.ReactionDelaySeconds;
+            motion.beatSync.beatSeatJitter = state.Variation.BeatJitter;
+            motion.beatSync.beatBlockDelay = new Vector2(state.Variation.BlockDelayXBeats, state.Variation.BlockDelayYBeats);
+            motion.human.enthusiasmVariation = state.Variation.EnergyResponse;
+            motion.human.speedVariation = state.Variation.Speed;
+            motion.beatSync.beatReactionDelay = state.Variation.BeatReactionDelaySeconds;
+            audience.handZone.variation = state.Variation.HandZone;
+            motion.noise.phaseIrregularity = state.Noise.PhaseAmount;
+            motion.noise.phaseIrregularitySpeed = state.Noise.PhaseSpeed;
+            motion.noise.axisNoiseAmount = state.Noise.AxisAmount;
+            motion.noise.axisNoiseSpeed = state.Noise.AxisSpeed;
+            motion.noise.noiseOctaves = state.Noise.Octaves;
+            motion.noise.noiseDetail = state.Noise.Persistence;
+            motion.human.restProbability = state.Rest.Probability;
+            motion.human.restMotionLevel = state.Rest.MotionLevel;
+            motion.human.restCycleDuration = state.Rest.CycleSeconds;
+            motion.human.restDuration = state.Rest.DurationSeconds;
+            motion.human.restFadeDuration = state.Rest.FadeSeconds;
+            motion.human.restPhaseRandomness = state.Rest.PhaseRandomness;
+            audience.bodyHeight = state.AudienceBody.Height;
+            audience.bodyHeightJitter = state.AudienceBody.HeightVariation;
+            audience.bodyWidth = state.AudienceBody.Width;
+            audience.headSize = state.AudienceBody.HeadSize;
+            audience.shoulderHeight = state.AudienceBody.ShoulderHeightRatio;
+            audience.shoulderOffset = state.AudienceBody.ShoulderSideOffset;
+            audience.armWidth = state.AudienceBody.ArmWidth;
+            audience.armLengthLimit = state.AudienceBody.ArmLengthLimit;
+            audience.upperBodyLeanMax = state.AudienceBody.UpperBodyLeanMaximumRadians;
+            audience.upperBodyLean = state.AudienceBody.UpperBodyLean;
+            audience.motion.bodyBounce = state.AudienceBody.Bounce;
+            audience.motion.bodySway = state.AudienceBody.Sway;
+            audience.motion.bodyMotionSpeed = state.AudienceBody.MotionSpeed;
+            audience.motion.upperBodyLeanMotion = state.AudienceBody.LeanMotion;
+            motion.direction.swingMode = state.Direction.Mode == FanlightDirectionMode.WorldDirection
                 ? FanlightSwingMode.WorldDirection
                 : FanlightSwingMode.Target;
-            motion.direction.swingYaw = sample.Intent.Direction.WorldYawDegrees;
-            motion.direction.aimStrength = sample.Intent.Direction.AimStrength;
-            audience.handZone = FromHandZone(sample.Intent.HandZone, audience.handZone);
-            audience.enabled = sample.Intent.AudienceBodiesEnabled;
-            if (!sample.Intent.PenlightsEnabled) color.intensity = 0f;
+            motion.direction.swingYaw = state.Direction.WorldYawDegrees;
+            motion.direction.aimStrength = state.Direction.AimStrength;
+            audience.enabled = state.Visibility.AudienceBodiesEnabled;
+            if (!state.Visibility.PenlightsEnabled) color.intensity = 0f;
 
-            var expert = sample.Intent.Expert.Values.Span;
-            for (var i = 0; i < expert.Length; i++) ApplyExpert(ref motion, ref audience, expert[i]);
             var random = template.Random;
-            random.globalSeed = sample.GlobalSeed;
+            random.globalSeed = state.GlobalSeed;
             return new FanlightResolvedState(
-                FanlightTempoState.FromMusicalPosition(sample.ClockStatus is FanlightClockStatus.Ready or FanlightClockStatus.Holding, sample.MusicalPosition),
+                FanlightTempoState.FromMusicalPosition(true, sample.MusicalPosition),
                 motion,
                 color,
                 audience,
@@ -89,361 +190,324 @@ namespace PrismFanlight
                 sample.Discontinuity != FanlightTimeDiscontinuity.None);
         }
 
-        public static void AddLegacyParameter(
-            FanlightIntentPatchBuilder builder,
+        internal static bool TryAddLegacyParameter(
+            FanlightShowPatchBuilder builder,
             string path,
             object value,
-            FanlightResolvedIntent baseIntent) =>
-            TryAddLegacyParameter(builder, path, value, baseIntent);
-
-        public static bool TryAddLegacyParameter(
-            FanlightIntentPatchBuilder builder,
-            string path,
-            object value,
-            FanlightResolvedIntent baseIntent)
+            FanlightShowState baseState)
         {
             if (builder == null || string.IsNullOrEmpty(path) || value == null) return false;
+            return TryAddIntent(builder, path, value, baseState)
+                   || TryAddGesture(builder, path, value, baseState)
+                   || TryAddPose(builder, path, value, baseState)
+                   || TryAddVariation(builder, path, value, baseState)
+                   || TryAddNoise(builder, path, value, baseState)
+                   || TryAddRest(builder, path, value, baseState)
+                   || TryAddAudienceBody(builder, path, value, baseState)
+                   || TryAddDirection(builder, path, value, baseState)
+                   || TryAddPalette(builder, path, value, baseState)
+                   || TryAddVisibility(builder, path, value, baseState);
+        }
+
+        internal static FanlightPaletteState ToPalette(FanlightColorSettings value) => new(
+            value.slot1,
+            value.slot2,
+            value.slot3,
+            value.slot4,
+            value.slot5,
+            value.slot6,
+            Mathf.Max(0f, value.intensity),
+            Mathf.Clamp01(value.randomIntensity));
+
+        private static bool TryAddIntent(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Intent;
             switch (path)
             {
-                case "color.slot1":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot1);
-                    return true;
-                case "color.slot2":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot2);
-                    return true;
-                case "color.slot3":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot3);
-                    return true;
-                case "color.slot4":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot4);
-                    return true;
-                case "color.slot5":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot5);
-                    return true;
-                case "color.slot6":
-                    MergeColor(builder, baseIntent.Palette, (Color)value, FanlightPaletteFieldMask.Slot6);
-                    return true;
-                case "color.intensity":
-                    MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.GlobalIntensity);
-                    return true;
-                case "color.randomIntensity":
-                    MergeFloat(builder, baseIntent.Palette, (float)value, FanlightPaletteFieldMask.RandomIntensity);
-                    return true;
                 case "motion.swing.randomPhase":
-                    builder.SetSynchronization(1f - (float)value);
+                    builder.SetIntent(FanlightIntentFields.Synchronization, new FanlightIntentState(current.Energy, current.Participation, 1f - Convert.ToSingle(value), current.Realism, current.Reach));
                     return true;
                 case "motion.human.enthusiasm":
-                    builder.SetEnergy((float)value * 0.5f);
+                    builder.SetIntent(FanlightIntentFields.Energy, new FanlightIntentState(Convert.ToSingle(value) * 0.5f, current.Participation, current.Synchronization, current.Realism, current.Reach));
                     return true;
                 case "motion.human.lazyFanRatio":
-                    builder.SetParticipation(1f - (float)value);
-                    return true;
-                case "motion.beatSync.beatBlockDelay":
-                    var blockDelay = (Vector2)value;
-                    builder.SetExpert(F(FanlightExpertParameterId.VariationBlockDelayXBeats, blockDelay.x));
-                    builder.SetExpert(F(FanlightExpertParameterId.VariationBlockDelayYBeats, blockDelay.y));
-                    return true;
-                case "motion.direction.swingYaw":
-                    builder.SetDirection(WithYaw(baseIntent.Direction, (float)value));
-                    return true;
-                case "motion.direction.aimStrength":
-                    builder.SetDirection(WithAim(baseIntent.Direction, (float)value));
-                    return true;
-                case "motion.direction.swingMode":
-                    builder.SetDirection(WithMode(baseIntent.Direction, (FanlightSwingMode)value));
-                    return true;
-                case "audience.enabled":
-                    builder.SetAudienceBodiesEnabled((bool)value);
-                    return true;
-                case "audience.handZone.zone":
-                    builder.SetHandZone(WithZone(baseIntent.HandZone, (FanlightHandZone)value));
-                    return true;
-                case "audience.handZone.heightOffset":
-                    builder.SetHandZone(WithHeight(baseIntent.HandZone, (float)value));
-                    return true;
-                case "audience.handZone.forwardOffset":
-                    builder.SetHandZone(WithForward(baseIntent.HandZone, (float)value));
+                    builder.SetIntent(FanlightIntentFields.Participation, new FanlightIntentState(current.Energy, 1f - Convert.ToSingle(value), current.Synchronization, current.Realism, current.Reach));
                     return true;
                 case "audience.handZone.reachScale":
-                    builder.SetReach(Mathf.Clamp01((float)value / 1.28f));
+                    builder.SetIntent(FanlightIntentFields.Reach, new FanlightIntentState(current.Energy, current.Participation, current.Synchronization, current.Realism, Mathf.Clamp01(Convert.ToSingle(value) / 1.28f)));
                     return true;
+                default:
+                    return false;
             }
+        }
 
-            if (!TryMapExpert(path, value, out var expert)) return false;
-            builder.SetExpert(expert);
+        private static bool TryAddGesture(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Gesture;
+            var number = value is string ? 0f : Convert.ToSingle(value);
+            var fields = path switch
+            {
+                "motion.beatSync.beatsPerSwing" => FanlightGestureFields.BeatsPerCycle,
+                "motion.beatSync.beatPhaseOffset" => FanlightGestureFields.PhaseOffsetBeats,
+                "motion.swing.peakHold" => FanlightGestureFields.HoldRatio,
+                "motion.swing.crispness" => FanlightGestureFields.Crispness,
+                "motion.swing.followThrough" => FanlightGestureFields.FollowThrough,
+                "motion.beatSync.downbeatAccent" => FanlightGestureFields.DownbeatAccent,
+                _ => FanlightGestureFields.None
+            };
+            if (fields == FanlightGestureFields.None) return false;
+            builder.SetGesture(fields, new FanlightGestureState(
+                current.GestureId,
+                fields == FanlightGestureFields.BeatsPerCycle ? number : current.BeatsPerCycle,
+                fields == FanlightGestureFields.PhaseOffsetBeats ? number : current.PhaseOffsetBeats,
+                current.AttackRatio,
+                fields == FanlightGestureFields.HoldRatio ? number : current.HoldRatio,
+                current.ReturnRatio,
+                fields == FanlightGestureFields.Crispness ? number : current.Crispness,
+                fields == FanlightGestureFields.FollowThrough ? number : current.FollowThrough,
+                fields == FanlightGestureFields.DownbeatAccent ? number : current.DownbeatAccent));
             return true;
         }
 
-        public static FanlightPaletteIntent ToPalette(FanlightColorSettings value) => new(
-            value.slot1, value.slot2, value.slot3, value.slot4, value.slot5, value.slot6,
-            value.intensity, value.randomIntensity);
-
-        private static FanlightColorSettings ToColor(FanlightPaletteIntent value) => new()
+        private static bool TryAddPose(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
         {
-            slot1 = value.Slot1, slot2 = value.Slot2, slot3 = value.Slot3,
-            slot4 = value.Slot4, slot5 = value.Slot5, slot6 = value.Slot6,
-            intensity = Mathf.Max(0f, value.GlobalIntensity),
-            randomIntensity = Mathf.Clamp01(value.RandomIntensity)
+            var current = state.Pose;
+            var fields = path switch
+            {
+                "audience.handZone.zone" => FanlightPoseFields.HandZone,
+                "audience.handZone.heightOffset" => FanlightPoseFields.HandHeightOffset,
+                "audience.handZone.forwardOffset" => FanlightPoseFields.HandForwardOffset,
+                "motion.swing.armLengthMin" => FanlightPoseFields.ArmLengthMinimum,
+                "motion.swing.armLengthMax" => FanlightPoseFields.ArmLengthMaximum,
+                "motion.swing.minAngle" => FanlightPoseFields.AngleMinimumRadians,
+                "motion.swing.maxAngle" => FanlightPoseFields.AngleMaximumRadians,
+                "motion.swing.horizontalRatio" => FanlightPoseFields.HorizontalRatio,
+                "motion.swing.wristSwingSpeed" => FanlightPoseFields.WristFrequencyMultiplier,
+                "motion.swing.wristSwingAngle" => FanlightPoseFields.WristAngleRadians,
+                "motion.swing.lean" => FanlightPoseFields.BodyLean,
+                _ => FanlightPoseFields.None
+            };
+            if (fields == FanlightPoseFields.None) return false;
+            var number = fields == FanlightPoseFields.HandZone ? 0f : Convert.ToSingle(value);
+            builder.SetPose(fields, new FanlightPoseState(
+                fields == FanlightPoseFields.HandZone ? (FanlightHandZone)value : current.HandZone,
+                fields == FanlightPoseFields.HandHeightOffset ? number : current.HandHeightOffset,
+                fields == FanlightPoseFields.HandForwardOffset ? number : current.HandForwardOffset,
+                current.HandReachScale,
+                fields == FanlightPoseFields.ArmLengthMinimum ? number : current.ArmLengthMinimum,
+                fields == FanlightPoseFields.ArmLengthMaximum ? number : current.ArmLengthMaximum,
+                fields == FanlightPoseFields.AngleMinimumRadians ? number : current.AngleMinimumRadians,
+                fields == FanlightPoseFields.AngleMaximumRadians ? number : current.AngleMaximumRadians,
+                fields == FanlightPoseFields.HorizontalRatio ? number : current.HorizontalRatio,
+                fields == FanlightPoseFields.WristFrequencyMultiplier ? number : current.WristFrequencyMultiplier,
+                fields == FanlightPoseFields.WristAngleRadians ? number : current.WristAngleRadians,
+                fields == FanlightPoseFields.BodyLean ? number : current.BodyLean));
+            return true;
+        }
+
+        private static bool TryAddVariation(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Variation;
+            if (path == "motion.beatSync.beatBlockDelay")
+            {
+                var vector = (Vector2)value;
+                builder.SetVariation(FanlightVariationFields.BlockDelayXBeats | FanlightVariationFields.BlockDelayYBeats,
+                    new FanlightVariationState(current.SeatPosition, current.BodyHeight, current.ArmLength, current.Angle, current.DirectionSpread, current.ReactionDelaySeconds, current.BeatJitter, vector.x, vector.y, current.EnergyResponse, current.Speed, current.BeatReactionDelaySeconds, current.HandZone));
+                return true;
+            }
+
+            var fields = path switch
+            {
+                "motion.human.seatJitter" => FanlightVariationFields.SeatPosition,
+                "motion.human.heightJitter" => FanlightVariationFields.BodyHeight,
+                "motion.human.armLengthJitter" => FanlightVariationFields.ArmLength,
+                "motion.swing.angleNoise" => FanlightVariationFields.Angle,
+                "motion.direction.directionSpread" => FanlightVariationFields.DirectionSpread,
+                "motion.human.reactionDelay" => FanlightVariationFields.ReactionDelaySeconds,
+                "motion.beatSync.beatSeatJitter" => FanlightVariationFields.BeatJitter,
+                "motion.human.enthusiasmVariation" => FanlightVariationFields.EnergyResponse,
+                "motion.human.speedVariation" => FanlightVariationFields.Speed,
+                "motion.beatSync.beatReactionDelay" => FanlightVariationFields.BeatReactionDelaySeconds,
+                "audience.handZone.variation" => FanlightVariationFields.HandZone,
+                _ => FanlightVariationFields.None
+            };
+            if (fields == FanlightVariationFields.None) return false;
+            var number = Convert.ToSingle(value);
+            builder.SetVariation(fields, new FanlightVariationState(
+                fields == FanlightVariationFields.SeatPosition ? number : current.SeatPosition,
+                fields == FanlightVariationFields.BodyHeight ? number : current.BodyHeight,
+                fields == FanlightVariationFields.ArmLength ? number : current.ArmLength,
+                fields == FanlightVariationFields.Angle ? number : current.Angle,
+                fields == FanlightVariationFields.DirectionSpread ? number : current.DirectionSpread,
+                fields == FanlightVariationFields.ReactionDelaySeconds ? number : current.ReactionDelaySeconds,
+                fields == FanlightVariationFields.BeatJitter ? number : current.BeatJitter,
+                current.BlockDelayXBeats,
+                current.BlockDelayYBeats,
+                fields == FanlightVariationFields.EnergyResponse ? number : current.EnergyResponse,
+                fields == FanlightVariationFields.Speed ? number : current.Speed,
+                fields == FanlightVariationFields.BeatReactionDelaySeconds ? number : current.BeatReactionDelaySeconds,
+                fields == FanlightVariationFields.HandZone ? number : current.HandZone));
+            return true;
+        }
+
+        private static bool TryAddNoise(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Noise;
+            var fields = path switch
+            {
+                "motion.noise.phaseIrregularity" => FanlightNoiseFields.PhaseAmount,
+                "motion.noise.phaseIrregularitySpeed" => FanlightNoiseFields.PhaseSpeed,
+                "motion.noise.axisNoiseAmount" => FanlightNoiseFields.AxisAmount,
+                "motion.noise.axisNoiseSpeed" => FanlightNoiseFields.AxisSpeed,
+                "motion.noise.noiseOctaves" => FanlightNoiseFields.Octaves,
+                "motion.noise.noiseDetail" => FanlightNoiseFields.Persistence,
+                _ => FanlightNoiseFields.None
+            };
+            if (fields == FanlightNoiseFields.None) return false;
+            var number = Convert.ToSingle(value);
+            builder.SetNoise(fields, new FanlightNoiseState(
+                fields == FanlightNoiseFields.PhaseAmount ? number : current.PhaseAmount,
+                fields == FanlightNoiseFields.PhaseSpeed ? number : current.PhaseSpeed,
+                fields == FanlightNoiseFields.AxisAmount ? number : current.AxisAmount,
+                fields == FanlightNoiseFields.AxisSpeed ? number : current.AxisSpeed,
+                fields == FanlightNoiseFields.Octaves ? Convert.ToInt32(value) : current.Octaves,
+                fields == FanlightNoiseFields.Persistence ? number : current.Persistence));
+            return true;
+        }
+
+        private static bool TryAddRest(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Rest;
+            var fields = path switch
+            {
+                "motion.human.restProbability" => FanlightRestFields.Probability,
+                "motion.human.restMotionLevel" => FanlightRestFields.MotionLevel,
+                "motion.human.restCycleDuration" => FanlightRestFields.CycleSeconds,
+                "motion.human.restDuration" => FanlightRestFields.DurationSeconds,
+                "motion.human.restFadeDuration" => FanlightRestFields.FadeSeconds,
+                "motion.human.restPhaseRandomness" => FanlightRestFields.PhaseRandomness,
+                _ => FanlightRestFields.None
+            };
+            if (fields == FanlightRestFields.None) return false;
+            var number = Convert.ToSingle(value);
+            builder.SetRest(fields, new FanlightRestState(
+                fields == FanlightRestFields.Probability ? number : current.Probability,
+                fields == FanlightRestFields.MotionLevel ? number : current.MotionLevel,
+                fields == FanlightRestFields.CycleSeconds ? number : current.CycleSeconds,
+                fields == FanlightRestFields.DurationSeconds ? number : current.DurationSeconds,
+                fields == FanlightRestFields.FadeSeconds ? number : current.FadeSeconds,
+                fields == FanlightRestFields.PhaseRandomness ? number : current.PhaseRandomness));
+            return true;
+        }
+
+        private static bool TryAddAudienceBody(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.AudienceBody;
+            var fields = path switch
+            {
+                "audience.bodyHeight" => FanlightAudienceBodyFields.Height,
+                "audience.bodyHeightJitter" => FanlightAudienceBodyFields.HeightVariation,
+                "audience.bodyWidth" => FanlightAudienceBodyFields.Width,
+                "audience.headSize" => FanlightAudienceBodyFields.HeadSize,
+                "audience.shoulderHeight" => FanlightAudienceBodyFields.ShoulderHeightRatio,
+                "audience.shoulderOffset" => FanlightAudienceBodyFields.ShoulderSideOffset,
+                "audience.armWidth" => FanlightAudienceBodyFields.ArmWidth,
+                "audience.armLengthLimit" => FanlightAudienceBodyFields.ArmLengthLimit,
+                "audience.upperBodyLeanMax" => FanlightAudienceBodyFields.UpperBodyLeanMaximumRadians,
+                "audience.upperBodyLean" => FanlightAudienceBodyFields.UpperBodyLean,
+                "audience.motion.bodyBounce" => FanlightAudienceBodyFields.Bounce,
+                "audience.motion.bodySway" => FanlightAudienceBodyFields.Sway,
+                "audience.motion.bodyMotionSpeed" => FanlightAudienceBodyFields.MotionSpeed,
+                "audience.motion.upperBodyLeanMotion" => FanlightAudienceBodyFields.LeanMotion,
+                _ => FanlightAudienceBodyFields.None
+            };
+            if (fields == FanlightAudienceBodyFields.None) return false;
+            var number = Convert.ToSingle(value);
+            builder.SetAudienceBody(fields, new FanlightAudienceBodyState(
+                fields == FanlightAudienceBodyFields.Height ? number : current.Height,
+                fields == FanlightAudienceBodyFields.HeightVariation ? number : current.HeightVariation,
+                fields == FanlightAudienceBodyFields.Width ? number : current.Width,
+                fields == FanlightAudienceBodyFields.HeadSize ? number : current.HeadSize,
+                fields == FanlightAudienceBodyFields.ShoulderHeightRatio ? number : current.ShoulderHeightRatio,
+                fields == FanlightAudienceBodyFields.ShoulderSideOffset ? number : current.ShoulderSideOffset,
+                fields == FanlightAudienceBodyFields.ArmWidth ? number : current.ArmWidth,
+                fields == FanlightAudienceBodyFields.ArmLengthLimit ? number : current.ArmLengthLimit,
+                fields == FanlightAudienceBodyFields.UpperBodyLeanMaximumRadians ? number : current.UpperBodyLeanMaximumRadians,
+                fields == FanlightAudienceBodyFields.UpperBodyLean ? number : current.UpperBodyLean,
+                fields == FanlightAudienceBodyFields.Bounce ? number : current.Bounce,
+                fields == FanlightAudienceBodyFields.Sway ? number : current.Sway,
+                fields == FanlightAudienceBodyFields.MotionSpeed ? number : current.MotionSpeed,
+                fields == FanlightAudienceBodyFields.LeanMotion ? number : current.LeanMotion));
+            return true;
+        }
+
+        private static bool TryAddDirection(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Direction;
+            switch (path)
+            {
+                case "motion.direction.swingYaw":
+                    builder.SetDirection(FanlightDirectionFields.WorldYawDegrees, new FanlightDirectionState(current.Mode, Convert.ToSingle(value), current.AimStrength));
+                    return true;
+                case "motion.direction.aimStrength":
+                    builder.SetDirection(FanlightDirectionFields.AimStrength, new FanlightDirectionState(current.Mode, current.WorldYawDegrees, Convert.ToSingle(value)));
+                    return true;
+                case "motion.direction.swingMode":
+                    builder.SetDirection(FanlightDirectionFields.Mode, new FanlightDirectionState((FanlightSwingMode)value == FanlightSwingMode.WorldDirection ? FanlightDirectionMode.WorldDirection : FanlightDirectionMode.Target, current.WorldYawDegrees, current.AimStrength));
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryAddPalette(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            var current = state.Palette;
+            var fields = path switch
+            {
+                "color.slot1" => FanlightPaletteFields.Slot1,
+                "color.slot2" => FanlightPaletteFields.Slot2,
+                "color.slot3" => FanlightPaletteFields.Slot3,
+                "color.slot4" => FanlightPaletteFields.Slot4,
+                "color.slot5" => FanlightPaletteFields.Slot5,
+                "color.slot6" => FanlightPaletteFields.Slot6,
+                "color.intensity" => FanlightPaletteFields.GlobalIntensity,
+                "color.randomIntensity" => FanlightPaletteFields.RandomIntensity,
+                _ => FanlightPaletteFields.None
+            };
+            if (fields == FanlightPaletteFields.None) return false;
+            var color = value is Color incoming ? incoming : default;
+            var number = value is Color ? 0f : Convert.ToSingle(value);
+            builder.SetPalette(fields, new FanlightPaletteState(
+                fields == FanlightPaletteFields.Slot1 ? color : current.Slot1,
+                fields == FanlightPaletteFields.Slot2 ? color : current.Slot2,
+                fields == FanlightPaletteFields.Slot3 ? color : current.Slot3,
+                fields == FanlightPaletteFields.Slot4 ? color : current.Slot4,
+                fields == FanlightPaletteFields.Slot5 ? color : current.Slot5,
+                fields == FanlightPaletteFields.Slot6 ? color : current.Slot6,
+                fields == FanlightPaletteFields.GlobalIntensity ? number : current.GlobalIntensity,
+                fields == FanlightPaletteFields.RandomIntensity ? number : current.RandomIntensity));
+            return true;
+        }
+
+        private static bool TryAddVisibility(FanlightShowPatchBuilder builder, string path, object value, FanlightShowState state)
+        {
+            if (path != "audience.enabled") return false;
+            builder.SetVisibility(FanlightVisibilityFields.AudienceBodiesEnabled,
+                new FanlightVisibilityState(state.Visibility.PenlightsEnabled, Convert.ToBoolean(value)));
+            return true;
+        }
+
+        private static FanlightColorSettings ToColor(FanlightPaletteState value) => new()
+        {
+            slot1 = value.Slot1,
+            slot2 = value.Slot2,
+            slot3 = value.Slot3,
+            slot4 = value.Slot4,
+            slot5 = value.Slot5,
+            slot6 = value.Slot6,
+            intensity = value.GlobalIntensity,
+            randomIntensity = value.RandomIntensity
         };
-
-        private static FanlightDirectionIntent ToDirection(FanlightDirectionSettings value) => new(
-            value.swingMode == FanlightSwingMode.WorldDirection ? FanlightDirectionMode.WorldDirection : FanlightDirectionMode.TargetPoint,
-            value.swingYaw,
-            0f,
-            Vector3.zero,
-            string.Empty,
-            value.aimStrength,
-            value.swingYaw,
-            0f);
-
-        private static FanlightHandZoneIntent ToHandZone(FanlightHandZoneSettings value) => new(
-            value.zone switch
-            {
-                FanlightHandZone.Chest => FanlightHandZoneId.Chest,
-                FanlightHandZone.Face => FanlightHandZoneId.Face,
-                FanlightHandZone.Overhead => FanlightHandZoneId.Overhead,
-                FanlightHandZone.High => FanlightHandZoneId.High,
-                _ => FanlightHandZoneId.Shoulder
-            },
-            value.heightOffset,
-            value.forwardOffset,
-            0f);
-
-        private static FanlightHandZoneSettings FromHandZone(FanlightHandZoneIntent value, FanlightHandZoneSettings template)
-        {
-            template.zone = value.Zone switch
-            {
-                FanlightHandZoneId.Chest => FanlightHandZone.Chest,
-                FanlightHandZoneId.Face => FanlightHandZone.Face,
-                FanlightHandZoneId.Overhead => FanlightHandZone.Overhead,
-                FanlightHandZoneId.High => FanlightHandZone.High,
-                _ => FanlightHandZone.Shoulder
-            };
-            template.heightOffset = value.HeightOffset;
-            template.forwardOffset = value.ForwardOffset;
-            return template.Validated();
-        }
-
-        private static FanlightExpertParameterValue[] CreateExpertValues(FanlightMotionSettings motion, FanlightAudienceSettings audience)
-        {
-            var values = new List<FanlightExpertParameterValue>(56)
-            {
-                F(FanlightExpertParameterId.GestureBeatsPerCycle, motion.beatSync.beatsPerSwing),
-                F(FanlightExpertParameterId.GesturePhaseOffset, motion.beatSync.beatPhaseOffset),
-                F(FanlightExpertParameterId.GestureHoldRatio, motion.swing.peakHold),
-                F(FanlightExpertParameterId.GestureCrispness, motion.swing.crispness),
-                F(FanlightExpertParameterId.GestureFollowThrough, motion.swing.followThrough),
-                F(FanlightExpertParameterId.GestureDownbeatAccent, motion.beatSync.downbeatAccent),
-                F(FanlightExpertParameterId.PoseArmLengthMinimum, motion.swing.armLengthMin),
-                F(FanlightExpertParameterId.PoseArmLengthMaximum, motion.swing.armLengthMax),
-                F(FanlightExpertParameterId.PoseAngleMinimumRadians, motion.swing.minAngle),
-                F(FanlightExpertParameterId.PoseAngleMaximumRadians, motion.swing.maxAngle),
-                F(FanlightExpertParameterId.PoseHorizontalRatio, motion.swing.horizontalRatio),
-                F(FanlightExpertParameterId.PoseWristFrequencyMultiplier, motion.swing.wristSwingSpeed),
-                F(FanlightExpertParameterId.PoseWristAngleRadians, motion.swing.wristSwingAngle),
-                F(FanlightExpertParameterId.PoseBodyLean, motion.swing.lean),
-                F(FanlightExpertParameterId.PoseBodyBounce, audience.motion.bodyBounce),
-                F(FanlightExpertParameterId.PoseBodySway, audience.motion.bodySway),
-                F(FanlightExpertParameterId.PoseBodyMotionSpeed, audience.motion.bodyMotionSpeed),
-                F(FanlightExpertParameterId.PoseUpperBodyLeanMotion, audience.motion.upperBodyLeanMotion),
-                F(FanlightExpertParameterId.VariationSeatPosition, motion.human.seatJitter),
-                F(FanlightExpertParameterId.VariationBodyHeight, motion.human.heightJitter),
-                F(FanlightExpertParameterId.VariationArmLength, motion.human.armLengthJitter),
-                F(FanlightExpertParameterId.VariationAngle, motion.swing.angleNoise),
-                F(FanlightExpertParameterId.VariationDirectionSpread, motion.direction.directionSpread),
-                F(FanlightExpertParameterId.VariationReactionDelaySeconds, motion.human.reactionDelay),
-                F(FanlightExpertParameterId.VariationBeatJitter, motion.beatSync.beatSeatJitter),
-                F(FanlightExpertParameterId.VariationBlockDelayXBeats, motion.beatSync.beatBlockDelay.x),
-                F(FanlightExpertParameterId.VariationBlockDelayYBeats, motion.beatSync.beatBlockDelay.y),
-                F(FanlightExpertParameterId.VariationEnergyResponse, motion.human.enthusiasmVariation),
-                F(FanlightExpertParameterId.VariationSpeed, motion.human.speedVariation),
-                F(FanlightExpertParameterId.VariationBeatReactionDelaySeconds, motion.beatSync.beatReactionDelay),
-                F(FanlightExpertParameterId.VariationHandZone, audience.handZone.variation),
-                F(FanlightExpertParameterId.NoisePhaseAmount, motion.noise.phaseIrregularity),
-                F(FanlightExpertParameterId.NoisePhaseSpeed, motion.noise.phaseIrregularitySpeed),
-                F(FanlightExpertParameterId.NoiseAxisAmount, motion.noise.axisNoiseAmount),
-                F(FanlightExpertParameterId.NoiseAxisSpeed, motion.noise.axisNoiseSpeed),
-                I(FanlightExpertParameterId.NoiseOctaves, motion.noise.noiseOctaves),
-                F(FanlightExpertParameterId.NoisePersistence, motion.noise.noiseDetail),
-                F(FanlightExpertParameterId.RestProbability, motion.human.restProbability),
-                F(FanlightExpertParameterId.RestMotionLevel, motion.human.restMotionLevel),
-                F(FanlightExpertParameterId.RestCycleSeconds, motion.human.restCycleDuration),
-                F(FanlightExpertParameterId.RestDurationSeconds, motion.human.restDuration),
-                F(FanlightExpertParameterId.RestFadeSeconds, motion.human.restFadeDuration),
-                F(FanlightExpertParameterId.RestPhaseRandomness, motion.human.restPhaseRandomness),
-                F(FanlightExpertParameterId.BodyHeight, audience.bodyHeight),
-                F(FanlightExpertParameterId.BodyHeightVariation, audience.bodyHeightJitter),
-                F(FanlightExpertParameterId.BodyWidth, audience.bodyWidth),
-                F(FanlightExpertParameterId.BodyHeadSize, audience.headSize),
-                F(FanlightExpertParameterId.BodyShoulderHeightRatio, audience.shoulderHeight),
-                F(FanlightExpertParameterId.BodyShoulderSideOffset, audience.shoulderOffset),
-                F(FanlightExpertParameterId.BodyArmWidth, audience.armWidth),
-                F(FanlightExpertParameterId.BodyArmLengthLimit, audience.armLengthLimit),
-                F(FanlightExpertParameterId.BodyUpperBodyLeanMaximum, audience.upperBodyLeanMax),
-                F(FanlightExpertParameterId.BodyUpperBodyLean, audience.upperBodyLean)
-            };
-            values.Sort((left, right) => ((int)left.ParameterId).CompareTo((int)right.ParameterId));
-            return values.ToArray();
-        }
-
-        private static void ApplyExpert(ref FanlightMotionSettings motion, ref FanlightAudienceSettings audience, FanlightExpertParameterValue value)
-        {
-            var f = value.ValueKind == FanlightExpertValueKind.Integer ? value.IntegerValue : value.FloatValue;
-            switch (value.ParameterId)
-            {
-                case FanlightExpertParameterId.GestureBeatsPerCycle: motion.beatSync.beatsPerSwing = f; break;
-                case FanlightExpertParameterId.GesturePhaseOffset: motion.beatSync.beatPhaseOffset = f; break;
-                case FanlightExpertParameterId.GestureHoldRatio: motion.swing.peakHold = f; break;
-                case FanlightExpertParameterId.GestureCrispness: motion.swing.crispness = f; break;
-                case FanlightExpertParameterId.GestureFollowThrough: motion.swing.followThrough = f; break;
-                case FanlightExpertParameterId.GestureDownbeatAccent: motion.beatSync.downbeatAccent = f; break;
-                case FanlightExpertParameterId.PoseArmLengthMinimum: motion.swing.armLengthMin = f; break;
-                case FanlightExpertParameterId.PoseArmLengthMaximum: motion.swing.armLengthMax = f; break;
-                case FanlightExpertParameterId.PoseAngleMinimumRadians: motion.swing.minAngle = f; break;
-                case FanlightExpertParameterId.PoseAngleMaximumRadians: motion.swing.maxAngle = f; break;
-                case FanlightExpertParameterId.PoseHorizontalRatio: motion.swing.horizontalRatio = f; break;
-                case FanlightExpertParameterId.PoseWristFrequencyMultiplier: motion.swing.wristSwingSpeed = f; break;
-                case FanlightExpertParameterId.PoseWristAngleRadians: motion.swing.wristSwingAngle = f; break;
-                case FanlightExpertParameterId.PoseBodyLean: motion.swing.lean = f; break;
-                case FanlightExpertParameterId.PoseBodyBounce: audience.motion.bodyBounce = f; break;
-                case FanlightExpertParameterId.PoseBodySway: audience.motion.bodySway = f; break;
-                case FanlightExpertParameterId.PoseBodyMotionSpeed: audience.motion.bodyMotionSpeed = f; break;
-                case FanlightExpertParameterId.PoseUpperBodyLeanMotion: audience.motion.upperBodyLeanMotion = f; break;
-                case FanlightExpertParameterId.VariationSeatPosition: motion.human.seatJitter = f; break;
-                case FanlightExpertParameterId.VariationBodyHeight: motion.human.heightJitter = f; break;
-                case FanlightExpertParameterId.VariationArmLength: motion.human.armLengthJitter = f; break;
-                case FanlightExpertParameterId.VariationAngle: motion.swing.angleNoise = f; break;
-                case FanlightExpertParameterId.VariationDirectionSpread: motion.direction.directionSpread = f; break;
-                case FanlightExpertParameterId.VariationReactionDelaySeconds: motion.human.reactionDelay = f; break;
-                case FanlightExpertParameterId.VariationBeatJitter: motion.beatSync.beatSeatJitter = f; break;
-                case FanlightExpertParameterId.VariationBlockDelayXBeats: motion.beatSync.beatBlockDelay.x = f; break;
-                case FanlightExpertParameterId.VariationBlockDelayYBeats: motion.beatSync.beatBlockDelay.y = f; break;
-                case FanlightExpertParameterId.VariationEnergyResponse: motion.human.enthusiasmVariation = f; break;
-                case FanlightExpertParameterId.VariationSpeed: motion.human.speedVariation = f; break;
-                case FanlightExpertParameterId.VariationBeatReactionDelaySeconds: motion.beatSync.beatReactionDelay = f; break;
-                case FanlightExpertParameterId.VariationHandZone: audience.handZone.variation = f; break;
-                case FanlightExpertParameterId.NoisePhaseAmount: motion.noise.phaseIrregularity = f; break;
-                case FanlightExpertParameterId.NoisePhaseSpeed: motion.noise.phaseIrregularitySpeed = f; break;
-                case FanlightExpertParameterId.NoiseAxisAmount: motion.noise.axisNoiseAmount = f; break;
-                case FanlightExpertParameterId.NoiseAxisSpeed: motion.noise.axisNoiseSpeed = f; break;
-                case FanlightExpertParameterId.NoiseOctaves: motion.noise.noiseOctaves = value.IntegerValue; break;
-                case FanlightExpertParameterId.NoisePersistence: motion.noise.noiseDetail = f; break;
-                case FanlightExpertParameterId.RestProbability: motion.human.restProbability = f; break;
-                case FanlightExpertParameterId.RestMotionLevel: motion.human.restMotionLevel = f; break;
-                case FanlightExpertParameterId.RestCycleSeconds: motion.human.restCycleDuration = f; break;
-                case FanlightExpertParameterId.RestDurationSeconds: motion.human.restDuration = f; break;
-                case FanlightExpertParameterId.RestFadeSeconds: motion.human.restFadeDuration = f; break;
-                case FanlightExpertParameterId.RestPhaseRandomness: motion.human.restPhaseRandomness = f; break;
-                case FanlightExpertParameterId.BodyHeight: audience.bodyHeight = f; break;
-                case FanlightExpertParameterId.BodyHeightVariation: audience.bodyHeightJitter = f; break;
-                case FanlightExpertParameterId.BodyWidth: audience.bodyWidth = f; break;
-                case FanlightExpertParameterId.BodyHeadSize: audience.headSize = f; break;
-                case FanlightExpertParameterId.BodyShoulderHeightRatio: audience.shoulderHeight = f; break;
-                case FanlightExpertParameterId.BodyShoulderSideOffset: audience.shoulderOffset = f; break;
-                case FanlightExpertParameterId.BodyArmWidth: audience.armWidth = f; break;
-                case FanlightExpertParameterId.BodyArmLengthLimit: audience.armLengthLimit = f; break;
-                case FanlightExpertParameterId.BodyUpperBodyLeanMaximum: audience.upperBodyLeanMax = f; break;
-                case FanlightExpertParameterId.BodyUpperBodyLean: audience.upperBodyLean = f; break;
-            }
-        }
-
-        private static bool TryMapExpert(string path, object value, out FanlightExpertParameterValue expert)
-        {
-            var mapped = path switch
-            {
-                "motion.swing.armLengthMin" => FanlightExpertParameterId.PoseArmLengthMinimum,
-                "motion.swing.armLengthMax" => FanlightExpertParameterId.PoseArmLengthMaximum,
-                "motion.swing.minAngle" => FanlightExpertParameterId.PoseAngleMinimumRadians,
-                "motion.swing.maxAngle" => FanlightExpertParameterId.PoseAngleMaximumRadians,
-                "motion.swing.angleNoise" => FanlightExpertParameterId.VariationAngle,
-                "motion.swing.crispness" => FanlightExpertParameterId.GestureCrispness,
-                "motion.swing.peakHold" => FanlightExpertParameterId.GestureHoldRatio,
-                "motion.swing.followThrough" => FanlightExpertParameterId.GestureFollowThrough,
-                "motion.swing.lean" => FanlightExpertParameterId.PoseBodyLean,
-                "motion.swing.horizontalRatio" => FanlightExpertParameterId.PoseHorizontalRatio,
-                "motion.swing.wristSwingSpeed" => FanlightExpertParameterId.PoseWristFrequencyMultiplier,
-                "motion.swing.wristSwingAngle" => FanlightExpertParameterId.PoseWristAngleRadians,
-                "motion.direction.directionSpread" => FanlightExpertParameterId.VariationDirectionSpread,
-                "motion.noise.phaseIrregularity" => FanlightExpertParameterId.NoisePhaseAmount,
-                "motion.noise.phaseIrregularitySpeed" => FanlightExpertParameterId.NoisePhaseSpeed,
-                "motion.noise.axisNoiseAmount" => FanlightExpertParameterId.NoiseAxisAmount,
-                "motion.noise.axisNoiseSpeed" => FanlightExpertParameterId.NoiseAxisSpeed,
-                "motion.noise.noiseOctaves" => FanlightExpertParameterId.NoiseOctaves,
-                "motion.noise.noiseDetail" => FanlightExpertParameterId.NoisePersistence,
-                "motion.human.reactionDelay" => FanlightExpertParameterId.VariationReactionDelaySeconds,
-                "motion.human.seatJitter" => FanlightExpertParameterId.VariationSeatPosition,
-                "motion.human.heightJitter" => FanlightExpertParameterId.VariationBodyHeight,
-                "motion.human.armLengthJitter" => FanlightExpertParameterId.VariationArmLength,
-                "motion.human.enthusiasmVariation" => FanlightExpertParameterId.VariationEnergyResponse,
-                "motion.human.speedVariation" => FanlightExpertParameterId.VariationSpeed,
-                "motion.human.restProbability" => FanlightExpertParameterId.RestProbability,
-                "motion.human.restMotionLevel" => FanlightExpertParameterId.RestMotionLevel,
-                "motion.human.restCycleDuration" => FanlightExpertParameterId.RestCycleSeconds,
-                "motion.human.restDuration" => FanlightExpertParameterId.RestDurationSeconds,
-                "motion.human.restFadeDuration" => FanlightExpertParameterId.RestFadeSeconds,
-                "motion.human.restPhaseRandomness" => FanlightExpertParameterId.RestPhaseRandomness,
-                "motion.beatSync.beatsPerSwing" => FanlightExpertParameterId.GestureBeatsPerCycle,
-                "motion.beatSync.beatPhaseOffset" => FanlightExpertParameterId.GesturePhaseOffset,
-                "motion.beatSync.downbeatAccent" => FanlightExpertParameterId.GestureDownbeatAccent,
-                "motion.beatSync.beatSeatJitter" => FanlightExpertParameterId.VariationBeatJitter,
-                "motion.beatSync.beatReactionDelay" => FanlightExpertParameterId.VariationBeatReactionDelaySeconds,
-                "audience.bodyHeight" => FanlightExpertParameterId.BodyHeight,
-                "audience.bodyHeightJitter" => FanlightExpertParameterId.BodyHeightVariation,
-                "audience.bodyWidth" => FanlightExpertParameterId.BodyWidth,
-                "audience.headSize" => FanlightExpertParameterId.BodyHeadSize,
-                "audience.shoulderHeight" => FanlightExpertParameterId.BodyShoulderHeightRatio,
-                "audience.shoulderOffset" => FanlightExpertParameterId.BodyShoulderSideOffset,
-                "audience.armWidth" => FanlightExpertParameterId.BodyArmWidth,
-                "audience.armLengthLimit" => FanlightExpertParameterId.BodyArmLengthLimit,
-                "audience.upperBodyLeanMax" => FanlightExpertParameterId.BodyUpperBodyLeanMaximum,
-                "audience.upperBodyLean" => FanlightExpertParameterId.BodyUpperBodyLean,
-                "audience.handZone.variation" => FanlightExpertParameterId.VariationHandZone,
-                "audience.motion.bodyBounce" => FanlightExpertParameterId.PoseBodyBounce,
-                "audience.motion.bodySway" => FanlightExpertParameterId.PoseBodySway,
-                "audience.motion.bodyMotionSpeed" => FanlightExpertParameterId.PoseBodyMotionSpeed,
-                "audience.motion.upperBodyLeanMotion" => FanlightExpertParameterId.PoseUpperBodyLeanMotion,
-                _ => (FanlightExpertParameterId)(-1)
-            };
-            if ((int)mapped < 0)
-            {
-                expert = default;
-                return false;
-            }
-
-            expert = value is int integer ? I(mapped, integer) : F(mapped, Convert.ToSingle(value));
-            return true;
-        }
-
-        private static FanlightExpertParameterValue F(FanlightExpertParameterId id, float value) => FanlightExpertParameterValue.Float(id, value);
-        private static FanlightExpertParameterValue I(FanlightExpertParameterId id, int value) => FanlightExpertParameterValue.Integer(id, value);
-
-        private static void MergeColor(FanlightIntentPatchBuilder builder, FanlightPaletteIntent palette, Color value, FanlightPaletteFieldMask field)
-        {
-            var incoming = field switch
-            {
-                FanlightPaletteFieldMask.Slot1 => new FanlightPaletteIntent(value, palette.Slot2, palette.Slot3, palette.Slot4, palette.Slot5, palette.Slot6, palette.GlobalIntensity, palette.RandomIntensity),
-                FanlightPaletteFieldMask.Slot2 => new FanlightPaletteIntent(palette.Slot1, value, palette.Slot3, palette.Slot4, palette.Slot5, palette.Slot6, palette.GlobalIntensity, palette.RandomIntensity),
-                FanlightPaletteFieldMask.Slot3 => new FanlightPaletteIntent(palette.Slot1, palette.Slot2, value, palette.Slot4, palette.Slot5, palette.Slot6, palette.GlobalIntensity, palette.RandomIntensity),
-                FanlightPaletteFieldMask.Slot4 => new FanlightPaletteIntent(palette.Slot1, palette.Slot2, palette.Slot3, value, palette.Slot5, palette.Slot6, palette.GlobalIntensity, palette.RandomIntensity),
-                FanlightPaletteFieldMask.Slot5 => new FanlightPaletteIntent(palette.Slot1, palette.Slot2, palette.Slot3, palette.Slot4, value, palette.Slot6, palette.GlobalIntensity, palette.RandomIntensity),
-                _ => new FanlightPaletteIntent(palette.Slot1, palette.Slot2, palette.Slot3, palette.Slot4, palette.Slot5, value, palette.GlobalIntensity, palette.RandomIntensity)
-            };
-            builder.MergePalette(new FanlightPalettePatch(incoming, field));
-        }
-
-        private static void MergeFloat(FanlightIntentPatchBuilder builder, FanlightPaletteIntent palette, float value, FanlightPaletteFieldMask field)
-        {
-            var incoming = new FanlightPaletteIntent(palette.Slot1, palette.Slot2, palette.Slot3, palette.Slot4, palette.Slot5, palette.Slot6,
-                field == FanlightPaletteFieldMask.GlobalIntensity ? value : palette.GlobalIntensity,
-                field == FanlightPaletteFieldMask.RandomIntensity ? value : palette.RandomIntensity);
-            builder.MergePalette(new FanlightPalettePatch(incoming, field));
-        }
-
-        private static FanlightDirectionIntent WithYaw(FanlightDirectionIntent value, float yaw) => new(value.Mode, yaw, value.WorldPitchDegrees, value.TargetWorldPosition, value.TargetBindingId, value.AimStrength, value.FallbackWorldYawDegrees, value.FallbackWorldPitchDegrees);
-        private static FanlightDirectionIntent WithAim(FanlightDirectionIntent value, float aim) => new(value.Mode, value.WorldYawDegrees, value.WorldPitchDegrees, value.TargetWorldPosition, value.TargetBindingId, aim, value.FallbackWorldYawDegrees, value.FallbackWorldPitchDegrees);
-        private static FanlightDirectionIntent WithMode(FanlightDirectionIntent value, FanlightSwingMode mode) => new(mode == FanlightSwingMode.WorldDirection ? FanlightDirectionMode.WorldDirection : FanlightDirectionMode.TargetPoint, value.WorldYawDegrees, value.WorldPitchDegrees, value.TargetWorldPosition, value.TargetBindingId, value.AimStrength, value.FallbackWorldYawDegrees, value.FallbackWorldPitchDegrees);
-        private static FanlightHandZoneIntent WithZone(FanlightHandZoneIntent value, FanlightHandZone zone) => new(ToHandZone(new FanlightHandZoneSettings { zone = zone, reachScale = 1f }).Zone, value.HeightOffset, value.ForwardOffset, value.SideOffset);
-        private static FanlightHandZoneIntent WithHeight(FanlightHandZoneIntent value, float height) => new(value.Zone, height, value.ForwardOffset, value.SideOffset);
-        private static FanlightHandZoneIntent WithForward(FanlightHandZoneIntent value, float forward) => new(value.Zone, value.HeightOffset, forward, value.SideOffset);
     }
 }

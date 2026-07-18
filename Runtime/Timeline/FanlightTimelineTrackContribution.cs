@@ -30,10 +30,10 @@ namespace PrismFanlight.Timeline
         public IReadOnlyList<string> UnsupportedPaths => _unsupportedPaths;
         public bool HasMappedOverrides => _mappedParameterCount > 0;
 
-        public FanlightIntentPatch BuildPatch(FanlightResolvedIntent baseIntent)
+        public FanlightShowPatch BuildPatch(FanlightShowState baseState)
         {
             _mappedParameterCount = 0;
-            var builder = new FanlightIntentPatchBuilder();
+            var builder = new FanlightShowPatchBuilder(baseState);
             for (var i = 0; i < _activeParameters.Count; i++)
             {
                 var parameter = _activeParameters[i];
@@ -41,7 +41,7 @@ namespace PrismFanlight.Timeline
                         builder,
                         parameter.Descriptor.Path,
                         parameter.Value,
-                        baseIntent))
+                        baseState))
                 {
                     _unsupportedPaths.Add(parameter.Descriptor.Path);
                 }

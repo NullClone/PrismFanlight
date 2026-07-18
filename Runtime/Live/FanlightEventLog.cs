@@ -4,7 +4,7 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight.Live
 {
-    public sealed class FanlightMutableEventLog : FanlightLiveEventLog
+    internal sealed class FanlightMutableEventLog : FanlightLiveEventLog
     {
         public const int DefaultCapacity = 100000;
         private readonly List<FanlightLiveEvent> _events = new();
@@ -56,7 +56,7 @@ namespace PrismFanlight.Live
         }
     }
 
-    public sealed class FanlightTimeEventRecorder
+    internal sealed class FanlightTimeEventRecorder
     {
         private readonly FanlightMutableEventLog _log;
         private readonly string _sourceId;

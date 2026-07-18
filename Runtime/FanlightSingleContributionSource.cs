@@ -2,24 +2,15 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight
 {
-    public sealed class FanlightSingleContributionSource : IFanlightContributionSource
+    internal sealed class FanlightSingleContributionSource : IFanlightContributionSource
     {
-        // Fields
+        private FanlightShowContribution _contribution;
 
-        private FanlightContribution _contribution;
+        internal string SourceId => _contribution.SourceId;
 
-        public string SourceId => _contribution.SourceId;
+        internal FanlightSingleContributionSource(in FanlightShowContribution contribution) => Set(contribution);
 
-        public FanlightContributionLayer Layer => _contribution.Layer;
-
-        public int Priority => _contribution.Priority;
-
-
-        // Methods
-
-        public FanlightSingleContributionSource(in FanlightContribution contribution) => Set(contribution);
-
-        public void Set(in FanlightContribution contribution) => _contribution = contribution;
+        internal void Set(in FanlightShowContribution contribution) => _contribution = contribution;
 
         public void Collect(double seconds, FanlightContributionBuffer destination) => destination.Add(_contribution);
     }

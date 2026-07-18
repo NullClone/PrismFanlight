@@ -2,7 +2,7 @@ using System;
 
 namespace PrismFanlight.Core
 {
-    public enum FanlightLiveEventType
+    internal enum FanlightLiveEventType
     {
         ClockAuthorityChanged = 0,
         ClockDisconnected = 1,
@@ -24,7 +24,7 @@ namespace PrismFanlight.Core
         OperatorNote = 50
     }
 
-    public readonly struct FanlightLiveEvent
+    internal readonly struct FanlightLiveEvent
     {
         public string EventId { get; }
         public string SourceId { get; }
@@ -34,13 +34,13 @@ namespace PrismFanlight.Core
         public string TargetId { get; }
         public string SecondaryTargetId { get; }
         public int TargetVersion { get; }
-        public FanlightIntentPatch Patch { get; }
+        internal FanlightShowPatch Patch { get; }
         public bool HasPatch { get; }
         public string Note { get; }
         public string OperatorId { get; }
         public int SchemaVersion { get; }
 
-        public FanlightLiveEvent(
+        internal FanlightLiveEvent(
             string eventId,
             string sourceId,
             FanlightLiveEventType eventType,
@@ -49,7 +49,7 @@ namespace PrismFanlight.Core
             string targetId,
             string secondaryTargetId,
             int targetVersion,
-            FanlightIntentPatch patch,
+            FanlightShowPatch patch,
             bool hasPatch,
             string note,
             int schemaVersion,
@@ -71,7 +71,7 @@ namespace PrismFanlight.Core
         }
     }
 
-    public abstract class FanlightLiveEventLog
+    internal abstract class FanlightLiveEventLog
     {
         public abstract string ShowId { get; }
         public abstract string SessionId { get; }
@@ -83,7 +83,7 @@ namespace PrismFanlight.Core
             new FanlightLiveEventLogSnapshot(string.Empty, string.Empty, 1, Array.Empty<FanlightLiveEvent>());
     }
 
-    public sealed class FanlightLiveEventLogSnapshot : FanlightLiveEventLog
+    internal sealed class FanlightLiveEventLogSnapshot : FanlightLiveEventLog
     {
         private readonly FanlightLiveEvent[] _events;
 

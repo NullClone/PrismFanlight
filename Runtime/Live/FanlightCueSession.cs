@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Live
 {
-    public enum FanlightCueState
+    internal enum FanlightCueState
     {
         Idle = 0,
         Armed = 1,
@@ -17,14 +17,14 @@ namespace PrismFanlight.Live
         Faulted = 7
     }
 
-    public enum FanlightCueHoldMode
+    internal enum FanlightCueHoldMode
     {
         Timed = 0,
         Manual = 1,
         UntilNextCue = 2
     }
 
-    public enum FanlightCueCommandType
+    internal enum FanlightCueCommandType
     {
         Arm = 0,
         Go = 1,
@@ -36,21 +36,21 @@ namespace PrismFanlight.Live
         Resume = 7
     }
 
-    public enum FanlightCueSafetyClassification
+    internal enum FanlightCueSafetyClassification
     {
         Normal = 0,
         Caution = 1,
         Safety = 2
     }
 
-    public readonly struct FanlightCueDefinition
+    internal readonly struct FanlightCueDefinition
     {
         public string CueId { get; }
         public string DisplayName { get; }
         public string SourceId { get; }
         public FanlightContributionLayer Layer { get; }
         public int Priority { get; }
-        public FanlightIntentPatch Patch { get; }
+        public FanlightShowPatch Patch { get; }
         public double FadeInSeconds { get; }
         public FanlightCueHoldMode HoldMode { get; }
         public double DurationSeconds { get; }
@@ -65,7 +65,7 @@ namespace PrismFanlight.Live
             string cueId,
             string sourceId,
             int priority,
-            FanlightIntentPatch patch,
+            FanlightShowPatch patch,
             double fadeInSeconds,
             FanlightCueHoldMode holdMode,
             double durationSeconds,
@@ -75,7 +75,7 @@ namespace PrismFanlight.Live
                 cueId,
                 cueId,
                 sourceId,
-                FanlightContributionLayer.Live,
+                FanlightContributionLayer.Cue,
                 priority,
                 patch,
                 fadeInSeconds,
@@ -94,7 +94,7 @@ namespace PrismFanlight.Live
             string sourceId,
             FanlightContributionLayer layer,
             int priority,
-            FanlightIntentPatch patch,
+            FanlightShowPatch patch,
             double fadeInSeconds,
             FanlightCueHoldMode holdMode,
             double durationSeconds,
@@ -123,7 +123,7 @@ namespace PrismFanlight.Live
         }
     }
 
-    public readonly struct FanlightCueCommand
+    internal readonly struct FanlightCueCommand
     {
         public string CommandId { get; }
         public string SourceId { get; }
@@ -168,7 +168,7 @@ namespace PrismFanlight.Live
         }
     }
 
-    public readonly struct FanlightCueRuntimeState
+    internal readonly struct FanlightCueRuntimeState
     {
         public string CueId { get; }
         public FanlightCueState State { get; }
@@ -188,7 +188,7 @@ namespace PrismFanlight.Live
         }
     }
 
-    public interface IFanlightCueSession
+    internal interface IFanlightCueSession
     {
         string SessionId { get; }
         bool IsSafetyStopped { get; }
@@ -199,13 +199,13 @@ namespace PrismFanlight.Live
         FanlightLiveEventLog CaptureEventLog();
     }
 
-    public sealed class FanlightCueSession : IFanlightCueSession
+    internal sealed class FanlightCueSession : IFanlightCueSession
     {
         private readonly Dictionary<string, FanlightCueDefinition> _definitions = new(StringComparer.Ordinal);
         private readonly List<FanlightCueCommand> _commands = new();
         private readonly HashSet<string> _commandIds = new(StringComparer.Ordinal);
         private readonly FanlightMutableEventLog _eventLog;
-        private readonly FanlightIntentPatch _safetyPatch;
+        private readonly FanlightShowPatch _safetyPatch;
 
         public FanlightCueSession(
             string showId,
@@ -280,36 +280,26 @@ namespace PrismFanlight.Live
                 if (aborted && seconds >= release) continue;
                 var definition = pair.Value;
                 var end = ResolveEnd(definition, start, release);
-                var policy = aborted ? FanlightReleasePolicy.RestoreUnderlying : definition.ReleasePolicy;
-                destination.Add(new FanlightContribution(
-                    $"cue:{definition.CueId}",
+                if (end <= start || seconds >= end) continue;
+                destination.Add(new FanlightShowContribution(
                     definition.SourceId,
                     definition.Layer,
                     definition.Priority,
                     start,
                     end,
-                    definition.FadeInSeconds,
-                    definition.FadeOutSeconds,
-                    1f,
-                    FanlightBlendProfile.SmoothStep,
-                    policy,
+                    EvaluateWeight(definition, start, end, seconds),
                     definition.Patch));
             }
 
             if (TryGetSafetyState(seconds, out var safetyStart))
             {
-                destination.Add(new FanlightContribution(
-                    $"safety:{SessionId}",
+                destination.Add(new FanlightShowContribution(
                     $"safety:{SessionId}",
                     FanlightContributionLayer.Safety,
                     int.MaxValue,
                     safetyStart,
                     double.PositiveInfinity,
-                    0d,
-                    0d,
                     1f,
-                    FanlightBlendProfile.Linear,
-                    FanlightReleasePolicy.RestoreUnderlying,
                     _safetyPatch));
             }
         }
@@ -509,25 +499,27 @@ namespace PrismFanlight.Live
         }
     }
 
-    public static class FanlightSafetyStateV1
+    internal static class FanlightSafetyStateV1
     {
-        public static FanlightIntentPatch BlackoutPatch { get; } = CreateBlackoutPatch();
+        internal static FanlightShowPatch BlackoutPatch { get; } = CreateBlackoutPatch();
 
-        private static FanlightIntentPatch CreateBlackoutPatch()
+        private static FanlightShowPatch CreateBlackoutPatch()
         {
-            var black = new FanlightPaletteIntent(
+            var black = new FanlightPaletteState(
                 Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, 0f, 0f);
-            return new FanlightIntentPatchBuilder()
-                .SetGesture("Hold")
-                .SetEnergy(0f)
-                .SetParticipation(0f)
-                .SetSynchronization(1f)
-                .SetRealism(0f)
-                .SetReach(0f)
-                .SetPalette(new FanlightPalettePatch(black, FanlightPaletteFieldMask.All))
-                .SetPenlightsEnabled(false)
-                .SetAudienceBodiesEnabled(false)
-                .Build();
+            return new FanlightShowPatch(
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                new FanlightPalettePatch(FanlightPaletteFields.GlobalIntensity, black),
+                new FanlightVisibilityPatch(
+                    FanlightVisibilityFields.PenlightsEnabled | FanlightVisibilityFields.AudienceBodiesEnabled,
+                    new FanlightVisibilityState(false, false)));
         }
     }
 }

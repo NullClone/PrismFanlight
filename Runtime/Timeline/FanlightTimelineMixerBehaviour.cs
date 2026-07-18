@@ -62,7 +62,7 @@ namespace PrismFanlight.Timeline
                 return;
             }
 
-            var patch = _contribution.BuildPatch(fanlight.BaseIntent);
+            var patch = _contribution.BuildPatch(fanlight.BaseState);
             ReportUnsupportedPaths();
             if (!_contribution.HasMappedOverrides)
             {
@@ -71,18 +71,13 @@ namespace PrismFanlight.Timeline
                 return;
             }
 
-            var contribution = new FanlightContribution(
-                $"{_sourceId}:active",
+            var contribution = new FanlightShowContribution(
                 _sourceId,
-                FanlightContributionLayer.Scheduled,
+                FanlightContributionLayer.Timeline,
                 _priority,
                 double.MinValue,
                 double.MaxValue,
-                0d,
-                0d,
                 1f,
-                FanlightBlendProfile.Linear,
-                FanlightReleasePolicy.RestoreUnderlying,
                 patch);
             fanlight.SetScheduledContribution(this, contribution);
             _hasActiveCue = true;
@@ -101,8 +96,8 @@ namespace PrismFanlight.Timeline
                 var path = _contribution.UnsupportedPaths[i];
                 if (!_reportedUnsupportedPaths.Add(path)) continue;
                 Debug.LogWarning(
-                    $"Prism Fanlight legacy Timeline override '{path}' has no Stage 1 intent mapping. " +
-                    "Tempo overrides must be converted to a FanlightTempoMap; other paths require an approved Expert parameter ID.");
+                    $"Prism Fanlight Timeline override '{path}' has no typed state mapping. " +
+                    "Tempo overrides must be converted to a FanlightTempoMap.");
             }
         }
 

@@ -86,9 +86,6 @@ namespace PrismFanlight
         [SerializeField]
         private string _showId = "show.compatibility";
 
-        [SerializeField, Min(1)]
-        private int _showVersion = 1;
-
         [SerializeField, HideInInspector]
         private string _sessionId = string.Empty;
 
@@ -96,12 +93,9 @@ namespace PrismFanlight
         private readonly Dictionary<object, FanlightSingleContributionSource> _scheduledContributions = new();
         private readonly FanlightShowEvaluator _showEvaluator = new();
         private FanlightShowSession _showSession;
-        private FanlightSingleContributionSource _externalContribution;
         private SeatLayout _validatedSeatLayout;
         private FanlightRuntimeLayout _legacyRuntimeLayout;
         private FanlightRuntimeLayout _assetRuntimeLayout;
-        private bool _hasExternalResolvedStateOverride;
-        private bool _externalOverrideTimeJumpPending;
 
 #if UNITY_EDITOR
         private FanlightRuntimeLayout _editorPreviewLayout;
@@ -129,12 +123,13 @@ namespace PrismFanlight
 
         public FanlightLayoutAsset LayoutAsset => _layoutAsset;
 
-        internal bool HasResolvedStateOverride => _hasExternalResolvedStateOverride || _scheduledContributions.Count > 0;
+        internal bool HasResolvedStateOverride => _scheduledContributions.Count > 0;
 
-        public FanlightResolvedIntent BaseIntent => FanlightLegacyIntentAdapter.ToIntent(
+        internal FanlightShowState BaseState => FanlightLegacyIntentAdapter.ToShowState(
             _motionPreset != null ? _motionPreset.Settings : _motion,
             _colorPreset != null ? _colorPreset.Settings : _color,
-            _audienceSettings);
+            _audienceSettings,
+            _random.Validated().globalSeed);
 
         internal static event Action<PrismFanlight> ResolvedStateOverrideChanged;
 
@@ -192,36 +187,28 @@ namespace PrismFanlight
             }
 
             var template = CreateLegacyTemplate(time);
-            var snapshot = CreateSnapshot(template);
-
             var showSample = _showSession.Evaluate(
                 time,
-                snapshot,
+                BaseState,
                 _showEvaluator,
                 new FanlightEvaluationOptions(
                     AnimationUpdate.Mode == FanlightGpuUpdateMode.FixedRate ? AnimationUpdate.TargetFrameRate : 0d,
-                    1e-6d,
-                    0.5f,
-                    FanlightColorBlendSpace.LinearRgb));
+                    1e-6d));
 
             var state = FanlightLegacyIntentAdapter.ToLegacyState(showSample, template);
 
-            Render(state, state.IsTimeJump || _externalOverrideTimeJumpPending);
-
-            _externalOverrideTimeJumpPending = false;
+            Render(state, state.IsTimeJump);
         }
 
         private void OnDisable()
         {
             ClearScheduledContributions();
-            ClearResolvedStateOverride();
             Dispose();
         }
 
         private void OnDestroy()
         {
             ClearScheduledContributions();
-            ClearResolvedStateOverride();
             Dispose();
         }
 
@@ -235,8 +222,6 @@ namespace PrismFanlight
             _editorLayoutBlocked = false;
 #endif
             _color = _color.Validated();
-            _showVersion = Math.Max(1, _showVersion);
-
             if (string.IsNullOrWhiteSpace(_sessionId)) _sessionId = Guid.NewGuid().ToString("N");
 
 #if UNITY_EDITOR
@@ -294,11 +279,11 @@ namespace PrismFanlight
 
         public FanlightColorSettings GetColorSettings() => (_colorPreset != null ? _colorPreset.Settings : _color).Validated();
 
-        public void SetScheduledContribution(object sourceToken, in FanlightContribution contribution)
+        internal void SetScheduledContribution(object sourceToken, in FanlightShowContribution contribution)
         {
             if (sourceToken == null) throw new ArgumentNullException(nameof(sourceToken));
-            if (contribution.Layer != FanlightContributionLayer.Scheduled)
-                throw new ArgumentException("Timeline and scheduled adapters must submit Scheduled contributions.", nameof(contribution));
+            if (contribution.Layer != FanlightContributionLayer.Timeline)
+                throw new ArgumentException("Timeline adapters must submit Timeline contributions.", nameof(contribution));
 
             EnsureShowPipeline();
 
@@ -316,7 +301,7 @@ namespace PrismFanlight
             ResolvedStateOverrideChanged?.Invoke(this);
         }
 
-        public void ClearScheduledContribution(object sourceToken)
+        internal void ClearScheduledContribution(object sourceToken)
         {
             if (sourceToken == null || !_scheduledContributions.TryGetValue(sourceToken, out var source)) return;
 
@@ -355,21 +340,6 @@ namespace PrismFanlight
             }
 
             if (tokens.Count > 0) ResolvedStateOverrideChanged?.Invoke(this);
-        }
-
-        private void ClearResolvedStateOverride()
-        {
-            if (!_hasExternalResolvedStateOverride) return;
-
-            _hasExternalResolvedStateOverride = false;
-            _externalOverrideTimeJumpPending = false;
-            if (_externalContribution != null)
-            {
-                _showSession?.UnregisterSource(_externalContribution);
-                _externalContribution = null;
-            }
-
-            ResolvedStateOverrideChanged?.Invoke(this);
         }
 
         internal void SetLayoutAssetForEditor(FanlightLayoutAsset layoutAsset)
@@ -499,7 +469,6 @@ namespace PrismFanlight
 
             foreach (var source in _scheduledContributions.Values) _showSession.RegisterSource(source);
 
-            if (_externalContribution != null) _showSession.RegisterSource(_externalContribution);
         }
 
         private FanlightResolvedState CreateLegacyTemplate(in FanlightShowTimeSample time)
@@ -518,27 +487,6 @@ namespace PrismFanlight
                 (float)time.Seconds,
                 (float)time.Seconds,
                 time.Discontinuity != FanlightTimeDiscontinuity.None);
-        }
-
-        private FanlightShowSnapshot CreateSnapshot(in FanlightResolvedState template)
-        {
-            var layoutId = _layoutAsset != null && _layoutAsset.LayoutId.IsValid
-                ? _layoutAsset.LayoutId.Value
-                : "layout.legacy";
-            var layoutVersion = _layoutAsset != null ? _layoutAsset.LayoutVersion : 1;
-            return new FanlightShowSnapshot(
-                string.IsNullOrEmpty(_showId) ? "show.compatibility" : _showId,
-                Math.Max(1, _showVersion),
-                layoutId,
-                Math.Max(1, layoutVersion),
-                "persona.compatibility",
-                1,
-                "gesture.compatibility",
-                1,
-                "cue.compatibility",
-                1,
-                template.Random.globalSeed,
-                FanlightLegacyIntentAdapter.ToIntent(template.Motion, template.Color, template.Audience));
         }
 
         private SeatLayout GetValidatedSeatLayout()
