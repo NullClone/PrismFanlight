@@ -1,6 +1,10 @@
-/Documentation~/
-/Tests/
 /.idea/
+
+/Documentation~/
+
+/Tests/
+Tests.meta
+
 CLAUDE.md
 CLAUDE.md.meta
 AGENTS.md
