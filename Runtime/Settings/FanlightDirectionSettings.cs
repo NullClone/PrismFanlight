@@ -12,7 +12,6 @@ namespace PrismFanlight
         public FanlightSwingMode swingMode;
 
         [Range(0f, 360f)]
-        [FanlightTimelineBlend(FanlightTimelineBlendMode.Angle)]
         public float swingYaw;
 
         [Range(0f, 1f)]

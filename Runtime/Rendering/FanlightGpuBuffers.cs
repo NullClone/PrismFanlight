@@ -5,6 +5,10 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightGpuBuffers
     {
+        // Fields
+
+        private const int PaletteSlotCount = 6;
+
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
 
         // Properties
@@ -60,7 +64,7 @@ namespace PrismFanlight.Rendering
             FanlightPenlightRuntimeAppearance appearance,
             FanlightRuntimeLayout layout,
             bool allocateAudience,
-            FanlightRandomSettings random)
+            uint globalSeed)
         {
             Release();
 
@@ -98,7 +102,7 @@ namespace PrismFanlight.Rendering
             BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
             PenlightVariantAssignmentBuffer.SetData(assignments);
             PenlightVariantOffsetBuffer.SetData(PenlightVariantOffsets);
-            UpdateRandomData(random);
+            UpdateRandomData(globalSeed, layout);
 
             ResetPenlightArgs(PenlightArgsBuffer, appearance.Meshes);
             ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
@@ -156,13 +160,19 @@ namespace PrismFanlight.Rendering
             return bounds;
         }
 
-        public void UpdateRandomData(FanlightRandomSettings random)
+        public void UpdateRandomData(uint globalSeed, FanlightRuntimeLayout layout)
         {
-            if (RandomBuffer == null || ColorAssignmentBuffer == null || SeatCount <= 0) return;
+            if (RandomBuffer == null
+                || ColorAssignmentBuffer == null
+                || layout == null
+                || layout.SeatCount != SeatCount
+                || SeatCount <= 0)
+            {
+                return;
+            }
 
-            var seed = random.deterministic ? random.globalSeed : (uint)Environment.TickCount;
-            RandomBuffer.SetData(BuildRandomData(SeatCount, seed));
-            ColorAssignmentBuffer.SetData(BuildColorAssignments(SeatCount, seed));
+            RandomBuffer.SetData(BuildRandomData(layout, globalSeed));
+            ColorAssignmentBuffer.SetData(BuildColorAssignments(layout, globalSeed));
         }
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
@@ -249,39 +259,41 @@ namespace PrismFanlight.Rendering
                 pivots.Length > 3 ? pivots[3] : 0f);
         }
 
-        private static FanlightRandomData[] BuildRandomData(int seatCount, uint seed)
+        private static FanlightRandomData[] BuildRandomData(FanlightRuntimeLayout layout, uint seed)
         {
-            var data = new FanlightRandomData[seatCount];
+            var data = new FanlightRandomData[layout.SeatCount];
 
             for (var i = 0; i < data.Length; i++)
             {
+                var stableSeatId = GetStableSeatId(layout, i);
                 data[i] = new FanlightRandomData
                 {
-                    random0 = Random4(seed, (uint)i, 0u),
-                    random1 = Random4(seed, (uint)i, 4u),
-                    random2 = Random4(seed, (uint)i, 8u),
-                    random3 = Random4(seed, (uint)i, 12u),
-                    random4 = Random4(seed, (uint)i, 16u),
-                    random5 = Random4(seed, (uint)i, 20u),
-                    random6 = Random4(seed, (uint)i, 24u),
-                    random7 = Random4(seed, (uint)i, 28u)
+                    random0 = Random4(seed, stableSeatId, 0u),
+                    random1 = Random4(seed, stableSeatId, 4u),
+                    random2 = Random4(seed, stableSeatId, 8u),
+                    random3 = Random4(seed, stableSeatId, 12u),
+                    random4 = Random4(seed, stableSeatId, 16u),
+                    random5 = Random4(seed, stableSeatId, 20u),
+                    random6 = Random4(seed, stableSeatId, 24u),
+                    random7 = Random4(seed, stableSeatId, 28u)
                 };
             }
 
             return data;
         }
 
-        private static uint[] BuildColorAssignments(int seatCount, uint seed)
+        private static uint[] BuildColorAssignments(FanlightRuntimeLayout layout, uint seed)
         {
-            var assignments = new uint[seatCount];
+            var assignments = new uint[layout.SeatCount];
             for (var i = 0; i < assignments.Length; i++)
             {
-                var paletteRandom = Random01(seed, (uint)i, 27u);
-                var intensityRandom = Random01(seed, (uint)i, 28u);
+                var stableSeatId = GetStableSeatId(layout, i);
+                var paletteRandom = Random01(seed, stableSeatId, 27u);
+                var intensityRandom = Random01(seed, stableSeatId, 28u);
                 var paletteIndex = (uint)Mathf.Clamp(
-                    Mathf.FloorToInt(paletteRandom * FanlightColorSettings.PaletteSlotCount),
+                    Mathf.FloorToInt(paletteRandom * PaletteSlotCount),
                     0,
-                    FanlightColorSettings.PaletteSlotCount - 1);
+                    PaletteSlotCount - 1);
                 var packedIntensity = (uint)Mathf.Clamp(Mathf.FloorToInt(intensityRandom * 65536.0f), 0, 65535);
                 assignments[i] = paletteIndex | (packedIntensity << 8);
             }
@@ -289,19 +301,27 @@ namespace PrismFanlight.Rendering
             return assignments;
         }
 
-        private static Vector4 Random4(uint globalSeed, uint seatIndex, uint offset)
+        private static ulong GetStableSeatId(FanlightRuntimeLayout layout, int seatIndex)
         {
-            return new Vector4(
-                Random01(globalSeed, seatIndex, offset + 0u),
-                Random01(globalSeed, seatIndex, offset + 1u),
-                Random01(globalSeed, seatIndex, offset + 2u),
-                Random01(globalSeed, seatIndex, offset + 3u));
+            return layout.HasStableSeatIds
+                ? layout.StableSeatIds[seatIndex]
+                : (ulong)(uint)seatIndex + 1UL;
         }
 
-        private static float Random01(uint globalSeed, uint seatIndex, uint lane)
+        private static Vector4 Random4(uint globalSeed, ulong stableSeatId, uint offset)
+        {
+            return new Vector4(
+                Random01(globalSeed, stableSeatId, offset + 0u),
+                Random01(globalSeed, stableSeatId, offset + 1u),
+                Random01(globalSeed, stableSeatId, offset + 2u),
+                Random01(globalSeed, stableSeatId, offset + 3u));
+        }
+
+        private static float Random01(uint globalSeed, ulong stableSeatId, uint lane)
         {
             var x = globalSeed ^ 0x9E3779B9u;
-            x ^= seatIndex + 0x85EBCA6Bu + (x << 6) + (x >> 2);
+            x ^= (uint)stableSeatId + 0x85EBCA6Bu + (x << 6) + (x >> 2);
+            x ^= (uint)(stableSeatId >> 32) + 0x27D4EB2Fu + (x << 6) + (x >> 2);
             x ^= lane + 0xC2B2AE35u + (x << 6) + (x >> 2);
             x ^= x >> 16;
             x *= 0x7FEB352Du;

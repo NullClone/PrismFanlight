@@ -6,7 +6,7 @@ namespace PrismFanlight.Core
     [Serializable]
     internal struct FanlightPoseState
     {
-        // Fields\
+        // Fields
 
         [SerializeField]
         private FanlightHandZone _handZone;
