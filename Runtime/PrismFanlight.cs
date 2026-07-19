@@ -5,6 +5,7 @@ using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using PrismFanlight.Time;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PrismFanlight
 {
@@ -93,6 +94,9 @@ namespace PrismFanlight
         private readonly FanlightContributionBuffer _contributionBuffer = new(16);
         private readonly FanlightShowEvaluator _showEvaluator = new();
         private long _evaluationId;
+        private FanlightShowSample _renderSample;
+        private FanlightFrameContext _renderFrame;
+        private bool _hasRenderFrame;
         private SeatLayout _validatedSeatLayout;
         private FanlightRuntimeLayout _legacyRuntimeLayout;
         private FanlightRuntimeLayout _assetRuntimeLayout;
@@ -140,6 +144,14 @@ namespace PrismFanlight
 
         // Methods
 
+        private void OnEnable()
+        {
+            RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+            RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+            Camera.onPreCull -= OnCameraPreCull;
+            Camera.onPreCull += OnCameraPreCull;
+        }
+
         private void Start()
         {
             if (_enableCulling && _cullingCamera == null && Camera.main != null)
@@ -184,17 +196,19 @@ namespace PrismFanlight
             var request = new FanlightShowEvaluationRequest(time, BaseState, _contributionBuffer.AsMemory(), options);
             var sample = _showEvaluator.Evaluate(request);
 
-            Render(sample);
+            PrepareRenderFrame(sample);
         }
 
         private void OnDisable()
         {
+            UnregisterRenderCallbacks();
             ClearScheduledContributions();
             Dispose();
         }
 
         private void OnDestroy()
         {
+            UnregisterRenderCallbacks();
             ClearScheduledContributions();
             Dispose();
         }
@@ -343,8 +357,9 @@ namespace PrismFanlight
         }
 #endif
 
-        private void Render(in FanlightShowSample sample)
+        private void PrepareRenderFrame(in FanlightShowSample sample)
         {
+            _hasRenderFrame = false;
             var runtimeLayout = GetRuntimeLayout();
 
             if (runtimeLayout == null)
@@ -367,22 +382,56 @@ namespace PrismFanlight
 
             if (!_renderer.IsReady) return;
 
-            var camera = _cullingCamera;
-            var cameraPosition = camera != null ? camera.transform.position : transform.position;
-            var frame = new FanlightFrameContext(
+            _renderSample = sample;
+            _renderFrame = new FanlightFrameContext(
                 _evaluationId,
                 transform.localToWorldMatrix,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero);
-            var cameraContext = new FanlightCameraContext(
-                "camera.primary",
-                camera,
-                camera != null ? camera.worldToCameraMatrix : Matrix4x4.identity,
-                camera != null ? camera.projectionMatrix : Matrix4x4.identity,
-                cameraPosition,
-                _renderingLayerMask,
-                _enableCulling && camera != null);
+            _hasRenderFrame = true;
+        }
 
-            _renderer.Render(sample, frame, cameraContext, VisibilityUpdate, AnimationUpdate);
+        private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            RenderCamera(camera);
+        }
+
+        private void OnCameraPreCull(Camera camera)
+        {
+            if (GraphicsSettings.currentRenderPipeline == null)
+            {
+                RenderCamera(camera);
+            }
+        }
+
+        private void RenderCamera(Camera camera)
+        {
+            if (!_hasRenderFrame || !_renderer.IsReady || !ShouldRenderCamera(camera)) return;
+
+            var cameraContext = new FanlightCameraContext(
+                camera.cameraType == CameraType.SceneView ? "camera.scene-view" : "camera.primary",
+                camera,
+                camera.worldToCameraMatrix,
+                camera.projectionMatrix,
+                camera.transform.position,
+                _renderingLayerMask,
+                _enableCulling);
+
+            _renderer.Render(_renderSample, _renderFrame, cameraContext, VisibilityUpdate, AnimationUpdate);
+        }
+
+        private bool ShouldRenderCamera(Camera camera)
+        {
+            if (camera == null) return false;
+            if (camera.cameraType == CameraType.SceneView) return true;
+            if (!camera.isActiveAndEnabled) return false;
+            if (camera.cameraType != CameraType.Game) return false;
+            return _cullingCamera == null || camera == _cullingCamera;
+        }
+
+        private void UnregisterRenderCallbacks()
+        {
+            RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+            Camera.onPreCull -= OnCameraPreCull;
         }
 
         private void ResolveTimeCoordinatorReference()
@@ -401,6 +450,9 @@ namespace PrismFanlight
 
         private void Dispose()
         {
+            _hasRenderFrame = false;
+            _renderSample = default;
+            _renderFrame = default;
             _renderer.Dispose();
         }
 
