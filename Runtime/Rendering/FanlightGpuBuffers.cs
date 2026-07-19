@@ -11,6 +11,7 @@ namespace PrismFanlight.Rendering
 
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
 
+
         // Properties
 
         public ComputeBuffer SeatBuffer { get; private set; }

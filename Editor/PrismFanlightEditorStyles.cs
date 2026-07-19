@@ -6,15 +6,25 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightEditorStyles
     {
+        // Fields
+
         private static GUIStyle _section;
         private static GUIStyle _sectionTitle;
         private static GUIStyle _subGroupLabel;
 
+
+        // Properties
+
         private static GUIStyle Section => _section ??= CreateSection();
+
         private static GUIStyle SectionTitle => _sectionTitle ??= CreateSectionTitle();
 
+        private static GUIStyle SubGroupLabel => _subGroupLabel ??= CreateSubGroupLabel();
 
-        public static void DrawSection(string title, Action draw)
+
+        // Methods
+
+        internal static void DrawSection(string title, Action draw)
         {
             EditorGUILayout.Space();
 
@@ -26,9 +36,9 @@ namespace PrismFanlight.Editor
             }
         }
 
-        public static void DrawSubGroupLabel(string title)
+        internal static void DrawSubGroupLabel(string title)
         {
-            EditorGUILayout.LabelField(title);
+            EditorGUILayout.LabelField(title, SubGroupLabel);
         }
 
         private static GUIStyle CreateSection()
@@ -45,6 +55,15 @@ namespace PrismFanlight.Editor
             return new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 14
+            };
+        }
+
+        private static GUIStyle CreateSubGroupLabel()
+        {
+            return new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 12,
+                margin = new RectOffset(0, 0, 4, 2)
             };
         }
     }

@@ -11,6 +11,7 @@ namespace PrismFanlight.Authoring
         public const int CurrentAssignmentSchemaVersion = 1;
         public const int MaximumVariantCount = 4;
 
+
         [SerializeField, HideInInspector]
         private string _profileId = string.Empty;
 

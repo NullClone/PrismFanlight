@@ -37,10 +37,7 @@ namespace PrismFanlight.Core
                 throw new ArgumentException("Stable source ID is required.", nameof(sourceId));
             }
 
-            if (layer is not FanlightContributionLayer.Base
-                and not FanlightContributionLayer.Timeline
-                and not FanlightContributionLayer.Cue
-                and not FanlightContributionLayer.Live
+            if (layer is not FanlightContributionLayer.Timeline
                 and not FanlightContributionLayer.Safety)
             {
                 throw new ArgumentOutOfRangeException(nameof(layer));
