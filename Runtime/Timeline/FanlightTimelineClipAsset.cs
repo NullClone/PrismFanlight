@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -9,47 +8,79 @@ namespace PrismFanlight.Timeline
 {
     public abstract class FanlightTimelineClipAsset : PlayableAsset, ITimelineClipAsset
     {
-        [SerializeField, HideInInspector] private string _stableClipId = string.Empty;
-        [SerializeField] private AnimationCurve _localWeightCurve = AnimationCurve.Linear(0f, 1f, 1f, 1f);
-        [SerializeField] private int _priority;
-        [SerializeField] private FanlightTimelineHoldMode _holdMode;
+        // Fields
+
+        [SerializeField, HideInInspector]
+        private string _stableClipId = string.Empty;
+
+        [SerializeField]
+        private AnimationCurve _localWeightCurve = AnimationCurve.Linear(0f, 1f, 1f, 1f);
+
+        [SerializeField]
+        private FanlightTimelineHoldMode _holdMode;
+
+
+        // Properties
 
         public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.ClipIn | ClipCaps.SpeedMultiplier;
 
         internal string StableClipId => _stableClipId;
+
         internal AnimationCurve LocalWeightCurve => _localWeightCurve;
-        internal int Priority => _priority;
+
         internal FanlightTimelineHoldMode HoldMode => _holdMode;
-        internal abstract FanlightShowPatch Patch { get; }
+
+        internal abstract FanlightTimelineClipValue Value { get; }
+
+
+        // Methods
 
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
-            EnsureIdentity(null);
+            ValidateRuntimeIdentity();
+
             var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
             playable.GetBehaviour().Configure(
                 _stableClipId,
-                Patch,
+                Value,
                 _localWeightCurve,
-                _priority,
                 _holdMode);
+
             return playable;
         }
 
-        internal void EnsureIdentity(HashSet<string> usedIds)
+        private void ValidateRuntimeIdentity()
         {
-            if (_holdMode is not FanlightTimelineHoldMode.None and not FanlightTimelineHoldMode.HoldLast)
-                _holdMode = FanlightTimelineHoldMode.None;
-            _localWeightCurve ??= AnimationCurve.Linear(0f, 1f, 1f, 1f);
+            if (string.IsNullOrWhiteSpace(_stableClipId))
+            {
+                throw new InvalidOperationException("Timeline Clip Stable ID must be assigned during authoring.");
+            }
+        }
+
+
+#if UNITY_EDITOR
+        internal void EnsureAuthoringIdentity(HashSet<string> usedIds)
+        {
             if (string.IsNullOrWhiteSpace(_stableClipId) || usedIds != null && !usedIds.Add(_stableClipId))
             {
                 do
                 {
                     _stableClipId = Guid.NewGuid().ToString("N");
-                }
-                while (usedIds != null && !usedIds.Add(_stableClipId));
+                } while (usedIds != null && !usedIds.Add(_stableClipId));
             }
         }
 
-        protected virtual void OnValidate() => EnsureIdentity(null);
+        protected virtual void OnValidate()
+        {
+            EnsureAuthoringIdentity(null);
+
+            if (_holdMode is not FanlightTimelineHoldMode.None and not FanlightTimelineHoldMode.HoldLast)
+            {
+                _holdMode = FanlightTimelineHoldMode.None;
+            }
+
+            _localWeightCurve ??= AnimationCurve.Linear(0f, 1f, 1f, 1f);
+        }
+#endif
     }
 }

@@ -5,8 +5,9 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightDirectionClip : FanlightTimelineClipAsset
     {
-        [SerializeField] private FanlightDirectionPatch _patch = FanlightTimelineDefaults.DirectionPatch();
+        [SerializeField]
+        private FanlightDirectionState _value = FanlightTimelineDefaults.DirectionState();
 
-        internal override FanlightShowPatch Patch => new(default, default, default, default, default, default, default, _patch, default, default);
+        internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

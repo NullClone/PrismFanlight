@@ -5,8 +5,9 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightGestureClip : FanlightTimelineClipAsset
     {
-        [SerializeField] private FanlightGesturePatch _patch = FanlightTimelineDefaults.GesturePatch();
+        [SerializeField]
+        private FanlightGestureState _value = FanlightTimelineDefaults.GestureState();
 
-        internal override FanlightShowPatch Patch => new(default, _patch, default, default, default, default, default, default, default, default);
+        internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

@@ -5,8 +5,9 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightNoiseClip : FanlightTimelineClipAsset
     {
-        [SerializeField] private FanlightNoisePatch _patch = FanlightTimelineDefaults.NoisePatch();
+        [SerializeField]
+        private FanlightNoiseState _value = FanlightTimelineDefaults.NoiseState();
 
-        internal override FanlightShowPatch Patch => new(default, default, default, default, _patch, default, default, default, default, default);
+        internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

@@ -83,31 +83,5 @@ namespace PrismFanlight.Timeline
             0f);
 
         internal static FanlightVisibilityState VisibilityState() => new(true, true);
-
-        internal static FanlightIntentPatch IntentPatch() => new(FanlightIntentFields.None, IntentState());
-
-        internal static FanlightGesturePatch GesturePatch() => new(FanlightGestureFields.None, GestureState());
-
-        internal static FanlightPosePatch PosePatch() => new(FanlightPoseFields.None, PoseState());
-
-        internal static FanlightVariationPatch VariationPatch() => new(FanlightVariationFields.None, VariationState());
-
-        internal static FanlightNoisePatch NoisePatch() => new(FanlightNoiseFields.None, NoiseState());
-
-        internal static FanlightRestPatch RestPatch() => new(FanlightRestFields.None, RestState());
-
-        internal static FanlightAudienceBodyPatch AudienceBodyPatch() => new(
-            FanlightAudienceBodyFields.None,
-            AudienceBodyState());
-
-        internal static FanlightDirectionPatch DirectionPatch() => new(
-            FanlightDirectionFields.None,
-            DirectionState());
-
-        internal static FanlightPalettePatch PalettePatch() => new(FanlightPaletteFields.None, PaletteState());
-
-        internal static FanlightVisibilityPatch VisibilityPatch() => new(
-            FanlightVisibilityFields.None,
-            VisibilityState());
     }
 }

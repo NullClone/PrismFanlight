@@ -5,8 +5,9 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightVariationClip : FanlightTimelineClipAsset
     {
-        [SerializeField] private FanlightVariationPatch _patch = FanlightTimelineDefaults.VariationPatch();
+        [SerializeField]
+        private FanlightVariationState _value = FanlightTimelineDefaults.VariationState();
 
-        internal override FanlightShowPatch Patch => new(default, default, default, _patch, default, default, default, default, default, default);
+        internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

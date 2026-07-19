@@ -5,8 +5,9 @@ namespace PrismFanlight.Timeline
 {
     public sealed class FanlightVisibilityClip : FanlightTimelineClipAsset
     {
-        [SerializeField] private FanlightVisibilityPatch _patch = FanlightTimelineDefaults.VisibilityPatch();
+        [SerializeField]
+        private FanlightVisibilityState _value = FanlightTimelineDefaults.VisibilityState();
 
-        internal override FanlightShowPatch Patch => new(default, default, default, default, default, default, default, default, default, _patch);
+        internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

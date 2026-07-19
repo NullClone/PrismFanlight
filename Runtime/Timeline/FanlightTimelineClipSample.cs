@@ -1,24 +1,22 @@
-using PrismFanlight.Core;
-
 namespace PrismFanlight.Timeline
 {
     internal readonly struct FanlightTimelineClipSample
     {
         internal string StableClipId { get; }
-        internal FanlightShowPatch Patch { get; }
+
+        internal FanlightTimelineClipValue Value { get; }
+
         internal float Weight { get; }
-        internal int Priority { get; }
+
 
         internal FanlightTimelineClipSample(
             string stableClipId,
-            FanlightShowPatch patch,
-            float weight,
-            int priority)
+            FanlightTimelineClipValue value,
+            float weight)
         {
             StableClipId = stableClipId;
-            Patch = patch;
+            Value = value;
             Weight = weight;
-            Priority = priority;
         }
     }
 }

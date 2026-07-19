@@ -1,34 +1,51 @@
 using System;
 using System.Collections.Generic;
 using PrismFanlight.Core;
+using UnityEngine;
 using UnityEngine.Playables;
 
 namespace PrismFanlight.Timeline
 {
     internal sealed class FanlightTimelineMixerBehaviour : PlayableBehaviour
     {
-        private const float WeightEpsilon = 0.0001f;
+        // Fields
+
+        private string _sourceId = "timeline.unconfigured";
 
         private PrismFanlight _lastTarget;
-        private string _sourceId = "timeline.unconfigured";
+
         private FanlightTimelinePatchKind _patchKind;
+        private FanlightTimelineFieldMask _fieldMask;
+        private int _priority;
+
         private FanlightTimelineClipRange[] _ranges = Array.Empty<FanlightTimelineClipRange>();
         private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
+
+
+        // Methods
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
             var target = playerData as PrismFanlight;
+
             if (_lastTarget != target)
             {
-                if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
+                if (_lastTarget != null)
+                {
+                    _lastTarget.ClearScheduledContribution(this);
+                }
+
                 _lastTarget = target;
             }
 
             if (target == null) return;
+
             var inputCount = playable.GetInputCount();
+
             EnsureSampleCapacity(inputCount);
+
             var sampleCount = 0;
-            var priority = int.MinValue;
+            var totalWeight = 0f;
             var timelineSeconds = playable.GetTime();
 
             for (var i = 0; i < inputCount; i++)
@@ -38,7 +55,8 @@ namespace PrismFanlight.Timeline
                 var behaviour = input.GetBehaviour();
                 var timelineWeight = playable.GetInputWeight(i);
                 var held = false;
-                if (timelineWeight <= WeightEpsilon
+
+                if (timelineWeight <= 0f
                     && behaviour.HoldMode == FanlightTimelineHoldMode.HoldLast
                     && i < _ranges.Length
                     && timelineSeconds >= _ranges[i].EndSeconds
@@ -48,24 +66,27 @@ namespace PrismFanlight.Timeline
                     held = true;
                 }
 
-                if (float.IsNaN(timelineWeight) || float.IsInfinity(timelineWeight) || timelineWeight <= WeightEpsilon)
-                    continue;
+                if (float.IsNaN(timelineWeight) || float.IsInfinity(timelineWeight) || timelineWeight <= 0f) continue;
+
                 var duration = inputPlayable.GetDuration();
                 var normalizedTime = held || duration <= 0d || double.IsInfinity(duration)
                     ? held ? 1f : 0f
                     : (float)(inputPlayable.GetTime() / duration);
                 var weight = timelineWeight * behaviour.EvaluateLocalWeight(normalizedTime);
-                if (float.IsNaN(weight) || float.IsInfinity(weight) || weight <= WeightEpsilon) continue;
-                if (!FanlightTimelinePatchMixer.HasFields(_patchKind, behaviour.Patch)) continue;
+
+                if (float.IsNaN(weight) || float.IsInfinity(weight) || weight <= 0f) continue;
+                if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask)) continue;
+
                 var stableClipId = i < _ranges.Length && !string.IsNullOrWhiteSpace(_ranges[i].StableClipId)
                     ? _ranges[i].StableClipId
                     : behaviour.StableClipId;
+
                 _samples[sampleCount++] = new FanlightTimelineClipSample(
                     stableClipId,
-                    behaviour.Patch,
-                    weight,
-                    behaviour.Priority);
-                priority = Math.Max(priority, behaviour.Priority);
+                    behaviour.Value,
+                    weight);
+
+                totalWeight += weight;
             }
 
             if (sampleCount == 0)
@@ -75,9 +96,14 @@ namespace PrismFanlight.Timeline
             }
 
             Array.Sort(_samples, 0, sampleCount, SampleComparer.Instance);
+
             try
             {
-                if (!FanlightTimelinePatchMixer.TryBlend(_patchKind, _samples.AsSpan(0, sampleCount), out var patch))
+                if (!FanlightTimelinePatchMixer.TryBlend(
+                        _patchKind,
+                        _fieldMask,
+                        _samples.AsSpan(0, sampleCount),
+                        out var patch))
                 {
                     target.ClearScheduledContribution(this);
                     return;
@@ -88,10 +114,10 @@ namespace PrismFanlight.Timeline
                     new FanlightShowContribution(
                         _sourceId,
                         FanlightContributionLayer.Timeline,
-                        priority,
+                        _priority,
                         double.MinValue,
                         double.MaxValue,
-                        1f,
+                        Mathf.Clamp01(totalWeight),
                         patch));
             }
             finally
@@ -107,17 +133,26 @@ namespace PrismFanlight.Timeline
         internal void Configure(
             string sourceId,
             FanlightTimelinePatchKind patchKind,
+            FanlightTimelineFieldMask fieldMask,
+            int priority,
             FanlightTimelineClipRange[] ranges)
         {
-            if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("Source ID is required.", nameof(sourceId));
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                throw new ArgumentException("Source ID is required.", nameof(sourceId));
+            }
+
             _sourceId = sourceId;
             _patchKind = patchKind;
+            _fieldMask = fieldMask;
+            _priority = priority;
             _ranges = ranges ?? Array.Empty<FanlightTimelineClipRange>();
         }
 
         private void EnsureSampleCapacity(int capacity)
         {
             if (_samples.Length >= capacity) return;
+
             Array.Resize(ref _samples, Math.Max(4, capacity));
         }
 
@@ -128,9 +163,14 @@ namespace PrismFanlight.Timeline
 
         private void ClearContribution()
         {
-            if (_lastTarget != null) _lastTarget.ClearScheduledContribution(this);
+            if (_lastTarget != null)
+            {
+                _lastTarget.ClearScheduledContribution(this);
+            }
+
             _lastTarget = null;
         }
+
 
         private sealed class SampleComparer : IComparer<FanlightTimelineClipSample>
         {
