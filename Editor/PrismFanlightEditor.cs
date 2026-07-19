@@ -25,7 +25,6 @@ namespace PrismFanlight.Editor
         private SerializedProperty _layoutAsset;
         private SerializedProperty _swingTarget;
         private SerializedProperty _timeCoordinator;
-        private SerializedProperty _timelineDirector;
         private SerializedProperty _intent;
         private SerializedProperty _gesture;
         private SerializedProperty _pose;
@@ -64,7 +63,6 @@ namespace PrismFanlight.Editor
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _timeCoordinator = serializedObject.FindProperty(nameof(_timeCoordinator));
-            _timelineDirector = serializedObject.FindProperty(nameof(_timelineDirector));
             _intent = serializedObject.FindProperty(nameof(_intent));
             _gesture = serializedObject.FindProperty(nameof(_gesture));
             _pose = serializedObject.FindProperty(nameof(_pose));
@@ -206,12 +204,9 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Gesture");
 
-                DrawChild(_gesture, "_gestureId", "Gesture ID");
                 DrawChild(_gesture, "_beatsPerCycle", "Beats Per Cycle");
                 DrawChild(_gesture, "_phaseOffsetBeats", "Phase Offset");
-                DrawSlider(_gesture, "_attackRatio", "Attack", 0f, 1f);
                 DrawSlider(_gesture, "_holdRatio", "Hold", 0f, 1f);
-                DrawSlider(_gesture, "_returnRatio", "Return", 0f, 1f);
                 DrawSlider(_gesture, "_crispness", "Crispness", 0f, 1f);
                 DrawSlider(_gesture, "_followThrough", "Follow Through", 0f, 1f);
                 DrawChild(_gesture, "_downbeatAccent", "Downbeat Accent");
@@ -445,7 +440,6 @@ namespace PrismFanlight.Editor
             PrismFanlightEditorStyles.DrawSection("| Time", () =>
             {
                 EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
-                EditorGUILayout.PropertyField(_timelineDirector, new GUIContent("Timeline Director"));
                 EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
                 if (_timeCoordinator.objectReferenceValue == null)

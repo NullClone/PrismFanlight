@@ -23,8 +23,9 @@ namespace PrismFanlight.Timeline
 
         private bool _hasPrevious;
         private double _previousSeconds;
-        private double _previousUnitySeconds;
+        private double _previousClockSeconds;
         private double _previousRate;
+        private DirectorUpdateMode _previousUpdateMode;
         private long _sequence;
 
 
@@ -51,19 +52,24 @@ namespace PrismFanlight.Timeline
             }
 
             var seconds = _director.time;
-            var unitySeconds = UnityEngine.Time.unscaledTimeAsDouble;
+            var updateMode = _director.timeUpdateMode;
+            var clockSeconds = GetClockSeconds(updateMode);
             var rate = _director.state == PlayState.Playing ? GetRate() : 0d;
             var discontinuity = FanlightTimeDiscontinuity.None;
 
             if (_hasPrevious)
             {
                 var actual = seconds - _previousSeconds;
-                var expected = (unitySeconds - _previousUnitySeconds) * rate;
-                if (rate < 0d && _previousRate >= 0d)
+                var expected = (clockSeconds - _previousClockSeconds) * _previousRate;
+                if (updateMode != _previousUpdateMode)
+                {
+                    discontinuity = FanlightTimeDiscontinuity.Seek;
+                }
+                else if (rate < 0d && _previousRate >= 0d)
                 {
                     discontinuity = FanlightTimeDiscontinuity.Reverse;
                 }
-                else if (IsForwardLoop(actual, rate))
+                else if (IsForwardLoop(actual, _previousRate))
                 {
                     discontinuity = FanlightTimeDiscontinuity.Loop;
                 }
@@ -75,8 +81,9 @@ namespace PrismFanlight.Timeline
 
             _hasPrevious = true;
             _previousSeconds = seconds;
-            _previousUnitySeconds = unitySeconds;
+            _previousClockSeconds = clockSeconds;
             _previousRate = rate;
+            _previousUpdateMode = updateMode;
 
             var status = rate == 0d ? FanlightClockStatus.Holding : FanlightClockStatus.Ready;
 
@@ -94,6 +101,15 @@ namespace PrismFanlight.Timeline
 
             return graph.GetRootPlayable(0).GetSpeed();
         }
+
+        private static double GetClockSeconds(DirectorUpdateMode updateMode) => updateMode switch
+        {
+            DirectorUpdateMode.GameTime => UnityEngine.Time.timeAsDouble,
+            DirectorUpdateMode.UnscaledGameTime => UnityEngine.Time.unscaledTimeAsDouble,
+            DirectorUpdateMode.DSPClock => AudioSettings.dspTime,
+            DirectorUpdateMode.Manual => UnityEngine.Time.unscaledTimeAsDouble,
+            _ => UnityEngine.Time.unscaledTimeAsDouble
+        };
 
         private bool IsForwardLoop(double actualDelta, double rate) =>
             rate >= 0d

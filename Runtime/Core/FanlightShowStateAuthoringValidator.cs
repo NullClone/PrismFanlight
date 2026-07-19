@@ -28,15 +28,10 @@ namespace PrismFanlight.Core
         {
             try
             {
-                if (value.AttackRatio > value.ReturnRatio) return FanlightShowStateDefaults.Gesture();
-
                 return new FanlightGestureState(
-                    value.GestureId,
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
-                    value.AttackRatio,
                     value.HoldRatio,
-                    value.ReturnRatio,
                     value.Crispness,
                     value.FollowThrough,
                     value.DownbeatAccent);

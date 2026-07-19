@@ -5,7 +5,6 @@ using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using PrismFanlight.Time;
 using UnityEngine;
-using UnityEngine.Playables;
 
 namespace PrismFanlight
 {
@@ -54,9 +53,6 @@ namespace PrismFanlight
 
         [SerializeField]
         private ShowTimeCoordinatorBehaviour _timeCoordinator;
-
-        [SerializeField]
-        private PlayableDirector _timelineDirector;
 
         [SerializeField]
         private FanlightIntentState _intent = FanlightShowStateDefaults.Intent();
@@ -177,8 +173,6 @@ namespace PrismFanlight
                 Dispose();
                 return;
             }
-
-            EvaluateTimeline(time.Seconds);
 
             _contributionBuffer.Clear();
             foreach (var contribution in _scheduledContributions.Values)
@@ -348,15 +342,6 @@ namespace PrismFanlight
             Dispose();
         }
 #endif
-
-        private void EvaluateTimeline(double showSeconds)
-        {
-            if (_timelineDirector == null || _timelineDirector.playableAsset == null) return;
-
-            _timelineDirector.timeUpdateMode = DirectorUpdateMode.Manual;
-            _timelineDirector.time = showSeconds;
-            _timelineDirector.Evaluate();
-        }
 
         private void Render(in FanlightShowSample sample)
         {

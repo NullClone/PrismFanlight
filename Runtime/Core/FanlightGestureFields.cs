@@ -6,15 +6,12 @@ namespace PrismFanlight.Core
     internal enum FanlightGestureFields
     {
         None = 0,
-        GestureId = 1 << 0,
-        BeatsPerCycle = 1 << 1,
-        PhaseOffsetBeats = 1 << 2,
-        AttackRatio = 1 << 3,
-        HoldRatio = 1 << 4,
-        ReturnRatio = 1 << 5,
-        Crispness = 1 << 6,
-        FollowThrough = 1 << 7,
-        DownbeatAccent = 1 << 8,
-        All = GestureId | BeatsPerCycle | PhaseOffsetBeats | AttackRatio | HoldRatio | ReturnRatio | Crispness | FollowThrough | DownbeatAccent
+        BeatsPerCycle = 1 << 0,
+        PhaseOffsetBeats = 1 << 1,
+        HoldRatio = 1 << 2,
+        Crispness = 1 << 3,
+        FollowThrough = 1 << 4,
+        DownbeatAccent = 1 << 5,
+        All = BeatsPerCycle | PhaseOffsetBeats | HoldRatio | Crispness | FollowThrough | DownbeatAccent
     }
 }

@@ -9,12 +9,9 @@ namespace PrismFanlight.Core
         internal static FanlightIntentState Intent() => new(0.5f, 1f, 0.5f, 1f, 1f);
 
         internal static FanlightGestureState Gesture() => new(
-            "gesture.default",
             1f,
-            0f,
             0f,
             0.5f,
-            1f,
             0.5f,
             0f,
             0f);

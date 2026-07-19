@@ -108,12 +108,9 @@ namespace PrismFanlight.Timeline
         {
             ValidateMask((int)fields, (int)FanlightGestureFields.All);
 
-            var gestureId = new FanlightDiscreteValue<string>();
             var beatsPerCycle = new FanlightWeightedFloat();
             var phaseOffsetBeats = new FanlightWeightedFloat();
-            var attackRatio = new FanlightWeightedFloat();
             var holdRatio = new FanlightWeightedFloat();
-            var returnRatio = new FanlightWeightedFloat();
             var crispness = new FanlightWeightedFloat();
             var followThrough = new FanlightWeightedFloat();
             var downbeatAccent = new FanlightWeightedFloat();
@@ -122,12 +119,9 @@ namespace PrismFanlight.Timeline
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Gesture;
-                if (Has(fields, FanlightGestureFields.GestureId)) gestureId.Consider(sourceValue.GestureId, sample.Weight, sample.StableClipId);
                 if (Has(fields, FanlightGestureFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
                 if (Has(fields, FanlightGestureFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
-                if (Has(fields, FanlightGestureFields.AttackRatio)) attackRatio.Add(sourceValue.AttackRatio, sample.Weight);
                 if (Has(fields, FanlightGestureFields.HoldRatio)) holdRatio.Add(sourceValue.HoldRatio, sample.Weight);
-                if (Has(fields, FanlightGestureFields.ReturnRatio)) returnRatio.Add(sourceValue.ReturnRatio, sample.Weight);
                 if (Has(fields, FanlightGestureFields.Crispness)) crispness.Add(sourceValue.Crispness, sample.Weight);
                 if (Has(fields, FanlightGestureFields.FollowThrough)) followThrough.Add(sourceValue.FollowThrough, sample.Weight);
                 if (Has(fields, FanlightGestureFields.DownbeatAccent)) downbeatAccent.Add(sourceValue.DownbeatAccent, sample.Weight);
@@ -141,12 +135,9 @@ namespace PrismFanlight.Timeline
 
             var fallback = FanlightTimelineDefaults.GestureState();
             var value = new FanlightGestureState(
-                gestureId.Value(fallback.GestureId),
                 beatsPerCycle.Value(fallback.BeatsPerCycle),
                 phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
-                attackRatio.Value(fallback.AttackRatio),
                 holdRatio.Value(fallback.HoldRatio),
-                returnRatio.Value(fallback.ReturnRatio),
                 crispness.Value(fallback.Crispness),
                 followThrough.Value(fallback.FollowThrough),
                 downbeatAccent.Value(fallback.DownbeatAccent)

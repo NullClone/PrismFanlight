@@ -25,8 +25,6 @@ namespace PrismFanlight.Core
 
         internal static FanlightShowState Validate(FanlightShowState state)
         {
-            if (state.Gesture.AttackRatio > state.Gesture.ReturnRatio)
-                throw new InvalidOperationException("Gesture attack ratio must not exceed return ratio.");
             if (state.Pose.ArmLengthMinimum > state.Pose.ArmLengthMaximum)
                 throw new InvalidOperationException("Minimum arm length must not exceed maximum arm length.");
             if (state.Pose.AngleMinimumRadians > state.Pose.AngleMaximumRadians)
@@ -66,14 +64,10 @@ namespace PrismFanlight.Core
             ValidateMask((int)patch.Fields, (int)FanlightGestureFields.All, nameof(patch));
 
             var value = patch.Value;
-            var discrete = weight >= 0.5f;
             return new FanlightGestureState(
-                Has(patch.Fields, FanlightGestureFields.GestureId) && discrete ? value.GestureId : current.GestureId,
                 Has(patch.Fields, FanlightGestureFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
                 Has(patch.Fields, FanlightGestureFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
-                Has(patch.Fields, FanlightGestureFields.AttackRatio) ? Lerp(current.AttackRatio, value.AttackRatio, weight) : current.AttackRatio,
                 Has(patch.Fields, FanlightGestureFields.HoldRatio) ? Lerp(current.HoldRatio, value.HoldRatio, weight) : current.HoldRatio,
-                Has(patch.Fields, FanlightGestureFields.ReturnRatio) ? Lerp(current.ReturnRatio, value.ReturnRatio, weight) : current.ReturnRatio,
                 Has(patch.Fields, FanlightGestureFields.Crispness) ? Lerp(current.Crispness, value.Crispness, weight) : current.Crispness,
                 Has(patch.Fields, FanlightGestureFields.FollowThrough) ? Lerp(current.FollowThrough, value.FollowThrough, weight) : current.FollowThrough,
                 Has(patch.Fields, FanlightGestureFields.DownbeatAccent) ? Lerp(current.DownbeatAccent, value.DownbeatAccent, weight) : current.DownbeatAccent);
