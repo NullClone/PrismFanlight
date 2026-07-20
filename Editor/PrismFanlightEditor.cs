@@ -36,10 +36,15 @@ namespace PrismFanlight.Editor
         private SerializedProperty _palette;
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
-
+        private bool _enableGizmos = true;
 
         private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
-        private bool _enableGizmos = true;
+
+        private static readonly PrismFanlightSection _renderingSection = new(new GUIContent("Rendering"));
+        private static readonly PrismFanlightSection _generalSection = new(new GUIContent("General"));
+        private static readonly PrismFanlightSection _layoutSection = new(new GUIContent("Layout"));
+        private static readonly PrismFanlightSection _timeSection = new(new GUIContent("Time"));
+        private static readonly PrismFanlightSection _advanceSection = new(new GUIContent("Advance"));
 
 
         // Methods
@@ -106,13 +111,14 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.HelpBox("Compute shaders are not supported on this platform.", MessageType.Warning);
             }
 
+            EditorGUILayout.Space();
             DrawRenderingSection();
             DrawGeneralSection();
             DrawLayoutSection();
             DrawTimeSection();
             DrawAdvanceSection();
-
             EditorGUILayout.Space();
+
             EditorGUI.BeginChangeCheck();
             _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
             if (EditorGUI.EndChangeCheck())
@@ -125,7 +131,7 @@ namespace PrismFanlight.Editor
 
         private void DrawRenderingSection()
         {
-            PrismFanlightEditorStyles.DrawSection("| Rendering", () =>
+            PrismFanlightEditorStyles.DrawSection(_renderingSection, () =>
             {
                 EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight"));
 
@@ -193,8 +199,10 @@ namespace PrismFanlight.Editor
 
         private void DrawGeneralSection()
         {
-            PrismFanlightEditorStyles.DrawSection("| General", () =>
+            PrismFanlightEditorStyles.DrawSection(_generalSection, () =>
             {
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Main");
+
                 DrawSlider(_intent, "_energy", "Energy", 0f, 1f);
                 DrawSlider(_intent, "_participation", "Participation", 0f, 1f);
                 DrawSlider(_intent, "_synchronization", "Synchronization", 0f, 1f);
@@ -210,6 +218,18 @@ namespace PrismFanlight.Editor
                 DrawSlider(_gesture, "_crispness", "Crispness", 0f, 1f);
                 DrawSlider(_gesture, "_followThrough", "Follow Through", 0f, 1f);
                 DrawChild(_gesture, "_downbeatAccent", "Downbeat Accent");
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Color");
+
+                DrawChild(_palette, "_slot1", "Slot 1");
+                DrawChild(_palette, "_slot2", "Slot 2");
+                DrawChild(_palette, "_slot3", "Slot 3");
+                DrawChild(_palette, "_slot4", "Slot 4");
+                DrawChild(_palette, "_slot5", "Slot 5");
+                DrawChild(_palette, "_slot6", "Slot 6");
+                DrawChild(_palette, "_globalIntensity", "Global Intensity");
+                DrawSlider(_palette, "_randomIntensity", "Random Intensity", 0f, 1f);
 
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Direction");
@@ -232,18 +252,6 @@ namespace PrismFanlight.Editor
                 }
 
                 EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Palette");
-
-                DrawChild(_palette, "_slot1", "Slot 1");
-                DrawChild(_palette, "_slot2", "Slot 2");
-                DrawChild(_palette, "_slot3", "Slot 3");
-                DrawChild(_palette, "_slot4", "Slot 4");
-                DrawChild(_palette, "_slot5", "Slot 5");
-                DrawChild(_palette, "_slot6", "Slot 6");
-                DrawChild(_palette, "_globalIntensity", "Global Intensity");
-                DrawSlider(_palette, "_randomIntensity", "Random Intensity", 0f, 1f);
-
-                EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Visibility");
 
                 DrawChild(_visibility, "_penlightsEnabled", "Penlights");
@@ -253,9 +261,10 @@ namespace PrismFanlight.Editor
 
         private void DrawLayoutSection()
         {
-            PrismFanlightEditorStyles.DrawSection("| Layout", () =>
+            PrismFanlightEditorStyles.DrawSection(_layoutSection, () =>
             {
                 EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+
                 if (_layoutAsset.hasMultipleDifferentValues)
                 {
                     EditorGUILayout.HelpBox("Layout editing is unavailable while selected objects use different layouts.", MessageType.Info);
@@ -270,6 +279,7 @@ namespace PrismFanlight.Editor
                 }
 
                 _instance.SetEditorLayoutBlocked(false);
+
                 DrawEmbeddedLayoutControls();
             });
         }
@@ -289,14 +299,6 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.HelpBox("The Layout Asset is not initialized.", MessageType.Error);
                 return;
             }
-
-            EditorGUILayout.Space();
-            PrismFanlightEditorStyles.DrawSubGroupLabel("Layout Asset");
-            EditorGUILayout.LabelField("Layout ID", layout.LayoutId.Value);
-            EditorGUILayout.LabelField("Layout Version", layout.LayoutVersion.ToString());
-            EditorGUILayout.LabelField("Blocks", $"{layout.BlockCount.x} × {layout.BlockCount.y}");
-            EditorGUILayout.LabelField("Seats Per Block", $"{layout.SeatPerBlock.x} × {layout.SeatPerBlock.y}");
-            EditorGUILayout.LabelField("Total Seats", layout.TotalSeatCount.ToString("N0"));
 
             var session = FanlightLayoutEditSession.Get(layout);
             if (session == null) return;
@@ -437,9 +439,13 @@ namespace PrismFanlight.Editor
 
         private void DrawTimeSection()
         {
-            PrismFanlightEditorStyles.DrawSection("| Time", () =>
+            PrismFanlightEditorStyles.DrawSection(_timeSection, () =>
             {
-                EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
+                using (new EditorGUI.DisabledGroupScope(true))
+                {
+                    EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
+                }
+
                 EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
                 if (_timeCoordinator.objectReferenceValue == null)
@@ -451,9 +457,8 @@ namespace PrismFanlight.Editor
 
         private void DrawAdvanceSection()
         {
-            PrismFanlightEditorStyles.DrawSection("| Advance", () =>
+            PrismFanlightEditorStyles.DrawSection(_advanceSection, () =>
             {
-                EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Pose");
 
                 DrawChild(_pose, "_handZone", "Hand Zone");

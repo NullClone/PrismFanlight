@@ -8,54 +8,36 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        private static GUIStyle _section;
-        private static GUIStyle _sectionTitle;
         private static GUIStyle _subGroupLabel;
 
 
         // Properties
-
-        private static GUIStyle Section => _section ??= CreateSection();
-
-        private static GUIStyle SectionTitle => _sectionTitle ??= CreateSectionTitle();
 
         private static GUIStyle SubGroupLabel => _subGroupLabel ??= CreateSubGroupLabel();
 
 
         // Methods
 
-        internal static void DrawSection(string title, Action draw)
+        internal static void DrawSection(PrismFanlightSection section, Action draw)
         {
-            EditorGUILayout.Space();
+            section.DrawHeader();
 
-            using (new EditorGUILayout.VerticalScope(Section))
+            if (EditorGUILayout.BeginFadeGroup(section.anim.faded))
             {
-                EditorGUILayout.LabelField(title, SectionTitle);
-                EditorGUILayout.Space();
-                draw();
+                //using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUILayout.Space();
+                    draw();
+                    EditorGUILayout.Space();
+                }
             }
+
+            EditorGUILayout.EndFadeGroup();
         }
 
         internal static void DrawSubGroupLabel(string title)
         {
             EditorGUILayout.LabelField(title, SubGroupLabel);
-        }
-
-        private static GUIStyle CreateSection()
-        {
-            return new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(10, 10, 8, 10),
-                margin = new RectOffset(0, 0, 4, 4)
-            };
-        }
-
-        private static GUIStyle CreateSectionTitle()
-        {
-            return new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 14
-            };
         }
 
         private static GUIStyle CreateSubGroupLabel()

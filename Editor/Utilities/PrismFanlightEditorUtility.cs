@@ -1,0 +1,88 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace PrismFanlight.Editor
+{
+    public static class PrismFanlightEditorUtility
+    {
+        public static void DrawSplitter(bool isBoxed = false)
+        {
+            var rect = GUILayoutUtility.GetRect(1f, 1f);
+
+            DrawSplitter(rect, isBoxed);
+        }
+
+        public static void DrawSplitter(Rect rect, bool isBoxed = false)
+        {
+            if (!isBoxed)
+            {
+                rect = ToFullWidth(rect);
+            }
+
+            if (Event.current.type != EventType.Repaint) return;
+
+            EditorGUI.DrawRect(rect, !EditorGUIUtility.isProSkin
+                ? new Color(0.6f, 0.6f, 0.6f, 1.333f)
+                : new Color(0.12f, 0.12f, 0.12f, 1.333f));
+        }
+
+        public static Rect ToFullWidth(Rect rect)
+        {
+            rect.xMin = 0f;
+            rect.width += 4f;
+            return rect;
+        }
+
+        public static bool DrawHeader(GUIContent content, bool isExpanded)
+        {
+            const float HEIGHT = 20f;
+
+            DrawSplitter();
+
+            var backgroundRect = GUILayoutUtility.GetRect(1f, HEIGHT);
+
+            var labelRect = backgroundRect;
+            labelRect.xMin += 8f;
+            labelRect.xMax -= 20f + 16 + 5;
+
+            var foldoutRect = backgroundRect;
+            foldoutRect.xMin -= 8f;
+            foldoutRect.y += 0f;
+            foldoutRect.width = HEIGHT;
+            foldoutRect.height = HEIGHT;
+
+            backgroundRect.xMin = 0f;
+            backgroundRect.width += 4f;
+
+            var backgroundTint = EditorGUIUtility.isProSkin ? 0.1f : 1f;
+
+            if (backgroundRect.Contains(Event.current.mousePosition))
+            {
+                backgroundTint *= EditorGUIUtility.isProSkin ? 1.5f : 0.9f;
+            }
+
+            EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
+
+            EditorGUI.LabelField(labelRect, content, EditorStyles.boldLabel);
+
+            GUI.Label(foldoutRect, new GUIContent(isExpanded ? "−" : "="), EditorStyles.boldLabel);
+
+            var e = Event.current;
+
+            if (e.type == EventType.MouseDown)
+            {
+                if (backgroundRect.Contains(e.mousePosition))
+                {
+                    if (e.button == 0)
+                    {
+                        isExpanded = !isExpanded;
+                    }
+
+                    e.Use();
+                }
+            }
+
+            return isExpanded;
+        }
+    }
+}
