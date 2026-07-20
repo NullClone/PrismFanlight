@@ -104,7 +104,6 @@ namespace PrismFanlight.Rendering
             PenlightVariantAssignmentBuffer.SetData(assignments);
             PenlightVariantOffsetBuffer.SetData(PenlightVariantOffsets);
             UpdateRandomData(globalSeed, layout);
-
             ResetPenlightArgs(PenlightArgsBuffer, appearance.Meshes);
             ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
 
@@ -116,9 +115,7 @@ namespace PrismFanlight.Rendering
 
         public void UpdateStaticData(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout)
         {
-            if (SeatBuffer == null || BlockBuffer == null
-                                   || layout.SeatCount != SeatCount
-                                   || layout.BlockCount != BlockCount)
+            if (SeatBuffer == null || BlockBuffer == null || layout.SeatCount != SeatCount || layout.BlockCount != BlockCount)
             {
                 throw new InvalidOperationException("Static layout topology does not match allocated GPU buffers.");
             }
@@ -210,10 +207,7 @@ namespace PrismFanlight.Rendering
             argsBuffer.SetData(args);
         }
 
-        private static uint[] BuildVariantAssignments(
-            FanlightRuntimeLayout layout,
-            FanlightPenlightRuntimeAppearance appearance,
-            out int[] counts)
+        private static uint[] BuildVariantAssignments(FanlightRuntimeLayout layout, FanlightPenlightRuntimeAppearance appearance, out int[] counts)
         {
             var assignments = new uint[layout.SeatCount];
             counts = new int[appearance.VariantCount];
@@ -221,13 +215,13 @@ namespace PrismFanlight.Rendering
             for (var i = 0; i < assignments.Length; i++)
             {
                 var variantIndex = 0;
-                var stableSeatId = layout.HasStableSeatIds ? layout.StableSeatIds[i] : (ulong)i + 1UL;
+                var stableSeatId = layout.StableSeatIds[i];
                 if (appearance.VariantCount > 1)
                 {
                     variantIndex = FanlightPenlightAssignment.SelectVariantIndex(
                         stableSeatId,
                         appearance.AssignmentSeed,
-                        appearance.AssignmentSchemaVersion,
+                        FanlightPenlightAssignment.PersonaAlgorithmVersion,
                         appearance.StableVariantIds);
                 }
 
@@ -306,7 +300,7 @@ namespace PrismFanlight.Rendering
         {
             return layout.HasStableSeatIds
                 ? layout.StableSeatIds[seatIndex]
-                : (ulong)(uint)seatIndex + 1UL;
+                : (uint)seatIndex + 1UL;
         }
 
         private static Vector4 Random4(uint globalSeed, ulong stableSeatId, uint offset)

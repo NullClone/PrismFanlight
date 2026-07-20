@@ -78,9 +78,7 @@ namespace PrismFanlight.Rendering
 
             var appearanceHash = appearanceProfile.GetRuntimeContentHash();
             var appearance = _appearance;
-            if (appearance == null
-                || _appearanceProfile != appearanceProfile
-                || appearance.ContentHash != appearanceHash)
+            if (appearance == null || _appearanceProfile != appearanceProfile || appearance.ContentHash != appearanceHash)
             {
                 appearance = FanlightPenlightRuntimeAppearance.Create(appearanceProfile);
             }
@@ -124,6 +122,7 @@ namespace PrismFanlight.Rendering
             _audienceMaterial = audienceMaterial;
             _computeShader = computeShader;
             _layout = layout;
+
             try
             {
                 _kernels = new FanlightGpuKernels(computeShader);
@@ -135,6 +134,7 @@ namespace PrismFanlight.Rendering
             }
 
             _properties = new MaterialPropertyBlock();
+
             try
             {
                 _buffers.Allocate(appearance, layout, allocateAudience, 0u);
@@ -266,8 +266,7 @@ namespace PrismFanlight.Rendering
             if (double.IsNaN(sample.ShowSeconds)
                 || double.IsInfinity(sample.ShowSeconds)
                 || double.IsNaN(sample.AnimationSampleSeconds)
-                || double.IsInfinity(sample.AnimationSampleSeconds)
-                || sample.SampleSequence <= 0)
+                || double.IsInfinity(sample.AnimationSampleSeconds))
             {
                 throw new ArgumentException("A complete show sample is required.", nameof(sample));
             }

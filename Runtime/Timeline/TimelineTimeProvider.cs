@@ -12,9 +12,6 @@ namespace PrismFanlight.Timeline
         // Fields
 
         [SerializeField]
-        private string _providerId = string.Empty;
-
-        [SerializeField]
         private PlayableDirector _director;
 
         [SerializeField, Min(1e-9f)]
@@ -26,29 +23,24 @@ namespace PrismFanlight.Timeline
         private double _previousClockSeconds;
         private double _previousRate;
         private DirectorUpdateMode _previousUpdateMode;
-        private long _sequence;
 
 
         // Properties
 
-        public string ProviderId => _providerId ?? string.Empty;
-
-        public bool IsConfigured => _director != null && _director.playableAsset != null;
+        private bool IsConfigured => _director != null && _director.playableAsset != null;
 
 
         // Methods
 
-        public ShowTimeProviderSample Sample()
+        ShowTimeProviderSample IShowTimeProvider.Sample()
         {
             if (!IsConfigured)
             {
                 return new ShowTimeProviderSample(
-                    ProviderId,
                     _hasPrevious ? _previousSeconds : 0d,
                     0d,
                     FanlightClockStatus.Disconnected,
-                    FanlightTimeDiscontinuity.None,
-                    ++_sequence);
+                    FanlightTimeDiscontinuity.None);
             }
 
             var seconds = _director.time;
@@ -87,7 +79,7 @@ namespace PrismFanlight.Timeline
 
             var status = rate == 0d ? FanlightClockStatus.Holding : FanlightClockStatus.Ready;
 
-            return new ShowTimeProviderSample(ProviderId, seconds, rate, status, discontinuity, ++_sequence);
+            return new ShowTimeProviderSample(seconds, rate, status, discontinuity);
         }
 
         private double GetRate()
@@ -122,17 +114,6 @@ namespace PrismFanlight.Timeline
         private void OnValidate()
         {
             _seekTolerance = Math.Max(1e-9d, _seekTolerance);
-
-            if (string.IsNullOrEmpty(_providerId)) _providerId = $"timeline.{Guid.NewGuid():N}";
-
-            foreach (var other in FindObjectsByType<TimelineTimeProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (other != this && string.Equals(other._providerId, _providerId, StringComparison.Ordinal))
-                {
-                    _providerId = $"timeline.{Guid.NewGuid():N}";
-                    break;
-                }
-            }
         }
 #endif
     }

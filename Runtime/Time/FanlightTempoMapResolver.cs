@@ -4,30 +4,21 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight.Time
 {
-    public sealed class FanlightTempoMapResolver : IShowTempoMapResolver
+    internal sealed class FanlightTempoMapResolver : IShowTempoMapResolver
     {
         // Fields
 
         private readonly FanlightTempoSegment[] _segments;
 
 
-        // Properties
-
-        public string TempoMapId { get; }
-
-        public int Version { get; }
-
-
         // Methods
 
-        public FanlightTempoMapResolver(FanlightTempoMap map)
+        internal FanlightTempoMapResolver(FanlightTempoMap map)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
 
             if (!map.Validate(out var error)) throw new ArgumentException(error, nameof(map));
 
-            TempoMapId = map.TempoMapId;
-            Version = map.Version;
             _segments = map.Segments.ToArray();
         }
 
@@ -49,8 +40,7 @@ namespace PrismFanlight.Time
                 beatInBar / segment.BeatsPerBar,
                 segment.Bpm,
                 segment.BeatsPerBar,
-                segment.BeatUnit,
-                segment.SegmentId);
+                segment.BeatUnit);
         }
 
         private int FindSegment(double seconds)

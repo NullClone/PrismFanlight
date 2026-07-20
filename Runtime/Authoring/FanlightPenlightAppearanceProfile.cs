@@ -8,18 +8,7 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        public const int CurrentAssignmentSchemaVersion = 1;
         public const int MaximumVariantCount = 4;
-
-
-        [SerializeField, HideInInspector]
-        private string _profileId = string.Empty;
-
-        [SerializeField, Min(1)]
-        private int _profileVersion = 1;
-
-        [SerializeField, HideInInspector]
-        private int _assignmentSchemaVersion = CurrentAssignmentSchemaVersion;
 
         [SerializeField]
         private uint _assignmentSeed = 1u;
@@ -33,12 +22,6 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public string ProfileId => _profileId ?? string.Empty;
-
-        public int ProfileVersion => _profileVersion;
-
-        public int AssignmentSchemaVersion => _assignmentSchemaVersion;
-
         public uint AssignmentSeed => _assignmentSeed;
 
         public int VariantCount => _variants?.Length ?? 0;
@@ -50,24 +33,6 @@ namespace PrismFanlight.Authoring
 
         public bool TryValidate(out string error)
         {
-            if (string.IsNullOrWhiteSpace(ProfileId))
-            {
-                error = "Appearance profile ID is missing.";
-                return false;
-            }
-
-            if (_profileVersion <= 0)
-            {
-                error = "Appearance profile version must be greater than zero.";
-                return false;
-            }
-
-            if (_assignmentSchemaVersion != CurrentAssignmentSchemaVersion)
-            {
-                error = $"Unsupported appearance assignment schema: {_assignmentSchemaVersion}.";
-                return false;
-            }
-
             if (VariantCount < 1 || VariantCount > MaximumVariantCount)
             {
                 error = $"Appearance profile must contain between 1 and {MaximumVariantCount} variants.";
@@ -112,9 +77,6 @@ namespace PrismFanlight.Authoring
         internal ulong GetRuntimeContentHash()
         {
             var hash = 14695981039346656037UL;
-            AddString(ProfileId);
-            AddInt(_profileVersion);
-            AddInt(_assignmentSchemaVersion);
             AddUInt(_assignmentSeed);
             AddInt(VariantCount);
             for (var i = 0; i < VariantCount; i++)
@@ -135,16 +97,6 @@ namespace PrismFanlight.Authoring
             }
 
             return hash == 0UL ? 1UL : hash;
-
-            void AddString(string value)
-            {
-                value ??= string.Empty;
-                for (var i = 0; i < value.Length; i++)
-                {
-                    AddByte((byte)value[i]);
-                    AddByte((byte)(value[i] >> 8));
-                }
-            }
 
             void AddInt(int value) => AddUInt(unchecked((uint)value));
 
@@ -171,22 +123,8 @@ namespace PrismFanlight.Authoring
 
         private void Reset()
         {
-            EnsureIdentity();
-            _profileVersion = 1;
-            _assignmentSchemaVersion = CurrentAssignmentSchemaVersion;
             _assignmentSeed = 1u;
             _variants = new[] { new FanlightPenlightVariant(1u, null, true, 0f) };
-        }
-
-        private void OnValidate()
-        {
-            EnsureIdentity();
-            _profileVersion = Mathf.Max(1, _profileVersion);
-        }
-
-        private void EnsureIdentity()
-        {
-            if (string.IsNullOrWhiteSpace(_profileId)) _profileId = Guid.NewGuid().ToString("N");
         }
 
         private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

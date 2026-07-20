@@ -14,18 +14,11 @@ namespace PrismFanlight.Authoring
         [SerializeField]
         private FanlightBlockPlacement _placement;
 
-        [SerializeField]
-        private int _authoringRevision;
-
-
         // Properties
 
         public string BlockId => _blockId ?? string.Empty;
 
         public FanlightBlockPlacement Placement => _placement;
-
-        public int AuthoringRevision => _authoringRevision;
-
 
         // Methods
 
@@ -33,14 +26,11 @@ namespace PrismFanlight.Authoring
         {
             _blockId = blockId;
             _placement = FanlightBlockPlacement.Identity;
-            _authoringRevision = 1;
         }
 
         internal void SetPlacement(FanlightBlockPlacement placement)
         {
-            if (_authoringRevision == int.MaxValue) throw new InvalidOperationException("Block authoring revision is exhausted.");
             _placement = placement;
-            _authoringRevision++;
         }
     }
 }

@@ -26,8 +26,6 @@ namespace PrismFanlight.Authoring
         // Methods
 
         public bool Equals(FanlightBlockPlacement other)
-        {
-            return position.Equals(other.position) && eulerRotation.Equals(other.eulerRotation);
-        }
+            => position.Equals(other.position) && eulerRotation.Equals(other.eulerRotation);
     }
 }

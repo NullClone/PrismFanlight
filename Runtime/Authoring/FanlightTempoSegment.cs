@@ -9,9 +9,6 @@ namespace PrismFanlight.Authoring
         // Fields
 
         [SerializeField]
-        private string _segmentId;
-
-        [SerializeField]
         private double _startSeconds;
 
         [SerializeField]
@@ -32,8 +29,6 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public string SegmentId => _segmentId ?? string.Empty;
-
         public double StartSeconds => _startSeconds;
 
         public double StartBeat => _startBeat;
@@ -47,18 +42,16 @@ namespace PrismFanlight.Authoring
         public long StartBar => _startBar;
 
         public bool IsValid =>
-            !string.IsNullOrEmpty(SegmentId)
-            && !double.IsNaN(StartSeconds) && !double.IsInfinity(StartSeconds)
-            && !double.IsNaN(StartBeat) && !double.IsInfinity(StartBeat)
-            && Bpm > 0d && !double.IsInfinity(Bpm)
-            && BeatsPerBar >= 1
-            && BeatUnit is 1 or 2 or 4 or 8 or 16;
+            !double.IsNaN(StartSeconds) && !double.IsInfinity(StartSeconds)
+                                        && !double.IsNaN(StartBeat) && !double.IsInfinity(StartBeat)
+                                        && Bpm > 0d && !double.IsInfinity(Bpm)
+                                        && BeatsPerBar >= 1
+                                        && BeatUnit is 1 or 2 or 4 or 8 or 16;
 
 
         // Methods
 
         public FanlightTempoSegment(
-            string segmentId,
             double startSeconds,
             double startBeat,
             double bpm,
@@ -66,7 +59,6 @@ namespace PrismFanlight.Authoring
             int beatUnit,
             long startBar)
         {
-            _segmentId = segmentId ?? string.Empty;
             _startSeconds = startSeconds;
             _startBeat = startBeat;
             _bpm = bpm;

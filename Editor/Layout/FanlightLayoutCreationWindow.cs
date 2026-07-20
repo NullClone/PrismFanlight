@@ -118,8 +118,7 @@ namespace PrismFanlight.Editor
             var layout = (FanlightLayoutAsset)target;
             EditorGUILayout.LabelField("Stable Identity", EditorStyles.boldLabel);
             EditorGUILayout.SelectableLabel(layout.LayoutId.Value, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-            EditorGUILayout.LabelField("Schema Version", layout.SchemaVersion.ToString());
-            EditorGUILayout.LabelField("Layout Version", layout.LayoutVersion.ToString());
+            EditorGUILayout.LabelField("Content Hash", layout.ContentHash.ToString("X16"));
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Immutable Topology", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Blocks", $"{layout.BlockCount.x} × {layout.BlockCount.y}");
@@ -128,7 +127,7 @@ namespace PrismFanlight.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Bake", EditorStyles.boldLabel);
             EditorGUILayout.ObjectField("Active Artifact", layout.ActiveBake, typeof(FanlightLayoutBakeArtifact), false);
-            EditorGUILayout.LabelField("Status", layout.HasCompatibleBake ? "Current" : "Bake Required");
+            EditorGUILayout.LabelField("Status", layout.HasValidBake ? "Current" : "Bake Required");
 
             if (FanlightLayoutIdRegistry.IsDuplicate(layout))
             {

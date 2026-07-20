@@ -4,18 +4,25 @@ namespace PrismFanlight.Rendering
 {
     internal static class FanlightPenlightAssignment
     {
-        internal const int SchemaVersion = 1;
+        internal const int PersonaAlgorithmVersion = 1;
 
-        internal static int SelectVariantIndex(
-            ulong stableSeatId,
-            uint assignmentSeed,
-            int assignmentSchemaVersion,
-            ReadOnlySpan<uint> stableVariantIds)
+
+        internal static int SelectVariantIndex(ulong stableSeatId, uint assignmentSeed, int personaAlgorithmVersion, ReadOnlySpan<uint> stableVariantIds)
         {
-            if (stableSeatId == 0UL) throw new ArgumentOutOfRangeException(nameof(stableSeatId));
-            if (assignmentSchemaVersion != SchemaVersion)
-                throw new ArgumentOutOfRangeException(nameof(assignmentSchemaVersion));
-            if (stableVariantIds.Length == 0) throw new ArgumentException("At least one variant ID is required.", nameof(stableVariantIds));
+            if (stableSeatId == 0UL)
+            {
+                throw new ArgumentOutOfRangeException(nameof(stableSeatId));
+            }
+
+            if (personaAlgorithmVersion != PersonaAlgorithmVersion)
+            {
+                throw new ArgumentOutOfRangeException(nameof(personaAlgorithmVersion));
+            }
+
+            if (stableVariantIds.Length == 0)
+            {
+                throw new ArgumentException("At least one variant ID is required.", nameof(stableVariantIds));
+            }
 
             var selectedIndex = -1;
             var selectedId = uint.MaxValue;
@@ -24,14 +31,20 @@ namespace PrismFanlight.Rendering
             for (var i = 0; i < stableVariantIds.Length; i++)
             {
                 var variantId = stableVariantIds[i];
-                if (variantId == 0u) throw new ArgumentException("Variant IDs must be non-zero.", nameof(stableVariantIds));
+                if (variantId == 0u)
+                {
+                    throw new ArgumentException("Variant IDs must be non-zero.", nameof(stableVariantIds));
+                }
+
                 for (var previous = 0; previous < i; previous++)
                 {
                     if (stableVariantIds[previous] == variantId)
+                    {
                         throw new ArgumentException("Variant IDs must be unique.", nameof(stableVariantIds));
+                    }
                 }
 
-                var score = Score(stableSeatId, assignmentSeed, assignmentSchemaVersion, variantId);
+                var score = Score(stableSeatId, assignmentSeed, personaAlgorithmVersion, variantId);
                 if (selectedIndex < 0 || score > selectedScore || score == selectedScore && variantId < selectedId)
                 {
                     selectedIndex = i;
@@ -46,14 +59,16 @@ namespace PrismFanlight.Rendering
         private static ulong Score(
             ulong stableSeatId,
             uint assignmentSeed,
-            int assignmentSchemaVersion,
+            int personaAlgorithmVersion,
             uint stableVariantId)
         {
             var hash = 14695981039346656037UL;
+
             AddUInt(assignmentSeed);
             AddULong(stableSeatId);
-            AddUInt(unchecked((uint)assignmentSchemaVersion));
+            AddUInt(unchecked((uint)personaAlgorithmVersion));
             AddUInt(stableVariantId);
+
             return Mix(hash);
 
             void AddUInt(uint value)

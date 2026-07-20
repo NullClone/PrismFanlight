@@ -18,7 +18,6 @@ namespace PrismFanlight.Authoring
     public struct FanlightBakedBlockRecord
     {
         public string blockId;
-        public int sourceRevision;
         public Bounds localBounds;
         public int contiguousSeatStart;
         public int contiguousSeatCount;
@@ -30,16 +29,13 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        public const int CurrentFormatVersion = 1;
+        public const int CurrentFormatVersion = 2;
 
         [SerializeField]
         private int _formatVersion;
 
         [SerializeField]
         private string _layoutId;
-
-        [SerializeField]
-        private int _sourceLayoutVersion;
 
         [SerializeField]
         private ulong _contentHash;
@@ -59,8 +55,6 @@ namespace PrismFanlight.Authoring
         public int FormatVersion => _formatVersion;
 
         public string LayoutId => _layoutId ?? string.Empty;
-
-        public int SourceLayoutVersion => _sourceLayoutVersion;
 
         public ulong ContentHash => _contentHash;
 
@@ -87,7 +81,8 @@ namespace PrismFanlight.Authoring
 
             if (_formatVersion != CurrentFormatVersion
                 || !string.Equals(LayoutId, layout.LayoutId.Value, StringComparison.Ordinal)
-                || _sourceLayoutVersion != layout.LayoutVersion
+                || _contentHash == 0UL
+                || _contentHash != layout.ContentHash
                 || SeatCount != layout.TotalSeatCount
                 || BlockCount != layout.TotalBlockCount)
             {
@@ -99,7 +94,6 @@ namespace PrismFanlight.Authoring
 
         internal void InitializeImported(
             string layoutId,
-            int sourceLayoutVersion,
             ulong contentHash,
             Bounds localBounds,
             FanlightBakedSeatRecord[] seats,
@@ -107,7 +101,6 @@ namespace PrismFanlight.Authoring
         {
             _formatVersion = CurrentFormatVersion;
             _layoutId = layoutId;
-            _sourceLayoutVersion = sourceLayoutVersion;
             _contentHash = contentHash;
             _localBounds = localBounds;
             _seats = seats ?? Array.Empty<FanlightBakedSeatRecord>();

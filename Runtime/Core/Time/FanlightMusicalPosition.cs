@@ -22,9 +22,6 @@
 
         public int BeatUnit { get; }
 
-        public string TempoSegmentId { get; }
-
-
         // Methods
 
         public FanlightMusicalPosition(
@@ -36,8 +33,7 @@
             double barPhase,
             double bpm,
             int beatsPerBar,
-            int beatUnit,
-            string tempoSegmentId)
+            int beatUnit)
         {
             Seconds = seconds;
             Beat = beat;
@@ -48,7 +44,6 @@
             Bpm = bpm;
             BeatsPerBar = beatsPerBar;
             BeatUnit = beatUnit;
-            TempoSegmentId = tempoSegmentId ?? string.Empty;
         }
 
         public bool IsComplete =>
@@ -60,8 +55,7 @@
             && IsFinite(Bpm)
             && Bpm > 0d
             && BeatsPerBar > 0
-            && BeatUnit > 0
-            && !string.IsNullOrEmpty(TempoSegmentId);
+            && BeatUnit is 1 or 2 or 4 or 8 or 16;
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     }

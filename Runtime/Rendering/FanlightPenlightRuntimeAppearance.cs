@@ -6,35 +6,7 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightPenlightRuntimeAppearance
     {
-        private FanlightPenlightRuntimeAppearance(
-            string profileId,
-            int profileVersion,
-            int assignmentSchemaVersion,
-            uint assignmentSeed,
-            ulong contentHash,
-            Mesh[] meshes,
-            uint[] stableVariantIds,
-            float[] gripPivotYs,
-            Bounds gripLocalBounds,
-            bool isLegacy)
-        {
-            ProfileId = profileId ?? string.Empty;
-            ProfileVersion = profileVersion;
-            AssignmentSchemaVersion = assignmentSchemaVersion;
-            AssignmentSeed = assignmentSeed;
-            ContentHash = contentHash;
-            Meshes = meshes ?? Array.Empty<Mesh>();
-            StableVariantIds = stableVariantIds ?? Array.Empty<uint>();
-            GripPivotYs = gripPivotYs ?? Array.Empty<float>();
-            GripLocalBounds = gripLocalBounds;
-            IsLegacy = isLegacy;
-        }
-
-        public string ProfileId { get; }
-
-        public int ProfileVersion { get; }
-
-        public int AssignmentSchemaVersion { get; }
+        // Properties
 
         public uint AssignmentSeed { get; }
 
@@ -48,30 +20,29 @@ namespace PrismFanlight.Rendering
 
         public Bounds GripLocalBounds { get; }
 
-        public bool IsLegacy { get; }
-
         public int VariantCount => Meshes.Length;
 
         public float BoundsRadius => GripLocalBounds.center.magnitude + GripLocalBounds.extents.magnitude;
 
         public float BoundsPadding => BoundsRadius + 4f;
 
-        public static FanlightPenlightRuntimeAppearance CreateLegacy(Mesh mesh)
+
+        // Methods
+
+        private FanlightPenlightRuntimeAppearance(
+            uint assignmentSeed,
+            ulong contentHash,
+            Mesh[] meshes,
+            uint[] stableVariantIds,
+            float[] gripPivotYs,
+            Bounds gripLocalBounds)
         {
-            if (mesh == null) return null;
-            var pivotY = mesh.bounds.min.y;
-            var bounds = ToGripLocalBounds(mesh.bounds, pivotY);
-            return new FanlightPenlightRuntimeAppearance(
-                "appearance.legacy",
-                1,
-                FanlightPenlightAssignment.SchemaVersion,
-                0u,
-                unchecked((ulong)(uint)mesh.GetInstanceID()) | 1UL,
-                new[] { mesh },
-                new[] { 1u },
-                new[] { pivotY },
-                bounds,
-                true);
+            AssignmentSeed = assignmentSeed;
+            ContentHash = contentHash;
+            Meshes = meshes ?? Array.Empty<Mesh>();
+            StableVariantIds = stableVariantIds ?? Array.Empty<uint>();
+            GripPivotYs = gripPivotYs ?? Array.Empty<float>();
+            GripLocalBounds = gripLocalBounds;
         }
 
         public static FanlightPenlightRuntimeAppearance Create(FanlightPenlightAppearanceProfile profile)
@@ -79,7 +50,12 @@ namespace PrismFanlight.Rendering
             if (profile == null || !profile.TryValidate(out _)) return null;
 
             var variants = new FanlightPenlightVariant[profile.VariantCount];
-            for (var i = 0; i < variants.Length; i++) variants[i] = profile.GetVariant(i);
+
+            for (var i = 0; i < variants.Length; i++)
+            {
+                variants[i] = profile.GetVariant(i);
+            }
+
             Array.Sort(variants, (left, right) => left.StableVariantId.CompareTo(right.StableVariantId));
 
             var meshes = new Mesh[variants.Length];
@@ -95,6 +71,7 @@ namespace PrismFanlight.Rendering
                 ids[i] = variant.StableVariantId;
                 pivots[i] = variant.GripPivotY;
                 var variantBounds = ToGripLocalBounds(variant.Mesh.bounds, pivots[i]);
+
                 if (!hasBounds)
                 {
                     bounds = variantBounds;
@@ -108,16 +85,12 @@ namespace PrismFanlight.Rendering
             }
 
             return new FanlightPenlightRuntimeAppearance(
-                profile.ProfileId,
-                profile.ProfileVersion,
-                profile.AssignmentSchemaVersion,
                 profile.AssignmentSeed,
                 profile.GetRuntimeContentHash(),
                 meshes,
                 ids,
                 pivots,
-                bounds,
-                false);
+                bounds);
         }
 
         private static Bounds ToGripLocalBounds(Bounds meshBounds, float gripPivotY)

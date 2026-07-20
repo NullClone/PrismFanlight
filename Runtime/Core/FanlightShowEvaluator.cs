@@ -57,7 +57,6 @@ namespace PrismFanlight.Core
                 var animationSeconds = Quantize(request.Time.Seconds, request.Options);
 
                 return new FanlightShowSample(
-                    request.Time.Sequence,
                     request.Time.Seconds,
                     animationSeconds,
                     request.Time.MusicalPosition,

@@ -14,15 +14,9 @@ namespace PrismFanlight.Time
 
     [ExecuteAlways]
     [AddComponentMenu("Prism Fanlight/Show Time Coordinator")]
-    public sealed class ShowTimeCoordinatorBehaviour : MonoBehaviour, IShowTimeCoordinator
+    public sealed class ShowTimeCoordinatorBehaviour : MonoBehaviour
     {
         // Fields
-
-        [SerializeField]
-        private string _timeDomainId = string.Empty;
-
-        [SerializeField, Min(1)]
-        private int _timeDomainVersion = 1;
 
         [SerializeField]
         private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
@@ -43,29 +37,27 @@ namespace PrismFanlight.Time
         private FanlightTempoMap _tempoMap;
 
         [SerializeField, Min(1e-6f)]
-        private double _compatibilityBpm = 120d;
+        private double _defaultBpm = 120d;
 
         [SerializeField, Min(1)]
-        private int _compatibilityBeatsPerBar = 4;
+        private int _defaultBeatsPerBar = 4;
 
         [SerializeField]
-        private double _compatibilityOffsetSeconds;
+        private int _defaultBeatUnit = 4;
+
+        [SerializeField]
+        private double _defaultOffsetSeconds;
 
 
         private readonly UnityUnscaledTimeSource _unityTime = new();
         private ShowTimeCoordinator _coordinator;
         private UnityTimeProvider _unityProvider;
         private ManualTimeProvider _manualProvider;
-        private int _configurationHash;
         private FanlightShowTimeFault _lastFault;
         private string _lastFailureCode = string.Empty;
 
 
         // Properties
-
-        public string TimeDomainId => _timeDomainId ?? string.Empty;
-
-        public int TimeDomainVersion => Math.Max(1, _timeDomainVersion);
 
         public ShowNegativeTimePolicy NegativeTimePolicy => _negativeTimePolicy;
 
@@ -82,22 +74,13 @@ namespace PrismFanlight.Time
 
         private void OnEnable() => EnsureCoordinator();
 
+        private void OnDisable() => _coordinator = null;
+
         private void OnValidate()
         {
-            _timeDomainVersion = Math.Max(1, _timeDomainVersion);
-            _compatibilityBpm = Math.Max(1e-6d, _compatibilityBpm);
-            _compatibilityBeatsPerBar = Math.Max(1, _compatibilityBeatsPerBar);
-            if (string.IsNullOrEmpty(_timeDomainId)) _timeDomainId = Guid.NewGuid().ToString("N");
-#if UNITY_EDITOR
-            foreach (var other in FindObjectsByType<ShowTimeCoordinatorBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (other != this && string.Equals(other._timeDomainId, _timeDomainId, StringComparison.Ordinal))
-                {
-                    _timeDomainId = Guid.NewGuid().ToString("N");
-                    break;
-                }
-            }
-#endif
+            _defaultBpm = Math.Max(1e-6d, _defaultBpm);
+            _defaultBeatsPerBar = Math.Max(1, _defaultBeatsPerBar);
+            if (_defaultBeatUnit is not (1 or 2 or 4 or 8 or 16)) _defaultBeatUnit = 4;
             _coordinator = null;
         }
 
@@ -138,30 +121,6 @@ namespace PrismFanlight.Time
             return result;
         }
 
-        public void ConfigureCompatibilityTempo(double bpm, int beatsPerBar, double offsetSeconds)
-        {
-            if (_tempoMap != null) return;
-
-            var validatedBpm = Math.Max(1e-6d, bpm);
-            var validatedBeats = Math.Max(1, beatsPerBar);
-
-            if (Math.Abs(_compatibilityBpm - validatedBpm) <= 1e-9
-                && _compatibilityBeatsPerBar == validatedBeats
-                && Math.Abs(_compatibilityOffsetSeconds - offsetSeconds) <= 1e-9) return;
-
-            _compatibilityBpm = validatedBpm;
-            _compatibilityBeatsPerBar = validatedBeats;
-            _compatibilityOffsetSeconds = offsetSeconds;
-            _coordinator = null;
-        }
-
-        public void ConfigureCompatibilityIdentity(string timeDomainId)
-        {
-            if (!string.IsNullOrEmpty(TimeDomainId) || string.IsNullOrWhiteSpace(timeDomainId)) return;
-            _timeDomainId = timeDomainId;
-            _coordinator = null;
-        }
-
         public void SetManualTime(double seconds, double rate = 0d)
         {
             _manualSeconds = seconds;
@@ -172,19 +131,7 @@ namespace PrismFanlight.Time
 
         private void EnsureCoordinator()
         {
-            var hash = ComputeConfigurationHash();
-
-            if (_coordinator != null && hash == _configurationHash) return;
-
-            _configurationHash = hash;
-
-            if (string.IsNullOrEmpty(TimeDomainId))
-            {
-                _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
-                _lastFailureCode = "TimeDomainIdMissing";
-                _coordinator = null;
-                return;
-            }
+            if (_coordinator != null) return;
 
             var provider = ResolveProvider();
 
@@ -203,12 +150,10 @@ namespace PrismFanlight.Time
                 tempo = _tempoMap != null
                     ? new FanlightTempoMapResolver(_tempoMap)
                     : new ConstantTempoMapResolver(
-                        "tempo.compatibility",
-                        ComputeCompatibilityTempoVersion(),
-                        _compatibilityBpm,
-                        _compatibilityBeatsPerBar,
-                        4,
-                        _compatibilityOffsetSeconds);
+                        _defaultBpm,
+                        _defaultBeatsPerBar,
+                        _defaultBeatUnit,
+                        _defaultOffsetSeconds);
             }
             catch (Exception exception)
             {
@@ -219,8 +164,6 @@ namespace PrismFanlight.Time
             }
 
             _coordinator = new ShowTimeCoordinator(
-                TimeDomainId,
-                TimeDomainVersion,
                 NegativeTimePolicy,
                 provider,
                 tempo,
@@ -235,46 +178,13 @@ namespace PrismFanlight.Time
             switch (_primaryMode)
             {
                 case ShowTimePrimaryMode.Manual:
-                    _manualProvider ??= new ManualTimeProvider("manual.primary");
+                    _manualProvider ??= new ManualTimeProvider();
                     _manualProvider.Set(_manualSeconds, _manualRate);
                     return _manualProvider;
                 case ShowTimePrimaryMode.Component:
                     return _primaryProvider as IShowTimeProvider;
                 default:
-                    return _unityProvider ??= new UnityTimeProvider("unity.unscaled.primary", _unityTime);
-            }
-        }
-
-        private int ComputeConfigurationHash()
-        {
-            unchecked
-            {
-                var hash = 17;
-                hash = hash * 31 + StringComparer.Ordinal.GetHashCode(TimeDomainId);
-                hash = hash * 31 + TimeDomainVersion;
-                hash = hash * 31 + (int)_negativeTimePolicy;
-                hash = hash * 31 + (int)_primaryMode;
-                hash = hash * 31 + (_primaryProvider != null ? _primaryProvider.GetInstanceID() : 0);
-                hash = hash * 31 + (_tempoMap != null ? _tempoMap.GetInstanceID() : 0);
-                hash = hash * 31 + _compatibilityBpm.GetHashCode();
-                hash = hash * 31 + _compatibilityBeatsPerBar;
-                hash = hash * 31 + _compatibilityOffsetSeconds.GetHashCode();
-                return hash;
-            }
-        }
-
-        private int ComputeCompatibilityTempoVersion()
-        {
-            unchecked
-            {
-                var bpmBits = BitConverter.DoubleToInt64Bits(_compatibilityBpm);
-                var offsetBits = BitConverter.DoubleToInt64Bits(_compatibilityOffsetSeconds);
-                var hash = 17;
-                hash = hash * 31 + (int)(bpmBits ^ (bpmBits >> 32));
-                hash = hash * 31 + _compatibilityBeatsPerBar;
-                hash = hash * 31 + (int)(offsetBits ^ (offsetBits >> 32));
-                hash &= int.MaxValue;
-                return hash == 0 ? 1 : hash;
+                    return _unityProvider ??= new UnityTimeProvider(_unityTime);
             }
         }
     }

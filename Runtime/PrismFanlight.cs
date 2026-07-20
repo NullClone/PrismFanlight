@@ -44,9 +44,6 @@ namespace PrismFanlight
         private FanlightPenlightAppearanceProfile _penlightAppearanceProfile;
 
         [SerializeField]
-        private SeatLayout _seatLayout = SeatLayout.Default();
-
-        [SerializeField]
         private FanlightLayoutAsset _layoutAsset;
 
         [SerializeField]
@@ -94,11 +91,10 @@ namespace PrismFanlight
         private readonly FanlightContributionBuffer _contributionBuffer = new(16);
         private readonly FanlightShowEvaluator _showEvaluator = new();
         private long _evaluationId;
+        private long _renderFrameId;
         private FanlightShowSample _renderSample;
         private FanlightFrameContext _renderFrame;
         private bool _hasRenderFrame;
-        private SeatLayout _validatedSeatLayout;
-        private FanlightRuntimeLayout _legacyRuntimeLayout;
         private FanlightRuntimeLayout _assetRuntimeLayout;
 
 
@@ -158,8 +154,6 @@ namespace PrismFanlight
             {
                 _cullingCamera = Camera.main;
             }
-
-            ResolveTimeCoordinatorReference();
         }
 
         private void LateUpdate()
@@ -169,8 +163,6 @@ namespace PrismFanlight
                 Dispose();
                 return;
             }
-
-            ResolveTimeCoordinatorReference();
 
             if (_timeCoordinator == null || _evaluationId == long.MaxValue)
             {
@@ -216,13 +208,9 @@ namespace PrismFanlight
         private void OnValidate()
         {
 #if UNITY_EDITOR
-            _validatedSeatLayout = null;
-            _legacyRuntimeLayout = null;
             _assetRuntimeLayout = null;
             _editorPreviewLayout = null;
             _editorLayoutBlocked = false;
-
-            if (_timeCoordinator == null) _timeCoordinator = GetComponent<ShowTimeCoordinatorBehaviour>();
 
             _intent = FanlightShowStateAuthoringValidator.Validate(_intent);
             _gesture = FanlightShowStateAuthoringValidator.Validate(_gesture);
@@ -273,32 +261,7 @@ namespace PrismFanlight
             Dispose();
         }
 
-        public SeatLayout GetSeatLayout() => GetValidatedSeatLayout();
-
-
 #if UNITY_EDITOR
-        public void BakeSeatLayoutForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            if (_layoutAsset != null)
-            {
-                Debug.LogWarning("Use the Layout Asset 'Bake Dirty Blocks' command for asset-backed layouts.");
-                return;
-            }
-
-            var layout = GetSeatLayout();
-            layout.SetBakedGeometry(
-                FanlightGeometryBuilder.BuildSeatData(layout, false),
-                FanlightGeometryBuilder.BuildBakedBlockData(layout),
-                FanlightGeometryBuilder.BuildAuthoringBounds(layout));
-
-            _seatLayout = layout;
-            _validatedSeatLayout = _seatLayout;
-
-            Dispose();
-        }
-
         internal void SetEditorLayoutPreview(FanlightRuntimeLayout preview, int changedBlockIndex)
         {
             if (Application.isPlaying) return;
@@ -339,22 +302,6 @@ namespace PrismFanlight
             Dispose();
         }
 
-        public void ClearSeatLayoutBakeForEditor()
-        {
-            if (Application.isPlaying) return;
-
-            if (_layoutAsset != null)
-            {
-                Debug.LogWarning("The legacy bake cannot be cleared while a Layout Asset is assigned.");
-                return;
-            }
-
-            _seatLayout = GetSeatLayout();
-            _seatLayout.ClearBakedGeometry();
-            _validatedSeatLayout = _seatLayout;
-
-            Dispose();
-        }
 #endif
 
         private void PrepareRenderFrame(in FanlightShowSample sample)
@@ -383,8 +330,9 @@ namespace PrismFanlight
             if (!_renderer.IsReady) return;
 
             _renderSample = sample;
+            _renderFrameId = _renderFrameId == long.MaxValue ? 1L : _renderFrameId + 1L;
             _renderFrame = new FanlightFrameContext(
-                _evaluationId,
+                _renderFrameId,
                 transform.localToWorldMatrix,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero);
             _hasRenderFrame = true;
@@ -434,14 +382,6 @@ namespace PrismFanlight
             Camera.onPreCull -= OnCameraPreCull;
         }
 
-        private void ResolveTimeCoordinatorReference()
-        {
-            if (_timeCoordinator == null)
-            {
-                _timeCoordinator = gameObject.GetComponent<ShowTimeCoordinatorBehaviour>();
-            }
-        }
-
         private void ClearScheduledContributions()
         {
             _scheduledContributions.Clear();
@@ -456,35 +396,25 @@ namespace PrismFanlight
             _renderer.Dispose();
         }
 
-        private SeatLayout GetValidatedSeatLayout()
-        {
-            if (_validatedSeatLayout == null)
-            {
-                _validatedSeatLayout = (_seatLayout ?? SeatLayout.Default()).Validated();
-            }
-
-            return _validatedSeatLayout;
-        }
-
         private FanlightRuntimeLayout GetRuntimeLayout()
         {
 #if UNITY_EDITOR
             if (!Application.isPlaying && _editorLayoutBlocked) return null;
             if (!Application.isPlaying && _editorPreviewLayout != null) return _editorPreviewLayout;
 #endif
-            if (_layoutAsset != null)
+            if (_layoutAsset == null || !_layoutAsset.HasValidBake)
             {
-                if (_assetRuntimeLayout == null
-                    || _assetRuntimeLayout.LayoutVersion != _layoutAsset.LayoutVersion
-                    || _layoutAsset.ActiveBake != null && _assetRuntimeLayout.ContentHash != _layoutAsset.ActiveBake.ContentHash)
-                {
-                    _assetRuntimeLayout = FanlightRuntimeLayout.FromArtifact(_layoutAsset);
-                }
-
-                return _assetRuntimeLayout;
+                _assetRuntimeLayout = null;
+                return null;
             }
 
-            return _legacyRuntimeLayout ??= FanlightRuntimeLayout.FromLegacy(GetValidatedSeatLayout());
+            if (_assetRuntimeLayout == null
+                || _assetRuntimeLayout.ContentHash != _layoutAsset.ContentHash)
+            {
+                _assetRuntimeLayout = FanlightRuntimeLayout.FromArtifact(_layoutAsset);
+            }
+
+            return _assetRuntimeLayout;
         }
     }
 }

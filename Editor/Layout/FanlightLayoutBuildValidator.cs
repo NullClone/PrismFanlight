@@ -38,9 +38,9 @@ namespace PrismFanlight.Editor
                 throw new BuildFailedException($"Fanlight layout ID is duplicated: {path}");
             }
 
-            if (!layout.HasCompatibleBake)
+            if (!layout.HasValidBake)
             {
-                throw new BuildFailedException($"Fanlight layout requires a compatible bake: {path}");
+                throw new BuildFailedException($"Fanlight layout requires a valid bake: {path}");
             }
         }
     }

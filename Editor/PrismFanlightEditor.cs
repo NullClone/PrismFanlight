@@ -21,7 +21,6 @@ namespace PrismFanlight.Editor
         private SerializedProperty _cullingCamera;
         private SerializedProperty _visibilityUpdate;
         private SerializedProperty _animationUpdate;
-        private SerializedProperty _seatLayout;
         private SerializedProperty _layoutAsset;
         private SerializedProperty _swingTarget;
         private SerializedProperty _timeCoordinator;
@@ -64,7 +63,6 @@ namespace PrismFanlight.Editor
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
             _visibilityUpdate = serializedObject.FindProperty(nameof(_visibilityUpdate));
             _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
-            _seatLayout = serializedObject.FindProperty(nameof(_seatLayout));
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _timeCoordinator = serializedObject.FindProperty(nameof(_timeCoordinator));
@@ -85,14 +83,7 @@ namespace PrismFanlight.Editor
         {
             if (!_enableGizmos || _instance == null) return;
 
-            if (_instance.LayoutAsset != null)
-            {
-                _layoutScenePreview.Draw(_instance);
-            }
-            else
-            {
-                new PrismFanlightScenePreview().Draw(_instance);
-            }
+            if (_instance.LayoutAsset != null) _layoutScenePreview.Draw(_instance);
         }
 
         public override void OnInspectorGUI()
@@ -273,15 +264,19 @@ namespace PrismFanlight.Editor
                 }
 
                 var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
-                if (layout != null)
+                if (layout == null)
                 {
-                    DrawLayoutAssetControls(layout);
+                    _instance.SetEditorLayoutBlocked(false);
+                    EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
+                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                    {
+                        if (GUILayout.Button("Create Layout Asset...")) FanlightLayoutCreationWindow.ShowFor(_instance);
+                    }
+
                     return;
                 }
 
-                _instance.SetEditorLayoutBlocked(false);
-
-                DrawEmbeddedLayoutControls();
+                DrawLayoutAssetControls(layout);
             });
         }
 
@@ -314,7 +309,7 @@ namespace PrismFanlight.Editor
                 _layoutScenePreview.EditTransforms);
             EditorGUILayout.LabelField(
                 "Bake Status",
-                session.DirtyBlockCount == 0 && layout.HasCompatibleBake ? "Current" : "Bake Required");
+                session.DirtyBlockCount == 0 && layout.HasValidBake ? "Current" : "Bake Required");
 
             using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
             {
@@ -354,98 +349,11 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private void DrawEmbeddedLayoutControls()
-        {
-            EditorGUILayout.HelpBox("Create a Layout Asset to use stable IDs, block editing and partial preview.", MessageType.Info);
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                if (GUILayout.Button("Create Layout Asset...")) FanlightLayoutCreationWindow.ShowFor(_instance);
-            }
-
-            EditorGUILayout.Space();
-            PrismFanlightEditorStyles.DrawSubGroupLabel("Embedded Layout");
-            EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("blockCount"), new GUIContent("Block Count"));
-            EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("aisleWidth"), new GUIContent("Aisle Width"));
-            EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPerBlock"), new GUIContent("Seats Per Block"));
-            EditorGUILayout.PropertyField(_seatLayout.FindPropertyRelative("seatPitch"), new GUIContent("Seat Pitch"));
-
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                PrismFanlightScenePreview.EditBlockTransforms = EditorGUILayout.Toggle(
-                    new GUIContent("Edit In Scene View"),
-                    PrismFanlightScenePreview.EditBlockTransforms);
-            }
-
-            var layout = _instance.GetSeatLayout();
-            var totalBlockCount = layout.TotalBlockCount;
-            var transforms = EnsureBlockTransformProperties(_seatLayout, totalBlockCount);
-            var selected = PrismFanlightScenePreview.SelectedBlockIndex;
-            if (selected >= totalBlockCount)
-            {
-                PrismFanlightScenePreview.SelectedBlockIndex = -1;
-                selected = -1;
-            }
-
-            EditorGUILayout.LabelField("Bake Status", layout.NeedsBake ? "Bake Required" : "Current");
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Bake Layout"))
-                    {
-                        serializedObject.ApplyModifiedProperties();
-                        _instance.BakeSeatLayoutForEditor();
-                        EditorUtility.SetDirty(_instance);
-                        serializedObject.Update();
-                    }
-
-                    if (GUILayout.Button("Clear Bake"))
-                    {
-                        serializedObject.ApplyModifiedProperties();
-                        _instance.ClearSeatLayoutBakeForEditor();
-                        EditorUtility.SetDirty(_instance);
-                        serializedObject.Update();
-                    }
-                }
-            }
-
-            EditorGUILayout.Space();
-            if (selected < 0)
-            {
-                EditorGUILayout.LabelField("Selected Block", "None");
-                return;
-            }
-
-            var coordinates = layout.GetBlockCoordinates(selected);
-            EditorGUILayout.LabelField("Selected Block", $"{coordinates.x}, {coordinates.y}");
-            var transformProperty = transforms.GetArrayElementAtIndex(selected);
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                EditorGUILayout.PropertyField(transformProperty.FindPropertyRelative("position"), new GUIContent("Position"));
-                EditorGUILayout.PropertyField(transformProperty.FindPropertyRelative("eulerRotation"), new GUIContent("Rotation"));
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Reset Selected")) ResetBlockTransform(transformProperty);
-                    if (GUILayout.Button("Reset All"))
-                    {
-                        for (var i = 0; i < transforms.arraySize; i++)
-                        {
-                            ResetBlockTransform(transforms.GetArrayElementAtIndex(i));
-                        }
-                    }
-                }
-            }
-        }
-
         private void DrawTimeSection()
         {
             PrismFanlightEditorStyles.DrawSection(_timeSection, () =>
             {
-                using (new EditorGUI.DisabledGroupScope(true))
-                {
-                    EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
-                }
+                EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
 
                 EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
@@ -565,27 +473,6 @@ namespace PrismFanlight.Editor
             }
 
             EditorGUI.showMixedValue = false;
-        }
-
-        private static SerializedProperty EnsureBlockTransformProperties(SerializedProperty seatLayout, int count)
-        {
-            var transforms = seatLayout.FindPropertyRelative("blockTransforms");
-            if (transforms.arraySize == count) return transforms;
-
-            var oldSize = transforms.arraySize;
-            transforms.arraySize = count;
-            for (var i = oldSize; i < count; i++)
-            {
-                ResetBlockTransform(transforms.GetArrayElementAtIndex(i));
-            }
-
-            return transforms;
-        }
-
-        private static void ResetBlockTransform(SerializedProperty transformProperty)
-        {
-            transformProperty.FindPropertyRelative("position").vector3Value = Vector3.zero;
-            transformProperty.FindPropertyRelative("eulerRotation").vector3Value = Vector3.zero;
         }
     }
 }

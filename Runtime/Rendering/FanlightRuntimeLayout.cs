@@ -8,9 +8,7 @@ namespace PrismFanlight.Rendering
     internal sealed class FanlightRuntimeLayout
     {
         public FanlightRuntimeLayout(
-            string layoutKey,
-            int layoutVersion,
-            int bakeVersion,
+            string layoutId,
             ulong contentHash,
             int2 seatPerBlock,
             float2 seatPitch,
@@ -20,9 +18,7 @@ namespace PrismFanlight.Rendering
             ulong[] stableSeatIds,
             FanlightBakedBlockData[] blocks)
         {
-            LayoutKey = layoutKey ?? string.Empty;
-            LayoutVersion = layoutVersion;
-            BakeVersion = bakeVersion;
+            LayoutId = layoutId ?? string.Empty;
             ContentHash = contentHash;
             SeatPerBlock = seatPerBlock;
             SeatPitch = seatPitch;
@@ -34,11 +30,7 @@ namespace PrismFanlight.Rendering
             StableSeatIdHash = ComputeStableSeatIdHash(StableSeatIds);
         }
 
-        public string LayoutKey { get; }
-
-        public int LayoutVersion { get; }
-
-        public int BakeVersion { get; }
+        public string LayoutId { get; }
 
         public ulong ContentHash { get; }
 
@@ -66,39 +58,21 @@ namespace PrismFanlight.Rendering
 
         public bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
 
-        public bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0;
+        public bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0 && HasStableSeatIds;
 
         public bool HasSameTopology(FanlightRuntimeLayout other)
         {
             return other != null
-                   && string.Equals(LayoutKey, other.LayoutKey, StringComparison.Ordinal)
+                   && string.Equals(LayoutId, other.LayoutId, StringComparison.Ordinal)
                    && SeatCount == other.SeatCount
                    && BlockCount == other.BlockCount
                    && SeatPerBlock.Equals(other.SeatPerBlock)
                    && BlockCount2D.Equals(other.BlockCount2D);
         }
 
-        public static FanlightRuntimeLayout FromLegacy(SeatLayout layout)
-        {
-            if (layout == null) return null;
-            var authoringHash = layout.AuthoringHash;
-            return new FanlightRuntimeLayout(
-                "legacy:" + authoringHash,
-                authoringHash,
-                0,
-                unchecked((ulong)(uint)authoringHash),
-                layout.seatPerBlock,
-                layout.seatPitch,
-                layout.blockCount,
-                layout.TryGetBakedBounds(out var bounds) ? bounds : FanlightGeometryBuilder.BuildAuthoringBounds(layout),
-                FanlightGeometryBuilder.BuildSeatData(layout),
-                Array.Empty<ulong>(),
-                layout.TryGetBakedBlocks(out var blocks) ? blocks : FanlightGeometryBuilder.BuildBakedBlockData(layout));
-        }
-
         public static FanlightRuntimeLayout FromArtifact(FanlightLayoutAsset layout)
         {
-            if (layout == null || !layout.HasCompatibleBake) return null;
+            if (layout == null || !layout.HasValidBake) return null;
             var artifact = layout.ActiveBake;
             var seats = new FanlightSeatData[artifact.SeatCount];
             var stableSeatIds = new ulong[artifact.SeatCount];
@@ -123,8 +97,6 @@ namespace PrismFanlight.Rendering
 
             return new FanlightRuntimeLayout(
                 layout.LayoutId.Value,
-                layout.LayoutVersion,
-                artifact.FormatVersion,
                 artifact.ContentHash,
                 layout.SeatPerBlock,
                 layout.SeatPitch,

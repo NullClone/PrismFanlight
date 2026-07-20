@@ -11,16 +11,11 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        public const int CurrentSchemaVersion = 1;
-
-        [SerializeField]
-        private int _schemaVersion;
-
         [SerializeField]
         private string _layoutId;
 
         [SerializeField]
-        private int _layoutVersion;
+        private ulong _contentHash;
 
         [SerializeField]
         private int2 _seatPerBlock;
@@ -46,11 +41,9 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public int SchemaVersion => _schemaVersion;
-
         public FanlightLayoutId LayoutId => new(_layoutId);
 
-        public int LayoutVersion => _layoutVersion;
+        public ulong ContentHash => _contentHash;
 
         public int2 SeatPerBlock => _seatPerBlock;
 
@@ -68,15 +61,14 @@ namespace PrismFanlight.Authoring
 
         public FanlightLayoutBakeArtifact ActiveBake => _activeBake;
 
-        public bool IsInitialized => _schemaVersion == CurrentSchemaVersion
-                                     && LayoutId.IsValid
+        public bool IsInitialized => LayoutId.IsValid
                                      && TryGetTopologyCounts(out _, out var totalBlockCount, out var totalSeatCount)
                                      && _blocks != null
                                      && _blocks.Length == totalBlockCount
                                      && _stableSeatIds != null
                                      && _stableSeatIds.Length == totalSeatCount;
 
-        public bool HasCompatibleBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
+        public bool HasValidBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
 
 
         // Methods
@@ -116,16 +108,9 @@ namespace PrismFanlight.Authoring
         }
 
 
-        internal void Initialize(
-            string layoutId,
-            int2 seatPerBlock,
-            float2 seatPitch,
-            int2 blockCount,
-            float2 aisleWidth,
-            string[] blockIds,
-            ulong[] stableSeatIds)
+        internal void Initialize(string layoutId, int2 seatPerBlock, float2 seatPitch, int2 blockCount, float2 aisleWidth, string[] blockIds, ulong[] stableSeatIds)
         {
-            if (_schemaVersion != 0) throw new InvalidOperationException("Layout topology is already initialized and immutable.");
+            if (IsInitialized) throw new InvalidOperationException("Layout topology is already initialized and immutable.");
 
             seatPerBlock = math.max(seatPerBlock, math.int2(1, 1));
             seatPitch = math.max(seatPitch, math.float2(0.001f, 0.001f));
@@ -171,9 +156,8 @@ namespace PrismFanlight.Authoring
                 }
             }
 
-            _schemaVersion = CurrentSchemaVersion;
             _layoutId = normalizedLayoutId.Value;
-            _layoutVersion = 1;
+            _contentHash = 0UL;
             _seatPerBlock = seatPerBlock;
             _seatPitch = seatPitch;
             _blockCount = blockCount;
@@ -188,9 +172,15 @@ namespace PrismFanlight.Authoring
         {
             if (!IsInitialized || blockIndex < 0 || blockIndex >= _blocks.Length) return false;
             if (_blocks[blockIndex].Placement.Equals(placement)) return false;
-            if (_layoutVersion == int.MaxValue) throw new InvalidOperationException("Layout authoring version is exhausted.");
             _blocks[blockIndex].SetPlacement(placement);
-            _layoutVersion++;
+            return true;
+        }
+
+        internal bool SetContentHash(ulong contentHash)
+        {
+            contentHash = contentHash == 0UL ? 1UL : contentHash;
+            if (_contentHash == contentHash) return false;
+            _contentHash = contentHash;
             return true;
         }
 

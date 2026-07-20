@@ -6,29 +6,20 @@ namespace PrismFanlight.Time
     {
         // Fields
 
-        private readonly IUnscaledTimeSource _time;
-        private long _sequence;
-
-
-        // Properties
-
-        public string ProviderId { get; }
+        private readonly UnityUnscaledTimeSource _time;
 
 
         // Methods
 
-        public UnityTimeProvider(string providerId, IUnscaledTimeSource time)
+        internal UnityTimeProvider(UnityUnscaledTimeSource time)
         {
-            ProviderId = providerId;
             _time = time;
         }
 
         public ShowTimeProviderSample Sample() => new(
-            ProviderId,
             _time.Seconds,
             1d,
             FanlightClockStatus.Ready,
-            FanlightTimeDiscontinuity.None,
-            ++_sequence);
+            FanlightTimeDiscontinuity.None);
     }
 }

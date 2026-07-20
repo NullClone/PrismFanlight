@@ -3,7 +3,7 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight.Time
 {
-    public sealed class ConstantTempoMapResolver : IShowTempoMapResolver
+    internal sealed class ConstantTempoMapResolver : IShowTempoMapResolver
     {
         // Fields
 
@@ -13,25 +13,14 @@ namespace PrismFanlight.Time
         private readonly double _offsetSeconds;
 
 
-        // Properties
-
-        public string TempoMapId { get; }
-
-        public int Version { get; }
-
-
         // Methods
 
-        public ConstantTempoMapResolver(
-            string tempoMapId,
-            int version,
+        internal ConstantTempoMapResolver(
             double bpm,
             int beatsPerBar,
             int beatUnit = 4,
             double offsetSeconds = 0d)
         {
-            TempoMapId = string.IsNullOrEmpty(tempoMapId) ? "tempo.compatibility" : tempoMapId;
-            Version = Math.Max(1, version);
             _bpm = Math.Max(1e-6d, bpm);
             _beatsPerBar = Math.Max(1, beatsPerBar);
             _beatUnit = beatUnit is 1 or 2 or 4 or 8 or 16 ? beatUnit : 4;
@@ -52,8 +41,7 @@ namespace PrismFanlight.Time
                 beatInBar / _beatsPerBar,
                 _bpm,
                 _beatsPerBar,
-                _beatUnit,
-                "tempo.compatibility.segment");
+                _beatUnit);
         }
 
         private static double PositiveModulo(double value, double divisor)

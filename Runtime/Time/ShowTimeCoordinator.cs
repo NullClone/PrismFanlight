@@ -3,15 +3,13 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight.Time
 {
-    public sealed class ShowTimeCoordinator : IShowTimeCoordinator
+    internal sealed class ShowTimeCoordinator
     {
         // Fields
 
-        public const string FallbackProviderId = "unity.unscaled.fallback";
-
         private readonly IShowTimeProvider _primary;
         private readonly IShowTempoMapResolver _tempoMap;
-        private readonly IUnscaledTimeSource _unscaledTime;
+        private readonly UnityUnscaledTimeSource _unscaledTime;
         private long _lastEvaluationId = long.MinValue;
         private bool _hasCachedResult;
         private bool _cachedSuccess;
@@ -24,44 +22,33 @@ namespace PrismFanlight.Time
         private bool _primaryAvailable;
         private bool _primaryAvailabilityReported;
         private ShowTimeProviderSample _availablePrimary;
-        private long _sequence;
         private bool _reacquireTransitionPending;
 
 
         // Properties
 
-        public string TimeDomainId { get; }
+        private ShowNegativeTimePolicy NegativeTimePolicy { get; }
 
-        public int TimeDomainVersion { get; }
+        internal bool IsFallbackActive => _fallbackActive;
 
-        public ShowNegativeTimePolicy NegativeTimePolicy { get; }
-
-        public bool IsFallbackActive => _fallbackActive;
-
-        public bool IsPrimaryAvailable => _primaryAvailable;
+        internal bool IsPrimaryAvailable => _primaryAvailable;
 
 
         // Methods
 
-        public ShowTimeCoordinator(
-            string timeDomainId,
-            int timeDomainVersion,
+        internal ShowTimeCoordinator(
             ShowNegativeTimePolicy negativeTimePolicy,
             IShowTimeProvider primary,
             IShowTempoMapResolver tempoMap,
-            IUnscaledTimeSource unscaledTime)
+            UnityUnscaledTimeSource unscaledTime)
         {
-            if (string.IsNullOrWhiteSpace(timeDomainId)) throw new ArgumentException("Time Domain ID is required.", nameof(timeDomainId));
-
-            TimeDomainId = timeDomainId;
-            TimeDomainVersion = Math.Max(1, timeDomainVersion);
             NegativeTimePolicy = negativeTimePolicy;
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _tempoMap = tempoMap ?? throw new ArgumentNullException(nameof(tempoMap));
             _unscaledTime = unscaledTime ?? throw new ArgumentNullException(nameof(unscaledTime));
         }
 
-        public bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
+        internal bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
         {
             if (_hasCachedResult && evaluationId == _lastEvaluationId)
             {
@@ -88,12 +75,10 @@ namespace PrismFanlight.Time
             catch
             {
                 primarySample = new ShowTimeProviderSample(
-                    _primary.ProviderId,
                     double.NaN,
                     double.NaN,
                     FanlightClockStatus.Faulted,
-                    FanlightTimeDiscontinuity.None,
-                    0L);
+                    FanlightTimeDiscontinuity.None);
             }
 
             var primaryValid = primarySample.IsValid;
@@ -180,7 +165,7 @@ namespace PrismFanlight.Time
             }
         }
 
-        public bool TryRequestPrimaryReacquire(out string failureCode)
+        internal bool TryRequestPrimaryReacquire(out string failureCode)
         {
             if (_reacquireTransitionPending)
             {
@@ -211,12 +196,10 @@ namespace PrismFanlight.Time
         {
             var seconds = _lastPrimary.Seconds + (_unscaledTime.Seconds - _fallbackStartUnitySeconds) * _lastPrimary.Rate;
             var provider = new ShowTimeProviderSample(
-                FallbackProviderId,
                 seconds,
                 _lastPrimary.Rate,
                 _lastPrimary.Rate == 0d ? FanlightClockStatus.Holding : FanlightClockStatus.Ready,
-                discontinuity,
-                0L);
+                discontinuity);
             return CreateSample(provider, true, _primaryAvailable, discontinuity);
         }
 
@@ -235,16 +218,10 @@ namespace PrismFanlight.Time
                 throw new InvalidOperationException("Tempo Map returned an inconsistent musical position.");
 
             return new FanlightShowTimeSample(
-                TimeDomainId,
-                TimeDomainVersion,
-                provider.ProviderId,
-                _tempoMap.TempoMapId,
-                _tempoMap.Version,
                 seconds,
                 provider.Rate,
                 provider.Status,
                 discontinuity,
-                ++_sequence,
                 fallback,
                 primaryAvailable,
                 musical);

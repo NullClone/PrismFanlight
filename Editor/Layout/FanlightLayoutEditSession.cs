@@ -25,7 +25,6 @@ namespace PrismFanlight.Editor
         private readonly BitArray _dirtyBlocks;
         private int _dirtyBlockCount;
         private FanlightLayoutDirtyReason _dirtyReason;
-        private int _knownLayoutVersion;
         private FanlightRuntimeLayout _runtimeLayout;
 
         static FanlightLayoutEditSession()
@@ -56,7 +55,6 @@ namespace PrismFanlight.Editor
                 if (_dirtyBlocks[i]) _dirtyBlockCount++;
             }
 
-            _knownLayoutVersion = source.LayoutVersion;
             _dirtyReason = source.ActiveBake == null
                 ? FanlightLayoutDirtyReason.Topology | FanlightLayoutDirtyReason.BakeSchema
                 : _dirtyBlockCount > 0
@@ -80,8 +78,7 @@ namespace PrismFanlight.Editor
             if (source == null || !source.IsInitialized) return null;
             var key = source.GetInstanceID();
             if (!Sessions.TryGetValue(key, out var session)
-                || session.Source != source
-                || session._knownLayoutVersion != source.LayoutVersion)
+                || session.Source != source)
             {
                 session = new FanlightLayoutEditSession(source);
                 Sessions[key] = session;
@@ -127,7 +124,6 @@ namespace PrismFanlight.Editor
             }
 
             _dirtyReason |= FanlightLayoutDirtyReason.BlockPlacement;
-            _knownLayoutVersion = Source.LayoutVersion;
             RefreshRuntimeLayout();
             ApplyPreviewToAllInstances(blockIndex);
             return true;
@@ -191,9 +187,8 @@ namespace PrismFanlight.Editor
             var artifact = Source.ActiveBake;
             if (artifact == null || artifact.BlockCount != Source.TotalBlockCount) return false;
             var baked = artifact.GetBlock(blockIndex);
-            var source = Source.GetBlock(blockIndex);
-            return baked.sourceRevision == source.AuthoringRevision
-                   && string.Equals(baked.blockId, source.BlockId, StringComparison.Ordinal);
+            return baked.contentHash == _compiled.Blocks[blockIndex].contentHash
+                   && string.Equals(baked.blockId, Source.GetBlock(blockIndex).BlockId, StringComparison.Ordinal);
         }
 
         private void ConvertBlock(int blockIndex)
@@ -220,8 +215,6 @@ namespace PrismFanlight.Editor
             _compiled.SetSummary(_boundsTree.Root, contentHash);
             _runtimeLayout = new FanlightRuntimeLayout(
                 Source.LayoutId.Value,
-                Source.LayoutVersion,
-                FanlightLayoutBakeArtifact.CurrentFormatVersion,
                 contentHash,
                 Source.SeatPerBlock,
                 Source.SeatPitch,
@@ -230,13 +223,13 @@ namespace PrismFanlight.Editor
                 _gpuSeats,
                 _stableSeatIds,
                 _gpuBlocks);
+            if (Source.SetContentHash(contentHash)) EditorUtility.SetDirty(Source);
         }
 
         private ulong ComputeLayoutHash()
         {
             var hash = FanlightStableHash.Begin();
             hash = FanlightStableHash.Add(hash, Source.LayoutId.Value);
-            hash = FanlightStableHash.Add(hash, Source.LayoutVersion);
             hash = FanlightStableHash.Add(hash, _hashTree.Root);
             return FanlightStableHash.Finish(hash);
         }

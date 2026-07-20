@@ -9,23 +9,13 @@ namespace PrismFanlight.Authoring
         // Fields
 
         [SerializeField]
-        private string _tempoMapId = string.Empty;
-
-        [SerializeField, Min(1)]
-        private int _version = 1;
-
-        [SerializeField]
         private FanlightTempoSegment[] _segments =
         {
-            new("tempo.default", 0d, 0d, 120d, 4, 4, 1)
+            new(0d, 0d, 120d, 4, 4, 1)
         };
 
 
         // Properties
-
-        public string TempoMapId => _tempoMapId ?? string.Empty;
-
-        public int Version => Math.Max(1, _version);
 
         public ReadOnlyMemory<FanlightTempoSegment> Segments => _segments ?? Array.Empty<FanlightTempoSegment>();
 
@@ -34,12 +24,6 @@ namespace PrismFanlight.Authoring
 
         public bool Validate(out string error)
         {
-            if (string.IsNullOrEmpty(TempoMapId))
-            {
-                error = "Tempo Map ID is missing.";
-                return false;
-            }
-
             if (_segments == null || _segments.Length == 0)
             {
                 error = "At least one tempo segment is required.";
@@ -76,13 +60,5 @@ namespace PrismFanlight.Authoring
             error = string.Empty;
             return true;
         }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            _version = Math.Max(1, _version);
-            if (string.IsNullOrEmpty(_tempoMapId)) _tempoMapId = Guid.NewGuid().ToString("N");
-        }
-#endif
     }
 }

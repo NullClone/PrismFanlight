@@ -16,26 +16,7 @@ namespace PrismFanlight.Editor
             Seats = new FanlightBakedSeatRecord[source.TotalSeatCount];
             Blocks = new FanlightBakedBlockRecord[source.TotalBlockCount];
 
-            var previous = source.ActiveBake;
-            if (previous != null
-                && previous.FormatVersion == FanlightLayoutBakeArtifact.CurrentFormatVersion
-                && string.Equals(previous.LayoutId, source.LayoutId.Value, StringComparison.Ordinal)
-                && previous.SeatCount == Seats.Length
-                && previous.BlockCount == Blocks.Length)
-            {
-                for (var i = 0; i < Seats.Length; i++) Seats[i] = previous.GetSeat(i);
-                for (var i = 0; i < Blocks.Length; i++) Blocks[i] = previous.GetBlock(i);
-            }
-
-            for (var i = 0; i < Blocks.Length; i++)
-            {
-                var block = source.GetBlock(i);
-                if (Blocks[i].sourceRevision != block.AuthoringRevision
-                    || !string.Equals(Blocks[i].blockId, block.BlockId, StringComparison.Ordinal))
-                {
-                    CompileBlock(i);
-                }
-            }
+            for (var i = 0; i < Blocks.Length; i++) CompileBlock(i);
 
             RecalculateSummary();
         }
@@ -58,7 +39,6 @@ namespace PrismFanlight.Editor
 
         public void CompileBlock(int blockIndex)
         {
-            var sourceBlock = Source.GetBlock(blockIndex);
             var block = Source.GetBlockCoordinates(blockIndex);
             var start = blockIndex * Source.BlockSeatCount;
             var hash = FanlightStableHash.Begin();
@@ -91,8 +71,7 @@ namespace PrismFanlight.Editor
             hash = FanlightStableHash.Add(hash, bounds.size);
             Blocks[blockIndex] = new FanlightBakedBlockRecord
             {
-                blockId = sourceBlock.BlockId,
-                sourceRevision = sourceBlock.AuthoringRevision,
+                blockId = Source.GetBlock(blockIndex).BlockId,
                 localBounds = bounds,
                 contiguousSeatStart = start,
                 contiguousSeatCount = Source.BlockSeatCount,
@@ -124,7 +103,6 @@ namespace PrismFanlight.Editor
 
             var hash = FanlightStableHash.Begin();
             hash = FanlightStableHash.Add(hash, Source.LayoutId.Value);
-            hash = FanlightStableHash.Add(hash, Source.LayoutVersion);
             hash = FanlightStableHash.Add(hash, hashTree.Root);
             LocalBounds = hasBounds ? bounds : new Bounds(Vector3.zero, Vector3.one);
             ContentHash = FanlightStableHash.Finish(hash);
@@ -214,7 +192,6 @@ namespace PrismFanlight.Editor
                 writer.Write(Magic);
                 writer.Write(FanlightLayoutBakeArtifact.CurrentFormatVersion);
                 writer.Write(compiled.Source.LayoutId.Value);
-                writer.Write(compiled.Source.LayoutVersion);
                 writer.Write(compiled.ContentHash);
                 WriteBounds(writer, compiled.LocalBounds);
                 writer.Write(compiled.Seats.Length);
@@ -224,7 +201,6 @@ namespace PrismFanlight.Editor
                 {
                     var block = compiled.Blocks[blockIndex];
                     writer.Write(block.blockId ?? string.Empty);
-                    writer.Write(block.sourceRevision);
                     WriteBounds(writer, block.localBounds);
                     writer.Write(block.contiguousSeatStart);
                     writer.Write(block.contiguousSeatCount);
@@ -253,7 +229,6 @@ namespace PrismFanlight.Editor
             var data = new FanlightBakeFileData
             {
                 LayoutId = reader.ReadString(),
-                SourceLayoutVersion = reader.ReadInt32(),
                 ContentHash = reader.ReadUInt64(),
                 LocalBounds = ReadBounds(reader)
             };
@@ -270,7 +245,6 @@ namespace PrismFanlight.Editor
                 var block = new FanlightBakedBlockRecord
                 {
                     blockId = reader.ReadString(),
-                    sourceRevision = reader.ReadInt32(),
                     localBounds = ReadBounds(reader),
                     contiguousSeatStart = reader.ReadInt32(),
                     contiguousSeatCount = reader.ReadInt32(),
@@ -316,7 +290,6 @@ namespace PrismFanlight.Editor
 
             var layoutHash = FanlightStableHash.Begin();
             layoutHash = FanlightStableHash.Add(layoutHash, data.LayoutId);
-            layoutHash = FanlightStableHash.Add(layoutHash, data.SourceLayoutVersion);
             layoutHash = FanlightStableHash.Add(layoutHash, hashTree.Root);
             if (FanlightStableHash.Finish(layoutHash) != data.ContentHash) throw new InvalidDataException("Layout content hash mismatch.");
             if (stream.Position != stream.Length) throw new InvalidDataException("Unexpected trailing data in layout bake.");
@@ -376,7 +349,6 @@ namespace PrismFanlight.Editor
     internal sealed class FanlightBakeFileData
     {
         public string LayoutId;
-        public int SourceLayoutVersion;
         public ulong ContentHash;
         public Bounds LocalBounds;
         public FanlightBakedSeatRecord[] Seats;
@@ -393,7 +365,7 @@ namespace PrismFanlight.Editor
                 var data = FanlightLayoutBakeFile.Read(context.assetPath);
                 var artifact = ScriptableObject.CreateInstance<FanlightLayoutBakeArtifact>();
                 artifact.name = Path.GetFileNameWithoutExtension(context.assetPath);
-                artifact.InitializeImported(data.LayoutId, data.SourceLayoutVersion, data.ContentHash, data.LocalBounds, data.Seats, data.Blocks);
+                artifact.InitializeImported(data.LayoutId, data.ContentHash, data.LocalBounds, data.Seats, data.Blocks);
                 context.AddObjectToAsset("LayoutBake", artifact);
                 context.SetMainObject(artifact);
             }

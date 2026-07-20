@@ -1,4 +1,3 @@
-using System;
 using PrismFanlight.Core;
 using UnityEngine;
 
@@ -8,9 +7,6 @@ namespace PrismFanlight.Time
     public sealed class ManualTimeProviderBehaviour : MonoBehaviour, IShowTimeProvider
     {
         // Fields
-
-        [SerializeField]
-        private string _providerId = string.Empty;
 
         [SerializeField]
         private double _seconds;
@@ -24,14 +20,6 @@ namespace PrismFanlight.Time
         [SerializeField]
         private FanlightTimeDiscontinuity _nextDiscontinuity;
 
-        private long _sequence;
-
-
-        // Properties
-
-        public string ProviderId => _providerId ?? string.Empty;
-
-
         // Methods
 
         public void SetTime(double seconds, double rate, FanlightTimeDiscontinuity discontinuity = FanlightTimeDiscontinuity.Seek)
@@ -44,28 +32,12 @@ namespace PrismFanlight.Time
 
         public void SetStatus(FanlightClockStatus status) => _status = status;
 
-        public ShowTimeProviderSample Sample()
+        ShowTimeProviderSample IShowTimeProvider.Sample()
         {
             var discontinuity = _nextDiscontinuity;
             _nextDiscontinuity = FanlightTimeDiscontinuity.None;
 
-            return new ShowTimeProviderSample(ProviderId, _seconds, _rate, _status, discontinuity, ++_sequence);
+            return new ShowTimeProviderSample(_seconds, _rate, _status, discontinuity);
         }
-
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            if (string.IsNullOrEmpty(_providerId)) _providerId = $"manual.{Guid.NewGuid():N}";
-            foreach (var other in FindObjectsByType<ManualTimeProviderBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (other != this && string.Equals(other._providerId, _providerId, StringComparison.Ordinal))
-                {
-                    _providerId = $"manual.{Guid.NewGuid():N}";
-                    break;
-                }
-            }
-        }
-#endif
     }
 }
