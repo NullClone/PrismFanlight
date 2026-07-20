@@ -8,22 +8,22 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot1;
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot2;
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot3;
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot4;
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot5;
 
-        [SerializeField]
+        [SerializeField, ColorUsage(false, true)]
         private Color _slot6;
 
         [SerializeField]

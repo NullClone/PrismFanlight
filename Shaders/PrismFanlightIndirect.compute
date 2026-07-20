@@ -185,10 +185,7 @@ void GenerateAllFrameData(uint3 dispatchId : SV_DispatchThreadID)
         PrismArm arm = PrismComputeArm(seat, pose, PrismPenlightGripPivotY(id));
         _FanlightMatrices[id] = arm.worldMatrix;
 
-        if (_AudienceSlots[id] != 0xFFFFFFFFu)
-        {
-            PrismBuildAudienceParts(id, pose, arm);
-        }
+        PrismBuildAudienceParts(id, pose, arm);
     }
 }
 

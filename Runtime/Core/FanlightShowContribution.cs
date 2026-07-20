@@ -8,8 +8,6 @@ namespace PrismFanlight.Core
 
         internal string SourceId { get; }
 
-        internal FanlightContributionLayer Layer { get; }
-
         internal int Priority { get; }
 
         internal double StartSeconds { get; }
@@ -25,7 +23,6 @@ namespace PrismFanlight.Core
 
         internal FanlightShowContribution(
             string sourceId,
-            FanlightContributionLayer layer,
             int priority,
             double startSeconds,
             double endSeconds,
@@ -35,12 +32,6 @@ namespace PrismFanlight.Core
             if (string.IsNullOrWhiteSpace(sourceId))
             {
                 throw new ArgumentException("Stable source ID is required.", nameof(sourceId));
-            }
-
-            if (layer is not FanlightContributionLayer.Timeline
-                and not FanlightContributionLayer.Safety)
-            {
-                throw new ArgumentOutOfRangeException(nameof(layer));
             }
 
             FanlightStateValidation.RequireFinite(startSeconds, nameof(startSeconds));
@@ -56,7 +47,6 @@ namespace PrismFanlight.Core
             }
 
             SourceId = sourceId;
-            Layer = layer;
             Priority = priority;
             StartSeconds = startSeconds;
             EndSeconds = endSeconds;

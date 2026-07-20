@@ -21,30 +21,28 @@ namespace PrismFanlight.Rendering
 
         internal bool ShouldUpdateAnimation(FanlightGpuUpdateTiming timing, float clock, bool force)
         {
-            var validated = timing.Validated();
-
             if (force)
             {
-                _animation.MarkUpdated(clock, GetInterval(validated));
+                _animation.MarkUpdated(clock);
                 return true;
             }
 
-            return ShouldUpdate(ref _animation, validated, clock);
+            return ShouldUpdate(ref _animation, timing.Validated(), clock);
         }
 
         private static bool ShouldUpdate(ref UpdateLane lane, FanlightGpuUpdateTiming timing, float clock)
         {
             if (timing.Mode == FanlightGpuUpdateMode.EveryFrame)
             {
-                lane.MarkUpdated(clock, 0.0f);
+                lane.MarkUpdated(clock);
                 return true;
             }
 
             var interval = GetInterval(timing);
 
-            if (!lane.HasUpdated || clock >= lane.NextUpdateTime)
+            if (!lane.HasUpdated || Mathf.Abs(clock - lane.LastUpdateTime) >= interval)
             {
-                lane.MarkUpdated(clock, interval);
+                lane.MarkUpdated(clock);
                 return true;
             }
 
@@ -61,19 +59,19 @@ namespace PrismFanlight.Rendering
         {
             internal bool HasUpdated { get; private set; }
 
-            internal float NextUpdateTime { get; private set; }
+            internal float LastUpdateTime { get; private set; }
 
 
-            internal void MarkUpdated(float clock, float interval)
+            internal void MarkUpdated(float clock)
             {
                 HasUpdated = true;
-                NextUpdateTime = clock + Mathf.Max(0.0f, interval);
+                LastUpdateTime = clock;
             }
 
             internal void Reset()
             {
                 HasUpdated = false;
-                NextUpdateTime = 0.0f;
+                LastUpdateTime = 0.0f;
             }
         }
     }

@@ -113,7 +113,6 @@ namespace PrismFanlight.Timeline
                     this,
                     new FanlightShowContribution(
                         _sourceId,
-                        FanlightContributionLayer.Timeline,
                         _priority,
                         double.MinValue,
                         double.MaxValue,

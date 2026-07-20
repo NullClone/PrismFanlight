@@ -224,11 +224,6 @@ namespace PrismFanlight
                 throw new ArgumentNullException(nameof(sourceToken));
             }
 
-            if (contribution.Layer != FanlightContributionLayer.Timeline)
-            {
-                throw new ArgumentException("Timeline sources must submit Timeline contributions.", nameof(contribution));
-            }
-
             _scheduledContributions[sourceToken] = contribution;
         }
 

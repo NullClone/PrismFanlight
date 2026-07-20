@@ -130,10 +130,10 @@ namespace PrismFanlight.Core
 
             public int Compare(FanlightShowContribution left, FanlightShowContribution right)
             {
-                var layer = left.Layer.CompareTo(right.Layer);
-                if (layer != 0) return layer;
                 var priority = left.Priority.CompareTo(right.Priority);
+
                 if (priority != 0) return priority;
+
                 return string.Compare(left.SourceId, right.SourceId, StringComparison.Ordinal);
             }
         }

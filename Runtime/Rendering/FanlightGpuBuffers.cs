@@ -261,7 +261,7 @@ namespace PrismFanlight.Rendering
 
             for (var i = 0; i < data.Length; i++)
             {
-                var stableSeatId = GetStableSeatId(layout, i);
+                var stableSeatId = layout.StableSeatIds[i];
                 data[i] = new FanlightRandomData
                 {
                     random0 = Random4(seed, stableSeatId, 0u),
@@ -283,7 +283,7 @@ namespace PrismFanlight.Rendering
             var assignments = new uint[layout.SeatCount];
             for (var i = 0; i < assignments.Length; i++)
             {
-                var stableSeatId = GetStableSeatId(layout, i);
+                var stableSeatId = layout.StableSeatIds[i];
                 var paletteRandom = Random01(seed, stableSeatId, 27u);
                 var intensityRandom = Random01(seed, stableSeatId, 28u);
                 var paletteIndex = (uint)Mathf.Clamp(
@@ -295,13 +295,6 @@ namespace PrismFanlight.Rendering
             }
 
             return assignments;
-        }
-
-        private static ulong GetStableSeatId(FanlightRuntimeLayout layout, int seatIndex)
-        {
-            return layout.HasStableSeatIds
-                ? layout.StableSeatIds[seatIndex]
-                : (uint)seatIndex + 1UL;
         }
 
         private static Vector4 Random4(uint globalSeed, ulong stableSeatId, uint offset)

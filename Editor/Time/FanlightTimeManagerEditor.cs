@@ -63,6 +63,8 @@ namespace PrismFanlight.Editor
             DrawTempo();
 
             serializedObject.ApplyModifiedProperties();
+
+            if (Application.isPlaying) DrawPrimaryRecovery();
         }
 
         public override bool RequiresConstantRepaint() => Application.isPlaying;
@@ -219,6 +221,24 @@ namespace PrismFanlight.Editor
                     BeatUnitLabels,
                     BeatUnitValues);
                 EditorGUILayout.PropertyField(_defaultOffsetSeconds, new GUIContent("Offset Seconds"));
+            }
+        }
+
+        private void DrawPrimaryRecovery()
+        {
+            var fallbackActive = _instance.IsFallbackActive;
+            var primaryAvailable = _instance.IsPrimaryAvailable;
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Fallback Active", fallbackActive ? "Yes" : "No");
+            EditorGUILayout.LabelField("Primary Available", primaryAvailable ? "Yes" : "No");
+
+            using (new EditorGUI.DisabledScope(!fallbackActive || !primaryAvailable))
+            {
+                if (GUILayout.Button("Reacquire Primary"))
+                {
+                    _instance.TryRequestPrimaryReacquire(out _);
+                }
             }
         }
     }
