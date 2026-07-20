@@ -10,7 +10,7 @@ MonoImporter:
   - _cullingCamera: {instanceID: 0}
   - _penlightAppearanceProfile: {fileID: 11400000, guid: 49fd21abe8886df4a9c2867f15cb12b5,
       type: 2}
-  - _layoutAsset: {instanceID: 0}
+  - _layoutAsset: {fileID: 11400000, guid: d89571f1ab470c048aa8a3bdc59dd0ee, type: 2}
   - _swingTarget: {instanceID: 0}
   - _timeCoordinator: {instanceID: 0}
   executionOrder: 0
