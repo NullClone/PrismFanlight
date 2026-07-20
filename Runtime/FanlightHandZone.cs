@@ -1,6 +1,6 @@
 namespace PrismFanlight
 {
-    public enum FanlightHandZone
+    internal enum FanlightHandZone
     {
         Shoulder = 0,
         Chest = 1,

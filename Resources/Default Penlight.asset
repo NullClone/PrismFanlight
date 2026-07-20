@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56e1d72868814f048b52e4626dd31d98, type: 3}
+  m_Name: Default Penlight
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Authoring.FanlightPenlightAppearanceProfile
+  _profileId: 495a1d9c40dc418f8e940081be7fab3f
+  _profileVersion: 1
+  _assignmentSchemaVersion: 1
+  _assignmentSeed: 1
+  _variants:
+  - _stableVariantId: 1
+    _mesh: {fileID: -4224193870148154796, guid: 4a0fdaf9e49855f4ea9750e17c4f4ee2,
+      type: 3}
+    _useMeshBoundsMinimumAsGrip: 1
+    _gripPivotY: 0

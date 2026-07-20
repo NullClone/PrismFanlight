@@ -1,235 +1,386 @@
+using System;
+using PrismFanlight.Authoring;
+using PrismFanlight.Core;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace PrismFanlight.Rendering
 {
-    public sealed class FanlightGpuRenderer
+    internal sealed class FanlightGpuRenderer : IDisposable
     {
         // Fields
 
+        private const int PaletteSlotCount = 6;
+
         private readonly FanlightGpuBuffers _buffers = new();
         private readonly FanlightGpuDispatcher _dispatcher = new();
-        private readonly FanlightGpuVisibilityReadback _visibilityReadback = new();
         private readonly FanlightGpuUpdateScheduler _scheduler = new();
-        private readonly Vector4[] _paletteColors = new Vector4[FanlightColorSettings.PaletteSlotCount];
+        private readonly Vector4[] _paletteColors = new Vector4[PaletteSlotCount];
 
         private MaterialPropertyBlock _properties;
         private MaterialPropertyBlock _audienceProperties;
         private FanlightGpuKernels _kernels;
-        private SeatLayout _layout;
-        private Mesh _mesh;
+        private FanlightRuntimeLayout _layout;
+        private FanlightPenlightRuntimeAppearance _appearance;
+        private FanlightPenlightAppearanceProfile _appearanceProfile;
+        private Material _penlightMaterial;
+        private Material _audienceMaterial;
         private ComputeShader _computeShader;
+        private Mesh _audienceMesh;
         private bool _audienceAllocated;
         private bool _isInitialized;
         private bool _animationInitialized;
-        private bool _hasLastUpdateClock;
-        private int _lastRandomHash;
-        private float _lastUpdateClock;
+        private bool _hasGlobalSeed;
+        private bool _hasCameraContext;
+        private uint _globalSeed;
+        private FanlightCameraContext _lastCameraContext;
         private Matrix4x4 _lastAnimationLocalToWorld;
 
 
         // Properties
 
-        public bool IsReady => _isInitialized;
+        internal bool IsReady => _isInitialized && Fault == FanlightRendererFault.None;
 
-        public int VisibleSeatCount => _visibilityReadback.VisibleSeatCount;
+        internal FanlightRendererFault Fault { get; private set; }
 
 
         // Methods
 
-        public void Render(
-            Mesh mesh,
-            Material material,
-            ComputeShader computeShader,
-            uint renderingLayerMask,
-            Camera cullingCamera,
-            bool enableCulling,
-            FanlightGpuUpdateTiming visibilityUpdate,
-            FanlightGpuUpdateTiming animationUpdate,
-            SeatLayout layout,
+        internal void Load(
+            FanlightRuntimeLayout layout,
+            FanlightPenlightAppearanceProfile appearanceProfile,
+            Material penlightMaterial,
             Material audienceMaterial,
-            FanlightResolvedState state,
-            bool isTimeJump,
-            Vector3 lodCameraWorldPos)
+            ComputeShader computeShader)
         {
-            if (!CanRender(mesh, material, computeShader, layout))
+            if (!SystemInfo.supportsComputeShaders)
             {
-                Dispose();
+                FailLoad(FanlightRendererFault.UnsupportedComputeShader);
                 return;
             }
 
-            var audienceEnabled = state.Audience.enabled && audienceMaterial != null;
-
-            EnsureInitialized(mesh, computeShader, layout, audienceEnabled, state.Random);
-
-            var randomHash = state.Random.GetStableHash();
-            if (_lastRandomHash != randomHash)
+            if (layout == null || !layout.HasValidTopology)
             {
-                _buffers.UpdateRandomData(state.Random);
-                _lastRandomHash = randomHash;
+                FailLoad(FanlightRendererFault.InvalidLayout);
+                return;
+            }
+
+            if (appearanceProfile == null || penlightMaterial == null || computeShader == null)
+            {
+                FailLoad(FanlightRendererFault.MissingResource);
+                return;
+            }
+
+            if (!appearanceProfile.TryValidate(out _)
+                || appearanceProfile.VariantCount > 1 && !layout.HasStableSeatIds)
+            {
+                FailLoad(FanlightRendererFault.InvalidLayout);
+                return;
+            }
+
+            var appearanceHash = appearanceProfile.GetRuntimeContentHash();
+            var appearance = _appearance;
+            if (appearance == null || _appearanceProfile != appearanceProfile || appearance.ContentHash != appearanceHash)
+            {
+                appearance = FanlightPenlightRuntimeAppearance.Create(appearanceProfile);
+            }
+
+            if (appearance == null)
+            {
+                FailLoad(FanlightRendererFault.MissingResource);
+                return;
+            }
+
+            var allocateAudience = audienceMaterial != null;
+            if (_isInitialized
+                && _appearance != null
+                && _appearance.ContentHash == appearance.ContentHash
+                && _computeShader == computeShader
+                && _audienceAllocated == allocateAudience
+                && layout.HasSameTopology(_layout)
+                && layout.StableSeatIdHash == _layout.StableSeatIdHash)
+            {
+                if (_layout.ContentHash != layout.ContentHash)
+                {
+                    _buffers.UpdateStaticData(appearance, layout);
+                    _layout = layout;
+                    _animationInitialized = false;
+                    _scheduler.Reset();
+                }
+
+                _appearance = appearance;
+                _appearanceProfile = appearanceProfile;
+                _penlightMaterial = penlightMaterial;
+                _audienceMaterial = audienceMaterial;
+                Fault = FanlightRendererFault.None;
+                return;
+            }
+
+            ReleaseResources();
+
+            _appearance = appearance;
+            _appearanceProfile = appearanceProfile;
+            _penlightMaterial = penlightMaterial;
+            _audienceMaterial = audienceMaterial;
+            _computeShader = computeShader;
+            _layout = layout;
+
+            try
+            {
+                _kernels = new FanlightGpuKernels(computeShader);
+            }
+            catch (ArgumentException)
+            {
+                FailLoad(FanlightRendererFault.UnsupportedComputeShader);
+                return;
+            }
+
+            _properties = new MaterialPropertyBlock();
+            _audienceMesh = allocateAudience ? FanlightGeometryBuilder.CreateAudienceQuad() : null;
+
+            try
+            {
+                _buffers.Allocate(appearance, layout, allocateAudience, _audienceMesh, 0u);
+            }
+            catch (Exception)
+            {
+                FailLoad(FanlightRendererFault.MissingResource);
+                return;
+            }
+
+            _audienceAllocated = allocateAudience;
+            _isInitialized = true;
+            Fault = FanlightRendererFault.None;
+        }
+
+        internal void Render(
+            in FanlightShowSample sample,
+            in FanlightFrameContext frame,
+            in FanlightCameraContext camera,
+            in FanlightGpuUpdateTiming visibilityTiming,
+            in FanlightGpuUpdateTiming animationTiming)
+        {
+            if (!_isInitialized) return;
+
+            try
+            {
+                ValidateSample(sample);
+            }
+            catch (ArgumentException)
+            {
+                Fault = FanlightRendererFault.InvalidShowSample;
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                Fault = FanlightRendererFault.InvalidShowSample;
+                return;
+            }
+
+            Fault = FanlightRendererFault.None;
+
+            if (!_hasGlobalSeed || _globalSeed != sample.State.GlobalSeed)
+            {
+                _buffers.UpdateRandomData(sample.State.GlobalSeed, _layout);
+                _globalSeed = sample.State.GlobalSeed;
+                _hasGlobalSeed = true;
                 _animationInitialized = false;
             }
 
-            var worldBounds = FanlightGeometryBuilder.TransformBounds(state.LocalToWorld, _buffers.LocalBounds);
-
-            var context = new FanlightGpuDispatchContext(
-                cullingCamera,
-                enableCulling,
-                layout,
-                state.Tempo,
-                state.Motion,
-                state.Audience,
-                state.Lod,
-                state.SwingTargetWorldPosition,
-                lodCameraWorldPos,
-                state.LocalToWorld,
-                state.Time,
-                worldBounds);
-
-            if (isTimeJump)
+            var worldBounds = FanlightGeometryBuilder.TransformBounds(frame.LocalToWorld, _buffers.LocalBounds);
+            var context = new FanlightGpuDispatchContext(_layout, sample, frame, camera, worldBounds);
+            var discontinuity = sample.Discontinuity != FanlightTimeDiscontinuity.None;
+            if (discontinuity)
             {
                 _scheduler.Reset();
                 _animationInitialized = false;
             }
-            else if (_hasLastUpdateClock && state.UpdateClock < _lastUpdateClock)
-            {
-                _scheduler.Reset();
-            }
 
-            var refreshAllAnimation = !_animationInitialized || state.LocalToWorld != _lastAnimationLocalToWorld;
-            var visibilityUpdated = refreshAllAnimation || _scheduler.ShouldUpdateVisibility(visibilityUpdate, state.UpdateClock);
+            var refreshAllAnimation = !_animationInitialized || frame.LocalToWorld != _lastAnimationLocalToWorld;
+            var cameraChanged = !_hasCameraContext || HasCameraChanged(camera, _lastCameraContext);
+            var visibilityUpdated = refreshAllAnimation
+                                    || cameraChanged
+                                    || _scheduler.ShouldUpdateVisibility(visibilityTiming, (float)sample.ShowSeconds);
 
             if (visibilityUpdated)
             {
-                Profiler.BeginSample("Prism Fanlight GPU Visibility");
-                _dispatcher.DispatchVisibility(computeShader, _kernels, _buffers, context);
-                _visibilityReadback.Request(_buffers.PenlightArgsBuffer, _buffers.SeatCount);
-                Profiler.EndSample();
+                _dispatcher.DispatchVisibility(_computeShader, _kernels, _buffers, context);
             }
 
-            if (_scheduler.ShouldUpdateAnimation(animationUpdate, state.UpdateClock, refreshAllAnimation || visibilityUpdated))
+            if (_scheduler.ShouldUpdateAnimation(
+                    animationTiming,
+                    (float)sample.AnimationSampleSeconds,
+                    refreshAllAnimation))
             {
-                Profiler.BeginSample("Prism Fanlight GPU Animation");
-                _dispatcher.DispatchAnimation(computeShader, _kernels, _buffers, context, !refreshAllAnimation);
+                _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context, !refreshAllAnimation);
                 _animationInitialized = true;
-                _lastAnimationLocalToWorld = state.LocalToWorld;
-                Profiler.EndSample();
+                _lastAnimationLocalToWorld = frame.LocalToWorld;
             }
 
-            _hasLastUpdateClock = true;
-            _lastUpdateClock = state.UpdateClock;
+            _lastCameraContext = camera;
+            _hasCameraContext = true;
 
-            Profiler.BeginSample("Prism Fanlight GPU Draw");
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
             _properties.SetBuffer(FanlightShaderIds.ColorAssignments, _buffers.ColorAssignmentBuffer);
             _properties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.PenlightVisibleIndexBuffer);
             _properties.SetBuffer(FanlightShaderIds.PenlightVisibleIndices, _buffers.PenlightVisibleIndexBuffer);
-            SetColorProperties(_properties, state.Color);
+            SetColorProperties(_properties, sample.State.Palette);
 
-            var renderParams = new RenderParams(material)
+            if (sample.State.Visibility.PenlightsEnabled)
             {
-                renderingLayerMask = renderingLayerMask,
-                receiveShadows = false,
-                worldBounds = worldBounds,
-                matProps = _properties
-            };
+                DrawPenlights(camera, worldBounds);
+            }
 
-            Graphics.RenderMeshIndirect(renderParams, mesh, _buffers.PenlightArgsBuffer);
-            Profiler.EndSample();
-
-            if (audienceEnabled)
+            if (sample.State.Visibility.AudienceBodiesEnabled && _audienceMaterial != null)
             {
                 var audienceBounds = worldBounds;
-                audienceBounds.Expand(2.0f);
-                DrawAudience(audienceMaterial, renderingLayerMask, audienceBounds, state.Color);
+                audienceBounds.Expand(2f);
+                DrawAudience(camera, audienceBounds, sample.State.Palette);
             }
         }
 
-        private static bool CanRender(Mesh mesh, Material material, ComputeShader computeShader, SeatLayout layout)
+        internal bool ApplyEditorLayoutPreview(FanlightRuntimeLayout layout, int changedBlockIndex)
         {
-            return mesh != null
-                   && material != null
-                   && computeShader != null
-                   && layout != null
-                   && layout.TotalSeatCount > 0
-                   && layout.BlockSeatCount > 0;
+            if (!_isInitialized || !layout.HasSameTopology(_layout)) return false;
+
+            if (changedBlockIndex >= 0)
+            {
+                _buffers.UpdateBlock(_appearance, layout, changedBlockIndex);
+            }
+            else
+            {
+                _buffers.UpdateStaticData(_appearance, layout);
+            }
+
+            _layout = layout;
+            _animationInitialized = false;
+            _scheduler.Reset();
+            return true;
         }
 
-        private void DrawAudience(Material audienceMaterial, uint renderingLayerMask, Bounds worldBounds, FanlightColorSettings color)
+        public void Dispose()
         {
-            Profiler.BeginSample("Prism Fanlight GPU Audience Draw");
+            ReleaseResources();
+            Fault = FanlightRendererFault.None;
+        }
 
+        private static void ValidateSample(in FanlightShowSample sample)
+        {
+            if (double.IsNaN(sample.ShowSeconds)
+                || double.IsInfinity(sample.ShowSeconds)
+                || double.IsNaN(sample.AnimationSampleSeconds)
+                || double.IsInfinity(sample.AnimationSampleSeconds))
+            {
+                throw new ArgumentException("A complete show sample is required.", nameof(sample));
+            }
+
+            _ = FanlightShowStatePatcher.Validate(sample.State);
+        }
+
+        private static bool HasCameraChanged(
+            in FanlightCameraContext current,
+            in FanlightCameraContext previous)
+        {
+            return !string.Equals(current.CameraId, previous.CameraId, StringComparison.Ordinal)
+                   || current.Camera != previous.Camera
+                   || current.ViewMatrix != previous.ViewMatrix
+                   || current.ProjectionMatrix != previous.ProjectionMatrix
+                   || current.WorldPosition != previous.WorldPosition
+                   || current.CullingEnabled != previous.CullingEnabled;
+        }
+
+        private void DrawPenlights(in FanlightCameraContext camera, Bounds worldBounds)
+        {
+            for (var variantIndex = 0; variantIndex < _appearance.VariantCount; variantIndex++)
+            {
+                _properties.SetInt(FanlightShaderIds.VisibleIndexBase, (int)_buffers.PenlightVariantOffsets[variantIndex]);
+                var renderParams = new RenderParams(_penlightMaterial)
+                {
+                    camera = camera.Camera,
+                    renderingLayerMask = camera.RenderingLayerMask,
+                    receiveShadows = false,
+                    worldBounds = worldBounds,
+                    matProps = _properties
+                };
+
+                Graphics.RenderMeshIndirect(
+                    renderParams,
+                    _appearance.Meshes[variantIndex],
+                    _buffers.PenlightArgsBuffer,
+                    1,
+                    variantIndex);
+            }
+        }
+
+        private void DrawAudience(
+            in FanlightCameraContext camera,
+            Bounds worldBounds,
+            FanlightPaletteState palette)
+        {
             _audienceProperties ??= new MaterialPropertyBlock();
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceParts, _buffers.AudiencePartBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceVisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.ColorAssignments, _buffers.ColorAssignmentBuffer);
-            SetColorProperties(_audienceProperties, color);
+            SetColorProperties(_audienceProperties, palette);
 
-            var renderParams = new RenderParams(audienceMaterial)
+            var renderParams = new RenderParams(_audienceMaterial)
             {
-                renderingLayerMask = renderingLayerMask,
+                camera = camera.Camera,
+                renderingLayerMask = camera.RenderingLayerMask,
                 receiveShadows = false,
                 worldBounds = worldBounds,
                 matProps = _audienceProperties
             };
 
-            Graphics.RenderMeshIndirect(renderParams, FanlightGeometryBuilder.GetAudienceQuad(), _buffers.AudienceArgsBuffer);
-            Profiler.EndSample();
+            Graphics.RenderMeshIndirect(renderParams, _audienceMesh, _buffers.AudienceArgsBuffer);
         }
 
-        private void EnsureInitialized(Mesh mesh, ComputeShader computeShader, SeatLayout layout, bool allocateAudience, FanlightRandomSettings random)
+        private void SetColorProperties(MaterialPropertyBlock properties, FanlightPaletteState palette)
         {
-            if (_isInitialized
-                && _mesh == mesh
-                && _computeShader == computeShader
-                && _audienceAllocated == allocateAudience
-                && _buffers.SeatCount == layout.TotalSeatCount
-                && layout.Equals(_layout))
-            {
-                return;
-            }
-
-            Dispose();
-
-            _mesh = mesh;
-            _computeShader = computeShader;
-            _layout = layout;
-            _kernels = new FanlightGpuKernels(computeShader);
-            _properties = new MaterialPropertyBlock();
-            _buffers.Allocate(mesh, layout, allocateAudience, random);
-            _audienceAllocated = allocateAudience;
-            _lastRandomHash = random.GetStableHash();
-            _isInitialized = true;
-        }
-
-        private void SetColorProperties(MaterialPropertyBlock properties, FanlightColorSettings color)
-        {
-            var settings = color.Validated();
-            for (var i = 0; i < FanlightColorSettings.PaletteSlotCount; i++)
-            {
-                _paletteColors[i] = settings.GetSlot(i);
-            }
+            _paletteColors[0] = palette.Slot1;
+            _paletteColors[1] = palette.Slot2;
+            _paletteColors[2] = palette.Slot3;
+            _paletteColors[3] = palette.Slot4;
+            _paletteColors[4] = palette.Slot5;
+            _paletteColors[5] = palette.Slot6;
 
             properties.SetVectorArray(FanlightShaderIds.PaletteColors, _paletteColors);
-            properties.SetFloat(FanlightShaderIds.GlobalIntensity, settings.GetGlobalIntensity());
-            properties.SetFloat(FanlightShaderIds.RandomIntensity, settings.randomIntensity);
+            properties.SetFloat(FanlightShaderIds.GlobalIntensity, palette.GlobalIntensity);
+            properties.SetFloat(FanlightShaderIds.RandomIntensity, palette.RandomIntensity);
         }
 
-        public void Dispose()
+        private void FailLoad(FanlightRendererFault fault)
+        {
+            ReleaseResources();
+            Fault = fault;
+        }
+
+        private void ReleaseResources()
         {
             _buffers.Release();
-            _visibilityReadback.Reset();
+            if (_audienceMesh != null)
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(_audienceMesh);
+                else UnityEngine.Object.DestroyImmediate(_audienceMesh);
+            }
+
             _properties = null;
             _audienceProperties = null;
-            _audienceAllocated = false;
-            _mesh = null;
+            _kernels = default;
+            _layout = null;
+            _appearance = null;
+            _appearanceProfile = null;
+            _penlightMaterial = null;
+            _audienceMaterial = null;
             _computeShader = null;
+            _audienceMesh = null;
+            _audienceAllocated = false;
             _isInitialized = false;
             _animationInitialized = false;
-            _hasLastUpdateClock = false;
-            _lastRandomHash = 0;
-            _lastUpdateClock = 0.0f;
+            _hasGlobalSeed = false;
+            _hasCameraContext = false;
+            _globalSeed = 0u;
+            _lastCameraContext = default;
             _lastAnimationLocalToWorld = Matrix4x4.identity;
             _scheduler.Reset();
         }

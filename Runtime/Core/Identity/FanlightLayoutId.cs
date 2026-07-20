@@ -1,0 +1,56 @@
+using System;
+
+namespace PrismFanlight.Core
+{
+    [Serializable]
+    internal readonly struct FanlightLayoutId : IEquatable<FanlightLayoutId>
+    {
+        // Fields
+
+        private readonly string _value;
+
+
+        // Properties
+
+        internal string Value => _value ?? string.Empty;
+
+        internal bool IsValid
+        {
+            get
+            {
+                var value = Value;
+                if (value.Length != 32) return false;
+                for (var i = 0; i < value.Length; i++)
+                {
+                    var c = value[i];
+                    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+                }
+
+                return true;
+            }
+        }
+
+
+        // Methods
+
+        internal FanlightLayoutId(string value)
+        {
+            _value = Normalize(value);
+        }
+
+        public bool Equals(FanlightLayoutId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
+
+        public override bool Equals(object obj) => obj is FanlightLayoutId other && Equals(other);
+
+        public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Value);
+
+        public override string ToString() => Value;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Replace("-", string.Empty).Trim().ToLowerInvariant();
+        }
+    }
+}

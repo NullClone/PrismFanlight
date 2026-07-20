@@ -6,84 +6,46 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightEditorStyles
     {
-        private static GUIStyle _section;
-        private static GUIStyle _sectionTitle;
+        // Fields
+
         private static GUIStyle _subGroupLabel;
-        private static GUIStyle _statLabel;
-        private static GUIStyle _statValue;
-
-        private static GUIStyle Section => _section ??= CreateSection();
-        private static GUIStyle SectionTitle => _sectionTitle ??= CreateSectionTitle();
-        private static GUIStyle StatLabel => _statLabel ??= CreateStatLabel();
-        private static GUIStyle StatValue => _statValue ??= CreateStatValue();
 
 
-        public static void DrawSection(string title, Action draw)
+        // Properties
+
+        private static GUIStyle SubGroupLabel => _subGroupLabel ??= CreateSubGroupLabel();
+
+
+        // Methods
+
+        internal static void DrawSection(PrismFanlightSection section, Action draw)
         {
-            EditorGUILayout.Space();
+            section.DrawHeader();
 
-            using (new EditorGUILayout.VerticalScope(Section))
+            if (EditorGUILayout.BeginFadeGroup(section.anim.faded))
             {
-                EditorGUILayout.LabelField(title, SectionTitle);
-                EditorGUILayout.Space();
-                draw();
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    draw();
+
+                    EditorGUILayout.Space();
+                }
             }
+
+            EditorGUILayout.EndFadeGroup();
         }
 
-        public static void DrawSubGroupLabel(string title)
+        internal static void DrawSubGroupLabel(string title)
         {
-            EditorGUILayout.LabelField(title);
+            EditorGUILayout.LabelField(title, SubGroupLabel);
         }
 
-        public static void DrawStat(string label, string value)
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField(label, StatLabel);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.LabelField(value, StatValue, GUILayout.Width(110));
-            }
-        }
-
-        public static void DrawOverride(SerializedProperty property, GUIContent label, bool includeChildren = false)
-        {
-            using (new TimelineOverrideColorScope(true))
-            {
-                EditorGUILayout.PropertyField(property, label, includeChildren);
-            }
-        }
-
-
-        private static GUIStyle CreateSection()
-        {
-            return new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(10, 10, 8, 10),
-                margin = new RectOffset(0, 0, 4, 4)
-            };
-        }
-
-        private static GUIStyle CreateSectionTitle()
+        private static GUIStyle CreateSubGroupLabel()
         {
             return new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 14
-            };
-        }
-
-        private static GUIStyle CreateStatLabel()
-        {
-            return new GUIStyle(EditorStyles.miniLabel)
-            {
-                alignment = TextAnchor.MiddleLeft
-            };
-        }
-
-        private static GUIStyle CreateStatValue()
-        {
-            return new GUIStyle(EditorStyles.miniBoldLabel)
-            {
-                alignment = TextAnchor.MiddleRight
+                fontSize = 12,
+                margin = new RectOffset(0, 0, 4, 2)
             };
         }
     }

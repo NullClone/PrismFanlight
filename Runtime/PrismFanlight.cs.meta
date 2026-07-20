@@ -4,17 +4,17 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - _mesh: {fileID: -4224193870148154796, guid: 4a0fdaf9e49855f4ea9750e17c4f4ee2,
-      type: 3}
   - _material: {fileID: 2100000, guid: 353ef03c96b3d2d4898039a440b753f3, type: 2}
   - _audienceMaterial: {fileID: 2100000, guid: 4ad3218fb62b0fe47918f9ec651dc995, type: 2}
   - _computeShader: {fileID: 7200000, guid: 9e9f72b11c4b4cba979a635fc870e319, type: 3}
   - _cullingCamera: {instanceID: 0}
-  - _motionPreset: {instanceID: 0}
-  - _colorPreset: {instanceID: 0}
+  - _penlightAppearanceProfile: {fileID: 11400000, guid: 49fd21abe8886df4a9c2867f15cb12b5,
+      type: 2}
+  - _layoutAsset: {fileID: 11400000, guid: d89571f1ab470c048aa8a3bdc59dd0ee, type: 2}
   - _swingTarget: {instanceID: 0}
+  - _timeCoordinator: {instanceID: 0}
   executionOrder: 0
-  icon: {instanceID: 0}
+  icon: {fileID: 2800000, guid: ae8e9f93d3d78a84190dfc2bed35c6a2, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

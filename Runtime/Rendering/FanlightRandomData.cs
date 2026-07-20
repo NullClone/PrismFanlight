@@ -4,17 +4,17 @@ using UnityEngine;
 namespace PrismFanlight.Rendering
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct FanlightRandomData
+    internal struct FanlightRandomData
     {
-        public Vector4 random0;
-        public Vector4 random1;
-        public Vector4 random2;
-        public Vector4 random3;
-        public Vector4 random4;
-        public Vector4 random5;
-        public Vector4 random6;
-        public Vector4 random7;
+        internal Vector4 random0;
+        internal Vector4 random1;
+        internal Vector4 random2;
+        internal Vector4 random3;
+        internal Vector4 random4;
+        internal Vector4 random5;
+        internal Vector4 random6;
+        internal Vector4 random7;
 
-        public const int Stride = sizeof(float) * 32;
+        internal const int Stride = sizeof(float) * 32;
     }
 }

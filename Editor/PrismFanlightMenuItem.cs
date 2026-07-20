@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
-    public static class PrismFanlightMenuItem
+    internal static class PrismFanlightMenuItem
     {
         [MenuItem("GameObject/Create Other/Prism Fanlight", false, 100)]
         private static void CreateMyCustomObject(MenuCommand command)

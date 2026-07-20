@@ -35,7 +35,7 @@ float PrismComputeRestFactor(FanlightSeatData seat)
     return lerp(1.0, _MotionRest.y, restWeight);
 }
 
-PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
+PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose, float gripPivotY)
 {
     float3 armBaseLocal = PrismComputeHandZoneBase(seat, pose);
     PrismCrowdRhythm rhythm = PrismComputeCrowdRhythm(seat);
@@ -104,7 +104,7 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
     float4x4 mArm = AxisAngle(axis, armAngle);
     float4x4 m3 = Translate(float3(0.0, armReach, 0.0));
     float4x4 mWrist = AxisAngle(axis, wristAngle);
-    float4x4 mGrip = Translate(float3(0.0, -_GripPivotY, 0.0));
+    float4x4 mGrip = Translate(float3(0.0, -gripPivotY, 0.0));
 
     PrismArm result = (PrismArm)0;
     result.worldMatrix = mul(_LocalToWorld, mul(m1, mul(mArm, mul(m3, mul(mWrist, mGrip)))));
@@ -113,10 +113,10 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose)
     return result;
 }
 
-float4x4 PrismComputeMatrix(FanlightSeatData seat)
+float4x4 PrismComputeMatrix(FanlightSeatData seat, float gripPivotY)
 {
     PrismHumanPose pose = PrismComputeHumanPose(seat);
-    return PrismComputeArm(seat, pose).worldMatrix;
+    return PrismComputeArm(seat, pose, gripPivotY).worldMatrix;
 }
 
 #endif

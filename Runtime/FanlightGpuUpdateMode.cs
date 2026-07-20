@@ -1,6 +1,6 @@
 namespace PrismFanlight
 {
-    public enum FanlightGpuUpdateMode
+    internal enum FanlightGpuUpdateMode
     {
         EveryFrame,
         FixedRate

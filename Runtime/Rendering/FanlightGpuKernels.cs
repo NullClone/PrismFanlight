@@ -4,16 +4,16 @@ namespace PrismFanlight.Rendering
 {
     internal readonly struct FanlightGpuKernels
     {
-        public readonly int ClearIndirectArgs;
-        public readonly int CullBlocks;
-        public readonly int BuildVisibleInstances;
-        public readonly int GenerateVisibleAnimation;
-        public readonly int GenerateAllAnimation;
-        public readonly int GenerateVisibleFrameData;
-        public readonly int GenerateAllFrameData;
+        internal readonly int ClearIndirectArgs;
+        internal readonly int CullBlocks;
+        internal readonly int BuildVisibleInstances;
+        internal readonly int GenerateVisibleAnimation;
+        internal readonly int GenerateAllAnimation;
+        internal readonly int GenerateVisibleFrameData;
+        internal readonly int GenerateAllFrameData;
 
 
-        public FanlightGpuKernels(ComputeShader shader)
+        internal FanlightGpuKernels(ComputeShader shader)
         {
             ClearIndirectArgs = shader.FindKernel("ClearIndirectArgs");
             CullBlocks = shader.FindKernel("CullBlocks");

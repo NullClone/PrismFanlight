@@ -5,10 +5,11 @@
 
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<float4x4> _FanlightMatrices;
+int _VisibleIndexBase;
 
 uint PrismFanlightVisibleIndex(float instanceId)
 {
-    return (uint)max(0.0, instanceId);
+    return (uint)max(0.0, instanceId) + (uint)max(0, _VisibleIndexBase);
 }
 
 uint PrismFanlightSeatIndex(float instanceId)
