@@ -9,9 +9,9 @@ using UnityEngine.Rendering;
 
 namespace PrismFanlight
 {
+    [ExecuteAlways]
     [HelpURL("https://github.com/NullClone/PrismFanlight")]
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
-    [ExecuteAlways]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
@@ -50,7 +50,7 @@ namespace PrismFanlight
         private Transform _swingTarget;
 
         [SerializeField]
-        private ShowTimeCoordinatorBehaviour _timeCoordinator;
+        private FanlightTimeManager _timeManager;
 
         [SerializeField]
         private FanlightIntentState _intent = FanlightShowStateDefaults.Intent();
@@ -164,7 +164,7 @@ namespace PrismFanlight
                 return;
             }
 
-            if (_timeCoordinator == null || _evaluationId == long.MaxValue)
+            if (_timeManager == null || _evaluationId == long.MaxValue)
             {
                 Dispose();
                 return;
@@ -172,13 +172,14 @@ namespace PrismFanlight
 
             _evaluationId++;
 
-            if (!_timeCoordinator.TrySample(_evaluationId, out var time, out _))
+            if (!_timeManager.TrySample(_evaluationId, out var time, out _))
             {
                 Dispose();
                 return;
             }
 
             _contributionBuffer.Clear();
+
             foreach (var contribution in _scheduledContributions.Values)
             {
                 _contributionBuffer.Add(contribution);

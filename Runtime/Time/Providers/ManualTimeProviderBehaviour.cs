@@ -20,6 +20,7 @@ namespace PrismFanlight.Time
         [SerializeField]
         private FanlightTimeDiscontinuity _nextDiscontinuity;
 
+
         // Methods
 
         public void SetTime(double seconds, double rate, FanlightTimeDiscontinuity discontinuity = FanlightTimeDiscontinuity.Seek)
@@ -31,6 +32,7 @@ namespace PrismFanlight.Time
         }
 
         public void SetStatus(FanlightClockStatus status) => _status = status;
+
 
         ShowTimeProviderSample IShowTimeProvider.Sample()
         {

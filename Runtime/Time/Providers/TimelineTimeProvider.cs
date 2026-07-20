@@ -4,7 +4,7 @@ using PrismFanlight.Time;
 using UnityEngine;
 using UnityEngine.Playables;
 
-namespace PrismFanlight.Timeline
+namespace PrismFanlight.Time
 {
     [AddComponentMenu("Prism Fanlight/Time Providers/Timeline Time Provider")]
     public sealed class TimelineTimeProvider : MonoBehaviour, IShowTimeProvider
@@ -81,6 +81,7 @@ namespace PrismFanlight.Timeline
 
             return new ShowTimeProviderSample(seconds, rate, status, discontinuity);
         }
+
 
         private double GetRate()
         {

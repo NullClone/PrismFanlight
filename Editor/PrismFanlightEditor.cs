@@ -23,7 +23,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _animationUpdate;
         private SerializedProperty _layoutAsset;
         private SerializedProperty _swingTarget;
-        private SerializedProperty _timeCoordinator;
+        private SerializedProperty _timeManager;
         private SerializedProperty _intent;
         private SerializedProperty _gesture;
         private SerializedProperty _pose;
@@ -65,7 +65,7 @@ namespace PrismFanlight.Editor
             _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
-            _timeCoordinator = serializedObject.FindProperty(nameof(_timeCoordinator));
+            _timeManager = serializedObject.FindProperty(nameof(_timeManager));
             _intent = serializedObject.FindProperty(nameof(_intent));
             _gesture = serializedObject.FindProperty(nameof(_gesture));
             _pose = serializedObject.FindProperty(nameof(_pose));
@@ -383,11 +383,10 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection(_timeSection, () =>
             {
-                EditorGUILayout.PropertyField(_timeCoordinator, new GUIContent("Time Coordinator"));
-
+                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Coordinator"));
                 EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
-                if (_timeCoordinator.objectReferenceValue == null)
+                if (_timeManager.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
                 }

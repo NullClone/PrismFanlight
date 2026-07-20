@@ -32,6 +32,7 @@ namespace PrismFanlight.Time
             var beat = (seconds - _offsetSeconds) * _bpm / 60d;
             var barOffset = (long)Math.Floor(beat / _beatsPerBar);
             var beatInBar = PositiveModulo(beat, _beatsPerBar);
+
             return new FanlightMusicalPosition(
                 seconds,
                 beat,

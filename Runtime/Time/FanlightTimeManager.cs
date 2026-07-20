@@ -5,16 +5,10 @@ using UnityEngine;
 
 namespace PrismFanlight.Time
 {
-    public enum ShowTimePrimaryMode
-    {
-        UnityTime = 0,
-        Manual = 1,
-        Component = 2
-    }
-
     [ExecuteAlways]
-    [AddComponentMenu("Prism Fanlight/Show Time Coordinator")]
-    public sealed class ShowTimeCoordinatorBehaviour : MonoBehaviour
+    [HelpURL("https://github.com/NullClone/PrismFanlight")]
+    [AddComponentMenu("Prism Fanlight/Fanlight Time Manager")]
+    public sealed class FanlightTimeManager : MonoBehaviour
     {
         // Fields
 
