@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using PrismFanlight.Core;
 using Unity.Mathematics;
 using UnityEngine;
@@ -18,16 +19,16 @@ namespace PrismFanlight.Authoring
         private ulong _contentHash;
 
         [SerializeField]
-        private int2 _seatPerBlock;
+        private int2 _seatPerBlock = new(8, 12);
 
         [SerializeField]
-        private float2 _seatPitch;
+        private float2 _seatPitch = new(0.4f, 0.8f);
 
         [SerializeField]
-        private int2 _blockCount;
+        private int2 _blockCount = new(7, 3);
 
         [SerializeField]
-        private float2 _aisleWidth;
+        private float2 _aisleWidth = new(0.7f, 1.2f);
 
         [SerializeField]
         private FanlightLayoutBlock[] _blocks = Array.Empty<FanlightLayoutBlock>();
@@ -108,53 +109,58 @@ namespace PrismFanlight.Authoring
         }
 
 
-        internal void Initialize(string layoutId, int2 seatPerBlock, float2 seatPitch, int2 blockCount, float2 aisleWidth, string[] blockIds, ulong[] stableSeatIds)
+        internal void Rebuild(int2 seatPerBlock, float2 seatPitch, int2 blockCount, float2 aisleWidth)
         {
-            if (IsInitialized) throw new InvalidOperationException("Layout topology is already initialized and immutable.");
+            if (!math.all(math.isfinite(seatPitch)) || !math.all(math.isfinite(aisleWidth)))
+            {
+                throw new ArgumentOutOfRangeException(nameof(seatPitch), "Layout spacing values must be finite.");
+            }
 
             seatPerBlock = math.max(seatPerBlock, math.int2(1, 1));
             seatPitch = math.max(seatPitch, math.float2(0.001f, 0.001f));
             blockCount = math.max(blockCount, math.int2(1, 1));
             aisleWidth = math.max(aisleWidth, float2.zero);
 
-            var totalBlocks64 = (long)blockCount.x * blockCount.y;
-            var blockSeats64 = (long)seatPerBlock.x * seatPerBlock.y;
-            if (totalBlocks64 > int.MaxValue || blockSeats64 > int.MaxValue)
+            int totalBlocks;
+            int totalSeats;
+
+            try
+            {
+                var totalBlocks64 = checked((long)blockCount.x * blockCount.y);
+                var blockSeats64 = checked((long)seatPerBlock.x * seatPerBlock.y);
+                var totalSeats64 = checked(totalBlocks64 * blockSeats64);
+
+                if (totalBlocks64 > int.MaxValue || blockSeats64 > int.MaxValue || totalSeats64 > int.MaxValue)
+                {
+                    throw new OverflowException();
+                }
+
+                totalBlocks = (int)totalBlocks64;
+                totalSeats = (int)totalSeats64;
+            }
+            catch (OverflowException)
             {
                 throw new ArgumentOutOfRangeException(nameof(blockCount), "Layout topology exceeds the supported 32-bit artifact range.");
             }
 
-            var totalSeats64 = totalBlocks64 * blockSeats64;
-            if (totalSeats64 > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(blockCount), "Layout topology exceeds the supported 32-bit artifact range.");
-            }
+            var layoutId = Guid.NewGuid().ToString("N");
+            var seatIds = CreateSeatIds(totalSeats);
+            var blockIds = new string[totalBlocks];
+            var usedBlockIds = new HashSet<string>(StringComparer.Ordinal);
 
-            var totalBlocks = (int)totalBlocks64;
-            var totalSeats = (int)totalSeats64;
-            if (blockIds == null || blockIds.Length != totalBlocks) throw new ArgumentException("Block ID count does not match topology.", nameof(blockIds));
-            if (stableSeatIds == null || stableSeatIds.Length != totalSeats) throw new ArgumentException("Seat ID count does not match topology.", nameof(stableSeatIds));
-
-            var normalizedLayoutId = new FanlightLayoutId(layoutId);
-            if (!normalizedLayoutId.IsValid) throw new ArgumentException("Layout ID must be a 128-bit hexadecimal identifier.", nameof(layoutId));
-
-            var uniqueBlockIds = new HashSet<string>(StringComparer.Ordinal);
             for (var i = 0; i < blockIds.Length; i++)
             {
-                if (string.IsNullOrWhiteSpace(blockIds[i]) || !uniqueBlockIds.Add(blockIds[i]))
+                string blockId;
+
+                do
                 {
-                    throw new ArgumentException("Block IDs must be non-empty and unique.", nameof(blockIds));
-                }
+                    blockId = Guid.NewGuid().ToString("N");
+                } while (!usedBlockIds.Add(blockId));
+
+                blockIds[i] = blockId;
             }
 
-            var uniqueSeatIds = new HashSet<ulong>();
-            for (var i = 0; i < stableSeatIds.Length; i++)
-            {
-                if (stableSeatIds[i] == 0UL || !uniqueSeatIds.Add(stableSeatIds[i]))
-                {
-                    throw new ArgumentException("Stable seat IDs must be non-zero and unique.", nameof(stableSeatIds));
-                }
-            }
+            var normalizedLayoutId = new FanlightLayoutId(layoutId);
 
             _layoutId = normalizedLayoutId.Value;
             _contentHash = 0UL;
@@ -163,8 +169,12 @@ namespace PrismFanlight.Authoring
             _blockCount = blockCount;
             _aisleWidth = aisleWidth;
             _blocks = new FanlightLayoutBlock[totalBlocks];
-            for (var i = 0; i < totalBlocks; i++) _blocks[i] = new FanlightLayoutBlock(blockIds[i]);
-            _stableSeatIds = (ulong[])stableSeatIds.Clone();
+            for (var i = 0; i < totalBlocks; i++)
+            {
+                _blocks[i] = new FanlightLayoutBlock(blockIds[i]);
+            }
+
+            _stableSeatIds = seatIds;
             _activeBake = null;
         }
 
@@ -172,15 +182,20 @@ namespace PrismFanlight.Authoring
         {
             if (!IsInitialized || blockIndex < 0 || blockIndex >= _blocks.Length) return false;
             if (_blocks[blockIndex].Placement.Equals(placement)) return false;
+
             _blocks[blockIndex].SetPlacement(placement);
+
             return true;
         }
 
         internal bool SetContentHash(ulong contentHash)
         {
             contentHash = contentHash == 0UL ? 1UL : contentHash;
+
             if (_contentHash == contentHash) return false;
+
             _contentHash = contentHash;
+
             return true;
         }
 
@@ -194,18 +209,47 @@ namespace PrismFanlight.Authoring
             blockSeatCount = 0;
             totalBlockCount = 0;
             totalSeatCount = 0;
+
             if (_seatPerBlock.x <= 0 || _seatPerBlock.y <= 0 || _blockCount.x <= 0 || _blockCount.y <= 0) return false;
 
             var blockSeats64 = (long)_seatPerBlock.x * _seatPerBlock.y;
             var totalBlocks64 = (long)_blockCount.x * _blockCount.y;
+
             if (blockSeats64 > int.MaxValue || totalBlocks64 > int.MaxValue) return false;
+
             var totalSeats64 = blockSeats64 * totalBlocks64;
+
             if (totalSeats64 > int.MaxValue) return false;
 
             blockSeatCount = (int)blockSeats64;
             totalBlockCount = (int)totalBlocks64;
             totalSeatCount = (int)totalSeats64;
+
             return true;
+        }
+
+
+        private static ulong[] CreateSeatIds(int count)
+        {
+            var values = new ulong[count];
+            var used = new HashSet<ulong>();
+            var bytes = new byte[8];
+
+            using var random = RandomNumberGenerator.Create();
+
+            for (var i = 0; i < values.Length; i++)
+            {
+                ulong value;
+                do
+                {
+                    random.GetBytes(bytes);
+                    value = BitConverter.ToUInt64(bytes, 0);
+                } while (value == 0UL || !used.Add(value));
+
+                values[i] = value;
+            }
+
+            return values;
         }
     }
 }

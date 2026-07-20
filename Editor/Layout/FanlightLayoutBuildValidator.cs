@@ -13,14 +13,19 @@ namespace PrismFanlight.Editor
         public void OnPreprocessBuild(BuildReport report)
         {
             var checkedPaths = new HashSet<string>();
+
             foreach (var scene in EditorBuildSettings.scenes)
             {
                 if (!scene.enabled) continue;
+
                 foreach (var dependency in AssetDatabase.GetDependencies(scene.path, true))
                 {
                     if (!checkedPaths.Add(dependency)) continue;
+
                     var layout = AssetDatabase.LoadAssetAtPath<FanlightLayoutAsset>(dependency);
+
                     if (layout == null) continue;
+
                     Validate(layout, dependency);
                 }
             }
@@ -38,9 +43,9 @@ namespace PrismFanlight.Editor
                 throw new BuildFailedException($"Fanlight layout ID is duplicated: {path}");
             }
 
-            if (!layout.HasValidBake)
+            if (!FanlightLayoutEditSession.IsEmbeddedBake(layout, layout.ActiveBake) || !layout.HasValidBake)
             {
-                throw new BuildFailedException($"Fanlight layout requires a valid bake: {path}");
+                throw new BuildFailedException($"Fanlight layout requires a valid embedded bake: {path}");
             }
         }
     }

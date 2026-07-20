@@ -264,89 +264,119 @@ namespace PrismFanlight.Editor
                 }
 
                 var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
+
                 if (layout == null)
                 {
                     _instance.SetEditorLayoutBlocked(false);
+
                     EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
+
                     using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
                     {
-                        if (GUILayout.Button("Create Layout Asset...")) FanlightLayoutCreationWindow.ShowFor(_instance);
+                        if (GUILayout.Button("Create Layout Asset"))
+                        {
+                            CreateLayoutAsset();
+                        }
+                    }
+                }
+                else
+                {
+                    if (!layout.IsInitialized)
+                    {
+                        _instance.SetEditorLayoutBlocked(false);
+                        EditorGUILayout.HelpBox("The Layout Asset is not initialized. Select it to configure the topology and bake it.", MessageType.Error);
+                        return;
                     }
 
-                    return;
-                }
+                    if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+                    {
+                        _instance.SetEditorLayoutBlocked(true);
+                        EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
+                        return;
+                    }
 
-                DrawLayoutAssetControls(layout);
+                    _instance.SetEditorLayoutBlocked(false);
+
+                    var session = FanlightLayoutEditSession.Get(layout);
+
+                    if (session == null) return;
+
+                    if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+                    {
+                        _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+                    }
+
+                    EditorGUILayout.Space();
+
+                    _layoutScenePreview.EditTransforms = EditorGUILayout.Toggle(new GUIContent("Edit In Scene View"), _layoutScenePreview.EditTransforms);
+
+                    var selected = _layoutScenePreview.GetSelectedBlockIndex(layout);
+
+                    EditorGUILayout.Space();
+
+                    if (selected < 0)
+                    {
+                        EditorGUILayout.LabelField("Selected Block", "None");
+                        return;
+                    }
+
+                    var coordinates = layout.GetBlockCoordinates(selected);
+                    var placement = layout.GetBlock(selected).Placement;
+                    EditorGUILayout.LabelField("Selected Block", $"{coordinates.x}, {coordinates.y}");
+
+                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        var position = EditorGUILayout.Vector3Field("Position", placement.position);
+                        var rotation = EditorGUILayout.Vector3Field("Rotation", placement.eulerRotation);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            session.SetBlockPlacement(
+                                selected,
+                                new FanlightBlockPlacement
+                                {
+                                    position = position,
+                                    eulerRotation = rotation
+                                },
+                                "Edit Fanlight Block Placement");
+                        }
+
+                        if (GUILayout.Button("Reset Selected Block"))
+                        {
+                            _layoutScenePreview.ResetSelected(layout);
+                        }
+                    }
+                }
             });
         }
 
-        private void DrawLayoutAssetControls(FanlightLayoutAsset layout)
+        private void CreateLayoutAsset()
         {
-            if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+            var path = EditorUtility.SaveFilePanelInProject(
+                "Create Fanlight Layout Asset",
+                "FanlightLayout",
+                "asset",
+                "Choose where to save the layout authoring asset.");
+
+            if (string.IsNullOrEmpty(path)) return;
+
+            var asset = CreateInstance<FanlightLayoutAsset>();
+
+            AssetDatabase.CreateAsset(asset, path);
+            Undo.RegisterCreatedObjectUndo(asset, "Create Fanlight Layout Asset");
+            AssetDatabase.SaveAssets();
+
+            if (_instance != null)
             {
-                _instance.SetEditorLayoutBlocked(true);
-                EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
-                return;
+                Undo.RecordObject(_instance, "Assign Fanlight Layout Asset");
+
+                _instance.SetLayoutAssetForEditor(asset);
+
+                EditorUtility.SetDirty(_instance);
             }
 
-            _instance.SetEditorLayoutBlocked(false);
-            if (!layout.IsInitialized)
-            {
-                EditorGUILayout.HelpBox("The Layout Asset is not initialized.", MessageType.Error);
-                return;
-            }
-
-            var session = FanlightLayoutEditSession.Get(layout);
-            if (session == null) return;
-            if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
-            {
-                _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
-            }
-
-            EditorGUILayout.Space();
-            _layoutScenePreview.EditTransforms = EditorGUILayout.Toggle(
-                new GUIContent("Edit In Scene View"),
-                _layoutScenePreview.EditTransforms);
-            EditorGUILayout.LabelField(
-                "Bake Status",
-                session.DirtyBlockCount == 0 && layout.HasValidBake ? "Current" : "Bake Required");
-
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                if (GUILayout.Button("Bake Dirty Blocks...")) session.BakeWithSaveDialog();
-            }
-
-            var selected = _layoutScenePreview.GetSelectedBlockIndex(layout);
-            EditorGUILayout.Space();
-            if (selected < 0)
-            {
-                EditorGUILayout.LabelField("Selected Block", "None");
-                return;
-            }
-
-            var coordinates = layout.GetBlockCoordinates(selected);
-            var placement = layout.GetBlock(selected).Placement;
-            EditorGUILayout.LabelField("Selected Block", $"{coordinates.x}, {coordinates.y}");
-
-            using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-            {
-                EditorGUI.BeginChangeCheck();
-                var position = EditorGUILayout.Vector3Field("Position", placement.position);
-                var rotation = EditorGUILayout.Vector3Field("Rotation", placement.eulerRotation);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    session.SetBlockPlacement(
-                        selected,
-                        new FanlightBlockPlacement
-                        {
-                            position = position,
-                            eulerRotation = rotation
-                        },
-                        "Edit Fanlight Block Placement");
-                }
-
-                if (GUILayout.Button("Reset Selected Block")) _layoutScenePreview.ResetSelected(layout);
-            }
+            Selection.activeObject = asset;
+            FanlightLayoutIdRegistry.Invalidate();
         }
 
         private void DrawTimeSection()

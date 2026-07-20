@@ -13,6 +13,8 @@ namespace PrismFanlight.Editor
     [InitializeOnLoad]
     internal sealed class FanlightLayoutEditSession
     {
+        // Fields
+
         private static readonly Dictionary<int, FanlightLayoutEditSession> Sessions = new();
 
         private readonly FanlightCompiledLayout _compiled;
@@ -26,6 +28,9 @@ namespace PrismFanlight.Editor
         private int _dirtyBlockCount;
         private FanlightLayoutDirtyReason _dirtyReason;
         private FanlightRuntimeLayout _runtimeLayout;
+
+
+        // Properties
 
         static FanlightLayoutEditSession()
         {
@@ -55,7 +60,7 @@ namespace PrismFanlight.Editor
                 if (_dirtyBlocks[i]) _dirtyBlockCount++;
             }
 
-            _dirtyReason = source.ActiveBake == null
+            _dirtyReason = !HasEmbeddedBake
                 ? FanlightLayoutDirtyReason.Topology | FanlightLayoutDirtyReason.BakeSchema
                 : _dirtyBlockCount > 0
                     ? FanlightLayoutDirtyReason.BlockPlacement
@@ -73,12 +78,20 @@ namespace PrismFanlight.Editor
 
         public FanlightLayoutDirtyReason DirtyReason => _dirtyReason;
 
+        public bool HasEmbeddedBake => IsEmbeddedBake(Source, Source.ActiveBake);
+
+        public bool HasCurrentBake => HasEmbeddedBake && Source.HasValidBake && DirtyBlockCount == 0;
+
+
+        // Methods
+
         public static FanlightLayoutEditSession Get(FanlightLayoutAsset source)
         {
             if (source == null || !source.IsInitialized) return null;
+
             var key = source.GetInstanceID();
-            if (!Sessions.TryGetValue(key, out var session)
-                || session.Source != source)
+
+            if (!Sessions.TryGetValue(key, out var session) || session.Source != source)
             {
                 session = new FanlightLayoutEditSession(source);
                 Sessions[key] = session;
@@ -90,10 +103,26 @@ namespace PrismFanlight.Editor
         public static void ResetAll()
         {
             Sessions.Clear();
+
             if (Application.isPlaying) return;
+
             foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 fanlight.ClearEditorLayoutPreview();
+            }
+        }
+
+        internal static void Reset(FanlightLayoutAsset source)
+        {
+            if (source == null) return;
+
+            Sessions.Remove(source.GetInstanceID());
+
+            if (Application.isPlaying) return;
+
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            {
+                if (fanlight.LayoutAsset == source) fanlight.ClearEditorLayoutPreview();
             }
         }
 
@@ -109,14 +138,20 @@ namespace PrismFanlight.Editor
         public bool SetBlockPlacement(int blockIndex, FanlightBlockPlacement placement, string undoName)
         {
             Undo.RecordObject(Source, undoName);
+
             if (!Source.SetBlockPlacement(blockIndex, placement)) return false;
+
             EditorUtility.SetDirty(Source);
 
             _compiled.CompileBlock(blockIndex);
+
             ConvertBlock(blockIndex);
+
             _boundsTree.Update(blockIndex, _compiled.Blocks[blockIndex].localBounds);
             _hashTree.Update(blockIndex, _compiled.Blocks[blockIndex].contentHash);
+
             WriteCorners(blockIndex, _corners[blockIndex]);
+
             if (!_dirtyBlocks[blockIndex])
             {
                 _dirtyBlocks[blockIndex] = true;
@@ -124,12 +159,14 @@ namespace PrismFanlight.Editor
             }
 
             _dirtyReason |= FanlightLayoutDirtyReason.BlockPlacement;
+
             RefreshRuntimeLayout();
             ApplyPreviewToAllInstances(blockIndex);
+
             return true;
         }
 
-        public bool BakeWithSaveDialog()
+        public bool Bake()
         {
             if (FanlightLayoutIdRegistry.IsDuplicate(Source))
             {
@@ -138,29 +175,49 @@ namespace PrismFanlight.Editor
             }
 
             _compiled.SetSummary(_boundsTree.Root, ComputeLayoutHash());
-            var path = EditorUtility.SaveFilePanelInProject(
-                "Save Fanlight Layout Bake",
-                Source.name,
-                "pflayoutbake",
-                "Choose where to save this immutable layout bake artifact.");
-            if (string.IsNullOrEmpty(path)) return false;
 
             try
             {
-                FanlightLayoutBakeFile.Write(path, _compiled);
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-                var artifact = AssetDatabase.LoadAssetAtPath<FanlightLayoutBakeArtifact>(path);
-                if (artifact == null) throw new InvalidOperationException("The imported layout bake artifact is unavailable.");
+                var path = AssetDatabase.GetAssetPath(Source);
 
-                Undo.RecordObject(Source, "Assign Fanlight Layout Bake");
+                if (string.IsNullOrEmpty(path) || AssetDatabase.LoadMainAssetAtPath(path) != Source)
+                {
+                    throw new InvalidOperationException("The Layout Asset must be saved as the main object of an .asset file before baking.");
+                }
+
+                var artifact = FindEmbeddedBake(path);
+                if (artifact == null)
+
+                {
+                    artifact = ScriptableObject.CreateInstance<FanlightLayoutBakeArtifact>();
+                    artifact.name = $"{Source.name} Bake Artifact";
+                    artifact.hideFlags = HideFlags.NotEditable;
+                    AssetDatabase.AddObjectToAsset(artifact, Source);
+                }
+
+                artifact.name = $"{Source.name} Bake Artifact";
+                artifact.hideFlags = HideFlags.NotEditable;
+                artifact.Initialize(
+                    Source.LayoutId.Value,
+                    _compiled.ContentHash,
+                    _compiled.LocalBounds,
+                    _compiled.Seats,
+                    _compiled.Blocks);
                 Source.SetActiveBake(artifact);
+
+                EditorUtility.SetDirty(artifact);
                 EditorUtility.SetDirty(Source);
                 AssetDatabase.SaveAssets();
+                EditorApplication.RepaintProjectWindow();
+
                 for (var i = 0; i < _dirtyBlocks.Length; i++) _dirtyBlocks[i] = false;
+
                 _dirtyBlockCount = 0;
                 _dirtyReason = FanlightLayoutDirtyReason.None;
+
                 EditorApplication.QueuePlayerLoopUpdate();
                 SceneView.RepaintAll();
+
                 return true;
             }
             catch (Exception exception)
@@ -185,16 +242,51 @@ namespace PrismFanlight.Editor
         private bool IsBlockCurrent(int blockIndex)
         {
             var artifact = Source.ActiveBake;
-            if (artifact == null || artifact.BlockCount != Source.TotalBlockCount) return false;
+
+            if (!IsEmbeddedBake(Source, artifact) || artifact.BlockCount != Source.TotalBlockCount) return false;
+
             var baked = artifact.GetBlock(blockIndex);
+
             return baked.contentHash == _compiled.Blocks[blockIndex].contentHash
                    && string.Equals(baked.blockId, Source.GetBlock(blockIndex).BlockId, StringComparison.Ordinal);
+        }
+
+        private FanlightLayoutBakeArtifact FindEmbeddedBake(string path)
+        {
+            FanlightLayoutBakeArtifact found = null;
+
+            var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            for (var i = 0; i < assets.Length; i++)
+            {
+                if (assets[i] is not FanlightLayoutBakeArtifact artifact) continue;
+
+                if (found != null)
+                {
+                    throw new InvalidOperationException("The Layout Asset contains multiple bake artifacts. Remove the extra artifact before baking.");
+                }
+
+                found = artifact;
+            }
+
+            return found;
+        }
+
+        internal static bool IsEmbeddedBake(FanlightLayoutAsset layout, FanlightLayoutBakeArtifact artifact)
+        {
+            if (layout == null || artifact == null || !AssetDatabase.IsSubAsset(artifact)) return false;
+
+            return string.Equals(
+                AssetDatabase.GetAssetPath(layout),
+                AssetDatabase.GetAssetPath(artifact),
+                StringComparison.Ordinal);
         }
 
         private void ConvertBlock(int blockIndex)
         {
             var block = _compiled.Blocks[blockIndex];
             var end = block.contiguousSeatStart + block.contiguousSeatCount;
+
             for (var i = block.contiguousSeatStart; i < end; i++)
             {
                 var seat = _compiled.Seats[i];
@@ -212,6 +304,7 @@ namespace PrismFanlight.Editor
         private void RefreshRuntimeLayout()
         {
             var contentHash = ComputeLayoutHash();
+
             _compiled.SetSummary(_boundsTree.Root, contentHash);
             _runtimeLayout = new FanlightRuntimeLayout(
                 Source.LayoutId.Value,
@@ -237,7 +330,9 @@ namespace PrismFanlight.Editor
         private Vector3[] BuildCorners(int blockIndex)
         {
             var corners = new Vector3[4];
+
             WriteCorners(blockIndex, corners);
+
             return corners;
         }
 
@@ -250,114 +345,6 @@ namespace PrismFanlight.Editor
             corners[1] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, min.y));
             corners[2] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, max.y));
             corners[3] = Source.TransformBlockPoint(blockIndex, new Vector3(min.x, 0f, max.y));
-        }
-    }
-
-    internal sealed class FanlightHashTree
-    {
-        private readonly int _size;
-        private readonly ulong[] _nodes;
-
-        public FanlightHashTree(int count)
-        {
-            _size = 1;
-            while (_size < count) _size <<= 1;
-            _nodes = new ulong[_size * 2];
-        }
-
-        public ulong Root => _nodes[1];
-
-        public void Update(int index, ulong value)
-        {
-            var node = _size + index;
-            _nodes[node] = value;
-            while ((node >>= 1) > 0)
-            {
-                var hash = FanlightStableHash.Begin();
-                hash = FanlightStableHash.Add(hash, _nodes[node * 2]);
-                hash = FanlightStableHash.Add(hash, _nodes[node * 2 + 1]);
-                _nodes[node] = FanlightStableHash.Finish(hash);
-            }
-        }
-    }
-
-    internal sealed class FanlightBoundsTree
-    {
-        private readonly int _count;
-        private readonly int _size;
-        private readonly Bounds[] _nodes;
-        private readonly bool[] _valid;
-
-        public FanlightBoundsTree(int count)
-        {
-            _count = count;
-            _size = 1;
-            while (_size < count) _size <<= 1;
-            _nodes = new Bounds[_size * 2];
-            _valid = new bool[_size * 2];
-        }
-
-        public Bounds Root => _valid[1] ? _nodes[1] : new Bounds(Vector3.zero, Vector3.one);
-
-        public void Update(int index, Bounds bounds)
-        {
-            var node = _size + index;
-            _nodes[node] = bounds;
-            _valid[node] = true;
-            while ((node >>= 1) > 0) Rebuild(node);
-        }
-
-        public void Query(Plane[] planes, Matrix4x4 localToWorld, List<int> results)
-        {
-            results.Clear();
-            QueryNode(1, planes, localToWorld, results);
-        }
-
-        private void QueryNode(int node, Plane[] planes, Matrix4x4 localToWorld, List<int> results)
-        {
-            if (node >= _nodes.Length || !_valid[node]) return;
-            var worldBounds = FanlightGeometryBuilder.TransformBounds(localToWorld, _nodes[node]);
-            if (!GeometryUtility.TestPlanesAABB(planes, worldBounds)) return;
-            if (node >= _size)
-            {
-                var index = node - _size;
-                if (index < _count) results.Add(index);
-                return;
-            }
-
-            QueryNode(node * 2, planes, localToWorld, results);
-            QueryNode(node * 2 + 1, planes, localToWorld, results);
-        }
-
-        private void Rebuild(int node)
-        {
-            var left = node * 2;
-            var right = left + 1;
-            if (!_valid[left] && !_valid[right])
-            {
-                _valid[node] = false;
-                return;
-            }
-
-            if (!_valid[right])
-            {
-                _nodes[node] = _nodes[left];
-                _valid[node] = true;
-                return;
-            }
-
-            if (!_valid[left])
-            {
-                _nodes[node] = _nodes[right];
-                _valid[node] = true;
-                return;
-            }
-
-            var bounds = _nodes[left];
-            bounds.Encapsulate(_nodes[right].min);
-            bounds.Encapsulate(_nodes[right].max);
-            _nodes[node] = bounds;
-            _valid[node] = true;
         }
     }
 }

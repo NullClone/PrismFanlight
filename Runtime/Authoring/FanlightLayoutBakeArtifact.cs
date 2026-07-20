@@ -31,6 +31,7 @@ namespace PrismFanlight.Authoring
 
         public const int CurrentFormatVersion = 2;
 
+
         [SerializeField]
         private int _formatVersion;
 
@@ -92,7 +93,7 @@ namespace PrismFanlight.Authoring
             return true;
         }
 
-        internal void InitializeImported(
+        internal void Initialize(
             string layoutId,
             ulong contentHash,
             Bounds localBounds,
@@ -103,8 +104,12 @@ namespace PrismFanlight.Authoring
             _layoutId = layoutId;
             _contentHash = contentHash;
             _localBounds = localBounds;
-            _seats = seats ?? Array.Empty<FanlightBakedSeatRecord>();
-            _blocks = blocks ?? Array.Empty<FanlightBakedBlockRecord>();
+            _seats = seats == null
+                ? Array.Empty<FanlightBakedSeatRecord>()
+                : (FanlightBakedSeatRecord[])seats.Clone();
+            _blocks = blocks == null
+                ? Array.Empty<FanlightBakedBlockRecord>()
+                : (FanlightBakedBlockRecord[])blocks.Clone();
         }
     }
 }

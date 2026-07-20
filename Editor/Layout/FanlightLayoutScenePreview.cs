@@ -8,6 +8,8 @@ namespace PrismFanlight.Editor
 {
     internal sealed class FanlightLayoutScenePreview
     {
+        // Fields
+
         private static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
         private static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
         private static readonly Dictionary<string, string> SelectedBlockIds = new(StringComparer.Ordinal);
@@ -15,11 +17,18 @@ namespace PrismFanlight.Editor
         private readonly List<int> _visibleBlocks = new();
         private readonly Plane[] _planes = new Plane[6];
 
+
+        // Properties
+
         public bool EditTransforms { get; set; } = true;
+
+
+        // Methods
 
         public int GetSelectedBlockIndex(FanlightLayoutAsset layout)
         {
             if (layout == null || !SelectedBlockIds.TryGetValue(layout.LayoutId.Value, out var blockId)) return -1;
+
             for (var i = 0; i < layout.TotalBlockCount; i++)
             {
                 if (string.Equals(layout.GetBlock(i).BlockId, blockId, StringComparison.Ordinal)) return i;
@@ -31,7 +40,9 @@ namespace PrismFanlight.Editor
         public void Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
+
             if (layout == null || !layout.IsInitialized) return;
+
             if (FanlightLayoutIdRegistry.IsDuplicate(layout))
             {
                 fanlight.SetEditorLayoutBlocked(true);
@@ -39,7 +50,9 @@ namespace PrismFanlight.Editor
             }
 
             fanlight.SetEditorLayoutBlocked(false);
+
             var session = FanlightLayoutEditSession.Get(layout);
+
             if (session == null) return;
 
             if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
@@ -58,11 +71,16 @@ namespace PrismFanlight.Editor
             else
             {
                 _visibleBlocks.Clear();
-                for (var i = 0; i < layout.TotalBlockCount; i++) _visibleBlocks.Add(i);
+
+                for (var i = 0; i < layout.TotalBlockCount; i++)
+                {
+                    _visibleBlocks.Add(i);
+                }
             }
 
             var selected = GetSelectedBlockIndex(layout);
             var transform = fanlight.transform;
+
             for (var i = 0; i < _visibleBlocks.Count; i++)
             {
                 var blockIndex = _visibleBlocks[i];
@@ -77,14 +95,17 @@ namespace PrismFanlight.Editor
 
                 var center = transform.TransformPoint(session.GetBlockBounds(blockIndex).center);
                 var size = HandleUtility.GetHandleSize(center) * 0.08f;
-                if (!Application.isPlaying && EditTransforms
-                                           && Handles.Button(center, transform.rotation, size, size, Handles.SphereHandleCap))
+
+                if (!Application.isPlaying && EditTransforms && Handles.Button(center, transform.rotation, size, size, Handles.SphereHandleCap))
                 {
                     SelectedBlockIds[layout.LayoutId.Value] = layout.GetBlock(blockIndex).BlockId;
                     selected = blockIndex;
                 }
 
-                if (isSelected) Handles.Label(center, $"Block {layout.GetBlockCoordinates(blockIndex).x}, {layout.GetBlockCoordinates(blockIndex).y}");
+                if (isSelected)
+                {
+                    Handles.Label(center, $"Block {layout.GetBlockCoordinates(blockIndex).x}, {layout.GetBlockCoordinates(blockIndex).y}");
+                }
             }
 
             if (selected >= 0)
@@ -97,7 +118,9 @@ namespace PrismFanlight.Editor
         public void ResetSelected(FanlightLayoutAsset layout)
         {
             var index = GetSelectedBlockIndex(layout);
+
             if (index < 0) return;
+
             FanlightLayoutEditSession.Get(layout)?.SetBlockPlacement(index, FanlightBlockPlacement.Identity, "Reset Fanlight Block Placement");
         }
 
@@ -108,6 +131,7 @@ namespace PrismFanlight.Editor
             int blockIndex)
         {
             if (Application.isPlaying) return;
+
             var block = layout.GetBlockCoordinates(blockIndex);
             var placement = layout.GetBlock(blockIndex).Placement;
             var baseCenter = layout.GetBlockBaseCenterLocal(block);
@@ -115,8 +139,10 @@ namespace PrismFanlight.Editor
             var worldRotation = fanlight.transform.rotation * placement.Rotation;
 
             EditorGUI.BeginChangeCheck();
+
             var nextCenter = Handles.PositionHandle(worldCenter, worldRotation);
             var nextRotation = Handles.RotationHandle(worldRotation, nextCenter);
+
             if (!EditorGUI.EndChangeCheck()) return;
 
             var next = new FanlightBlockPlacement
@@ -124,6 +150,7 @@ namespace PrismFanlight.Editor
                 position = fanlight.transform.InverseTransformPoint(nextCenter) - baseCenter,
                 eulerRotation = (Quaternion.Inverse(fanlight.transform.rotation) * nextRotation).eulerAngles
             };
+
             session.SetBlockPlacement(blockIndex, next, "Edit Fanlight Block Placement");
         }
 
@@ -134,6 +161,7 @@ namespace PrismFanlight.Editor
             var color = SelectedColor;
             color.a = 0.7f;
             Handles.color = color;
+
             for (var i = block.startIndex; i < end; i++)
             {
                 var packed = session.RuntimeLayout.Seats[i].localPositionSeed;
