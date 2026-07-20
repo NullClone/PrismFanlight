@@ -24,10 +24,10 @@ namespace PrismFanlight.Editor
 
             if (EditorGUILayout.BeginFadeGroup(section.anim.faded))
             {
-                //using (new EditorGUI.IndentLevelScope())
+                using (new EditorGUI.IndentLevelScope())
                 {
-                    EditorGUILayout.Space();
                     draw();
+
                     EditorGUILayout.Space();
                 }
             }

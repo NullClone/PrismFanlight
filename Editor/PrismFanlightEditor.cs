@@ -103,28 +103,21 @@ namespace PrismFanlight.Editor
 
             using (new EditorGUI.DisabledScope(true))
             {
-                EditorGUILayout.PropertyField(_computeShader);
+                //EditorGUILayout.PropertyField(_computeShader);
+                //EditorGUILayout.Space();
             }
 
             if (!SystemInfo.supportsComputeShaders)
             {
-                EditorGUILayout.HelpBox("Compute shaders are not supported on this platform.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Compute shaders are not supported on this platform.", MessageType.Error);
+                EditorGUILayout.Space();
             }
 
-            EditorGUILayout.Space();
             DrawRenderingSection();
             DrawGeneralSection();
             DrawLayoutSection();
             DrawTimeSection();
             DrawAdvanceSection();
-            EditorGUILayout.Space();
-
-            EditorGUI.BeginChangeCheck();
-            _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
-            if (EditorGUI.EndChangeCheck())
-            {
-                SceneView.RepaintAll();
-            }
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -168,6 +161,14 @@ namespace PrismFanlight.Editor
                 if (_enableCulling.boolValue)
                 {
                     EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+                    EditorGUILayout.Space();
+                }
+
+                EditorGUI.BeginChangeCheck();
+                _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SceneView.RepaintAll();
                 }
             });
         }

@@ -35,19 +35,19 @@ namespace PrismFanlight.Editor
 
         public static bool DrawHeader(GUIContent content, bool isExpanded)
         {
-            const float HEIGHT = 20f;
+            const float HEIGHT = 17f;
 
             DrawSplitter();
 
             var backgroundRect = GUILayoutUtility.GetRect(1f, HEIGHT);
 
             var labelRect = backgroundRect;
-            labelRect.xMin += 8f;
-            labelRect.xMax -= 20f + 16 + 5;
+            labelRect.xMin += 13f;
+            labelRect.xMax -= 43f;
 
             var foldoutRect = backgroundRect;
-            foldoutRect.xMin -= 8f;
-            foldoutRect.y += 0f;
+            foldoutRect.xMin -= 2f;
+            foldoutRect.y -= 2f;
             foldoutRect.width = HEIGHT;
             foldoutRect.height = HEIGHT;
 
