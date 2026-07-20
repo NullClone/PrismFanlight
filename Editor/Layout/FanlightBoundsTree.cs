@@ -16,12 +16,12 @@ namespace PrismFanlight.Editor
 
         // Properties
 
-        public Bounds Root => _valid[1] ? _nodes[1] : new Bounds(Vector3.zero, Vector3.one);
+        internal Bounds Root => _valid[1] ? _nodes[1] : new Bounds(Vector3.zero, Vector3.one);
 
 
         // Methods
 
-        public FanlightBoundsTree(int count)
+        internal FanlightBoundsTree(int count)
         {
             _count = count;
             _size = 1;
@@ -30,7 +30,7 @@ namespace PrismFanlight.Editor
             _valid = new bool[_size * 2];
         }
 
-        public void Update(int index, Bounds bounds)
+        internal void Update(int index, Bounds bounds)
         {
             var node = _size + index;
             _nodes[node] = bounds;
@@ -38,7 +38,7 @@ namespace PrismFanlight.Editor
             while ((node >>= 1) > 0) Rebuild(node);
         }
 
-        public void Query(Plane[] planes, Matrix4x4 localToWorld, List<int> results)
+        internal void Query(Plane[] planes, Matrix4x4 localToWorld, List<int> results)
         {
             results.Clear();
 

@@ -14,57 +14,58 @@ namespace PrismFanlight.Rendering
 
         // Properties
 
-        public ComputeBuffer SeatBuffer { get; private set; }
+        internal ComputeBuffer SeatBuffer { get; private set; }
 
-        public ComputeBuffer BlockBuffer { get; private set; }
+        internal ComputeBuffer BlockBuffer { get; private set; }
 
-        public ComputeBuffer BlockVisibilityBuffer { get; private set; }
+        internal ComputeBuffer BlockVisibilityBuffer { get; private set; }
 
-        public ComputeBuffer PenlightVisibleIndexBuffer { get; private set; }
+        internal ComputeBuffer PenlightVisibleIndexBuffer { get; private set; }
 
-        public ComputeBuffer PenlightVariantAssignmentBuffer { get; private set; }
+        internal ComputeBuffer PenlightVariantAssignmentBuffer { get; private set; }
 
-        public ComputeBuffer PenlightVariantOffsetBuffer { get; private set; }
+        internal ComputeBuffer PenlightVariantOffsetBuffer { get; private set; }
 
-        public ComputeBuffer AudienceVisibleIndexBuffer { get; private set; }
+        internal ComputeBuffer AudienceVisibleIndexBuffer { get; private set; }
 
-        public ComputeBuffer AudienceSlotBuffer { get; private set; }
+        internal ComputeBuffer AudienceSlotBuffer { get; private set; }
 
-        public ComputeBuffer MatrixBuffer { get; private set; }
+        internal ComputeBuffer MatrixBuffer { get; private set; }
 
-        public ComputeBuffer ColorAssignmentBuffer { get; private set; }
+        internal ComputeBuffer ColorAssignmentBuffer { get; private set; }
 
-        public ComputeBuffer RandomBuffer { get; private set; }
+        internal ComputeBuffer RandomBuffer { get; private set; }
 
-        public GraphicsBuffer PenlightArgsBuffer { get; private set; }
+        internal GraphicsBuffer PenlightArgsBuffer { get; private set; }
 
-        public ComputeBuffer AudiencePartBuffer { get; private set; }
+        internal ComputeBuffer AudiencePartBuffer { get; private set; }
 
-        public GraphicsBuffer AudienceArgsBuffer { get; private set; }
+        internal GraphicsBuffer AudienceArgsBuffer { get; private set; }
 
-        public bool HasAudience => AudiencePartBuffer != null;
+        internal bool HasAudience => AudiencePartBuffer != null;
 
-        public int SeatCount { get; private set; }
+        internal int SeatCount { get; private set; }
 
-        public int BlockCount { get; private set; }
+        internal int BlockCount { get; private set; }
 
-        public Bounds LocalBounds { get; private set; }
+        internal Bounds LocalBounds { get; private set; }
 
-        public float MeshPivotY { get; private set; }
+        internal float MeshPivotY { get; private set; }
 
-        public int PenlightVariantCount { get; private set; }
+        internal int PenlightVariantCount { get; private set; }
 
-        public uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
+        internal uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
 
-        public Vector4 PenlightVariantGripPivotYs { get; private set; }
+        internal Vector4 PenlightVariantGripPivotYs { get; private set; }
 
 
         // Methods
 
-        public void Allocate(
+        internal void Allocate(
             FanlightPenlightRuntimeAppearance appearance,
             FanlightRuntimeLayout layout,
             bool allocateAudience,
+            Mesh audienceMesh,
             uint globalSeed)
         {
             Release();
@@ -105,7 +106,7 @@ namespace PrismFanlight.Rendering
             PenlightVariantOffsetBuffer.SetData(PenlightVariantOffsets);
             UpdateRandomData(globalSeed, layout);
             ResetPenlightArgs(PenlightArgsBuffer, appearance.Meshes);
-            ResetArgs(AudienceArgsBuffer, FanlightGeometryBuilder.GetAudienceQuad());
+            ResetArgs(AudienceArgsBuffer, audienceMesh);
 
             if (allocateAudience)
             {
@@ -113,7 +114,7 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        public void UpdateStaticData(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout)
+        internal void UpdateStaticData(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout)
         {
             if (SeatBuffer == null || BlockBuffer == null || layout.SeatCount != SeatCount || layout.BlockCount != BlockCount)
             {
@@ -125,7 +126,7 @@ namespace PrismFanlight.Rendering
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
         }
 
-        public void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
+        internal void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
         {
             if (SeatBuffer == null || BlockBuffer == null || blockIndex < 0 || blockIndex >= layout.BlockCount) return;
 
@@ -158,7 +159,7 @@ namespace PrismFanlight.Rendering
             return bounds;
         }
 
-        public void UpdateRandomData(uint globalSeed, FanlightRuntimeLayout layout)
+        internal void UpdateRandomData(uint globalSeed, FanlightRuntimeLayout layout)
         {
             if (RandomBuffer == null
                 || ColorAssignmentBuffer == null
@@ -179,10 +180,10 @@ namespace PrismFanlight.Rendering
             {
                 new GraphicsBuffer.IndirectDrawIndexedArgs
                 {
-                    indexCountPerInstance = mesh.GetIndexCount(0),
+                    indexCountPerInstance = mesh != null ? mesh.GetIndexCount(0) : 0u,
                     instanceCount = 0u,
-                    startIndex = mesh.GetIndexStart(0),
-                    baseVertexIndex = mesh.GetBaseVertex(0),
+                    startIndex = mesh != null ? mesh.GetIndexStart(0) : 0u,
+                    baseVertexIndex = mesh != null ? mesh.GetBaseVertex(0) : 0,
                     startInstance = 0u
                 }
             });
@@ -326,7 +327,7 @@ namespace PrismFanlight.Rendering
             return (x & 0x00FFFFFFu) / 16777215.0f;
         }
 
-        public void Release()
+        internal void Release()
         {
             SeatBuffer?.Release();
             BlockBuffer?.Release();

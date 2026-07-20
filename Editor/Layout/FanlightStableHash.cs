@@ -9,13 +9,13 @@ namespace PrismFanlight.Editor
         private const ulong Prime = 1099511628211UL;
 
 
-        public static ulong Begin() => Offset;
+        internal static ulong Begin() => Offset;
 
-        public static ulong Finish(ulong hash) => hash == 0UL ? 1UL : hash;
+        internal static ulong Finish(ulong hash) => hash == 0UL ? 1UL : hash;
 
-        public static ulong Add(ulong hash, int value) => Add(hash, unchecked((uint)value));
+        internal static ulong Add(ulong hash, int value) => Add(hash, unchecked((uint)value));
 
-        public static ulong Add(ulong hash, uint value)
+        internal static ulong Add(ulong hash, uint value)
         {
             for (var i = 0; i < 4; i++)
             {
@@ -25,7 +25,7 @@ namespace PrismFanlight.Editor
             return hash;
         }
 
-        public static ulong Add(ulong hash, ulong value)
+        internal static ulong Add(ulong hash, ulong value)
         {
             for (var i = 0; i < 8; i++)
             {
@@ -35,16 +35,16 @@ namespace PrismFanlight.Editor
             return hash;
         }
 
-        public static ulong Add(ulong hash, float value) => Add(hash, BitConverter.SingleToInt32Bits(value));
+        internal static ulong Add(ulong hash, float value) => Add(hash, BitConverter.SingleToInt32Bits(value));
 
-        public static ulong Add(ulong hash, Vector3 value)
+        internal static ulong Add(ulong hash, Vector3 value)
         {
             hash = Add(hash, value.x);
             hash = Add(hash, value.y);
             return Add(hash, value.z);
         }
 
-        public static ulong Add(ulong hash, string value)
+        internal static ulong Add(ulong hash, string value)
         {
             value ??= string.Empty;
 

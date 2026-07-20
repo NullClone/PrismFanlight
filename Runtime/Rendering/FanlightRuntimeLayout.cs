@@ -7,7 +7,7 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightRuntimeLayout
     {
-        public FanlightRuntimeLayout(
+        internal FanlightRuntimeLayout(
             string layoutId,
             ulong contentHash,
             int2 seatPerBlock,
@@ -30,37 +30,37 @@ namespace PrismFanlight.Rendering
             StableSeatIdHash = ComputeStableSeatIdHash(StableSeatIds);
         }
 
-        public string LayoutId { get; }
+        internal string LayoutId { get; }
 
-        public ulong ContentHash { get; }
+        internal ulong ContentHash { get; }
 
-        public int2 SeatPerBlock { get; }
+        internal int2 SeatPerBlock { get; }
 
-        public float2 SeatPitch { get; }
+        internal float2 SeatPitch { get; }
 
-        public int2 BlockCount2D { get; }
+        internal int2 BlockCount2D { get; }
 
-        public Bounds LocalBounds { get; }
+        internal Bounds LocalBounds { get; }
 
-        public FanlightSeatData[] Seats { get; }
+        internal FanlightSeatData[] Seats { get; }
 
-        public ulong[] StableSeatIds { get; }
+        internal ulong[] StableSeatIds { get; }
 
-        public ulong StableSeatIdHash { get; }
+        internal ulong StableSeatIdHash { get; }
 
-        public FanlightBakedBlockData[] Blocks { get; }
+        internal FanlightBakedBlockData[] Blocks { get; }
 
-        public int SeatCount => Seats.Length;
+        internal int SeatCount => Seats.Length;
 
-        public int BlockCount => Blocks.Length;
+        internal int BlockCount => Blocks.Length;
 
-        public int BlockSeatCount => SeatPerBlock.x * SeatPerBlock.y;
+        internal int BlockSeatCount => SeatPerBlock.x * SeatPerBlock.y;
 
-        public bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
+        internal bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
 
-        public bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0 && HasStableSeatIds;
+        internal bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0 && HasStableSeatIds;
 
-        public bool HasSameTopology(FanlightRuntimeLayout other)
+        internal bool HasSameTopology(FanlightRuntimeLayout other)
         {
             return other != null
                    && string.Equals(LayoutId, other.LayoutId, StringComparison.Ordinal)
@@ -70,7 +70,7 @@ namespace PrismFanlight.Rendering
                    && BlockCount2D.Equals(other.BlockCount2D);
         }
 
-        public static FanlightRuntimeLayout FromArtifact(FanlightLayoutAsset layout)
+        internal static FanlightRuntimeLayout FromArtifact(FanlightLayoutAsset layout)
         {
             if (layout == null || !layout.HasValidBake) return null;
             var artifact = layout.ActiveBake;

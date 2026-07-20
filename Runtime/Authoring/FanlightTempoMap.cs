@@ -17,12 +17,12 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public ReadOnlyMemory<FanlightTempoSegment> Segments => _segments ?? Array.Empty<FanlightTempoSegment>();
+        internal ReadOnlyMemory<FanlightTempoSegment> Segments => _segments ?? Array.Empty<FanlightTempoSegment>();
 
 
         // Methods
 
-        public bool Validate(out string error)
+        internal bool Validate(out string error)
         {
             if (_segments == null || _segments.Length == 0)
             {

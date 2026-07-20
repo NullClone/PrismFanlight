@@ -42,49 +42,49 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public FanlightLayoutId LayoutId => new(_layoutId);
+        internal FanlightLayoutId LayoutId => new(_layoutId);
 
-        public ulong ContentHash => _contentHash;
+        internal ulong ContentHash => _contentHash;
 
-        public int2 SeatPerBlock => _seatPerBlock;
+        internal int2 SeatPerBlock => _seatPerBlock;
 
-        public float2 SeatPitch => _seatPitch;
+        internal float2 SeatPitch => _seatPitch;
 
-        public int2 BlockCount => _blockCount;
+        internal int2 BlockCount => _blockCount;
 
-        public float2 AisleWidth => _aisleWidth;
+        internal float2 AisleWidth => _aisleWidth;
 
-        public int BlockSeatCount => TryGetTopologyCounts(out var blockSeatCount, out _, out _) ? blockSeatCount : 0;
+        internal int BlockSeatCount => TryGetTopologyCounts(out var blockSeatCount, out _, out _) ? blockSeatCount : 0;
 
-        public int TotalBlockCount => TryGetTopologyCounts(out _, out var totalBlockCount, out _) ? totalBlockCount : 0;
+        internal int TotalBlockCount => TryGetTopologyCounts(out _, out var totalBlockCount, out _) ? totalBlockCount : 0;
 
-        public int TotalSeatCount => TryGetTopologyCounts(out _, out _, out var totalSeatCount) ? totalSeatCount : 0;
+        internal int TotalSeatCount => TryGetTopologyCounts(out _, out _, out var totalSeatCount) ? totalSeatCount : 0;
 
-        public FanlightLayoutBakeArtifact ActiveBake => _activeBake;
+        internal FanlightLayoutBakeArtifact ActiveBake => _activeBake;
 
-        public bool IsInitialized => LayoutId.IsValid
+        internal bool IsInitialized => LayoutId.IsValid
                                      && TryGetTopologyCounts(out _, out var totalBlockCount, out var totalSeatCount)
                                      && _blocks != null
                                      && _blocks.Length == totalBlockCount
                                      && _stableSeatIds != null
                                      && _stableSeatIds.Length == totalSeatCount;
 
-        public bool HasValidBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
+        internal bool HasValidBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
 
 
         // Methods
 
-        public FanlightLayoutBlock GetBlock(int blockIndex) => _blocks[blockIndex];
+        internal FanlightLayoutBlock GetBlock(int blockIndex) => _blocks[blockIndex];
 
-        public ulong GetStableSeatId(int seatIndex) => _stableSeatIds[seatIndex];
+        internal ulong GetStableSeatId(int seatIndex) => _stableSeatIds[seatIndex];
 
-        public int2 GetBlockCoordinates(int blockIndex)
+        internal int2 GetBlockCoordinates(int blockIndex)
         {
             var y = blockIndex / _blockCount.x;
             return math.int2(blockIndex - y * _blockCount.x, y);
         }
 
-        public float2 GetPositionOnPlane(int2 block, int2 seat)
+        internal float2 GetPositionOnPlane(int2 block, int2 seat)
         {
             var lastSeat = _seatPerBlock - math.int2(1, 1);
             var lastBlock = _blockCount - math.int2(1, 1);
@@ -92,7 +92,7 @@ namespace PrismFanlight.Authoring
                    + (_seatPitch * lastSeat + _aisleWidth) * (block - (float2)lastBlock * 0.5f);
         }
 
-        public Vector3 GetBlockBaseCenterLocal(int2 block)
+        internal Vector3 GetBlockBaseCenterLocal(int2 block)
         {
             var min = GetPositionOnPlane(block, math.int2(0, 0)) - _seatPitch * 0.5f;
             var max = GetPositionOnPlane(block, _seatPerBlock - math.int2(1, 1)) + _seatPitch * 0.5f;
@@ -100,7 +100,7 @@ namespace PrismFanlight.Authoring
             return new Vector3(center.x, 0f, center.y);
         }
 
-        public Vector3 TransformBlockPoint(int blockIndex, Vector3 point)
+        internal Vector3 TransformBlockPoint(int blockIndex, Vector3 point)
         {
             var block = GetBlockCoordinates(blockIndex);
             var baseCenter = GetBlockBaseCenterLocal(block);

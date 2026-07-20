@@ -3,7 +3,7 @@ using System;
 namespace PrismFanlight.Core
 {
     [Serializable]
-    public readonly struct FanlightLayoutId : IEquatable<FanlightLayoutId>
+    internal readonly struct FanlightLayoutId : IEquatable<FanlightLayoutId>
     {
         // Fields
 
@@ -12,9 +12,9 @@ namespace PrismFanlight.Core
 
         // Properties
 
-        public string Value => _value ?? string.Empty;
+        internal string Value => _value ?? string.Empty;
 
-        public bool IsValid
+        internal bool IsValid
         {
             get
             {
@@ -33,7 +33,7 @@ namespace PrismFanlight.Core
 
         // Methods
 
-        public FanlightLayoutId(string value)
+        internal FanlightLayoutId(string value)
         {
             _value = Normalize(value);
         }

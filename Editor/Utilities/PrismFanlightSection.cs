@@ -16,7 +16,7 @@ namespace PrismFanlight.Editor
 
         // Methods
 
-        public PrismFanlightSection(GUIContent title)
+        internal PrismFanlightSection(GUIContent title)
         {
             this.title = title;
 
@@ -27,7 +27,7 @@ namespace PrismFanlight.Editor
             };
         }
 
-        public void DrawHeader()
+        internal void DrawHeader()
         {
             anim.target = expand = PrismFanlightEditorUtility.DrawHeader(title, expand);
         }

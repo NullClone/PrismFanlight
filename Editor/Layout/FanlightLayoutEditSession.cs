@@ -26,11 +26,23 @@ namespace PrismFanlight.Editor
         private readonly Vector3[][] _corners;
         private readonly BitArray _dirtyBlocks;
         private int _dirtyBlockCount;
-        private FanlightLayoutDirtyReason _dirtyReason;
         private FanlightRuntimeLayout _runtimeLayout;
 
 
         // Properties
+
+        internal FanlightLayoutAsset Source { get; }
+
+        internal FanlightRuntimeLayout RuntimeLayout => _runtimeLayout;
+
+        internal int DirtyBlockCount => _dirtyBlockCount;
+
+        internal bool HasEmbeddedBake => IsEmbeddedBake(Source, Source.ActiveBake);
+
+        internal bool HasCurrentBake => HasEmbeddedBake && Source.HasValidBake && DirtyBlockCount == 0;
+
+
+        // Methods
 
         static FanlightLayoutEditSession()
         {
@@ -53,39 +65,19 @@ namespace PrismFanlight.Editor
             for (var i = 0; i < source.TotalBlockCount; i++)
             {
                 ConvertBlock(i);
+
                 _boundsTree.Update(i, _compiled.Blocks[i].localBounds);
                 _hashTree.Update(i, _compiled.Blocks[i].contentHash);
                 _corners[i] = BuildCorners(i);
                 _dirtyBlocks[i] = !IsBlockCurrent(i);
+
                 if (_dirtyBlocks[i]) _dirtyBlockCount++;
             }
 
-            _dirtyReason = !HasEmbeddedBake
-                ? FanlightLayoutDirtyReason.Topology | FanlightLayoutDirtyReason.BakeSchema
-                : _dirtyBlockCount > 0
-                    ? FanlightLayoutDirtyReason.BlockPlacement
-                    : FanlightLayoutDirtyReason.None;
             RefreshRuntimeLayout();
         }
 
-        public FanlightLayoutAsset Source { get; }
-
-        public FanlightRuntimeLayout RuntimeLayout => _runtimeLayout;
-
-        public int DirtyBlockCount => _dirtyBlockCount;
-
-        public long EstimatedDirtySeatBytes => (long)DirtyBlockCount * Source.BlockSeatCount * FanlightSeatData.Stride;
-
-        public FanlightLayoutDirtyReason DirtyReason => _dirtyReason;
-
-        public bool HasEmbeddedBake => IsEmbeddedBake(Source, Source.ActiveBake);
-
-        public bool HasCurrentBake => HasEmbeddedBake && Source.HasValidBake && DirtyBlockCount == 0;
-
-
-        // Methods
-
-        public static FanlightLayoutEditSession Get(FanlightLayoutAsset source)
+        internal static FanlightLayoutEditSession Get(FanlightLayoutAsset source)
         {
             if (source == null || !source.IsInitialized) return null;
 
@@ -100,7 +92,7 @@ namespace PrismFanlight.Editor
             return session;
         }
 
-        public static void ResetAll()
+        internal static void ResetAll()
         {
             Sessions.Clear();
 
@@ -126,16 +118,16 @@ namespace PrismFanlight.Editor
             }
         }
 
-        public Vector3[] GetCorners(int blockIndex) => _corners[blockIndex];
+        internal Vector3[] GetCorners(int blockIndex) => _corners[blockIndex];
 
-        public Bounds GetBlockBounds(int blockIndex) => _compiled.Blocks[blockIndex].localBounds;
+        internal Bounds GetBlockBounds(int blockIndex) => _compiled.Blocks[blockIndex].localBounds;
 
-        public void QueryVisible(Plane[] planes, Matrix4x4 localToWorld, List<int> results)
+        internal void QueryVisible(Plane[] planes, Matrix4x4 localToWorld, List<int> results)
         {
             _boundsTree.Query(planes, localToWorld, results);
         }
 
-        public bool SetBlockPlacement(int blockIndex, FanlightBlockPlacement placement, string undoName)
+        internal bool SetBlockPlacement(int blockIndex, FanlightBlockPlacement placement, string undoName)
         {
             Undo.RecordObject(Source, undoName);
 
@@ -158,15 +150,13 @@ namespace PrismFanlight.Editor
                 _dirtyBlockCount++;
             }
 
-            _dirtyReason |= FanlightLayoutDirtyReason.BlockPlacement;
-
             RefreshRuntimeLayout();
             ApplyPreviewToAllInstances(blockIndex);
 
             return true;
         }
 
-        public bool Bake()
+        internal bool Bake()
         {
             if (FanlightLayoutIdRegistry.IsDuplicate(Source))
             {
@@ -213,8 +203,6 @@ namespace PrismFanlight.Editor
                 for (var i = 0; i < _dirtyBlocks.Length; i++) _dirtyBlocks[i] = false;
 
                 _dirtyBlockCount = 0;
-                _dirtyReason = FanlightLayoutDirtyReason.None;
-
                 EditorApplication.QueuePlayerLoopUpdate();
                 SceneView.RepaintAll();
 
@@ -228,7 +216,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        public void ApplyPreviewToAllInstances(int changedBlockIndex)
+        internal void ApplyPreviewToAllInstances(int changedBlockIndex)
         {
             foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {

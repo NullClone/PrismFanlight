@@ -13,7 +13,7 @@ namespace PrismFanlight.Core
         private readonly HashSet<string> _activeSourceIds;
 
 
-        // Properties
+        // Methods
 
         internal FanlightShowEvaluator(int initialContributionCapacity = DefaultContributionCapacity)
         {
@@ -122,6 +122,7 @@ namespace PrismFanlight.Core
             return Math.Floor(showSeconds * options.AnimationSampleRate + options.QuantizationEpsilon)
                    / options.AnimationSampleRate;
         }
+
 
         private sealed class ContributionComparer : IComparer<FanlightShowContribution>
         {

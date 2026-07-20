@@ -8,23 +8,23 @@ namespace PrismFanlight.Rendering
     {
         // Properties
 
-        public uint AssignmentSeed { get; }
+        internal uint AssignmentSeed { get; }
 
-        public ulong ContentHash { get; }
+        internal ulong ContentHash { get; }
 
-        public Mesh[] Meshes { get; }
+        internal Mesh[] Meshes { get; }
 
-        public uint[] StableVariantIds { get; }
+        internal uint[] StableVariantIds { get; }
 
-        public float[] GripPivotYs { get; }
+        internal float[] GripPivotYs { get; }
 
-        public Bounds GripLocalBounds { get; }
+        internal Bounds GripLocalBounds { get; }
 
-        public int VariantCount => Meshes.Length;
+        internal int VariantCount => Meshes.Length;
 
-        public float BoundsRadius => GripLocalBounds.center.magnitude + GripLocalBounds.extents.magnitude;
+        internal float BoundsRadius => GripLocalBounds.center.magnitude + GripLocalBounds.extents.magnitude;
 
-        public float BoundsPadding => BoundsRadius + 4f;
+        internal float BoundsPadding => BoundsRadius + 4f;
 
 
         // Methods
@@ -45,7 +45,7 @@ namespace PrismFanlight.Rendering
             GripLocalBounds = gripLocalBounds;
         }
 
-        public static FanlightPenlightRuntimeAppearance Create(FanlightPenlightAppearanceProfile profile)
+        internal static FanlightPenlightRuntimeAppearance Create(FanlightPenlightAppearanceProfile profile)
         {
             if (profile == null || !profile.TryValidate(out _)) return null;
 

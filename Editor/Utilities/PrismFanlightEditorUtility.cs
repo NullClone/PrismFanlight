@@ -3,16 +3,16 @@ using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
-    public static class PrismFanlightEditorUtility
+    internal static class PrismFanlightEditorUtility
     {
-        public static void DrawSplitter(bool isBoxed = false)
+        internal static void DrawSplitter(bool isBoxed = false)
         {
             var rect = GUILayoutUtility.GetRect(1f, 1f);
 
             DrawSplitter(rect, isBoxed);
         }
 
-        public static void DrawSplitter(Rect rect, bool isBoxed = false)
+        internal static void DrawSplitter(Rect rect, bool isBoxed = false)
         {
             if (!isBoxed)
             {
@@ -26,14 +26,14 @@ namespace PrismFanlight.Editor
                 : new Color(0.12f, 0.12f, 0.12f, 1.333f));
         }
 
-        public static Rect ToFullWidth(Rect rect)
+        internal static Rect ToFullWidth(Rect rect)
         {
             rect.xMin = 0f;
             rect.width += 4f;
             return rect;
         }
 
-        public static bool DrawHeader(GUIContent content, bool isExpanded)
+        internal static bool DrawHeader(GUIContent content, bool isExpanded)
         {
             const float HEIGHT = 17f;
 

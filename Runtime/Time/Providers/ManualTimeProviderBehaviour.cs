@@ -23,7 +23,7 @@ namespace PrismFanlight.Time
 
         // Methods
 
-        public void SetTime(double seconds, double rate, FanlightTimeDiscontinuity discontinuity = FanlightTimeDiscontinuity.Seek)
+        internal void SetTime(double seconds, double rate, FanlightTimeDiscontinuity discontinuity = FanlightTimeDiscontinuity.Seek)
         {
             _seconds = seconds;
             _rate = rate;
@@ -31,7 +31,7 @@ namespace PrismFanlight.Time
             _nextDiscontinuity = discontinuity;
         }
 
-        public void SetStatus(FanlightClockStatus status) => _status = status;
+        internal void SetStatus(FanlightClockStatus status) => _status = status;
 
 
         ShowTimeProviderSample IShowTimeProvider.Sample()

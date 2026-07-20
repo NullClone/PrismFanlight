@@ -8,20 +8,20 @@ namespace PrismFanlight.Editor
     {
         // Properties
 
-        public FanlightLayoutAsset Source { get; }
+        internal FanlightLayoutAsset Source { get; }
 
-        public FanlightBakedSeatRecord[] Seats { get; }
+        internal FanlightBakedSeatRecord[] Seats { get; }
 
-        public FanlightBakedBlockRecord[] Blocks { get; }
+        internal FanlightBakedBlockRecord[] Blocks { get; }
 
-        public Bounds LocalBounds { get; private set; }
+        internal Bounds LocalBounds { get; private set; }
 
-        public ulong ContentHash { get; private set; }
+        internal ulong ContentHash { get; private set; }
 
 
         // Methods
 
-        public FanlightCompiledLayout(FanlightLayoutAsset source)
+        internal FanlightCompiledLayout(FanlightLayoutAsset source)
         {
             Source = source;
             Seats = new FanlightBakedSeatRecord[source.TotalSeatCount];
@@ -35,13 +35,13 @@ namespace PrismFanlight.Editor
             RecalculateSummary();
         }
 
-        public void SetSummary(Bounds localBounds, ulong contentHash)
+        internal void SetSummary(Bounds localBounds, ulong contentHash)
         {
             LocalBounds = localBounds;
             ContentHash = contentHash == 0UL ? 1UL : contentHash;
         }
 
-        public void CompileBlock(int blockIndex)
+        internal void CompileBlock(int blockIndex)
         {
             var block = Source.GetBlockCoordinates(blockIndex);
             var start = blockIndex * Source.BlockSeatCount;
@@ -85,7 +85,7 @@ namespace PrismFanlight.Editor
             };
         }
 
-        public void RecalculateSummary()
+        internal void RecalculateSummary()
         {
             var hasBounds = false;
             var bounds = default(Bounds);

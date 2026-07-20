@@ -1,6 +1,6 @@
 ﻿namespace PrismFanlight.Time
 {
-    public enum ShowTimePrimaryMode
+    internal enum ShowTimePrimaryMode
     {
         UnityTime = 0,
         Manual = 1,

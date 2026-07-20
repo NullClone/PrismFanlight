@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PrismFanlight.Authoring
 {
     [Serializable]
-    public struct FanlightTempoSegment
+    internal struct FanlightTempoSegment
     {
         // Fields
 
@@ -29,19 +29,19 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public double StartSeconds => _startSeconds;
+        internal double StartSeconds => _startSeconds;
 
-        public double StartBeat => _startBeat;
+        internal double StartBeat => _startBeat;
 
-        public double Bpm => _bpm;
+        internal double Bpm => _bpm;
 
-        public int BeatsPerBar => _beatsPerBar;
+        internal int BeatsPerBar => _beatsPerBar;
 
-        public int BeatUnit => _beatUnit;
+        internal int BeatUnit => _beatUnit;
 
-        public long StartBar => _startBar;
+        internal long StartBar => _startBar;
 
-        public bool IsValid =>
+        internal bool IsValid =>
             !double.IsNaN(StartSeconds) && !double.IsInfinity(StartSeconds)
                                         && !double.IsNaN(StartBeat) && !double.IsInfinity(StartBeat)
                                         && Bpm > 0d && !double.IsInfinity(Bpm)
@@ -51,7 +51,7 @@ namespace PrismFanlight.Authoring
 
         // Methods
 
-        public FanlightTempoSegment(
+        internal FanlightTempoSegment(
             double startSeconds,
             double startBeat,
             double bpm,

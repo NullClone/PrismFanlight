@@ -8,7 +8,7 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        public const int MaximumVariantCount = 4;
+        internal const int MaximumVariantCount = 4;
 
         [SerializeField]
         private uint _assignmentSeed = 1u;
@@ -22,16 +22,16 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public uint AssignmentSeed => _assignmentSeed;
+        internal uint AssignmentSeed => _assignmentSeed;
 
-        public int VariantCount => _variants?.Length ?? 0;
+        internal int VariantCount => _variants?.Length ?? 0;
 
 
         // Methods
 
-        public FanlightPenlightVariant GetVariant(int index) => _variants[index];
+        internal FanlightPenlightVariant GetVariant(int index) => _variants[index];
 
-        public bool TryValidate(out string error)
+        internal bool TryValidate(out string error)
         {
             if (VariantCount < 1 || VariantCount > MaximumVariantCount)
             {

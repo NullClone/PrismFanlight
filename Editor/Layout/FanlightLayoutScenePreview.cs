@@ -20,12 +20,12 @@ namespace PrismFanlight.Editor
 
         // Properties
 
-        public bool EditTransforms { get; set; } = true;
+        internal bool EditTransforms { get; set; } = true;
 
 
         // Methods
 
-        public int GetSelectedBlockIndex(FanlightLayoutAsset layout)
+        internal int GetSelectedBlockIndex(FanlightLayoutAsset layout)
         {
             if (layout == null || !SelectedBlockIds.TryGetValue(layout.LayoutId.Value, out var blockId)) return -1;
 
@@ -37,7 +37,7 @@ namespace PrismFanlight.Editor
             return -1;
         }
 
-        public void Draw(PrismFanlight fanlight)
+        internal void Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
 
@@ -115,7 +115,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        public void ResetSelected(FanlightLayoutAsset layout)
+        internal void ResetSelected(FanlightLayoutAsset layout)
         {
             var index = GetSelectedBlockIndex(layout);
 

@@ -4,12 +4,12 @@ using UnityEngine;
 namespace PrismFanlight.Rendering
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct FanlightAudiencePart
+    internal struct FanlightAudiencePart
     {
-        public Vector4 p0HalfWidth;
-        public Vector4 p1Type;
+        internal Vector4 p0HalfWidth;
+        internal Vector4 p1Type;
 
-        public const int Stride = sizeof(float) * 8;
-        public const int PartsPerSeat = 3;
+        internal const int Stride = sizeof(float) * 8;
+        internal const int PartsPerSeat = 3;
     }
 }

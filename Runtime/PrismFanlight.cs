@@ -106,15 +106,7 @@ namespace PrismFanlight
 
         // Properties
 
-        public Camera CullingCamera
-        {
-            get => _cullingCamera;
-            set => _cullingCamera = value;
-        }
-
-        public bool IsCullingEnabled => _enableCulling && _cullingCamera != null;
-
-        public FanlightLayoutAsset LayoutAsset => _layoutAsset;
+        internal FanlightLayoutAsset LayoutAsset => _layoutAsset;
 
         private FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
 

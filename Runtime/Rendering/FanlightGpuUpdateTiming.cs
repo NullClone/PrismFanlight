@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PrismFanlight
 {
     [Serializable]
-    public struct FanlightGpuUpdateTiming
+    internal struct FanlightGpuUpdateTiming
     {
         // Fields
 
@@ -17,14 +17,14 @@ namespace PrismFanlight
 
         // Properties
 
-        public FanlightGpuUpdateMode Mode => _mode;
+        internal FanlightGpuUpdateMode Mode => _mode;
 
-        public float TargetFrameRate => Mathf.Max(1.0f, _targetFrameRate);
+        internal float TargetFrameRate => Mathf.Max(1.0f, _targetFrameRate);
 
 
         // Methods
 
-        public static FanlightGpuUpdateTiming EveryFrame()
+        internal static FanlightGpuUpdateTiming EveryFrame()
         {
             return new FanlightGpuUpdateTiming
             {
@@ -33,7 +33,7 @@ namespace PrismFanlight
             };
         }
 
-        public static FanlightGpuUpdateTiming FixedRate(float targetFrameRate)
+        internal static FanlightGpuUpdateTiming FixedRate(float targetFrameRate)
         {
             return new FanlightGpuUpdateTiming
             {
@@ -42,7 +42,7 @@ namespace PrismFanlight
             };
         }
 
-        public FanlightGpuUpdateTiming Validated()
+        internal FanlightGpuUpdateTiming Validated()
         {
             return new FanlightGpuUpdateTiming
             {
@@ -51,7 +51,7 @@ namespace PrismFanlight
             };
         }
 
-        public string ToDisplayString()
+        internal string ToDisplayString()
         {
             return _mode == FanlightGpuUpdateMode.EveryFrame
                 ? "Every Frame"

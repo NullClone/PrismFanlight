@@ -2,7 +2,7 @@ using PrismFanlight.Core;
 
 namespace PrismFanlight.Time
 {
-    public enum ShowNegativeTimePolicy
+    internal enum ShowNegativeTimePolicy
     {
         ClampToZero = 0,
         AllowPreroll = 1

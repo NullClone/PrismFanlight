@@ -25,6 +25,7 @@ namespace PrismFanlight.Rendering
         private Material _penlightMaterial;
         private Material _audienceMaterial;
         private ComputeShader _computeShader;
+        private Mesh _audienceMesh;
         private bool _audienceAllocated;
         private bool _isInitialized;
         private bool _animationInitialized;
@@ -134,10 +135,11 @@ namespace PrismFanlight.Rendering
             }
 
             _properties = new MaterialPropertyBlock();
+            _audienceMesh = allocateAudience ? FanlightGeometryBuilder.CreateAudienceQuad() : null;
 
             try
             {
-                _buffers.Allocate(appearance, layout, allocateAudience, 0u);
+                _buffers.Allocate(appearance, layout, allocateAudience, _audienceMesh, 0u);
             }
             catch (Exception)
             {
@@ -330,7 +332,7 @@ namespace PrismFanlight.Rendering
                 matProps = _audienceProperties
             };
 
-            Graphics.RenderMeshIndirect(renderParams, FanlightGeometryBuilder.GetAudienceQuad(), _buffers.AudienceArgsBuffer);
+            Graphics.RenderMeshIndirect(renderParams, _audienceMesh, _buffers.AudienceArgsBuffer);
         }
 
         private void SetColorProperties(MaterialPropertyBlock properties, FanlightPaletteState palette)
@@ -356,6 +358,12 @@ namespace PrismFanlight.Rendering
         private void ReleaseResources()
         {
             _buffers.Release();
+            if (_audienceMesh != null)
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(_audienceMesh);
+                else UnityEngine.Object.DestroyImmediate(_audienceMesh);
+            }
+
             _properties = null;
             _audienceProperties = null;
             _kernels = default;
@@ -365,6 +373,7 @@ namespace PrismFanlight.Rendering
             _penlightMaterial = null;
             _audienceMaterial = null;
             _computeShader = null;
+            _audienceMesh = null;
             _audienceAllocated = false;
             _isInitialized = false;
             _animationInitialized = false;

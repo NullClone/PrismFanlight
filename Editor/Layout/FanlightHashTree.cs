@@ -10,12 +10,12 @@
 
         // Properties
 
-        public ulong Root => _nodes[1];
+        internal ulong Root => _nodes[1];
 
 
         // Methods
 
-        public FanlightHashTree(int count)
+        internal FanlightHashTree(int count)
         {
             _size = 1;
 
@@ -24,7 +24,7 @@
             _nodes = new ulong[_size * 2];
         }
 
-        public void Update(int index, ulong value)
+        internal void Update(int index, ulong value)
         {
             var node = _size + index;
 

@@ -1,30 +1,30 @@
 ﻿namespace PrismFanlight.Core
 {
-    public readonly struct FanlightMusicalPosition
+    internal readonly struct FanlightMusicalPosition
     {
         // Properties
 
-        public double Seconds { get; }
+        internal double Seconds { get; }
 
-        public double Beat { get; }
+        internal double Beat { get; }
 
-        public long Bar { get; }
+        internal long Bar { get; }
 
-        public double BeatInBar { get; }
+        internal double BeatInBar { get; }
 
-        public double BeatPhase { get; }
+        internal double BeatPhase { get; }
 
-        public double BarPhase { get; }
+        internal double BarPhase { get; }
 
-        public double Bpm { get; }
+        internal double Bpm { get; }
 
-        public int BeatsPerBar { get; }
+        internal int BeatsPerBar { get; }
 
-        public int BeatUnit { get; }
+        internal int BeatUnit { get; }
 
         // Methods
 
-        public FanlightMusicalPosition(
+        internal FanlightMusicalPosition(
             double seconds,
             double beat,
             long bar,
@@ -46,7 +46,7 @@
             BeatUnit = beatUnit;
         }
 
-        public bool IsComplete =>
+        internal bool IsComplete =>
             IsFinite(Seconds)
             && IsFinite(Beat)
             && IsFinite(BeatInBar)

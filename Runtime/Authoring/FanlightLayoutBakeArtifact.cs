@@ -4,24 +4,44 @@ using UnityEngine;
 namespace PrismFanlight.Authoring
 {
     [Serializable]
-    public struct FanlightBakedSeatRecord
+    internal struct FanlightBakedSeatRecord
     {
-        public ulong stableSeatId;
-        public Vector3 localPosition;
-        public Vector2 planePosition;
-        public Vector2 blockCoordinates;
-        public int blockIndex;
-        public uint placementFlags;
+        [SerializeField]
+        internal ulong stableSeatId;
+
+        [SerializeField]
+        internal Vector3 localPosition;
+
+        [SerializeField]
+        internal Vector2 planePosition;
+
+        [SerializeField]
+        internal Vector2 blockCoordinates;
+
+        [SerializeField]
+        internal int blockIndex;
+
+        [SerializeField]
+        internal uint placementFlags;
     }
 
     [Serializable]
-    public struct FanlightBakedBlockRecord
+    internal struct FanlightBakedBlockRecord
     {
-        public string blockId;
-        public Bounds localBounds;
-        public int contiguousSeatStart;
-        public int contiguousSeatCount;
-        public ulong contentHash;
+        [SerializeField]
+        internal string blockId;
+
+        [SerializeField]
+        internal Bounds localBounds;
+
+        [SerializeField]
+        internal int contiguousSeatStart;
+
+        [SerializeField]
+        internal int contiguousSeatCount;
+
+        [SerializeField]
+        internal ulong contentHash;
     }
 
     [PreferBinarySerialization]
@@ -29,7 +49,7 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        public const int CurrentFormatVersion = 2;
+        internal const int CurrentFormatVersion = 2;
 
 
         [SerializeField]
@@ -53,30 +73,30 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public int FormatVersion => _formatVersion;
+        internal int FormatVersion => _formatVersion;
 
-        public string LayoutId => _layoutId ?? string.Empty;
+        internal string LayoutId => _layoutId ?? string.Empty;
 
-        public ulong ContentHash => _contentHash;
+        internal ulong ContentHash => _contentHash;
 
-        public Bounds LocalBounds => _localBounds;
+        internal Bounds LocalBounds => _localBounds;
 
-        public int SeatCount => _seats?.Length ?? 0;
+        internal int SeatCount => _seats?.Length ?? 0;
 
-        public int BlockCount => _blocks?.Length ?? 0;
+        internal int BlockCount => _blocks?.Length ?? 0;
 
-        public ReadOnlySpan<FanlightBakedSeatRecord> Seats => _seats;
+        internal ReadOnlySpan<FanlightBakedSeatRecord> Seats => _seats;
 
-        public ReadOnlySpan<FanlightBakedBlockRecord> Blocks => _blocks;
+        internal ReadOnlySpan<FanlightBakedBlockRecord> Blocks => _blocks;
 
 
         // Methods
 
-        public FanlightBakedSeatRecord GetSeat(int index) => _seats[index];
+        internal FanlightBakedSeatRecord GetSeat(int index) => _seats[index];
 
-        public FanlightBakedBlockRecord GetBlock(int index) => _blocks[index];
+        internal FanlightBakedBlockRecord GetBlock(int index) => _blocks[index];
 
-        public bool Matches(FanlightLayoutAsset layout)
+        internal bool Matches(FanlightLayoutAsset layout)
         {
             if (layout == null || !layout.IsInitialized) return false;
 

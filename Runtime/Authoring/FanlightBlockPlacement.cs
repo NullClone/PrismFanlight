@@ -4,23 +4,26 @@ using UnityEngine;
 namespace PrismFanlight.Authoring
 {
     [Serializable]
-    public struct FanlightBlockPlacement : IEquatable<FanlightBlockPlacement>
+    internal struct FanlightBlockPlacement : IEquatable<FanlightBlockPlacement>
     {
         // Fields
 
-        public Vector3 position;
-        public Vector3 eulerRotation;
+        [SerializeField]
+        internal Vector3 position;
+
+        [SerializeField]
+        internal Vector3 eulerRotation;
 
 
         // Properties
 
-        public static FanlightBlockPlacement Identity => new()
+        internal static FanlightBlockPlacement Identity => new()
         {
             position = Vector3.zero,
             eulerRotation = Vector3.zero
         };
 
-        public Quaternion Rotation => Quaternion.Euler(eulerRotation);
+        internal Quaternion Rotation => Quaternion.Euler(eulerRotation);
 
 
         // Methods

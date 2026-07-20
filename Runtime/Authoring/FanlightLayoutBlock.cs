@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PrismFanlight.Authoring
 {
     [Serializable]
-    public struct FanlightLayoutBlock
+    internal struct FanlightLayoutBlock
     {
         // Fields
 
@@ -16,9 +16,9 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public string BlockId => _blockId ?? string.Empty;
+        internal string BlockId => _blockId ?? string.Empty;
 
-        public FanlightBlockPlacement Placement => _placement;
+        internal FanlightBlockPlacement Placement => _placement;
 
         // Methods
 

@@ -4,16 +4,9 @@ namespace PrismFanlight.Rendering
 {
     internal static class FanlightGeometryBuilder
     {
-        private static Mesh _audienceQuad;
-
-        public static Mesh GetAudienceQuad()
+        internal static Mesh CreateAudienceQuad()
         {
-            if (_audienceQuad != null)
-            {
-                return _audienceQuad;
-            }
-
-            _audienceQuad = new Mesh
+            var mesh = new Mesh
             {
                 name = "PrismFanlightAudienceQuad",
                 hideFlags = HideFlags.HideAndDontSave,
@@ -33,13 +26,13 @@ namespace PrismFanlight.Rendering
                 }
             };
 
-            _audienceQuad.SetTriangles(new[] { 0, 2, 1, 2, 3, 1 }, 0);
-            _audienceQuad.bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
+            mesh.SetTriangles(new[] { 0, 2, 1, 2, 3, 1 }, 0);
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
 
-            return _audienceQuad;
+            return mesh;
         }
 
-        public static Bounds TransformBounds(Matrix4x4 matrix, Bounds bounds)
+        internal static Bounds TransformBounds(Matrix4x4 matrix, Bounds bounds)
         {
             var center = matrix.MultiplyPoint3x4(bounds.center);
             var extents = bounds.extents;
@@ -55,7 +48,7 @@ namespace PrismFanlight.Rendering
             return new Bounds(center, extents * 2.0f);
         }
 
-        public static float GetMaxScale(Matrix4x4 matrix)
+        internal static float GetMaxScale(Matrix4x4 matrix)
         {
             var x = matrix.MultiplyVector(Vector3.right).magnitude;
             var y = matrix.MultiplyVector(Vector3.up).magnitude;

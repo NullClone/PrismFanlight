@@ -12,7 +12,7 @@ namespace PrismFanlight.Time
 
         // Methods
 
-        public void Set(double seconds, double rate)
+        internal void Set(double seconds, double rate)
         {
             _seconds = seconds;
             _rate = rate;

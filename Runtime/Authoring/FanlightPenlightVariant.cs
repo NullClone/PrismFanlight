@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PrismFanlight.Authoring
 {
     [Serializable]
-    public struct FanlightPenlightVariant
+    internal struct FanlightPenlightVariant
     {
         // Fields
 
@@ -23,13 +23,13 @@ namespace PrismFanlight.Authoring
 
         // Properties
 
-        public uint StableVariantId => _stableVariantId;
+        internal uint StableVariantId => _stableVariantId;
 
-        public Mesh Mesh => _mesh;
+        internal Mesh Mesh => _mesh;
 
-        public bool UseMeshBoundsMinimumAsGrip => _useMeshBoundsMinimumAsGrip;
+        internal bool UseMeshBoundsMinimumAsGrip => _useMeshBoundsMinimumAsGrip;
 
-        public float GripPivotY => _mesh != null && _useMeshBoundsMinimumAsGrip
+        internal float GripPivotY => _mesh != null && _useMeshBoundsMinimumAsGrip
             ? _mesh.bounds.min.y
             : _gripPivotY;
 

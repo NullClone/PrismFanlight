@@ -1,6 +1,6 @@
 namespace PrismFanlight.Core
 {
-    public enum FanlightShowTimeFault
+    internal enum FanlightShowTimeFault
     {
         None = 0,
         PrimaryUnavailable = 1,

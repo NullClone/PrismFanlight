@@ -26,14 +26,14 @@ namespace PrismFanlight.Editor
             ScheduleSceneValidation();
         }
 
-        public static void Invalidate()
+        internal static void Invalidate()
         {
             _valid = false;
 
             ScheduleSceneValidation();
         }
 
-        public static bool IsDuplicate(FanlightLayoutAsset layout)
+        internal static bool IsDuplicate(FanlightLayoutAsset layout)
         {
             if (layout == null || !layout.LayoutId.IsValid) return true;
 

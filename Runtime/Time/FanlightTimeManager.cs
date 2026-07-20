@@ -53,16 +53,11 @@ namespace PrismFanlight.Time
 
         // Properties
 
-        public ShowNegativeTimePolicy NegativeTimePolicy => _negativeTimePolicy;
+        internal ShowNegativeTimePolicy NegativeTimePolicy => _negativeTimePolicy;
 
-        public bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
+        internal bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
 
-        public bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
-
-        public FanlightShowTimeFault LastFault => _lastFault;
-
-        public string LastFailureCode => _lastFailureCode;
-
+        internal bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
 
         // Methods
 
@@ -79,7 +74,7 @@ namespace PrismFanlight.Time
         }
 
 
-        public bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
+        internal bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
         {
             EnsureCoordinator();
 
@@ -99,7 +94,7 @@ namespace PrismFanlight.Time
             return success;
         }
 
-        public bool TryRequestPrimaryReacquire(out string failureCode)
+        internal bool TryRequestPrimaryReacquire(out string failureCode)
         {
             EnsureCoordinator();
 
@@ -115,7 +110,7 @@ namespace PrismFanlight.Time
             return result;
         }
 
-        public void SetManualTime(double seconds, double rate = 0d)
+        internal void SetManualTime(double seconds, double rate = 0d)
         {
             _manualSeconds = seconds;
             _manualRate = rate;

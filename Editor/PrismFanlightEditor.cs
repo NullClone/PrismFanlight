@@ -7,7 +7,7 @@ namespace PrismFanlight.Editor
 {
     [CanEditMultipleObjects]
     [CustomEditor(typeof(PrismFanlight))]
-    public sealed class PrismFanlightEditor : UnityEditor.Editor
+    internal sealed class PrismFanlightEditor : UnityEditor.Editor
     {
         // Fields
 
@@ -15,7 +15,6 @@ namespace PrismFanlight.Editor
         private SerializedProperty _penlightAppearanceProfile;
         private SerializedProperty _material;
         private SerializedProperty _audienceMaterial;
-        private SerializedProperty _computeShader;
         private SerializedProperty _renderingLayerMask;
         private SerializedProperty _enableCulling;
         private SerializedProperty _cullingCamera;
@@ -57,7 +56,6 @@ namespace PrismFanlight.Editor
             _penlightAppearanceProfile = serializedObject.FindProperty(nameof(_penlightAppearanceProfile));
             _material = serializedObject.FindProperty(nameof(_material));
             _audienceMaterial = serializedObject.FindProperty(nameof(_audienceMaterial));
-            _computeShader = serializedObject.FindProperty(nameof(_computeShader));
             _renderingLayerMask = serializedObject.FindProperty(nameof(_renderingLayerMask));
             _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
@@ -91,12 +89,6 @@ namespace PrismFanlight.Editor
             if (!_instance) return;
 
             serializedObject.Update();
-
-            using (new EditorGUI.DisabledScope(true))
-            {
-                //EditorGUILayout.PropertyField(_computeShader);
-                //EditorGUILayout.Space();
-            }
 
             if (!SystemInfo.supportsComputeShaders)
             {
@@ -383,7 +375,7 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection(_timeSection, () =>
             {
-                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Coordinator"));
+                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
                 EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
                 if (_timeManager.objectReferenceValue == null)

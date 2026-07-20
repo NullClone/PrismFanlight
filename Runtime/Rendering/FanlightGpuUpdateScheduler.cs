@@ -8,18 +8,18 @@ namespace PrismFanlight.Rendering
         private UpdateLane _animation;
 
 
-        public void Reset()
+        internal void Reset()
         {
             _visibility.Reset();
             _animation.Reset();
         }
 
-        public bool ShouldUpdateVisibility(FanlightGpuUpdateTiming timing, float clock)
+        internal bool ShouldUpdateVisibility(FanlightGpuUpdateTiming timing, float clock)
         {
             return ShouldUpdate(ref _visibility, timing.Validated(), clock);
         }
 
-        public bool ShouldUpdateAnimation(FanlightGpuUpdateTiming timing, float clock, bool force)
+        internal bool ShouldUpdateAnimation(FanlightGpuUpdateTiming timing, float clock, bool force)
         {
             var validated = timing.Validated();
 
@@ -59,18 +59,18 @@ namespace PrismFanlight.Rendering
 
         private struct UpdateLane
         {
-            public bool HasUpdated { get; private set; }
+            internal bool HasUpdated { get; private set; }
 
-            public float NextUpdateTime { get; private set; }
+            internal float NextUpdateTime { get; private set; }
 
 
-            public void MarkUpdated(float clock, float interval)
+            internal void MarkUpdated(float clock, float interval)
             {
                 HasUpdated = true;
                 NextUpdateTime = clock + Mathf.Max(0.0f, interval);
             }
 
-            public void Reset()
+            internal void Reset()
             {
                 HasUpdated = false;
                 NextUpdateTime = 0.0f;
