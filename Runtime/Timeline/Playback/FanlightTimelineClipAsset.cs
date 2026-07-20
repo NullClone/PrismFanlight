@@ -37,24 +37,14 @@ namespace PrismFanlight.Timeline
 
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
-            ValidateRuntimeIdentity();
-
-            var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
-            playable.GetBehaviour().Configure(
-                _stableClipId,
-                Value,
-                _localWeightCurve,
-                _holdMode);
-
-            return playable;
-        }
-
-        private void ValidateRuntimeIdentity()
-        {
             if (string.IsNullOrWhiteSpace(_stableClipId))
             {
                 throw new InvalidOperationException("Timeline Clip Stable ID must be assigned during authoring.");
             }
+
+            var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
+            playable.GetBehaviour().Configure(_stableClipId, Value, _localWeightCurve, _holdMode);
+            return playable;
         }
 
 
