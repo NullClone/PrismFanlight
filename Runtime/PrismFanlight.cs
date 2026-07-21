@@ -132,10 +132,22 @@ namespace PrismFanlight
 
         // Methods
 
+        private void Reset()
+        {
+            if (_timeManager == null)
+            {
+                if (!gameObject.TryGetComponent(out _timeManager))
+                {
+                    _timeManager = gameObject.AddComponent<FanlightTimeManager>();
+                }
+            }
+        }
+
         private void OnEnable()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+
             Camera.onPreCull -= OnCameraPreCull;
             Camera.onPreCull += OnCameraPreCull;
         }
@@ -295,17 +307,13 @@ namespace PrismFanlight
         private void PrepareRenderFrame(in FanlightShowSample sample)
         {
             _hasRenderFrame = false;
+
             var runtimeLayout = GetRuntimeLayout();
 
             if (runtimeLayout == null)
             {
                 Dispose();
                 return;
-            }
-
-            if (_computeShader == null)
-            {
-                throw new InvalidOperationException("A Compute Shader is required to render.");
             }
 
             _renderer.Load(

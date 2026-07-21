@@ -6,7 +6,12 @@ namespace PrismFanlight.Core
     {
         // Methods
 
-        internal static FanlightIntentState Intent() => new(0.5f, 1f, 0.5f, 1f, 1f);
+        internal static FanlightIntentState Intent() => new(
+            0.5f,
+            0.5f,
+            1f,
+            1f,
+            0.5f);
 
         internal static FanlightGestureState Gesture() => new(
             1f,
@@ -23,9 +28,9 @@ namespace PrismFanlight.Core
             1f,
             0f,
             1f,
-            0f,
-            Mathf.PI,
             0.5f,
+            1,
+            0f,
             1f,
             0f,
             0f);
@@ -77,7 +82,7 @@ namespace PrismFanlight.Core
             Color.white,
             Color.white,
             Color.white,
-            1f,
+            16f,
             0f);
 
         internal static FanlightVisibilityState Visibility() => new(true, true);
