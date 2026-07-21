@@ -95,7 +95,8 @@ namespace PrismFanlight.Timeline
                 return;
             }
 
-            Array.Sort(_samples, 0, sampleCount, SampleComparer.Instance);
+            Array.Sort(_samples, 0, sampleCount, Comparer<FanlightTimelineClipSample>.Create((left, right) =>
+                string.Compare(left.StableClipId, right.StableClipId, StringComparison.Ordinal)));
 
             try
             {
@@ -124,8 +125,6 @@ namespace PrismFanlight.Timeline
                 ClearSamples(sampleCount);
             }
         }
-
-        public override void OnGraphStop(Playable playable) => ClearContribution();
 
         public override void OnPlayableDestroy(Playable playable) => ClearContribution();
 
@@ -168,15 +167,6 @@ namespace PrismFanlight.Timeline
             }
 
             _lastTarget = null;
-        }
-
-
-        private sealed class SampleComparer : IComparer<FanlightTimelineClipSample>
-        {
-            internal static readonly SampleComparer Instance = new();
-
-            public int Compare(FanlightTimelineClipSample left, FanlightTimelineClipSample right) =>
-                string.Compare(left.StableClipId, right.StableClipId, StringComparison.Ordinal);
         }
     }
 }
