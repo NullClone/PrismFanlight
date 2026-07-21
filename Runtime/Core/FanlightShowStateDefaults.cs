@@ -76,13 +76,13 @@ namespace PrismFanlight.Core
             0f);
 
         internal static FanlightPaletteState Palette() => new(
-            Color.white,
-            Color.white,
-            Color.white,
-            Color.white,
-            Color.white,
-            Color.white,
-            16f,
+            new Color(8f, 8f, 8f),
+            new Color(8f, 8f, 8f),
+            new Color(8f, 8f, 8f),
+            new Color(8f, 8f, 8f),
+            new Color(8f, 8f, 8f),
+            new Color(8f, 8f, 8f),
+            2f,
             0f);
 
         internal static FanlightVisibilityState Visibility() => new(true, true);

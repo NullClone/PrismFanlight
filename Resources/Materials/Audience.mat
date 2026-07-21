@@ -89,7 +89,7 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _Ambient: 0.302
+    - _Ambient: 0.429
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
@@ -97,31 +97,35 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
-    - _DepthCutoff: 1
+    - _DepthCutoff: 0.55
     - _DepthFake: 1
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EdgeSoftness: 1.84
     - _EnvironmentReflections: 1
     - _FillAmbient: 0.5
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _GroundShade: 0.35
+    - _GroundShade: 0.353
     - _HueVariation: 0.06
+    - _LowerBodyAbsorption: 0.432
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
-    - _PenlightRimTint: 0.01
+    - _PenlightRimTint: 0.37
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _RimDirectionality: 0.922
     - _RimIntensity: 3
-    - _RimPower: 1
+    - _RimPower: 6.89
     - _RimSmoothness: 0.05
-    - _RimStrength: 0.05
+    - _RimStrength: 0.63
     - _RimThickness: 0.3
+    - _RimVariation: 0.305
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -142,6 +146,7 @@ Material:
     - _LightDir: {r: 0.35, g: 0.55, b: 0.75, a: 0}
     - _LightDir2D: {r: 0.5, g: 1, b: 0, a: 0}
     - _RimColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+    - _RimPixelRange: {r: -4.2, g: 3, b: 24, a: 52}
     - _SkinColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
