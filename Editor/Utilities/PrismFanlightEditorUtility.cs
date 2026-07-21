@@ -46,7 +46,7 @@ namespace PrismFanlight.Editor
             labelRect.xMax -= 43f;
 
             var foldoutRect = backgroundRect;
-            foldoutRect.xMin -= 2f;
+            foldoutRect.xMin += 11f;
             foldoutRect.y -= 2f;
             foldoutRect.width = HEIGHT;
             foldoutRect.height = HEIGHT;
@@ -62,10 +62,8 @@ namespace PrismFanlight.Editor
             }
 
             EditorGUI.DrawRect(backgroundRect, new Color(backgroundTint, backgroundTint, backgroundTint, 0.2f));
-
             EditorGUI.LabelField(labelRect, content, EditorStyles.boldLabel);
-
-            GUI.Label(foldoutRect, new GUIContent(isExpanded ? "−" : "="), EditorStyles.boldLabel);
+            isExpanded = EditorGUI.Foldout(foldoutRect, isExpanded, GUIContent.none, true, EditorStyles.foldout);
 
             var e = Event.current;
 

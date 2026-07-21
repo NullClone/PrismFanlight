@@ -185,7 +185,7 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection(_generalSection, () =>
             {
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Main");
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Intent");
 
                 DrawSlider(_intent, "_energy", "Energy", 0f, 1f);
                 DrawSlider(_intent, "_participation", "Participation", 0f, 1f);
