@@ -2,7 +2,7 @@ namespace PrismFanlight.Timeline
 {
     internal readonly struct FanlightTimelineClipSample
     {
-        internal string StableClipId { get; }
+        internal double StartSeconds { get; }
 
         internal FanlightTimelineClipValue Value { get; }
 
@@ -10,11 +10,11 @@ namespace PrismFanlight.Timeline
 
 
         internal FanlightTimelineClipSample(
-            string stableClipId,
+            double startSeconds,
             FanlightTimelineClipValue value,
             float weight)
         {
-            StableClipId = stableClipId;
+            StartSeconds = startSeconds;
             Value = value;
             Weight = weight;
         }

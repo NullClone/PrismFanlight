@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -10,15 +9,12 @@ namespace PrismFanlight.Timeline
     {
         // Fields
 
-        private string _sourceId = "timeline.unconfigured";
-
         private PrismFanlight _lastTarget;
-
         private FanlightTimelinePatchKind _patchKind;
         private FanlightTimelineFieldMask _fieldMask;
-        private int _priority;
-
-        private FanlightTimelineClipRange[] _ranges = Array.Empty<FanlightTimelineClipRange>();
+        private int _trackPriority;
+        private int _trackOrder;
+        private double[] _clipStartSeconds = Array.Empty<double>();
         private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
 
 
@@ -40,65 +36,61 @@ namespace PrismFanlight.Timeline
 
             if (target == null) return;
 
-            var inputCount = playable.GetInputCount();
-
-            EnsureSampleCapacity(inputCount);
-
-            var sampleCount = 0;
-            var totalWeight = 0f;
-            var timelineSeconds = playable.GetTime();
-
-            for (var i = 0; i < inputCount; i++)
-            {
-                var inputPlayable = playable.GetInput(i);
-                var input = (ScriptPlayable<FanlightTimelinePlayableBehaviour>)inputPlayable;
-                var behaviour = input.GetBehaviour();
-                var timelineWeight = playable.GetInputWeight(i);
-                var held = false;
-
-                if (timelineWeight <= 0f
-                    && behaviour.HoldMode == FanlightTimelineHoldMode.HoldLast
-                    && i < _ranges.Length
-                    && timelineSeconds >= _ranges[i].EndSeconds
-                    && timelineSeconds < _ranges[i].HoldEndSeconds)
-                {
-                    timelineWeight = 1f;
-                    held = true;
-                }
-
-                if (float.IsNaN(timelineWeight) || float.IsInfinity(timelineWeight) || timelineWeight <= 0f) continue;
-
-                var duration = inputPlayable.GetDuration();
-                var normalizedTime = held || duration <= 0d || double.IsInfinity(duration)
-                    ? held ? 1f : 0f
-                    : (float)(inputPlayable.GetTime() / duration);
-                var weight = timelineWeight * behaviour.EvaluateLocalWeight(normalizedTime);
-
-                if (float.IsNaN(weight) || float.IsInfinity(weight) || weight <= 0f) continue;
-                if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask)) continue;
-
-                var stableClipId = i < _ranges.Length && !string.IsNullOrWhiteSpace(_ranges[i].StableClipId)
-                    ? _ranges[i].StableClipId
-                    : behaviour.StableClipId;
-
-                _samples[sampleCount++] = new FanlightTimelineClipSample(
-                    stableClipId,
-                    behaviour.Value,
-                    weight);
-
-                totalWeight += weight;
-            }
-
-            if (sampleCount == 0)
+            if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask))
             {
                 target.ClearScheduledContribution(this);
                 return;
             }
 
-            Array.Sort(_samples, 0, sampleCount, SampleComparer.Instance);
+            var inputCount = playable.GetInputCount();
+
+            if (_clipStartSeconds.Length != inputCount)
+            {
+                target.ClearScheduledContribution(this);
+                throw new InvalidOperationException("Timeline clip start metadata does not match the playable inputs.");
+            }
+
+            EnsureSampleCapacity(2);
+
+            var sampleCount = 0;
+            var totalWeight = 0f;
 
             try
             {
+                for (var i = 0; i < inputCount; i++)
+                {
+                    var timelineWeight = playable.GetInputWeight(i);
+
+                    if (float.IsNaN(timelineWeight) || float.IsInfinity(timelineWeight) || timelineWeight <= 0f) continue;
+
+                    if (sampleCount == 2)
+                    {
+                        target.ClearScheduledContribution(this);
+                        throw new InvalidOperationException("A Prism Fanlight Timeline track cannot evaluate more than two clips at once.");
+                    }
+
+                    var input = (ScriptPlayable<FanlightTimelinePlayableBehaviour>)playable.GetInput(i);
+                    var behaviour = input.GetBehaviour();
+
+                    _samples[sampleCount++] = new FanlightTimelineClipSample(
+                        _clipStartSeconds[i],
+                        behaviour.Value,
+                        timelineWeight);
+
+                    totalWeight += timelineWeight;
+                }
+
+                if (sampleCount == 0)
+                {
+                    target.ClearScheduledContribution(this);
+                    return;
+                }
+
+                if (sampleCount == 2 && _samples[0].StartSeconds > _samples[1].StartSeconds)
+                {
+                    (_samples[0], _samples[1]) = (_samples[1], _samples[0]);
+                }
+
                 if (!FanlightTimelinePatchMixer.TryBlend(
                         _patchKind,
                         _fieldMask,
@@ -112,8 +104,8 @@ namespace PrismFanlight.Timeline
                 target.SetScheduledContribution(
                     this,
                     new FanlightShowContribution(
-                        _sourceId,
-                        _priority,
+                        _trackPriority,
+                        _trackOrder,
                         double.MinValue,
                         double.MaxValue,
                         Mathf.Clamp01(totalWeight),
@@ -128,29 +120,23 @@ namespace PrismFanlight.Timeline
         public override void OnPlayableDestroy(Playable playable) => ClearContribution();
 
         internal void Configure(
-            string sourceId,
             FanlightTimelinePatchKind patchKind,
             FanlightTimelineFieldMask fieldMask,
-            int priority,
-            FanlightTimelineClipRange[] ranges)
+            int trackPriority,
+            int trackOrder,
+            double[] clipStartSeconds)
         {
-            if (string.IsNullOrWhiteSpace(sourceId))
-            {
-                throw new ArgumentException("Source ID is required.", nameof(sourceId));
-            }
-
-            _sourceId = sourceId;
             _patchKind = patchKind;
             _fieldMask = fieldMask;
-            _priority = priority;
-            _ranges = ranges ?? Array.Empty<FanlightTimelineClipRange>();
+            _trackPriority = trackPriority;
+            _trackOrder = trackOrder;
+            _clipStartSeconds = clipStartSeconds ?? Array.Empty<double>();
         }
 
         private void EnsureSampleCapacity(int capacity)
         {
             if (_samples.Length >= capacity) return;
-
-            Array.Resize(ref _samples, Math.Max(4, capacity));
+            Array.Resize(ref _samples, capacity);
         }
 
         private void ClearSamples(int count)
@@ -166,15 +152,6 @@ namespace PrismFanlight.Timeline
             }
 
             _lastTarget = null;
-        }
-
-
-        private sealed class SampleComparer : IComparer<FanlightTimelineClipSample>
-        {
-            internal static readonly SampleComparer Instance = new();
-
-            public int Compare(FanlightTimelineClipSample left, FanlightTimelineClipSample right) =>
-                string.Compare(left.StableClipId, right.StableClipId, StringComparison.Ordinal);
         }
     }
 }

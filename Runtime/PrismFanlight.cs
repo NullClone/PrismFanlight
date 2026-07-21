@@ -164,12 +164,14 @@ namespace PrismFanlight
         {
             if (!enabled || !SystemInfo.supportsComputeShaders)
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
 
             if (_timeManager == null || _evaluationId == long.MaxValue)
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
@@ -178,6 +180,7 @@ namespace PrismFanlight
 
             if (!_timeManager.TrySample(_evaluationId, out var time, out _))
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
@@ -248,7 +251,7 @@ namespace PrismFanlight
         {
             if (Application.isPlaying)
             {
-                Debug.LogWarning("Layout asset changes are authoring-only. Assign and bake the layout before entering Play mode.");
+                Debug.LogWarning("Layout asset changes are authoring-only. Assign the layout before entering Play mode.");
                 return;
             }
 
@@ -264,8 +267,6 @@ namespace PrismFanlight
 #if UNITY_EDITOR
         internal void SetEditorLayoutPreview(FanlightRuntimeLayout preview, int changedBlockIndex)
         {
-            if (Application.isPlaying) return;
-
             if (preview == null)
             {
                 _editorPreviewLayout = null;
@@ -395,8 +396,8 @@ namespace PrismFanlight
         private FanlightRuntimeLayout GetRuntimeLayout()
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying && _editorLayoutBlocked) return null;
-            if (!Application.isPlaying && _editorPreviewLayout != null) return _editorPreviewLayout;
+            if (_editorLayoutBlocked) return null;
+            if (_editorPreviewLayout != null) return _editorPreviewLayout;
 #endif
             if (_layoutAsset == null || !_layoutAsset.HasValidBake)
             {

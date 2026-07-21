@@ -63,11 +63,11 @@ namespace PrismFanlight.Authoring
         internal FanlightLayoutBakeArtifact ActiveBake => _activeBake;
 
         internal bool IsInitialized => LayoutId.IsValid
-                                     && TryGetTopologyCounts(out _, out var totalBlockCount, out var totalSeatCount)
-                                     && _blocks != null
-                                     && _blocks.Length == totalBlockCount
-                                     && _stableSeatIds != null
-                                     && _stableSeatIds.Length == totalSeatCount;
+                                       && TryGetTopologyCounts(out _, out var totalBlockCount, out var totalSeatCount)
+                                       && _blocks != null
+                                       && _blocks.Length == totalBlockCount
+                                       && _stableSeatIds != null
+                                       && _stableSeatIds.Length == totalSeatCount;
 
         internal bool HasValidBake => IsInitialized && _activeBake != null && _activeBake.Matches(this);
 

@@ -183,7 +183,7 @@ namespace PrismFanlight.Timeline
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Pose;
-                if (Has(fields, FanlightPoseFields.HandZone)) handZone.Consider(sourceValue.HandZone, sample.Weight, sample.StableClipId);
+                if (Has(fields, FanlightPoseFields.HandZone)) handZone.Consider(sourceValue.HandZone, sample.Weight, sample.StartSeconds);
                 if (Has(fields, FanlightPoseFields.HandHeightOffset)) handHeightOffset.Add(sourceValue.HandHeightOffset, sample.Weight);
                 if (Has(fields, FanlightPoseFields.HandForwardOffset)) handForwardOffset.Add(sourceValue.HandForwardOffset, sample.Weight);
                 if (Has(fields, FanlightPoseFields.HandReachScale)) handReachScale.Add(sourceValue.HandReachScale, sample.Weight);
@@ -336,7 +336,7 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightNoiseFields.PhaseSpeed)) phaseSpeed.Add(sourceValue.PhaseSpeed, sample.Weight);
                 if (Has(fields, FanlightNoiseFields.AxisAmount)) axisAmount.Add(sourceValue.AxisAmount, sample.Weight);
                 if (Has(fields, FanlightNoiseFields.AxisSpeed)) axisSpeed.Add(sourceValue.AxisSpeed, sample.Weight);
-                if (Has(fields, FanlightNoiseFields.Octaves)) octaves.Consider(sourceValue.Octaves, sample.Weight, sample.StableClipId);
+                if (Has(fields, FanlightNoiseFields.Octaves)) octaves.Consider(sourceValue.Octaves, sample.Weight, sample.StartSeconds);
                 if (Has(fields, FanlightNoiseFields.Persistence)) persistence.Add(sourceValue.Persistence, sample.Weight);
             }
 
@@ -527,7 +527,7 @@ namespace PrismFanlight.Timeline
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Direction;
-                if (Has(fields, FanlightDirectionFields.Mode)) mode.Consider(sourceValue.Mode, sample.Weight, sample.StableClipId);
+                if (Has(fields, FanlightDirectionFields.Mode)) mode.Consider(sourceValue.Mode, sample.Weight, sample.StartSeconds);
                 if (Has(fields, FanlightDirectionFields.WorldYawDegrees)) worldYawDegrees.AddDegrees(sourceValue.WorldYawDegrees, sample.Weight);
                 if (Has(fields, FanlightDirectionFields.AimStrength)) aimStrength.Add(sourceValue.AimStrength, sample.Weight);
             }
@@ -639,8 +639,8 @@ namespace PrismFanlight.Timeline
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Visibility;
-                if (Has(fields, FanlightVisibilityFields.PenlightsEnabled)) penlightsEnabled.Consider(sourceValue.PenlightsEnabled, sample.Weight, sample.StableClipId);
-                if (Has(fields, FanlightVisibilityFields.AudienceBodiesEnabled)) audienceBodiesEnabled.Consider(sourceValue.AudienceBodiesEnabled, sample.Weight, sample.StableClipId);
+                if (Has(fields, FanlightVisibilityFields.PenlightsEnabled)) penlightsEnabled.Consider(sourceValue.PenlightsEnabled, sample.Weight, sample.StartSeconds);
+                if (Has(fields, FanlightVisibilityFields.AudienceBodiesEnabled)) audienceBodiesEnabled.Consider(sourceValue.AudienceBodiesEnabled, sample.Weight, sample.StartSeconds);
             }
 
             if (fields == FanlightVisibilityFields.None)

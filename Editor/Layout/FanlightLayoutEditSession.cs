@@ -16,6 +16,7 @@ namespace PrismFanlight.Editor
         // Fields
 
         private static readonly Dictionary<int, FanlightLayoutEditSession> Sessions = new();
+        private static bool _previewRefreshQueued;
 
         private readonly FanlightCompiledLayout _compiled;
         private readonly FanlightSeatData[] _gpuSeats;
@@ -47,7 +48,10 @@ namespace PrismFanlight.Editor
         static FanlightLayoutEditSession()
         {
             Undo.undoRedoPerformed += ResetAll;
-            AssemblyReloadEvents.beforeAssemblyReload += ResetAll;
+            AssemblyReloadEvents.beforeAssemblyReload += ClearAll;
+            EditorApplication.hierarchyChanged += QueuePreviewRefresh;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            QueuePreviewRefresh();
         }
 
         private FanlightLayoutEditSession(FanlightLayoutAsset source)
@@ -94,14 +98,8 @@ namespace PrismFanlight.Editor
 
         internal static void ResetAll()
         {
-            Sessions.Clear();
-
-            if (Application.isPlaying) return;
-
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
-            {
-                fanlight.ClearEditorLayoutPreview();
-            }
+            ClearAll();
+            QueuePreviewRefresh();
         }
 
         internal static void Reset(FanlightLayoutAsset source)
@@ -116,6 +114,8 @@ namespace PrismFanlight.Editor
             {
                 if (fanlight.LayoutAsset == source) fanlight.ClearEditorLayoutPreview();
             }
+
+            QueuePreviewRefresh();
         }
 
         internal Vector3[] GetCorners(int blockIndex) => _corners[blockIndex];
@@ -221,6 +221,70 @@ namespace PrismFanlight.Editor
             foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 if (fanlight.LayoutAsset == Source) fanlight.SetEditorLayoutPreview(_runtimeLayout, changedBlockIndex);
+            }
+
+            EditorApplication.QueuePlayerLoopUpdate();
+            SceneView.RepaintAll();
+        }
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.EnteredPlayMode)
+            {
+                QueuePreviewRefresh();
+            }
+        }
+
+        private static void ClearAll()
+        {
+            Sessions.Clear();
+
+            if (Application.isPlaying) return;
+
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            {
+                fanlight.ClearEditorLayoutPreview();
+            }
+        }
+
+        private static void QueuePreviewRefresh()
+        {
+            if (_previewRefreshQueued) return;
+
+            _previewRefreshQueued = true;
+            EditorApplication.delayCall += RefreshAllPreviews;
+        }
+
+        private static void RefreshAllPreviews()
+        {
+            _previewRefreshQueued = false;
+
+            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            {
+                var layout = fanlight.LayoutAsset;
+
+                if (layout == null || !layout.IsInitialized)
+                {
+                    fanlight.ClearEditorLayoutPreview();
+                    continue;
+                }
+
+                if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+                {
+                    fanlight.SetEditorLayoutBlocked(true);
+                    continue;
+                }
+
+                var session = Get(layout);
+
+                if (session == null) continue;
+
+                fanlight.SetEditorLayoutBlocked(false);
+
+                if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+                {
+                    fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+                }
             }
 
             EditorApplication.QueuePlayerLoopUpdate();

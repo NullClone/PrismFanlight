@@ -2,6 +2,7 @@ using System;
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Rendering
 {
@@ -360,8 +361,8 @@ namespace PrismFanlight.Rendering
             _buffers.Release();
             if (_audienceMesh != null)
             {
-                if (Application.isPlaying) UnityEngine.Object.Destroy(_audienceMesh);
-                else UnityEngine.Object.DestroyImmediate(_audienceMesh);
+                if (Application.isPlaying) Object.Destroy(_audienceMesh);
+                else Object.DestroyImmediate(_audienceMesh);
             }
 
             _properties = null;
