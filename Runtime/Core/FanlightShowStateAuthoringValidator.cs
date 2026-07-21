@@ -44,19 +44,26 @@ namespace PrismFanlight.Core
 
         internal static FanlightPoseState Validate(FanlightPoseState value)
         {
+            var fallback = FanlightShowStateDefaults.Pose();
+
             try
             {
                 if (value.ArmLengthMinimum > value.ArmLengthMaximum
                     || value.AngleMinimumRadians > value.AngleMaximumRadians)
                 {
-                    return FanlightShowStateDefaults.Pose();
+                    return fallback;
                 }
+
+                var handReachScale = FanlightStateValidation.IsFinite(value.HandReachScale)
+                                     && value.HandReachScale >= 0.01f
+                    ? value.HandReachScale
+                    : fallback.HandReachScale;
 
                 return new FanlightPoseState(
                     value.HandZone,
                     value.HandHeightOffset,
                     value.HandForwardOffset,
-                    value.HandReachScale,
+                    handReachScale,
                     value.ArmLengthMinimum,
                     value.ArmLengthMaximum,
                     value.AngleMinimumRadians,
@@ -68,7 +75,7 @@ namespace PrismFanlight.Core
             }
             catch (ArgumentException)
             {
-                return FanlightShowStateDefaults.Pose();
+                return fallback;
             }
         }
 

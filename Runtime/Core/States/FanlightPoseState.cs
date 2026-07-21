@@ -17,7 +17,7 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _handForwardOffset;
 
-        [SerializeField]
+        [SerializeField, Min(0.01f)]
         private float _handReachScale;
 
         [SerializeField]
