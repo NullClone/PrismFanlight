@@ -4,6 +4,6 @@
     {
         UnityTime = 0,
         Manual = 1,
-        Component = 2
+        Provider = 2
     }
 }

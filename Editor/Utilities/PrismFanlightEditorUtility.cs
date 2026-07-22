@@ -42,12 +42,12 @@ namespace PrismFanlight.Editor
             var backgroundRect = GUILayoutUtility.GetRect(1f, HEIGHT);
 
             var labelRect = backgroundRect;
-            labelRect.xMin += 13f;
+            labelRect.xMin += 13.5f;
             labelRect.xMax -= 43f;
 
             var foldoutRect = backgroundRect;
-            foldoutRect.xMin += 11f;
-            foldoutRect.y -= 2f;
+            foldoutRect.xMin += 11.5f;
+            foldoutRect.y -= 1f;
             foldoutRect.width = HEIGHT;
             foldoutRect.height = HEIGHT;
 
