@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Authoring;
 using UnityEngine;
 
 namespace PrismFanlight.Core
@@ -11,8 +12,7 @@ namespace PrismFanlight.Core
 
             return new FanlightShowState(
                 Apply(state.Intent, patch.Intent, weight),
-                Apply(state.Gesture, patch.Gesture, weight),
-                Apply(state.Pose, patch.Pose, weight),
+                Apply(state.Motion, patch.Motion, weight),
                 Apply(state.Variation, patch.Variation, weight),
                 Apply(state.Noise, patch.Noise, weight),
                 Apply(state.Rest, patch.Rest, weight),
@@ -30,8 +30,7 @@ namespace PrismFanlight.Core
 
             return new FanlightShowState(
                 Apply(state.Intent, new FanlightIntentPatch(FanlightIntentFields.All, state.Intent), 1f),
-                Apply(state.Gesture, new FanlightGesturePatch(FanlightGestureFields.All, state.Gesture), 1f),
-                Apply(state.Pose, new FanlightPosePatch(FanlightPoseFields.All, state.Pose), 1f),
+                Apply(state.Motion, new FanlightMotionPatch(FanlightMotionFields.All, state.Motion), 1f),
                 Apply(state.Variation, new FanlightVariationPatch(FanlightVariationFields.All, state.Variation), 1f),
                 Apply(state.Noise, new FanlightNoisePatch(FanlightNoiseFields.All, state.Noise), 1f),
                 Apply(state.Rest, new FanlightRestPatch(FanlightRestFields.All, state.Rest), 1f),
@@ -55,34 +54,60 @@ namespace PrismFanlight.Core
                 Has(patch.Fields, FanlightIntentFields.Reach) ? Lerp(current.Reach, value.Reach, weight) : current.Reach);
         }
 
-        internal static FanlightGestureState Apply(FanlightGestureState current, FanlightGesturePatch patch, float weight)
+        internal static FanlightMotionState Apply(FanlightMotionState current, FanlightMotionPatch patch, float weight)
         {
-            ValidateMask((int)patch.Fields, (int)FanlightGestureFields.All, nameof(patch));
+            ValidateMask((int)patch.Fields, (int)FanlightMotionFields.All, nameof(patch));
 
             var value = patch.Value;
-            return new FanlightGestureState(
-                Has(patch.Fields, FanlightGestureFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
-                Has(patch.Fields, FanlightGestureFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
-                Has(patch.Fields, FanlightGestureFields.StrokeRatio) ? Lerp(current.StrokeRatio, value.StrokeRatio, weight) : current.StrokeRatio,
-                Has(patch.Fields, FanlightGestureFields.HoldRatio) ? Lerp(current.HoldRatio, value.HoldRatio, weight) : current.HoldRatio,
-                Has(patch.Fields, FanlightGestureFields.Crispness) ? Lerp(current.Crispness, value.Crispness, weight) : current.Crispness,
-                Has(patch.Fields, FanlightGestureFields.FollowThrough) ? Lerp(current.FollowThrough, value.FollowThrough, weight) : current.FollowThrough,
-                Has(patch.Fields, FanlightGestureFields.WristLagRatio) ? Lerp(current.WristLagRatio, value.WristLagRatio, weight) : current.WristLagRatio,
-                Has(patch.Fields, FanlightGestureFields.DownbeatAccent) ? Lerp(current.DownbeatAccent, value.DownbeatAccent, weight) : current.DownbeatAccent);
-        }
+            var assetA = current.GetAsset(0);
+            var assetB = current.GetAsset(1);
+            var assetC = current.GetAsset(2);
+            var assetWeights = new Vector3(
+                current.GetAssetWeight(0),
+                current.GetAssetWeight(1),
+                current.GetAssetWeight(2));
 
-        internal static FanlightPoseState Apply(FanlightPoseState current, FanlightPosePatch patch, float weight)
-        {
-            ValidateMask((int)patch.Fields, (int)FanlightPoseFields.All, nameof(patch));
+            if (Has(patch.Fields, FanlightMotionFields.MotionAsset))
+            {
+                assetA = null;
+                assetB = null;
+                assetC = null;
+                assetWeights = Vector3.zero;
+                var currentWeight = 1f - weight;
+                var incomingWeight = weight;
 
-            var value = patch.Value;
-            return new FanlightPoseState(
-                Has(patch.Fields, FanlightPoseFields.ReadyHandOffset) ? Vector3.LerpUnclamped(current.ReadyHandOffset, value.ReadyHandOffset, weight) : current.ReadyHandOffset,
-                Has(patch.Fields, FanlightPoseFields.AccentHandOffset) ? Vector3.LerpUnclamped(current.AccentHandOffset, value.AccentHandOffset, weight) : current.AccentHandOffset,
-                Has(patch.Fields, FanlightPoseFields.HandArcOffset) ? Vector3.LerpUnclamped(current.HandArcOffset, value.HandArcOffset, weight) : current.HandArcOffset,
-                Has(patch.Fields, FanlightPoseFields.ReadyPenlightDirection) ? FanlightDirectionInterpolation.Interpolate(current.ReadyPenlightDirection, value.ReadyPenlightDirection, weight) : current.ReadyPenlightDirection,
-                Has(patch.Fields, FanlightPoseFields.AccentPenlightDirection) ? FanlightDirectionInterpolation.Interpolate(current.AccentPenlightDirection, value.AccentPenlightDirection, weight) : current.AccentPenlightDirection,
-                Has(patch.Fields, FanlightPoseFields.BodyLean) ? Lerp(current.BodyLean, value.BodyLean, weight) : current.BodyLean);
+                for (var i = 0; i < 3; i++)
+                {
+                    AddAsset(
+                        current.GetAsset(i),
+                        current.GetAssetWeight(i) * currentWeight,
+                        ref assetA,
+                        ref assetB,
+                        ref assetC,
+                        ref assetWeights);
+                    AddAsset(
+                        value.GetAsset(i),
+                        value.GetAssetWeight(i) * incomingWeight,
+                        ref assetA,
+                        ref assetB,
+                        ref assetC,
+                        ref assetWeights);
+                }
+            }
+
+            return FanlightMotionState.BlendAssets(
+                assetA,
+                assetB,
+                assetC,
+                assetWeights,
+                Has(patch.Fields, FanlightMotionFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
+                Has(patch.Fields, FanlightMotionFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
+                Has(patch.Fields, FanlightMotionFields.MotionAmount) ? Lerp(current.MotionAmount, value.MotionAmount, weight) : current.MotionAmount,
+                Has(patch.Fields, FanlightMotionFields.HeightBias) ? Lerp(current.HeightBias, value.HeightBias, weight) : current.HeightBias,
+                Has(patch.Fields, FanlightMotionFields.SideScale) ? Lerp(current.SideScale, value.SideScale, weight) : current.SideScale,
+                Has(patch.Fields, FanlightMotionFields.ForwardScale) ? Lerp(current.ForwardScale, value.ForwardScale, weight) : current.ForwardScale,
+                Has(patch.Fields, FanlightMotionFields.WristDelayRatio) ? Lerp(current.WristDelayRatio, value.WristDelayRatio, weight) : current.WristDelayRatio,
+                Has(patch.Fields, FanlightMotionFields.Variation) ? Lerp(current.Variation, value.Variation, weight) : current.Variation);
         }
 
         internal static FanlightVariationState Apply(FanlightVariationState current, FanlightVariationPatch patch, float weight)
@@ -197,9 +222,7 @@ namespace PrismFanlight.Core
 
         private static bool Has(FanlightIntentFields fields, FanlightIntentFields field) => (fields & field) != 0;
 
-        private static bool Has(FanlightGestureFields fields, FanlightGestureFields field) => (fields & field) != 0;
-
-        private static bool Has(FanlightPoseFields fields, FanlightPoseFields field) => (fields & field) != 0;
+        private static bool Has(FanlightMotionFields fields, FanlightMotionFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightVariationFields fields, FanlightVariationFields field) => (fields & field) != 0;
 
@@ -222,5 +245,57 @@ namespace PrismFanlight.Core
         }
 
         private static float Lerp(float current, float incoming, float weight) => current + (incoming - current) * weight;
+
+        private static void AddAsset(
+            FanlightMotionAsset asset,
+            float weight,
+            ref FanlightMotionAsset assetA,
+            ref FanlightMotionAsset assetB,
+            ref FanlightMotionAsset assetC,
+            ref Vector3 weights)
+        {
+            if (weight <= 0.000001f) return;
+
+            if (assetA == asset)
+            {
+                weights.x += weight;
+                return;
+            }
+
+            if (assetB == asset)
+            {
+                weights.y += weight;
+                return;
+            }
+
+            if (assetC == asset)
+            {
+                weights.z += weight;
+                return;
+            }
+
+            if (weights.x <= 0.000001f)
+            {
+                assetA = asset;
+                weights.x = weight;
+                return;
+            }
+
+            if (weights.y <= 0.000001f)
+            {
+                assetB = asset;
+                weights.y = weight;
+                return;
+            }
+
+            if (weights.z <= 0.000001f)
+            {
+                assetC = asset;
+                weights.z = weight;
+                return;
+            }
+
+            throw new InvalidOperationException("Motion evaluation cannot contain more than three assets.");
+        }
     }
 }

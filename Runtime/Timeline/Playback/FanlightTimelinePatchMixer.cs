@@ -11,8 +11,7 @@ namespace PrismFanlight.Timeline
             return kind switch
             {
                 FanlightTimelinePatchKind.Intent => fields.Intent != FanlightIntentFields.None,
-                FanlightTimelinePatchKind.Gesture => fields.Gesture != FanlightGestureFields.None,
-                FanlightTimelinePatchKind.Pose => fields.Pose != FanlightPoseFields.None,
+                FanlightTimelinePatchKind.Motion => fields.Motion != FanlightMotionFields.None,
                 FanlightTimelinePatchKind.Variation => fields.Variation != FanlightVariationFields.None,
                 FanlightTimelinePatchKind.Noise => fields.Noise != FanlightNoiseFields.None,
                 FanlightTimelinePatchKind.Rest => fields.Rest != FanlightRestFields.None,
@@ -33,8 +32,7 @@ namespace PrismFanlight.Timeline
             return kind switch
             {
                 FanlightTimelinePatchKind.Intent => TryBlendIntent(fieldMask.Intent, samples, out patch),
-                FanlightTimelinePatchKind.Gesture => TryBlendGesture(fieldMask.Gesture, samples, out patch),
-                FanlightTimelinePatchKind.Pose => TryBlendPose(fieldMask.Pose, samples, out patch),
+                FanlightTimelinePatchKind.Motion => TryBlendMotion(fieldMask.Motion, samples, out patch),
                 FanlightTimelinePatchKind.Variation => TryBlendVariation(fieldMask.Variation, samples, out patch),
                 FanlightTimelinePatchKind.Noise => TryBlendNoise(fieldMask.Noise, samples, out patch),
                 FanlightTimelinePatchKind.Rest => TryBlendRest(fieldMask.Rest, samples, out patch),
@@ -96,128 +94,70 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 default
             );
             return true;
         }
 
-        private static bool TryBlendGesture(
-            FanlightGestureFields fields,
+        private static bool TryBlendMotion(
+            FanlightMotionFields fields,
             ReadOnlySpan<FanlightTimelineClipSample> samples,
             out FanlightShowPatch patch)
         {
-            ValidateMask((int)fields, (int)FanlightGestureFields.All);
+            ValidateMask((int)fields, (int)FanlightMotionFields.All);
 
             var beatsPerCycle = new FanlightWeightedFloat();
             var phaseOffsetBeats = new FanlightWeightedFloat();
-            var strokeRatio = new FanlightWeightedFloat();
-            var holdRatio = new FanlightWeightedFloat();
-            var crispness = new FanlightWeightedFloat();
-            var followThrough = new FanlightWeightedFloat();
-            var wristLagRatio = new FanlightWeightedFloat();
-            var downbeatAccent = new FanlightWeightedFloat();
+            var motionAmount = new FanlightWeightedFloat();
+            var heightBias = new FanlightWeightedFloat();
+            var sideScale = new FanlightWeightedFloat();
+            var forwardScale = new FanlightWeightedFloat();
+            var wristDelayRatio = new FanlightWeightedFloat();
+            var variation = new FanlightWeightedFloat();
+            var assetA = default(global::PrismFanlight.Authoring.FanlightMotionAsset);
+            var assetB = default(global::PrismFanlight.Authoring.FanlightMotionAsset);
+            var assetWeights = Vector2.zero;
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
-                var sourceValue = sample.Value.Gesture;
-                if (Has(fields, FanlightGestureFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
-                if (Has(fields, FanlightGestureFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
-                if (Has(fields, FanlightGestureFields.StrokeRatio)) strokeRatio.Add(sourceValue.StrokeRatio, sample.Weight);
-                if (Has(fields, FanlightGestureFields.HoldRatio)) holdRatio.Add(sourceValue.HoldRatio, sample.Weight);
-                if (Has(fields, FanlightGestureFields.Crispness)) crispness.Add(sourceValue.Crispness, sample.Weight);
-                if (Has(fields, FanlightGestureFields.FollowThrough)) followThrough.Add(sourceValue.FollowThrough, sample.Weight);
-                if (Has(fields, FanlightGestureFields.WristLagRatio)) wristLagRatio.Add(sourceValue.WristLagRatio, sample.Weight);
-                if (Has(fields, FanlightGestureFields.DownbeatAccent)) downbeatAccent.Add(sourceValue.DownbeatAccent, sample.Weight);
+                var sourceValue = sample.Value.Motion;
+                if (Has(fields, FanlightMotionFields.MotionAsset)) AddAsset(sourceValue.MotionAsset, sample.Weight, ref assetA, ref assetB, ref assetWeights);
+                if (Has(fields, FanlightMotionFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
+                if (Has(fields, FanlightMotionFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
+                if (Has(fields, FanlightMotionFields.MotionAmount)) motionAmount.Add(sourceValue.MotionAmount, sample.Weight);
+                if (Has(fields, FanlightMotionFields.HeightBias)) heightBias.Add(sourceValue.HeightBias, sample.Weight);
+                if (Has(fields, FanlightMotionFields.SideScale)) sideScale.Add(sourceValue.SideScale, sample.Weight);
+                if (Has(fields, FanlightMotionFields.ForwardScale)) forwardScale.Add(sourceValue.ForwardScale, sample.Weight);
+                if (Has(fields, FanlightMotionFields.WristDelayRatio)) wristDelayRatio.Add(sourceValue.WristDelayRatio, sample.Weight);
+                if (Has(fields, FanlightMotionFields.Variation)) variation.Add(sourceValue.Variation, sample.Weight);
             }
 
-            if (fields == FanlightGestureFields.None)
+            if (fields == FanlightMotionFields.None)
             {
                 patch = default;
                 return false;
             }
 
-            var fallback = FanlightTimelineDefaults.GestureState();
-            var value = new FanlightGestureState(
+            var fallback = FanlightTimelineDefaults.MotionState();
+            var value = FanlightMotionState.BlendAssets(
+                Has(fields, FanlightMotionFields.MotionAsset) ? assetA : fallback.MotionAsset,
+                Has(fields, FanlightMotionFields.MotionAsset) ? assetB : null,
+                null,
+                Has(fields, FanlightMotionFields.MotionAsset) ? new Vector3(assetWeights.x, assetWeights.y, 0f) : new Vector3(1f, 0f, 0f),
                 beatsPerCycle.Value(fallback.BeatsPerCycle),
                 phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
-                strokeRatio.Value(fallback.StrokeRatio),
-                holdRatio.Value(fallback.HoldRatio),
-                crispness.Value(fallback.Crispness),
-                followThrough.Value(fallback.FollowThrough),
-                wristLagRatio.Value(fallback.WristLagRatio),
-                downbeatAccent.Value(fallback.DownbeatAccent)
+                motionAmount.Value(fallback.MotionAmount),
+                heightBias.Value(fallback.HeightBias),
+                sideScale.Value(fallback.SideScale),
+                forwardScale.Value(fallback.ForwardScale),
+                wristDelayRatio.Value(fallback.WristDelayRatio),
+                variation.Value(fallback.Variation)
             );
 
             patch = new FanlightShowPatch(
                 default,
-                new FanlightGesturePatch(fields, value),
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                default
-            );
-
-            return true;
-        }
-
-        private static bool TryBlendPose(
-            FanlightPoseFields fields,
-            ReadOnlySpan<FanlightTimelineClipSample> samples,
-            out FanlightShowPatch patch)
-        {
-            ValidateMask((int)fields, (int)FanlightPoseFields.All);
-
-            var readyHandOffsetX = new FanlightWeightedFloat();
-            var readyHandOffsetY = new FanlightWeightedFloat();
-            var readyHandOffsetZ = new FanlightWeightedFloat();
-            var accentHandOffsetX = new FanlightWeightedFloat();
-            var accentHandOffsetY = new FanlightWeightedFloat();
-            var accentHandOffsetZ = new FanlightWeightedFloat();
-            var handArcOffsetX = new FanlightWeightedFloat();
-            var handArcOffsetY = new FanlightWeightedFloat();
-            var handArcOffsetZ = new FanlightWeightedFloat();
-            var readyPenlightDirection = new FanlightWeightedDirection();
-            var accentPenlightDirection = new FanlightWeightedDirection();
-            var bodyLean = new FanlightWeightedFloat();
-
-            for (var i = 0; i < samples.Length; i++)
-            {
-                var sample = samples[i];
-                var sourceValue = sample.Value.Pose;
-                if (Has(fields, FanlightPoseFields.ReadyHandOffset)) Add(sourceValue.ReadyHandOffset, sample.Weight, ref readyHandOffsetX, ref readyHandOffsetY, ref readyHandOffsetZ);
-                if (Has(fields, FanlightPoseFields.AccentHandOffset)) Add(sourceValue.AccentHandOffset, sample.Weight, ref accentHandOffsetX, ref accentHandOffsetY, ref accentHandOffsetZ);
-                if (Has(fields, FanlightPoseFields.HandArcOffset)) Add(sourceValue.HandArcOffset, sample.Weight, ref handArcOffsetX, ref handArcOffsetY, ref handArcOffsetZ);
-                if (Has(fields, FanlightPoseFields.ReadyPenlightDirection)) readyPenlightDirection.Add(sourceValue.ReadyPenlightDirection, sample.Weight);
-                if (Has(fields, FanlightPoseFields.AccentPenlightDirection)) accentPenlightDirection.Add(sourceValue.AccentPenlightDirection, sample.Weight);
-                if (Has(fields, FanlightPoseFields.BodyLean)) bodyLean.Add(sourceValue.BodyLean, sample.Weight);
-            }
-
-            if (fields == FanlightPoseFields.None)
-            {
-                patch = default;
-                return false;
-            }
-
-            var fallback = FanlightTimelineDefaults.PoseState();
-            var value = new FanlightPoseState(
-                Value(fallback.ReadyHandOffset, readyHandOffsetX, readyHandOffsetY, readyHandOffsetZ),
-                Value(fallback.AccentHandOffset, accentHandOffsetX, accentHandOffsetY, accentHandOffsetZ),
-                Value(fallback.HandArcOffset, handArcOffsetX, handArcOffsetY, handArcOffsetZ),
-                readyPenlightDirection.Value(fallback.ReadyPenlightDirection),
-                accentPenlightDirection.Value(fallback.AccentPenlightDirection),
-                bodyLean.Value(fallback.BodyLean)
-            );
-
-            patch = new FanlightShowPatch(
-                default,
-                default,
-                new FanlightPosePatch(fields, value),
+                new FanlightMotionPatch(fields, value),
                 default,
                 default,
                 default,
@@ -296,7 +236,6 @@ namespace PrismFanlight.Timeline
             patch = new FanlightShowPatch(
                 default,
                 default,
-                default,
                 new FanlightVariationPatch(fields, value),
                 default,
                 default,
@@ -355,7 +294,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 new FanlightNoisePatch(fields, value),
                 default,
                 default,
@@ -410,7 +348,6 @@ namespace PrismFanlight.Timeline
             );
 
             patch = new FanlightShowPatch(
-                default,
                 default,
                 default,
                 default,
@@ -497,7 +434,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 new FanlightAudienceBodyPatch(fields, value),
                 default,
                 default,
@@ -541,7 +477,6 @@ namespace PrismFanlight.Timeline
             );
 
             patch = new FanlightShowPatch(
-                default,
                 default,
                 default,
                 default,
@@ -612,7 +547,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 new FanlightPalettePatch(fields, value),
                 default
             );
@@ -659,7 +593,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 new FanlightVisibilityPatch(fields, value)
             );
 
@@ -669,9 +602,7 @@ namespace PrismFanlight.Timeline
 
         private static bool Has(FanlightIntentFields fields, FanlightIntentFields field) => (fields & field) != 0;
 
-        private static bool Has(FanlightGestureFields fields, FanlightGestureFields field) => (fields & field) != 0;
-
-        private static bool Has(FanlightPoseFields fields, FanlightPoseFields field) => (fields & field) != 0;
+        private static bool Has(FanlightMotionFields fields, FanlightMotionFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightVariationFields fields, FanlightVariationFields field) => (fields & field) != 0;
 
@@ -687,26 +618,35 @@ namespace PrismFanlight.Timeline
 
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
 
-        private static void Add(
-            Vector3 value,
+        private static void AddAsset(
+            global::PrismFanlight.Authoring.FanlightMotionAsset asset,
             float weight,
-            ref FanlightWeightedFloat x,
-            ref FanlightWeightedFloat y,
-            ref FanlightWeightedFloat z)
+            ref global::PrismFanlight.Authoring.FanlightMotionAsset assetA,
+            ref global::PrismFanlight.Authoring.FanlightMotionAsset assetB,
+            ref Vector2 weights)
         {
-            x.Add(value.x, weight);
-            y.Add(value.y, weight);
-            z.Add(value.z, weight);
-        }
+            if (assetA == asset)
+            {
+                weights.x += weight;
+                return;
+            }
 
-        private static Vector3 Value(
-            Vector3 fallback,
-            FanlightWeightedFloat x,
-            FanlightWeightedFloat y,
-            FanlightWeightedFloat z) => new(
-            x.Value(fallback.x),
-            y.Value(fallback.y),
-            z.Value(fallback.z));
+            if (weights.x <= 0.000001f)
+            {
+                assetA = asset;
+                weights.x = weight;
+                return;
+            }
+
+            if (assetB == asset)
+            {
+                weights.y += weight;
+                return;
+            }
+
+            assetB = asset;
+            weights.y += weight;
+        }
 
         private static void ValidateMask(int fields, int all)
         {

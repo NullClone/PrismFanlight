@@ -62,6 +62,7 @@ namespace PrismFanlight.Rendering
 
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Randoms, buffers.RandomBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.MotionSamples, buffers.MotionSampleBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVisibleIndices, buffers.PenlightVisibleIndexBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantOffsets, buffers.PenlightVariantOffsetBuffer);
@@ -125,8 +126,7 @@ namespace PrismFanlight.Rendering
             var sample = context.Sample;
             var state = sample.State;
             var intent = state.Intent;
-            var gesture = state.Gesture;
-            var pose = state.Pose;
+            var motion = state.Motion;
             var variation = state.Variation;
             var noise = state.Noise;
             var rest = state.Rest;
@@ -169,25 +169,21 @@ namespace PrismFanlight.Rendering
 
             var worldDirection = ComputeWorldDirection(direction);
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(intent.Reach, asynchrony, noise.PhaseAmount * realism, noise.PhaseSpeed));
-            shader.SetVector(FanlightShaderIds.GestureTiming, new Vector4(
-                gesture.BeatsPerCycle,
-                gesture.PhaseOffsetBeats,
-                gesture.StrokeRatio,
-                gesture.HoldRatio));
-            shader.SetVector(FanlightShaderIds.GestureShape, new Vector4(
-                gesture.Crispness,
-                gesture.FollowThrough,
-                gesture.WristLagRatio,
-                gesture.DownbeatAccent));
-            shader.SetVector(FanlightShaderIds.PoseReadyHand, pose.ReadyHandOffset);
-            shader.SetVector(FanlightShaderIds.PoseAccentHand, pose.AccentHandOffset);
-            shader.SetVector(FanlightShaderIds.PoseHandArc, new Vector4(
-                pose.HandArcOffset.x,
-                pose.HandArcOffset.y,
-                pose.HandArcOffset.z,
-                pose.BodyLean));
-            shader.SetVector(FanlightShaderIds.PoseReadyDirection, pose.ReadyPenlightDirection);
-            shader.SetVector(FanlightShaderIds.PoseAccentDirection, pose.AccentPenlightDirection);
+            shader.SetVector(FanlightShaderIds.MotionCycle, new Vector4(
+                motion.BeatsPerCycle,
+                motion.PhaseOffsetBeats,
+                motion.WristDelayRatio,
+                motion.Variation));
+            shader.SetVector(FanlightShaderIds.MotionParameters, new Vector4(
+                motion.MotionAmount,
+                motion.HeightBias,
+                motion.SideScale,
+                motion.ForwardScale));
+            shader.SetVector(FanlightShaderIds.MotionAssetWeights, new Vector4(
+                motion.GetAssetWeight(0),
+                motion.GetAssetWeight(1),
+                motion.GetAssetWeight(2),
+                0f));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)direction.Mode);
             shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, variation.DirectionSpread * realism));
             var target = context.Frame.SwingTargetWorldPosition;

@@ -8,9 +8,7 @@ namespace PrismFanlight.Timeline
 
         internal static FanlightIntentState IntentState() => FanlightShowStateDefaults.Intent();
 
-        internal static FanlightGestureState GestureState() => FanlightShowStateDefaults.Gesture();
-
-        internal static FanlightPoseState PoseState() => FanlightShowStateDefaults.Pose();
+        internal static FanlightMotionState MotionState() => FanlightShowStateDefaults.Motion();
 
         internal static FanlightVariationState VariationState() => FanlightShowStateDefaults.Variation();
 

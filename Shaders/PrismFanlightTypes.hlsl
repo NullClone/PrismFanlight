@@ -40,6 +40,12 @@ struct FanlightRandomData
     float4 random7;
 };
 
+struct FanlightMotionSample
+{
+    float4 arm;
+    float4 penlight;
+};
+
 struct PrismArm
 {
     float4x4 worldMatrix;

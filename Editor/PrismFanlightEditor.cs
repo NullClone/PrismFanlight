@@ -24,8 +24,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _swingTarget;
         private SerializedProperty _timeManager;
         private SerializedProperty _intent;
-        private SerializedProperty _gesture;
-        private SerializedProperty _pose;
+        private SerializedProperty _motion;
         private SerializedProperty _variation;
         private SerializedProperty _noise;
         private SerializedProperty _rest;
@@ -36,6 +35,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _globalSeed;
         private bool _enableGizmos = true;
 
+        private UnityEditor.Editor _layoutEditor;
+
         private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
 
         private static readonly PrismFanlightSection _generalSection = new(new GUIContent("General"));
@@ -43,7 +44,6 @@ namespace PrismFanlight.Editor
         private static readonly PrismFanlightSection _emissionSection = new(new GUIContent("Emission"));
         private static readonly PrismFanlightSection _layoutSection = new(new GUIContent("Layout"));
         private static readonly PrismFanlightSection _timeSection = new(new GUIContent("Time"));
-        private static readonly PrismFanlightSection _poseSection = new(new GUIContent("Pose"));
         private static readonly PrismFanlightSection _variationSection = new(new GUIContent("Variation"));
         private static readonly PrismFanlightSection _noiseSection = new(new GUIContent("Noise"));
         private static readonly PrismFanlightSection _restSection = new(new GUIContent("Rest"));
@@ -70,8 +70,7 @@ namespace PrismFanlight.Editor
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _timeManager = serializedObject.FindProperty(nameof(_timeManager));
             _intent = serializedObject.FindProperty(nameof(_intent));
-            _gesture = serializedObject.FindProperty(nameof(_gesture));
-            _pose = serializedObject.FindProperty(nameof(_pose));
+            _motion = serializedObject.FindProperty(nameof(_motion));
             _variation = serializedObject.FindProperty(nameof(_variation));
             _noise = serializedObject.FindProperty(nameof(_noise));
             _rest = serializedObject.FindProperty(nameof(_rest));
@@ -80,6 +79,15 @@ namespace PrismFanlight.Editor
             _palette = serializedObject.FindProperty(nameof(_palette));
             _visibility = serializedObject.FindProperty(nameof(_visibility));
             _globalSeed = serializedObject.FindProperty(nameof(_globalSeed));
+        }
+
+        private void OnDisable()
+        {
+            if (_layoutEditor != null)
+            {
+                DestroyImmediate(_layoutEditor);
+                _layoutEditor = null;
+            }
         }
 
         private void OnSceneGUI()
@@ -127,16 +135,28 @@ namespace PrismFanlight.Editor
                 DrawSlider(_intent, "_reach", "Reach", 0f, 1f);
 
                 EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Gesture");
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Motion");
 
-                DrawSlider(_gesture, "_strokeRatio", "Stroke Ratio", 0.001f, 0.999f);
-                DrawSlider(_gesture, "_holdRatio", "Hold", 0f, 1f);
-                DrawSlider(_gesture, "_crispness", "Crispness", 0f, 1f);
-                DrawSlider(_gesture, "_followThrough", "Follow Through", 0f, 1f);
-                DrawSlider(_gesture, "_wristLagRatio", "Wrist Lag", 0f, 0.5f);
-                DrawChild(_gesture, "_downbeatAccent", "Downbeat Accent");
-                DrawChild(_gesture, "_beatsPerCycle", "Beats Per Cycle");
-                DrawChild(_gesture, "_phaseOffsetBeats", "Phase Offset");
+                var motionAsset = _motion.FindPropertyRelative("_motionAsset");
+                EditorGUILayout.PropertyField(motionAsset, new GUIContent("Motion Asset"));
+
+                if (motionAsset.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
+                    using (new EditorGUI.DisabledScope(serializedObject.isEditingMultipleObjects))
+                    {
+                        if (GUILayout.Button("Create Drum Motion Asset")) CreateMotionAsset(motionAsset);
+                    }
+                }
+
+                DrawChild(_motion, "_beatsPerCycle", "Beats Per Cycle");
+                DrawChild(_motion, "_phaseOffsetBeats", "Phase Offset");
+                DrawSlider(_motion, "_motionAmount", "Motion Amount", 0f, 2f);
+                DrawSlider(_motion, "_heightBias", "Height Bias", -1f, 1f);
+                DrawSlider(_motion, "_sideScale", "Side Scale", 0f, 2f);
+                DrawSlider(_motion, "_forwardScale", "Forward Scale", 0f, 2f);
+                DrawSlider(_motion, "_wristDelayRatio", "Wrist Delay", 0f, 0.5f);
+                DrawSlider(_motion, "_variation", "Variation", 0f, 1f);
 
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Direction");
@@ -280,6 +300,12 @@ namespace PrismFanlight.Editor
 
                 if (layout == null)
                 {
+                    if (_layoutEditor != null)
+                    {
+                        DestroyImmediate(_layoutEditor);
+                        _layoutEditor = null;
+                    }
+
                     _instance.SetEditorLayoutBlocked(false);
 
                     EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
@@ -294,6 +320,19 @@ namespace PrismFanlight.Editor
                 }
                 else
                 {
+                    CreateCachedEditor(layout, null, ref _layoutEditor);
+
+                    if (_layoutEditor != null)
+                    {
+                        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                        _layoutEditor.serializedObject.Update();
+                        _layoutEditor.OnInspectorGUI();
+                        _layoutEditor.serializedObject.ApplyModifiedProperties();
+
+                        EditorGUILayout.EndVertical();
+                    }
+
                     if (!layout.IsInitialized)
                     {
                         _instance.SetEditorLayoutBlocked(false);
@@ -416,16 +455,6 @@ namespace PrismFanlight.Editor
             PrismFanlightEditorStyles.DrawSubGroupLabel("Advance");
             EditorGUILayout.Space();
 
-            PrismFanlightEditorStyles.DrawSection(_poseSection, () =>
-            {
-                DrawChild(_pose, "_readyHandOffset", "Ready Hand Offset");
-                DrawChild(_pose, "_accentHandOffset", "Accent Hand Offset");
-                DrawChild(_pose, "_handArcOffset", "Hand Arc Offset");
-                FanlightPoseStateDrawer.DrawDirection(_pose.FindPropertyRelative("_readyPenlightDirection"), new GUIContent("Ready Penlight Direction"));
-                FanlightPoseStateDrawer.DrawDirection(_pose.FindPropertyRelative("_accentPenlightDirection"), new GUIContent("Accent Penlight Direction"));
-                DrawSlider(_pose, "_bodyLean", "Body Lean", -1f, 1f);
-            });
-
             PrismFanlightEditorStyles.DrawSection(_variationSection, () =>
             {
                 DrawSlider(_variation, "_seatPosition", "Seat Position", 0f, 1f);
@@ -495,6 +524,25 @@ namespace PrismFanlight.Editor
             {
                 EditorGUILayout.PropertyField(timing.FindPropertyRelative("_targetFrameRate"), new GUIContent("Target Frame Rate"));
             }
+        }
+
+        private static void CreateMotionAsset(SerializedProperty property)
+        {
+            var path = EditorUtility.SaveFilePanelInProject(
+                "Create Fanlight Motion Asset",
+                "FanlightDrumMotion",
+                "asset",
+                "Choose where to save the motion asset.");
+
+            if (string.IsNullOrEmpty(path)) return;
+
+            var asset = CreateInstance<FanlightMotionAsset>();
+            asset.ResetToDrum();
+            AssetDatabase.CreateAsset(asset, path);
+            Undo.RegisterCreatedObjectUndo(asset, "Create Fanlight Motion Asset");
+            AssetDatabase.SaveAssets();
+            property.objectReferenceValue = asset;
+            Selection.activeObject = asset;
         }
 
         private static void DrawChild(SerializedProperty parent, string propertyName, string label)

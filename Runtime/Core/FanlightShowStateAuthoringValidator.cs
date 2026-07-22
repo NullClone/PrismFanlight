@@ -24,41 +24,24 @@ namespace PrismFanlight.Core
             }
         }
 
-        internal static FanlightGestureState Validate(FanlightGestureState value)
+        internal static FanlightMotionState Validate(FanlightMotionState value)
         {
             try
             {
-                return new FanlightGestureState(
+                return new FanlightMotionState(
+                    value.MotionAsset,
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
-                    value.StrokeRatio,
-                    value.HoldRatio,
-                    value.Crispness,
-                    value.FollowThrough,
-                    value.WristLagRatio,
-                    value.DownbeatAccent);
+                    value.MotionAmount,
+                    value.HeightBias,
+                    value.SideScale,
+                    value.ForwardScale,
+                    value.WristDelayRatio,
+                    value.Variation);
             }
             catch (ArgumentException)
             {
-                return FanlightShowStateDefaults.Gesture();
-            }
-        }
-
-        internal static FanlightPoseState Validate(FanlightPoseState value)
-        {
-            try
-            {
-                return new FanlightPoseState(
-                    value.ReadyHandOffset,
-                    value.AccentHandOffset,
-                    value.HandArcOffset,
-                    value.ReadyPenlightDirection,
-                    value.AccentPenlightDirection,
-                    value.BodyLean);
-            }
-            catch (ArgumentException)
-            {
-                return FanlightShowStateDefaults.Pose();
+                return FanlightShowStateDefaults.Motion();
             }
         }
 

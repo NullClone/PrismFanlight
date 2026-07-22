@@ -187,6 +187,11 @@ namespace PrismFanlight.Rendering
                 _animationInitialized = false;
             }
 
+            if (_buffers.UpdateMotionData(sample.State.Motion))
+            {
+                _animationInitialized = false;
+            }
+
             var worldBounds = FanlightGeometryBuilder.TransformBounds(frame.LocalToWorld, _buffers.LocalBounds);
             var context = new FanlightGpuDispatchContext(_layout, sample, frame, camera, worldBounds);
             var discontinuity = sample.Discontinuity != FanlightTimeDiscontinuity.None;
@@ -275,6 +280,10 @@ namespace PrismFanlight.Rendering
             }
 
             _ = FanlightShowStatePatcher.Validate(sample.State);
+            if (!sample.State.Motion.HasValidAssets())
+            {
+                throw new InvalidOperationException("A complete show sample requires valid baked Motion Assets.");
+            }
         }
 
         private static bool HasCameraChanged(

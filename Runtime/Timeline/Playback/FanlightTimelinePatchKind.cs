@@ -3,14 +3,13 @@ namespace PrismFanlight.Timeline
     internal enum FanlightTimelinePatchKind
     {
         Intent = 0,
-        Gesture = 1,
-        Pose = 2,
-        Variation = 3,
-        Noise = 4,
-        Rest = 5,
-        AudienceBody = 6,
-        Direction = 7,
-        Palette = 8,
-        Visibility = 9
+        Motion = 1,
+        Variation = 2,
+        Noise = 3,
+        Rest = 4,
+        AudienceBody = 5,
+        Direction = 6,
+        Palette = 7,
+        Visibility = 8
     }
 }

@@ -1,7 +1,41 @@
 #ifndef PRISM_FANLIGHT_MOTION_INCLUDED
 #define PRISM_FANLIGHT_MOTION_INCLUDED
 
+#include "PrismFanlightComputeContext.hlsl"
+
+FanlightMotionSample PrismSampleMotion(float cyclePhase);
+
 #include "PrismFanlightPose.hlsl"
+
+#define PRISM_FANLIGHT_MOTION_SAMPLE_COUNT 64u
+
+FanlightMotionSample PrismSampleMotionAsset(uint assetIndex, float cyclePhase)
+{
+    float samplePosition = frac(cyclePhase) * (float)PRISM_FANLIGHT_MOTION_SAMPLE_COUNT;
+    uint sample0 = (uint)floor(samplePosition) % PRISM_FANLIGHT_MOTION_SAMPLE_COUNT;
+    uint sample1 = (sample0 + 1u) % PRISM_FANLIGHT_MOTION_SAMPLE_COUNT;
+    float weight = frac(samplePosition);
+    uint baseIndex = assetIndex * PRISM_FANLIGHT_MOTION_SAMPLE_COUNT;
+    FanlightMotionSample a = _MotionSamples[baseIndex + sample0];
+    FanlightMotionSample b = _MotionSamples[baseIndex + sample1];
+    FanlightMotionSample result;
+    result.arm = lerp(a.arm, b.arm, weight);
+    result.penlight = lerp(a.penlight, b.penlight, weight);
+    return result;
+}
+
+FanlightMotionSample PrismSampleMotion(float cyclePhase)
+{
+    FanlightMotionSample a = PrismSampleMotionAsset(0u, cyclePhase);
+    FanlightMotionSample b = PrismSampleMotionAsset(1u, cyclePhase);
+    FanlightMotionSample c = PrismSampleMotionAsset(2u, cyclePhase);
+    float3 weights = max(0.0, _MotionAssetWeights.xyz);
+    weights /= max(0.000001, weights.x + weights.y + weights.z);
+    FanlightMotionSample result;
+    result.arm = a.arm * weights.x + b.arm * weights.y + c.arm * weights.z;
+    result.penlight = a.penlight * weights.x + b.penlight * weights.y + c.penlight * weights.z;
+    return result;
+}
 
 float PrismComputeRestFactor(FanlightSeatData seat)
 {
@@ -34,58 +68,13 @@ float PrismComputeRestFactor(FanlightSeatData seat)
     return lerp(1.0, _MotionRest.y, restWeight);
 }
 
-float PrismShapeProgress(float progress)
+float PrismComputeMotionScale(FanlightSeatData seat)
 {
-    float p = saturate(progress);
-    float smooth = p * p * (3.0 - 2.0 * p);
-    float gain = lerp(1.0, 3.0, saturate(_GestureShape.x));
-    return saturate((smooth - 0.5) * gain + 0.5);
-}
-
-float PrismCycleProgress(float cyclePhase)
-{
-    float strokeDuration = saturate(_GestureTiming.z);
-    float nonStrokeDuration = max(0.0, 1.0 - strokeDuration);
-    float holdDuration = nonStrokeDuration * saturate(_GestureTiming.w);
-    float recoveryDuration = max(0.0, nonStrokeDuration - holdDuration);
-    float phase = frac(cyclePhase);
-
-    if (holdDuration > 0.000001 && phase < holdDuration)
-    {
-        return 1.0;
-    }
-
-    if (recoveryDuration > 0.000001 && phase < holdDuration + recoveryDuration)
-    {
-        return 1.0 - PrismShapeProgress((phase - holdDuration) / recoveryDuration);
-    }
-
-    if (strokeDuration > 0.000001)
-    {
-        return PrismShapeProgress((phase - holdDuration - recoveryDuration) / strokeDuration);
-    }
-
-    return 1.0;
-}
-
-float PrismFollowThroughWeight(float cyclePhase)
-{
-    float nonStrokeDuration = max(0.0, 1.0 - saturate(_GestureTiming.z));
-    float holdDuration = nonStrokeDuration * saturate(_GestureTiming.w);
-    float phase = frac(cyclePhase);
-    if (holdDuration <= 0.000001 || phase >= holdDuration) return 0.0;
-    return sin(PRISM_FANLIGHT_PI * saturate(phase / holdDuration));
-}
-
-float PrismComputeMotionScale(FanlightSeatData seat, PrismCrowdRhythm rhythm)
-{
-    float energyResponse = lerp(1.0, lerp(0.65, 1.35, PrismRandom(seat, 25u)), _MotionHuman.y);
+    float energyResponse = lerp(1.0, lerp(0.65, 1.35, PrismRandom(seat, 25u)), _MotionHuman.y * _MotionCycle.w);
     float enthusiasm = max(0.0, _MotionHuman.x) * energyResponse;
     float restFactor = PrismComputeRestFactor(seat);
     float participationScale = PrismRandom(seat, 26u) < _MotionRest.z ? 0.35 : 1.0;
-    float reachVariation = max(0.0, 1.0 + (PrismRandom(seat, 24u) * 2.0 - 1.0) * _MotionVariation.z);
-    float downbeatScale = 1.0 + rhythm.downbeatPulse * max(0.0, _GestureShape.w);
-    return max(0.0, enthusiasm * restFactor * participationScale * saturate(_MotionTiming.x) * reachVariation * downbeatScale);
+    return saturate(enthusiasm * restFactor * participationScale * saturate(_MotionTiming.x));
 }
 
 float3 PrismComputeHandNoise(FanlightSeatData seat, PrismAudienceBasis basis, float motionScale)
@@ -100,7 +89,11 @@ float3 PrismComputeHandNoise(FanlightSeatData seat, PrismAudienceBasis basis, fl
         float2(PrismRandom(seat, 22u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 317.5),
         noiseOctaves,
         noisePersistence);
-    return (basis.sideLocal * noiseSide + basis.upLocal * noiseUp) * _MotionNoise.x * 0.05 * motionScale;
+    return (basis.sideLocal * noiseSide + basis.upLocal * noiseUp)
+        * _MotionNoise.x
+        * _MotionCycle.w
+        * 0.05
+        * motionScale;
 }
 
 float3 PrismClampHandToArmLimit(float3 shoulderLocal, float3 handLocal)
@@ -113,24 +106,34 @@ float3 PrismClampHandToArmLimit(float3 shoulderLocal, float3 handLocal)
         : handLocal;
 }
 
+float3 PrismDirectionFromAngles(PrismAudienceBasis basis, float elevation, float side, bool worldSpace)
+{
+    float cosElevation = cos(elevation);
+    float3 audienceDirection = float3(
+        sin(side) * cosElevation,
+        sin(elevation),
+        cos(side) * cosElevation);
+    float3 direction = worldSpace
+        ? basis.sideWorld * audienceDirection.x + basis.upWorld * audienceDirection.y + basis.forwardWorld * audienceDirection.z
+        : basis.sideLocal * audienceDirection.x + basis.upLocal * audienceDirection.y + basis.forwardLocal * audienceDirection.z;
+    return SafeNormalize(direction, worldSpace ? basis.upWorld : basis.upLocal);
+}
+
 float3 PrismComputePenlightDirection(
     FanlightSeatData seat,
     PrismAudienceBasis basis,
-    float wristProgress)
+    FanlightMotionSample wristSample,
+    float motionScale)
 {
-    float3 localDirection = PrismInterpolateDirection(
-        _PoseReadyDirection.xyz,
-        _PoseAccentDirection.xyz,
-        wristProgress);
-    float3 direction = SafeNormalize(
-        PrismTransformAudienceDirectionWorld(basis, localDirection),
-        basis.upWorld);
+    float variation = _MotionCycle.w;
+    float elevationVariation = (PrismRandom(seat, 17u) * 2.0 - 1.0) * _MotionVariation.w * variation * 0.25;
+    float sideVariation = (PrismRandom(seat, 18u) * 2.0 - 1.0) * _SwingAxis.w * variation * PRISM_FANLIGHT_PI * 0.25;
+    float elevation = wristSample.penlight.x * _MotionParameters.x * motionScale + elevationVariation;
+    float side = wristSample.penlight.y * _MotionParameters.x * motionScale + sideVariation;
+    float3 direction = PrismDirectionFromAngles(basis, elevation, side, true);
     float3 fallback = direction;
-    float spread = max(0.0, _SwingAxis.w) + max(0.0, _MotionVariation.w) * 0.5;
-    float spreadAngle = (PrismRandom(seat, 18u) * 2.0 - 1.0) * spread * PRISM_FANLIGHT_PI * 0.25;
     float3 tangent = basis.sideWorld - direction * dot(basis.sideWorld, direction);
     tangent = SafeNormalize(tangent, SafePerp(direction));
-    direction = SafeNormalize(direction * cos(spreadAngle) + tangent * sin(spreadAngle), fallback);
 
     int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
     float noisePersistence = max(0.001, _MotionNoise.w);
@@ -138,7 +141,7 @@ float3 PrismComputePenlightDirection(
         float2(PrismRandom(seat, 19u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 631.0),
         noiseOctaves,
         noisePersistence);
-    return SafeNormalize(direction + tangent * directionNoise * _MotionNoise.x * 0.1, fallback);
+    return SafeNormalize(direction + tangent * directionNoise * _MotionNoise.x * variation * 0.1, fallback);
 }
 
 float4x4 PrismPenlightRotation(float3 directionWorld, PrismAudienceBasis basis)
@@ -160,36 +163,37 @@ PrismArm PrismComputeArm(FanlightSeatData seat, PrismHumanPose pose, float gripP
 {
     PrismCrowdRhythm rhythm = PrismComputeCrowdRhythm(seat);
     PrismAudienceBasis basis = PrismComputeAudienceBasis(seat);
-    float handProgress = PrismCycleProgress(rhythm.cyclePhase);
-    float wristPhase = frac(rhythm.cyclePhase - saturate(_GestureShape.z));
-    float wristProgress = PrismCycleProgress(wristPhase);
-    float motionScale = PrismComputeMotionScale(seat, rhythm);
+    FanlightMotionSample armSample = PrismSampleMotion(rhythm.cyclePhase);
+    float wristPhase = frac(rhythm.cyclePhase - saturate(_MotionCycle.z));
+    FanlightMotionSample wristSample = PrismSampleMotion(wristPhase);
+    float motionScale = PrismComputeMotionScale(seat);
+    float extensionVariation = max(
+        0.0,
+        1.0 + (PrismRandom(seat, 24u) * 2.0 - 1.0) * _MotionVariation.z * _MotionCycle.w);
+    float armLength = _AudienceArm.w * saturate(armSample.arm.z * extensionVariation);
+    float elevation = armSample.arm.x * _MotionParameters.x * motionScale;
+    float side = armSample.arm.y * _MotionParameters.x * motionScale;
+    float3 armDirection = PrismDirectionFromAngles(basis, elevation, side, false);
+    float sideDistance = dot(armDirection, basis.sideLocal) * armLength * _MotionParameters.z;
+    float upDistance = dot(armDirection, basis.upLocal) * armLength + _MotionParameters.y;
+    float forwardDistance = dot(armDirection, basis.forwardLocal) * armLength * _MotionParameters.w;
+    float3 handLocal = pose.shoulderLocal
+        + basis.sideLocal * sideDistance
+        + basis.upLocal * upDistance
+        + basis.forwardLocal * forwardDistance;
     float3 positionSpread = PrismTransformAudienceOffset(
         basis,
         float3(
             PrismRandom(seat, 29u) * 2.0 - 1.0,
             PrismRandom(seat, 30u) * 2.0 - 1.0,
-            PrismRandom(seat, 31u) * 2.0 - 1.0)) * max(0.0, _HandPositionSpread);
-    float3 bodyLeanOffset = basis.forwardLocal * _PoseHandArc.w * 0.15 * motionScale;
-    float3 readyHand = pose.shoulderLocal
-        + PrismTransformAudienceOffset(basis, _PoseReadyHand.xyz)
-        + positionSpread
-        + bodyLeanOffset;
-    float3 accentTarget = pose.shoulderLocal
-        + PrismTransformAudienceOffset(basis, _PoseAccentHand.xyz)
-        + positionSpread
-        + bodyLeanOffset;
-    float3 accentHand = readyHand + (accentTarget - readyHand) * motionScale;
-    float3 arcOffset = PrismTransformAudienceOffset(basis, _PoseHandArc.xyz) * motionScale;
-    float3 handLocal = lerp(readyHand, accentHand, handProgress)
-        + arcOffset * 4.0 * handProgress * (1.0 - handProgress);
-    handLocal += (accentHand - readyHand)
-        * saturate(_GestureShape.y)
-        * PrismFollowThroughWeight(rhythm.cyclePhase);
+            PrismRandom(seat, 31u) * 2.0 - 1.0))
+        * max(0.0, _HandPositionSpread)
+        * _MotionCycle.w;
+    handLocal += positionSpread;
     handLocal += PrismComputeHandNoise(seat, basis, motionScale);
     handLocal = PrismClampHandToArmLimit(pose.shoulderLocal, handLocal);
 
-    float3 penlightDirection = PrismComputePenlightDirection(seat, basis, wristProgress);
+    float3 penlightDirection = PrismComputePenlightDirection(seat, basis, wristSample, motionScale);
     float4x4 handTranslation = Translate(handLocal);
     float4x4 penlightRotation = PrismPenlightRotation(penlightDirection, basis);
     float4x4 gripTranslation = Translate(float3(0.0, -gripPivotY, 0.0));

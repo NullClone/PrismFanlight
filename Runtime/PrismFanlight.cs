@@ -56,10 +56,7 @@ namespace PrismFanlight
         private FanlightIntentState _intent = FanlightShowStateDefaults.Intent();
 
         [SerializeField]
-        private FanlightGestureState _gesture = FanlightShowStateDefaults.Gesture();
-
-        [SerializeField]
-        private FanlightPoseState _pose = FanlightShowStateDefaults.Pose();
+        private FanlightMotionState _motion = FanlightShowStateDefaults.Motion();
 
         [SerializeField]
         private FanlightVariationState _variation = FanlightShowStateDefaults.Variation();
@@ -118,8 +115,7 @@ namespace PrismFanlight
 
         internal FanlightShowState BaseState => new(
             _intent,
-            _gesture,
-            _pose,
+            _motion,
             _variation,
             _noise,
             _rest,
@@ -221,8 +217,7 @@ namespace PrismFanlight
             _editorLayoutBlocked = false;
 
             _intent = FanlightShowStateAuthoringValidator.Validate(_intent);
-            _gesture = FanlightShowStateAuthoringValidator.Validate(_gesture);
-            _pose = FanlightShowStateAuthoringValidator.Validate(_pose);
+            _motion = FanlightShowStateAuthoringValidator.Validate(_motion);
             _variation = FanlightShowStateAuthoringValidator.Validate(_variation);
             _noise = FanlightShowStateAuthoringValidator.Validate(_noise);
             _rest = FanlightShowStateAuthoringValidator.Validate(_rest);

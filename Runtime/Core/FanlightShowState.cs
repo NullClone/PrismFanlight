@@ -6,9 +6,7 @@ namespace PrismFanlight.Core
 
         internal FanlightIntentState Intent { get; }
 
-        internal FanlightGestureState Gesture { get; }
-
-        internal FanlightPoseState Pose { get; }
+        internal FanlightMotionState Motion { get; }
 
         internal FanlightVariationState Variation { get; }
 
@@ -31,8 +29,7 @@ namespace PrismFanlight.Core
 
         internal FanlightShowState(
             FanlightIntentState intent,
-            FanlightGestureState gesture,
-            FanlightPoseState pose,
+            FanlightMotionState motion,
             FanlightVariationState variation,
             FanlightNoiseState noise,
             FanlightRestState rest,
@@ -43,8 +40,7 @@ namespace PrismFanlight.Core
             uint globalSeed)
         {
             Intent = intent;
-            Gesture = gesture;
-            Pose = pose;
+            Motion = motion;
             Variation = variation;
             Noise = noise;
             Rest = rest;

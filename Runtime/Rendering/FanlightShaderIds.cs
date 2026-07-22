@@ -17,6 +17,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
         internal static readonly int ColorAssignments = Shader.PropertyToID("_FanlightColorAssignments");
         internal static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
+        internal static readonly int MotionSamples = Shader.PropertyToID("_MotionSamples");
         internal static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");
         internal static readonly int AudienceArgs = Shader.PropertyToID("_AudienceArgs");
 
@@ -39,13 +40,9 @@ namespace PrismFanlight.Rendering
         internal static readonly int SeatPitch = Shader.PropertyToID("_SeatPitch");
         internal static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
-        internal static readonly int GestureTiming = Shader.PropertyToID("_GestureTiming");
-        internal static readonly int GestureShape = Shader.PropertyToID("_GestureShape");
-        internal static readonly int PoseReadyHand = Shader.PropertyToID("_PoseReadyHand");
-        internal static readonly int PoseAccentHand = Shader.PropertyToID("_PoseAccentHand");
-        internal static readonly int PoseHandArc = Shader.PropertyToID("_PoseHandArc");
-        internal static readonly int PoseReadyDirection = Shader.PropertyToID("_PoseReadyDirection");
-        internal static readonly int PoseAccentDirection = Shader.PropertyToID("_PoseAccentDirection");
+        internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
+        internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");
+        internal static readonly int MotionAssetWeights = Shader.PropertyToID("_MotionAssetWeights");
         internal static readonly int SwingMode = Shader.PropertyToID("_SwingMode");
         internal static readonly int SwingAxis = Shader.PropertyToID("_SwingAxis");
         internal static readonly int SwingTargetPos = Shader.PropertyToID("_SwingTargetPos");

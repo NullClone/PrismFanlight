@@ -6,9 +6,7 @@ namespace PrismFanlight.Timeline
     {
         internal FanlightIntentFields Intent { get; }
 
-        internal FanlightGestureFields Gesture { get; }
-
-        internal FanlightPoseFields Pose { get; }
+        internal FanlightMotionFields Motion { get; }
 
         internal FanlightVariationFields Variation { get; }
 
@@ -27,8 +25,7 @@ namespace PrismFanlight.Timeline
 
         private FanlightTimelineFieldMask(
             FanlightIntentFields intent,
-            FanlightGestureFields gesture,
-            FanlightPoseFields pose,
+            FanlightMotionFields motion,
             FanlightVariationFields variation,
             FanlightNoiseFields noise,
             FanlightRestFields rest,
@@ -38,8 +35,7 @@ namespace PrismFanlight.Timeline
             FanlightVisibilityFields visibility)
         {
             Intent = intent;
-            Gesture = gesture;
-            Pose = pose;
+            Motion = motion;
             Variation = variation;
             Noise = noise;
             Rest = rest;
@@ -50,33 +46,30 @@ namespace PrismFanlight.Timeline
         }
 
         internal static FanlightTimelineFieldMask From(FanlightIntentFields fields) =>
-            new(fields, default, default, default, default, default, default, default, default, default);
+            new(fields, default, default, default, default, default, default, default, default);
 
-        internal static FanlightTimelineFieldMask From(FanlightGestureFields fields) =>
-            new(default, fields, default, default, default, default, default, default, default, default);
-
-        internal static FanlightTimelineFieldMask From(FanlightPoseFields fields) =>
-            new(default, default, fields, default, default, default, default, default, default, default);
+        internal static FanlightTimelineFieldMask From(FanlightMotionFields fields) =>
+            new(default, fields, default, default, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightVariationFields fields) =>
-            new(default, default, default, fields, default, default, default, default, default, default);
+            new(default, default, fields, default, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightNoiseFields fields) =>
-            new(default, default, default, default, fields, default, default, default, default, default);
+            new(default, default, default, fields, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightRestFields fields) =>
-            new(default, default, default, default, default, fields, default, default, default, default);
+            new(default, default, default, default, fields, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightAudienceBodyFields fields) =>
-            new(default, default, default, default, default, default, fields, default, default, default);
+            new(default, default, default, default, default, fields, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightDirectionFields fields) =>
-            new(default, default, default, default, default, default, default, fields, default, default);
+            new(default, default, default, default, default, default, fields, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightPaletteFields fields) =>
-            new(default, default, default, default, default, default, default, default, fields, default);
+            new(default, default, default, default, default, default, default, fields, default);
 
         internal static FanlightTimelineFieldMask From(FanlightVisibilityFields fields) =>
-            new(default, default, default, default, default, default, default, default, default, fields);
+            new(default, default, default, default, default, default, default, default, fields);
     }
 }

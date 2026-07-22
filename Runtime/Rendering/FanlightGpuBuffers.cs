@@ -1,4 +1,6 @@
 using System;
+using PrismFanlight.Authoring;
+using PrismFanlight.Core;
 using UnityEngine;
 
 namespace PrismFanlight.Rendering
@@ -10,6 +12,9 @@ namespace PrismFanlight.Rendering
         private const int PaletteSlotCount = 6;
 
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
+        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount * 3];
+        private readonly FanlightMotionAsset[] _motionAssets = new FanlightMotionAsset[3];
+        private readonly int[] _motionRevisions = new int[3];
 
 
         // Properties
@@ -35,6 +40,8 @@ namespace PrismFanlight.Rendering
         internal ComputeBuffer ColorAssignmentBuffer { get; private set; }
 
         internal ComputeBuffer RandomBuffer { get; private set; }
+
+        internal ComputeBuffer MotionSampleBuffer { get; private set; }
 
         internal GraphicsBuffer PenlightArgsBuffer { get; private set; }
 
@@ -88,6 +95,7 @@ namespace PrismFanlight.Rendering
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
             ColorAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
+            MotionSampleBuffer = new ComputeBuffer(_motionSamples.Length, FanlightMotionSample.Stride, ComputeBufferType.Structured);
             PenlightArgsBuffer = new GraphicsBuffer(
                 GraphicsBuffer.Target.IndirectArguments,
                 PenlightVariantCount,
@@ -169,6 +177,46 @@ namespace PrismFanlight.Rendering
 
             RandomBuffer.SetData(BuildRandomData(layout, globalSeed));
             ColorAssignmentBuffer.SetData(BuildColorAssignments(layout, globalSeed));
+        }
+
+        internal bool UpdateMotionData(FanlightMotionState motion)
+        {
+            if (MotionSampleBuffer == null) throw new InvalidOperationException("Motion sample buffer is not allocated.");
+
+            var changed = false;
+            for (var i = 0; i < 3; i++)
+            {
+                var asset = motion.GetAsset(i);
+                if (motion.GetAssetWeight(i) > 0f && (asset == null || !asset.HasValidBake))
+                {
+                    throw new InvalidOperationException("Motion state contains an invalid baked asset.");
+                }
+
+                var revision = asset != null ? asset.BakeRevision : 0;
+                if (_motionAssets[i] != asset || _motionRevisions[i] != revision) changed = true;
+            }
+
+            if (!changed) return false;
+
+            for (var i = 0; i < 3; i++)
+            {
+                var asset = motion.GetAsset(i);
+                var destinationIndex = i * FanlightMotionAsset.SampleCount;
+                if (asset != null && asset.HasValidBake)
+                {
+                    asset.CopyBakedSamples(_motionSamples, destinationIndex);
+                }
+                else
+                {
+                    Array.Clear(_motionSamples, destinationIndex, FanlightMotionAsset.SampleCount);
+                }
+
+                _motionAssets[i] = asset;
+                _motionRevisions[i] = asset != null ? asset.BakeRevision : 0;
+            }
+
+            MotionSampleBuffer.SetData(_motionSamples);
+            return true;
         }
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
@@ -330,6 +378,7 @@ namespace PrismFanlight.Rendering
             MatrixBuffer?.Release();
             ColorAssignmentBuffer?.Release();
             RandomBuffer?.Release();
+            MotionSampleBuffer?.Release();
             PenlightArgsBuffer?.Release();
             AudiencePartBuffer?.Release();
             AudienceArgsBuffer?.Release();
@@ -345,6 +394,7 @@ namespace PrismFanlight.Rendering
             MatrixBuffer = null;
             ColorAssignmentBuffer = null;
             RandomBuffer = null;
+            MotionSampleBuffer = null;
             PenlightArgsBuffer = null;
             AudiencePartBuffer = null;
             AudienceArgsBuffer = null;
@@ -354,6 +404,8 @@ namespace PrismFanlight.Rendering
             PenlightVariantCount = 0;
             PenlightVariantOffsets = Array.Empty<uint>();
             PenlightVariantGripPivotYs = default;
+            Array.Clear(_motionAssets, 0, _motionAssets.Length);
+            Array.Clear(_motionRevisions, 0, _motionRevisions.Length);
         }
     }
 }
