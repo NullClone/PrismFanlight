@@ -9,9 +9,9 @@ namespace PrismFanlight.Core
         internal static FanlightIntentState Intent() => new(
             0.5f,
             0.5f,
-            1f,
-            1f,
-            0.5f);
+            0.8f,
+            0.5f,
+            0.3f);
 
         internal static FanlightMotionState Motion() => new(
             null,

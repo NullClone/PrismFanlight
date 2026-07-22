@@ -143,20 +143,26 @@ namespace PrismFanlight.Editor
                 if (motionAsset.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
+
                     using (new EditorGUI.DisabledScope(serializedObject.isEditingMultipleObjects))
                     {
-                        if (GUILayout.Button("Create Drum Motion Asset")) CreateMotionAsset(motionAsset);
+                        if (GUILayout.Button("Create Drum Motion Asset"))
+                        {
+                            CreateMotionAsset(motionAsset);
+                        }
                     }
                 }
 
-                DrawChild(_motion, "_beatsPerCycle", "Beats Per Cycle");
-                DrawChild(_motion, "_phaseOffsetBeats", "Phase Offset");
+                EditorGUILayout.Space();
+
                 DrawSlider(_motion, "_motionAmount", "Motion Amount", 0f, 2f);
                 DrawSlider(_motion, "_heightBias", "Height Bias", -1f, 1f);
                 DrawSlider(_motion, "_sideScale", "Side Scale", 0f, 2f);
                 DrawSlider(_motion, "_forwardScale", "Forward Scale", 0f, 2f);
                 DrawSlider(_motion, "_wristDelayRatio", "Wrist Delay", 0f, 0.5f);
                 DrawSlider(_motion, "_variation", "Variation", 0f, 1f);
+                DrawChild(_motion, "_beatsPerCycle", "Beats Per Cycle");
+                DrawChild(_motion, "_phaseOffsetBeats", "Phase Offset");
 
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Direction");
