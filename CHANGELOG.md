@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [1.5.0] - 2026-07-22
+
+### Added
+- 観客の動きをベイクできるようにし、より細かく制御できるようにしました
+
+### Changed
+- TimelineのクリップをPriorityで評価するように変更しました
+- デフォルトの値を更新しました
+- インスペクターの見た目を改善しました
+
+### Fixed
+- 新規トラックにクリップを配置したときにエラーが出る問題を修正
+- Timeline上で停止時にプレビューが正しく反映されない問題を修正
+
+
 ## [1.4.0] - 2026-07-20
 
 ### ⚠️注意️⚠️ 以前のバージョンと互換性はありません

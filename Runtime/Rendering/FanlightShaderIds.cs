@@ -17,6 +17,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
         internal static readonly int ColorAssignments = Shader.PropertyToID("_FanlightColorAssignments");
         internal static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
+        internal static readonly int MotionSamples = Shader.PropertyToID("_MotionSamples");
         internal static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");
         internal static readonly int AudienceArgs = Shader.PropertyToID("_AudienceArgs");
 
@@ -39,10 +40,11 @@ namespace PrismFanlight.Rendering
         internal static readonly int SeatPitch = Shader.PropertyToID("_SeatPitch");
         internal static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
-        internal static readonly int MotionSwing = Shader.PropertyToID("_MotionSwing");
-        internal static readonly int MotionShape = Shader.PropertyToID("_MotionShape");
+        internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
+        internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");
+        internal static readonly int MotionReferenceArm = Shader.PropertyToID("_MotionReferenceArm");
+        internal static readonly int MotionReferencePenlight = Shader.PropertyToID("_MotionReferencePenlight");
         internal static readonly int SwingMode = Shader.PropertyToID("_SwingMode");
-        internal static readonly int SwingWrist = Shader.PropertyToID("_SwingWrist");
         internal static readonly int SwingAxis = Shader.PropertyToID("_SwingAxis");
         internal static readonly int SwingTargetPos = Shader.PropertyToID("_SwingTargetPos");
         internal static readonly int WorldToLocal = Shader.PropertyToID("_WorldToLocal");
@@ -51,13 +53,11 @@ namespace PrismFanlight.Rendering
         internal static readonly int MotionHuman = Shader.PropertyToID("_MotionHuman");
         internal static readonly int MotionRest = Shader.PropertyToID("_MotionRest");
         internal static readonly int MotionRestTiming = Shader.PropertyToID("_MotionRestTiming");
-        internal static readonly int MotionBeat = Shader.PropertyToID("_MotionBeat");
         internal static readonly int MotionBeatSpread = Shader.PropertyToID("_MotionBeatSpread");
-        internal static readonly int GripPivotY = Shader.PropertyToID("_GripPivotY");
+        internal static readonly int HandPositionSpread = Shader.PropertyToID("_HandPositionSpread");
 
         internal static readonly int AudienceShape = Shader.PropertyToID("_AudienceShape");
         internal static readonly int AudienceArm = Shader.PropertyToID("_AudienceArm");
-        internal static readonly int HandZone = Shader.PropertyToID("_HandZone");
         internal static readonly int AudienceUpperBody = Shader.PropertyToID("_AudienceUpperBody");
         internal static readonly int AudienceMotionBody = Shader.PropertyToID("_AudienceMotionBody");
 

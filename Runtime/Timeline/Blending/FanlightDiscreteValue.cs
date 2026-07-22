@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using PrismFanlight.Core;
 
 namespace PrismFanlight.Timeline
@@ -8,21 +9,24 @@ namespace PrismFanlight.Timeline
         private bool _hasValue;
         private T _value;
         private float _weight;
-        private string _stableClipId;
+        private double _startSeconds;
 
 
-        internal void Consider(T value, float weight, string stableClipId)
+        internal void Consider(T value, float weight, double startSeconds)
         {
             if (!FanlightStateValidation.IsFinite(weight) || weight <= 0f) return;
 
-            if ((_hasValue && weight < _weight) ||
-                (_hasValue && weight == _weight && string.Compare(stableClipId, _stableClipId, StringComparison.Ordinal) <= 0))
-                return;
+            if (_hasValue && startSeconds == _startSeconds && !EqualityComparer<T>.Default.Equals(value, _value))
+            {
+                throw new InvalidOperationException("Different discrete Timeline values share the same clip start time.");
+            }
+
+            if ((_hasValue && weight < _weight) || (_hasValue && weight == _weight && startSeconds <= _startSeconds)) return;
 
             _hasValue = true;
             _value = value;
             _weight = weight;
-            _stableClipId = stableClipId;
+            _startSeconds = startSeconds;
         }
 
         internal T Value(T fallback) => _hasValue ? _value : fallback;

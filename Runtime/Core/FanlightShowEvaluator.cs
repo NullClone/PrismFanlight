@@ -10,7 +10,7 @@ namespace PrismFanlight.Core
         private const int DefaultContributionCapacity = 32;
 
         private FanlightShowContribution[] _activeContributions;
-        private readonly HashSet<string> _activeSourceIds;
+        private readonly HashSet<int> _activeTrackOrders;
 
 
         // Methods
@@ -26,7 +26,7 @@ namespace PrismFanlight.Core
                 ? Array.Empty<FanlightShowContribution>()
                 : new FanlightShowContribution[initialContributionCapacity];
 
-            _activeSourceIds = new HashSet<string>(initialContributionCapacity, StringComparer.Ordinal);
+            _activeTrackOrders = new HashSet<int>(initialContributionCapacity);
         }
 
         internal FanlightShowSample Evaluate(in FanlightShowEvaluationRequest request)
@@ -45,7 +45,7 @@ namespace PrismFanlight.Core
 
                 Array.Sort(_activeContributions, 0, activeCount, ContributionComparer.Instance);
 
-                ValidateUniqueSources(activeCount);
+                ValidateUniqueTrackOrders(activeCount);
 
                 for (var i = 0; i < activeCount; i++)
                 {
@@ -70,7 +70,7 @@ namespace PrismFanlight.Core
                     Array.Clear(_activeContributions, 0, activeCount);
                 }
 
-                _activeSourceIds.Clear();
+                _activeTrackOrders.Clear();
             }
         }
 
@@ -100,27 +100,37 @@ namespace PrismFanlight.Core
         private void EnsureContributionCapacity(int requiredCapacity)
         {
             if (_activeContributions.Length >= requiredCapacity) return;
+
             var capacity = Math.Max(DefaultContributionCapacity, _activeContributions.Length);
-            while (capacity < requiredCapacity) capacity *= 2;
+
+            while (capacity < requiredCapacity)
+            {
+                capacity *= 2;
+            }
+
             Array.Resize(ref _activeContributions, capacity);
         }
 
-        private void ValidateUniqueSources(int contributionCount)
+        private void ValidateUniqueTrackOrders(int contributionCount)
         {
-            _activeSourceIds.EnsureCapacity(contributionCount);
+            _activeTrackOrders.EnsureCapacity(contributionCount);
+
             for (var i = 0; i < contributionCount; i++)
             {
-                var sourceId = _activeContributions[i].SourceId;
-                if (!_activeSourceIds.Add(sourceId))
-                    throw new InvalidOperationException($"Duplicate active contribution source ID: {sourceId}");
+                var trackOrder = _activeContributions[i].TrackOrder;
+
+                if (!_activeTrackOrders.Add(trackOrder))
+                {
+                    throw new InvalidOperationException($"Duplicate active Timeline Track Order: {trackOrder}");
+                }
             }
         }
 
         private static double Quantize(double showSeconds, FanlightEvaluationOptions options)
         {
             if (options.AnimationSampleRate <= 0d) return showSeconds;
-            return Math.Floor(showSeconds * options.AnimationSampleRate + options.QuantizationEpsilon)
-                   / options.AnimationSampleRate;
+
+            return Math.Floor(showSeconds * options.AnimationSampleRate + options.QuantizationEpsilon) / options.AnimationSampleRate;
         }
 
 
@@ -130,11 +140,11 @@ namespace PrismFanlight.Core
 
             public int Compare(FanlightShowContribution left, FanlightShowContribution right)
             {
-                var priority = left.Priority.CompareTo(right.Priority);
+                var priority = left.TrackPriority.CompareTo(right.TrackPriority);
 
                 if (priority != 0) return priority;
 
-                return string.Compare(left.SourceId, right.SourceId, StringComparison.Ordinal);
+                return left.TrackOrder.CompareTo(right.TrackOrder);
             }
         }
     }

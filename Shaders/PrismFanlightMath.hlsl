@@ -46,6 +46,57 @@ float3 SafePerp(float3 axis)
     return SafeNormalize(v, float3(1.0, 0.0, 0.0));
 }
 
+float3 PrismDirectionFallbackAxis(float3 direction)
+{
+    float3 absolute = abs(direction);
+    float3 reference;
+
+    if (absolute.x <= absolute.y && absolute.x <= absolute.z)
+    {
+        reference = float3(1.0, 0.0, 0.0);
+    }
+    else if (absolute.y <= absolute.z)
+    {
+        reference = float3(0.0, 1.0, 0.0);
+    }
+    else
+    {
+        reference = float3(0.0, 0.0, 1.0);
+    }
+
+    return SafeNormalize(cross(direction, reference), float3(1.0, 0.0, 0.0));
+}
+
+float3 PrismInterpolateDirection(float3 from, float3 to, float weight)
+{
+    from = SafeNormalize(from, float3(0.0, 1.0, 0.0));
+    to = SafeNormalize(to, from);
+    weight = saturate(weight);
+
+    if (weight <= 0.0) return from;
+    if (weight >= 1.0) return to;
+
+    float cosine = clamp(dot(from, to), -1.0, 1.0);
+
+    if (cosine >= 0.9995)
+    {
+        return SafeNormalize(lerp(from, to, weight), from);
+    }
+
+    if (cosine <= -0.999999)
+    {
+        float axisAngle = PRISM_FANLIGHT_PI * weight;
+        float3 axis = PrismDirectionFallbackAxis(from);
+        return SafeNormalize(from * cos(axisAngle) + cross(axis, from) * sin(axisAngle), from);
+    }
+
+    float theta = acos(cosine);
+    float inverseSinTheta = rcp(sin(theta));
+    float fromWeight = sin((1.0 - weight) * theta) * inverseSinTheta;
+    float toWeight = sin(weight * theta) * inverseSinTheta;
+    return SafeNormalize(from * fromWeight + to * toWeight, from);
+}
+
 float FbmNoise21(float2 p, int octaves, float persistence)
 {
     float value = 0.0;
@@ -68,20 +119,6 @@ float4x4 Translate(float3 t)
         1, 0, 0, t.x,
         0, 1, 0, t.y,
         0, 0, 1, t.z,
-        0, 0, 0, 1);
-}
-
-float4x4 AxisAngle(float3 axis, float angle)
-{
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-
-    return float4x4(
-        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0,
-        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0,
-        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0,
         0, 0, 0, 1);
 }
 

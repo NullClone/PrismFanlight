@@ -2,6 +2,7 @@ using System;
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Rendering
 {
@@ -186,6 +187,11 @@ namespace PrismFanlight.Rendering
                 _animationInitialized = false;
             }
 
+            if (_buffers.HasMotionAssetChanges(sample.State.Motion))
+            {
+                _animationInitialized = false;
+            }
+
             var worldBounds = FanlightGeometryBuilder.TransformBounds(frame.LocalToWorld, _buffers.LocalBounds);
             var context = new FanlightGpuDispatchContext(_layout, sample, frame, camera, worldBounds);
             var discontinuity = sample.Discontinuity != FanlightTimeDiscontinuity.None;
@@ -211,6 +217,7 @@ namespace PrismFanlight.Rendering
                     (float)sample.AnimationSampleSeconds,
                     refreshAllAnimation))
             {
+                _buffers.UpdateMotionData(sample.State.Motion);
                 _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context, !refreshAllAnimation);
                 _animationInitialized = true;
                 _lastAnimationLocalToWorld = frame.LocalToWorld;
@@ -274,6 +281,10 @@ namespace PrismFanlight.Rendering
             }
 
             _ = FanlightShowStatePatcher.Validate(sample.State);
+            if (!sample.State.Motion.HasValidAssets())
+            {
+                throw new InvalidOperationException("A complete show sample requires valid baked Motion Assets.");
+            }
         }
 
         private static bool HasCameraChanged(
@@ -360,8 +371,8 @@ namespace PrismFanlight.Rendering
             _buffers.Release();
             if (_audienceMesh != null)
             {
-                if (Application.isPlaying) UnityEngine.Object.Destroy(_audienceMesh);
-                else UnityEngine.Object.DestroyImmediate(_audienceMesh);
+                if (Application.isPlaying) Object.Destroy(_audienceMesh);
+                else Object.DestroyImmediate(_audienceMesh);
             }
 
             _properties = null;

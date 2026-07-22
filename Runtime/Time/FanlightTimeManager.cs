@@ -170,7 +170,7 @@ namespace PrismFanlight.Time
                     _manualProvider ??= new ManualTimeProvider();
                     _manualProvider.Set(_manualSeconds, _manualRate);
                     return _manualProvider;
-                case ShowTimePrimaryMode.Component:
+                case ShowTimePrimaryMode.Provider:
                     return _primaryProvider as IShowTimeProvider;
                 default:
                     return _unityProvider ??= new UnityTimeProvider(_unityTime);

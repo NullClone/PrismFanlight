@@ -22,7 +22,7 @@ namespace PrismFanlight.Editor
 
             anim = new AnimBool(expand)
             {
-                speed = 10f,
+                speed = 12f,
                 target = expand
             };
         }

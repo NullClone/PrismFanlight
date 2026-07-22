@@ -6,9 +6,9 @@ namespace PrismFanlight.Core
     {
         // Properties
 
-        internal string SourceId { get; }
+        internal int TrackPriority { get; }
 
-        internal int Priority { get; }
+        internal int TrackOrder { get; }
 
         internal double StartSeconds { get; }
 
@@ -22,18 +22,13 @@ namespace PrismFanlight.Core
         // Methods
 
         internal FanlightShowContribution(
-            string sourceId,
-            int priority,
+            int trackPriority,
+            int trackOrder,
             double startSeconds,
             double endSeconds,
             float weight,
             FanlightShowPatch patch)
         {
-            if (string.IsNullOrWhiteSpace(sourceId))
-            {
-                throw new ArgumentException("Stable source ID is required.", nameof(sourceId));
-            }
-
             FanlightStateValidation.RequireFinite(startSeconds, nameof(startSeconds));
 
             if (double.IsNaN(endSeconds) || double.IsNegativeInfinity(endSeconds) || endSeconds <= startSeconds)
@@ -46,8 +41,8 @@ namespace PrismFanlight.Core
                 throw new ArgumentOutOfRangeException(nameof(weight));
             }
 
-            SourceId = sourceId;
-            Priority = priority;
+            TrackPriority = trackPriority;
+            TrackOrder = trackOrder;
             StartSeconds = startSeconds;
             EndSeconds = endSeconds;
             Weight = weight < 0f ? 0f : weight > 1f ? 1f : weight;

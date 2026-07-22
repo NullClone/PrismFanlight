@@ -40,6 +40,12 @@ struct FanlightRandomData
     float4 random7;
 };
 
+struct FanlightMotionSample
+{
+    float4 armDirectionExtension;
+    float4 penlightDirectionBodyLean;
+};
+
 struct PrismArm
 {
     float4x4 worldMatrix;
@@ -49,12 +55,20 @@ struct PrismArm
 
 struct PrismCrowdRhythm
 {
-    float basePhase;
+    float cyclePhase;
     float bodyPhase;
     float shoulderPhase;
-    float armPhase;
-    float wristPhase;
     float downbeatPulse;
+};
+
+struct PrismAudienceBasis
+{
+    float3 sideWorld;
+    float3 upWorld;
+    float3 forwardWorld;
+    float3 sideLocal;
+    float3 upLocal;
+    float3 forwardLocal;
 };
 
 struct PrismHumanPose

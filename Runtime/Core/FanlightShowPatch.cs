@@ -12,10 +12,7 @@ namespace PrismFanlight.Core
         private FanlightIntentPatch _intent;
 
         [SerializeField]
-        private FanlightGesturePatch _gesture;
-
-        [SerializeField]
-        private FanlightPosePatch _pose;
+        private FanlightMotionPatch _motion;
 
         [SerializeField]
         private FanlightVariationPatch _variation;
@@ -43,9 +40,7 @@ namespace PrismFanlight.Core
 
         internal FanlightIntentPatch Intent => _intent;
 
-        internal FanlightGesturePatch Gesture => _gesture;
-
-        internal FanlightPosePatch Pose => _pose;
+        internal FanlightMotionPatch Motion => _motion;
 
         internal FanlightVariationPatch Variation => _variation;
 
@@ -66,8 +61,7 @@ namespace PrismFanlight.Core
 
         internal FanlightShowPatch(
             FanlightIntentPatch intent,
-            FanlightGesturePatch gesture,
-            FanlightPosePatch pose,
+            FanlightMotionPatch motion,
             FanlightVariationPatch variation,
             FanlightNoisePatch noise,
             FanlightRestPatch rest,
@@ -77,8 +71,7 @@ namespace PrismFanlight.Core
             FanlightVisibilityPatch visibility)
         {
             _intent = intent;
-            _gesture = gesture;
-            _pose = pose;
+            _motion = motion;
             _variation = variation;
             _noise = noise;
             _rest = rest;

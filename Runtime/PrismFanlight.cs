@@ -56,10 +56,7 @@ namespace PrismFanlight
         private FanlightIntentState _intent = FanlightShowStateDefaults.Intent();
 
         [SerializeField]
-        private FanlightGestureState _gesture = FanlightShowStateDefaults.Gesture();
-
-        [SerializeField]
-        private FanlightPoseState _pose = FanlightShowStateDefaults.Pose();
+        private FanlightMotionState _motion = FanlightShowStateDefaults.Motion();
 
         [SerializeField]
         private FanlightVariationState _variation = FanlightShowStateDefaults.Variation();
@@ -118,8 +115,7 @@ namespace PrismFanlight
 
         internal FanlightShowState BaseState => new(
             _intent,
-            _gesture,
-            _pose,
+            _motion,
             _variation,
             _noise,
             _rest,
@@ -132,10 +128,22 @@ namespace PrismFanlight
 
         // Methods
 
+        private void Reset()
+        {
+            if (_timeManager == null)
+            {
+                if (!gameObject.TryGetComponent(out _timeManager))
+                {
+                    _timeManager = gameObject.AddComponent<FanlightTimeManager>();
+                }
+            }
+        }
+
         private void OnEnable()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+
             Camera.onPreCull -= OnCameraPreCull;
             Camera.onPreCull += OnCameraPreCull;
         }
@@ -152,12 +160,14 @@ namespace PrismFanlight
         {
             if (!enabled || !SystemInfo.supportsComputeShaders)
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
 
             if (_timeManager == null || _evaluationId == long.MaxValue)
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
@@ -166,6 +176,7 @@ namespace PrismFanlight
 
             if (!_timeManager.TrySample(_evaluationId, out var time, out _))
             {
+                ClearScheduledContributions();
                 Dispose();
                 return;
             }
@@ -206,8 +217,7 @@ namespace PrismFanlight
             _editorLayoutBlocked = false;
 
             _intent = FanlightShowStateAuthoringValidator.Validate(_intent);
-            _gesture = FanlightShowStateAuthoringValidator.Validate(_gesture);
-            _pose = FanlightShowStateAuthoringValidator.Validate(_pose);
+            _motion = FanlightShowStateAuthoringValidator.Validate(_motion);
             _variation = FanlightShowStateAuthoringValidator.Validate(_variation);
             _noise = FanlightShowStateAuthoringValidator.Validate(_noise);
             _rest = FanlightShowStateAuthoringValidator.Validate(_rest);
@@ -236,7 +246,7 @@ namespace PrismFanlight
         {
             if (Application.isPlaying)
             {
-                Debug.LogWarning("Layout asset changes are authoring-only. Assign and bake the layout before entering Play mode.");
+                Debug.LogWarning("Layout asset changes are authoring-only. Assign the layout before entering Play mode.");
                 return;
             }
 
@@ -252,8 +262,6 @@ namespace PrismFanlight
 #if UNITY_EDITOR
         internal void SetEditorLayoutPreview(FanlightRuntimeLayout preview, int changedBlockIndex)
         {
-            if (Application.isPlaying) return;
-
             if (preview == null)
             {
                 _editorPreviewLayout = null;
@@ -295,17 +303,13 @@ namespace PrismFanlight
         private void PrepareRenderFrame(in FanlightShowSample sample)
         {
             _hasRenderFrame = false;
+
             var runtimeLayout = GetRuntimeLayout();
 
             if (runtimeLayout == null)
             {
                 Dispose();
                 return;
-            }
-
-            if (_computeShader == null)
-            {
-                throw new InvalidOperationException("A Compute Shader is required to render.");
             }
 
             _renderer.Load(
@@ -387,8 +391,8 @@ namespace PrismFanlight
         private FanlightRuntimeLayout GetRuntimeLayout()
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying && _editorLayoutBlocked) return null;
-            if (!Application.isPlaying && _editorPreviewLayout != null) return _editorPreviewLayout;
+            if (_editorLayoutBlocked) return null;
+            if (_editorPreviewLayout != null) return _editorPreviewLayout;
 #endif
             if (_layoutAsset == null || !_layoutAsset.HasValidBake)
             {

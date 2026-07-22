@@ -26,14 +26,28 @@ float3 PrismComputeWorldDirection(FanlightSeatData seat)
     return worldDirection;
 }
 
-float3 PrismComputeBaseAxis(FanlightSeatData seat, bool horizontal)
+PrismAudienceBasis PrismComputeAudienceBasis(FanlightSeatData seat)
 {
-    float3 worldDirection = PrismComputeWorldDirection(seat);
-    float3 worldAxis = horizontal
-        ? worldDirection
-        : SafeNormalize(cross(float3(0.0, 1.0, 0.0), worldDirection), float3(1.0, 0.0, 0.0));
+    PrismAudienceBasis basis = (PrismAudienceBasis)0;
+    basis.upWorld = float3(0.0, 1.0, 0.0);
+    basis.forwardWorld = PrismComputeWorldDirection(seat);
+    basis.forwardWorld.y = 0.0;
+    basis.forwardWorld = SafeNormalize(basis.forwardWorld, float3(0.0, 0.0, 1.0));
+    basis.sideWorld = SafeNormalize(cross(basis.upWorld, basis.forwardWorld), float3(1.0, 0.0, 0.0));
+    basis.sideLocal = SafeNormalize(PrismWorldVectorToLocal(basis.sideWorld), float3(1.0, 0.0, 0.0));
+    basis.upLocal = SafeNormalize(PrismWorldVectorToLocal(basis.upWorld), float3(0.0, 1.0, 0.0));
+    basis.forwardLocal = SafeNormalize(PrismWorldVectorToLocal(basis.forwardWorld), float3(0.0, 0.0, 1.0));
+    return basis;
+}
 
-    return SafeNormalize(PrismWorldVectorToLocal(worldAxis), float3(1.0, 0.0, 0.0));
+float3 PrismTransformAudienceOffset(PrismAudienceBasis basis, float3 offset)
+{
+    return basis.sideLocal * offset.x + basis.upLocal * offset.y + basis.forwardLocal * offset.z;
+}
+
+float3 PrismTransformAudienceDirectionWorld(PrismAudienceBasis basis, float3 direction)
+{
+    return basis.sideWorld * direction.x + basis.upWorld * direction.y + basis.forwardWorld * direction.z;
 }
 
 #endif

@@ -82,8 +82,8 @@ namespace PrismFanlight.Editor
                     case ShowTimePrimaryMode.Manual:
                         DrawManualClock();
                         break;
-                    case ShowTimePrimaryMode.Component:
-                        DrawComponentClock();
+                    case ShowTimePrimaryMode.Provider:
+                        DrawProviderClock();
                         break;
                 }
             }
@@ -106,7 +106,7 @@ namespace PrismFanlight.Editor
             EditorGUILayout.Space();
         }
 
-        private void DrawComponentClock()
+        private void DrawProviderClock()
         {
             var provider = _primaryProvider.objectReferenceValue as MonoBehaviour;
             var selectedIndex = FindProviderTypeIndex(provider != null ? provider.GetType() : null) + 1;
