@@ -8,6 +8,25 @@ namespace PrismFanlight.Authoring
         // Fields
 
         internal const int SampleCount = 64;
+        private const int CurrentBakeFormatVersion = 2;
+
+        [SerializeField, Range(-90f, 90f)]
+        private float _referenceArmElevation = 65f;
+
+        [SerializeField, Range(-90f, 90f)]
+        private float _referenceArmSide;
+
+        [SerializeField, Range(0f, 1f)]
+        private float _referenceArmExtension = 0.92f;
+
+        [SerializeField, Range(-90f, 90f)]
+        private float _referencePenlightElevation = 78f;
+
+        [SerializeField, Range(-180f, 180f)]
+        private float _referencePenlightSide;
+
+        [SerializeField, Range(-45f, 45f)]
+        private float _referenceBodyLean = -2f;
 
         [SerializeField]
         private AnimationCurve _armElevation = new();
@@ -28,17 +47,28 @@ namespace PrismFanlight.Authoring
         private AnimationCurve _bodyLean = new();
 
         [SerializeField, HideInInspector]
+        private FanlightMotionSample _bakedReferencePose;
+
+        [SerializeField, HideInInspector]
         private FanlightMotionSample[] _bakedSamples = new FanlightMotionSample[SampleCount];
 
         [SerializeField, HideInInspector]
         private int _bakeRevision;
 
+        [SerializeField, HideInInspector]
+        private int _bakeFormatVersion;
+
 
         // Properties
 
-        internal bool HasValidBake => _bakedSamples != null && _bakedSamples.Length == SampleCount;
+        internal bool HasValidBake => _bakeFormatVersion == CurrentBakeFormatVersion
+                                      && _bakedReferencePose.IsValid
+                                      && _bakedSamples != null
+                                      && _bakedSamples.Length == SampleCount;
 
         internal int BakeRevision => _bakeRevision;
+
+        internal FanlightMotionSample ReferencePose => _bakedReferencePose;
 
 
         // Methods
@@ -70,6 +100,12 @@ namespace PrismFanlight.Authoring
 
         internal void ResetToDrum()
         {
+            _referenceArmElevation = 65f;
+            _referenceArmSide = 0f;
+            _referenceArmExtension = 0.92f;
+            _referencePenlightElevation = 78f;
+            _referencePenlightSide = 0f;
+            _referenceBodyLean = -2f;
             _armElevation = CreateCurve(
                 new Keyframe(0f, -55f),
                 new Keyframe(0.10f, -55f),
@@ -100,6 +136,14 @@ namespace PrismFanlight.Authoring
 
         internal void Bake()
         {
+            _bakedReferencePose = CreateSample(
+                _referenceArmElevation,
+                _referenceArmSide,
+                _referenceArmExtension,
+                _referencePenlightElevation,
+                _referencePenlightSide,
+                _referenceBodyLean);
+
             if (_bakedSamples == null || _bakedSamples.Length != SampleCount)
             {
                 _bakedSamples = new FanlightMotionSample[SampleCount];
@@ -108,20 +152,24 @@ namespace PrismFanlight.Authoring
             for (var i = 0; i < SampleCount; i++)
             {
                 var phase = (float)i / SampleCount;
-                _bakedSamples[i] = new FanlightMotionSample(
-                    EvaluateDegrees(_armElevation, phase, -90f, 90f) * Mathf.Deg2Rad,
-                    EvaluateDegrees(_armSide, phase, -90f, 90f) * Mathf.Deg2Rad,
+                _bakedSamples[i] = CreateSample(
+                    EvaluateDegrees(_armElevation, phase, -90f, 90f),
+                    EvaluateDegrees(_armSide, phase, -90f, 90f),
                     Evaluate(_armExtension, phase, 0f, 1f, 0.8f),
-                    EvaluateDegrees(_bodyLean, phase, -45f, 45f) * Mathf.Deg2Rad,
-                    EvaluateDegrees(_penlightElevation, phase, -90f, 90f) * Mathf.Deg2Rad,
-                    EvaluateDegrees(_penlightSide, phase, -180f, 180f) * Mathf.Deg2Rad);
+                    EvaluateDegrees(_penlightElevation, phase, -90f, 90f),
+                    EvaluateDegrees(_penlightSide, phase, -180f, 180f),
+                    EvaluateDegrees(_bodyLean, phase, -45f, 45f));
             }
 
+            _bakeFormatVersion = CurrentBakeFormatVersion;
             var revision = 17;
+            revision = unchecked(revision * 31 + _bakeFormatVersion);
+            revision = unchecked(revision * 31 + _bakedReferencePose.ArmDirectionExtension.GetHashCode());
+            revision = unchecked(revision * 31 + _bakedReferencePose.PenlightDirectionBodyLean.GetHashCode());
             for (var i = 0; i < _bakedSamples.Length; i++)
             {
-                revision = unchecked(revision * 31 + _bakedSamples[i].Arm.GetHashCode());
-                revision = unchecked(revision * 31 + _bakedSamples[i].Penlight.GetHashCode());
+                revision = unchecked(revision * 31 + _bakedSamples[i].ArmDirectionExtension.GetHashCode());
+                revision = unchecked(revision * 31 + _bakedSamples[i].PenlightDirectionBodyLean.GetHashCode());
             }
 
             _bakeRevision = revision == 0 ? 1 : revision;
@@ -146,6 +194,30 @@ namespace PrismFanlight.Authoring
             var curve = new AnimationCurve(keys);
             for (var i = 0; i < curve.length; i++) curve.SmoothTangents(i, 0f);
             return curve;
+        }
+
+        private static FanlightMotionSample CreateSample(
+            float armElevationDegrees,
+            float armSideDegrees,
+            float armExtension,
+            float penlightElevationDegrees,
+            float penlightSideDegrees,
+            float bodyLeanDegrees) =>
+            new(
+                CreateDirection(armElevationDegrees, armSideDegrees),
+                Mathf.Clamp01(armExtension),
+                CreateDirection(penlightElevationDegrees, penlightSideDegrees),
+                Mathf.Clamp(bodyLeanDegrees, -45f, 45f) * Mathf.Deg2Rad);
+
+        private static Vector3 CreateDirection(float elevationDegrees, float sideDegrees)
+        {
+            var elevation = elevationDegrees * Mathf.Deg2Rad;
+            var side = sideDegrees * Mathf.Deg2Rad;
+            var cosElevation = Mathf.Cos(elevation);
+            return new Vector3(
+                Mathf.Sin(side) * cosElevation,
+                Mathf.Sin(elevation),
+                Mathf.Cos(side) * cosElevation).normalized;
         }
 
         private static float EvaluateDegrees(AnimationCurve curve, float phase, float minimum, float maximum) =>

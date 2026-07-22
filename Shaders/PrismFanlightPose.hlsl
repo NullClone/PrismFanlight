@@ -41,11 +41,14 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
     return rhythm;
 }
 
-PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
+PrismHumanPose PrismComputeHumanPose(
+    FanlightSeatData seat,
+    PrismCrowdRhythm rhythm,
+    PrismAudienceBasis basis,
+    FanlightMotionSample motionSample,
+    float motionActivity)
 {
     float3 anchor = PrismComputeSeatAnchor(seat);
-    PrismCrowdRhythm rhythm = PrismComputeCrowdRhythm(seat);
-    PrismAudienceBasis basis = PrismComputeAudienceBasis(seat);
     float heightJitter = (PrismRandom(seat, 8u) * 2.0 - 1.0) * _AudienceShape.y;
     float bodyHeight = max(0.1, _AudienceShape.x * (1.0 + heightJitter));
     float shoulderHeight = bodyHeight * saturate(_AudienceShape.z);
@@ -62,8 +65,10 @@ PrismHumanPose PrismComputeHumanPose(FanlightSeatData seat)
     float neckHeight = max(shoulderHeight, bodyHeight - headHalf * 2.0);
     float shoulderLean = _AudienceUpperBody.y * saturate(_AudienceUpperBody.x) * saturate(_AudienceMotionBody.w);
     float3 upperBodyLean = basis.forwardLocal * shoulderSway * shoulderLean;
-    FanlightMotionSample motionSample = PrismSampleMotion(rhythm.cyclePhase);
-    float motionLean = motionSample.arm.w * _MotionParameters.x;
+    float motionLean = lerp(
+        _MotionReferencePenlight.w,
+        motionSample.penlightDirectionBodyLean.w,
+        motionActivity);
     float3 authoredBodyLean = basis.forwardLocal * sin(motionLean) * shoulderHeight;
 
     PrismHumanPose pose = (PrismHumanPose)0;

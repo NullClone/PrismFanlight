@@ -187,7 +187,7 @@ namespace PrismFanlight.Rendering
                 _animationInitialized = false;
             }
 
-            if (_buffers.UpdateMotionData(sample.State.Motion))
+            if (_buffers.HasMotionAssetChanges(sample.State.Motion))
             {
                 _animationInitialized = false;
             }
@@ -217,6 +217,7 @@ namespace PrismFanlight.Rendering
                     (float)sample.AnimationSampleSeconds,
                     refreshAllAnimation))
             {
+                _buffers.UpdateMotionData(sample.State.Motion);
                 _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context, !refreshAllAnimation);
                 _animationInitialized = true;
                 _lastAnimationLocalToWorld = frame.LocalToWorld;

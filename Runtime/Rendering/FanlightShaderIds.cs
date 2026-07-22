@@ -42,7 +42,8 @@ namespace PrismFanlight.Rendering
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
         internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
         internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");
-        internal static readonly int MotionAssetWeights = Shader.PropertyToID("_MotionAssetWeights");
+        internal static readonly int MotionReferenceArm = Shader.PropertyToID("_MotionReferenceArm");
+        internal static readonly int MotionReferencePenlight = Shader.PropertyToID("_MotionReferencePenlight");
         internal static readonly int SwingMode = Shader.PropertyToID("_SwingMode");
         internal static readonly int SwingAxis = Shader.PropertyToID("_SwingAxis");
         internal static readonly int SwingTargetPos = Shader.PropertyToID("_SwingTargetPos");

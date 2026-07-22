@@ -53,6 +53,8 @@ namespace PrismFanlight.Rendering
         {
             SetCommonParams(shader, context, buffers, false);
             SetAudienceParams(shader, context);
+            shader.SetVector(FanlightShaderIds.MotionReferenceArm, buffers.MotionReferenceArm);
+            shader.SetVector(FanlightShaderIds.MotionReferencePenlight, buffers.MotionReferencePenlight);
 
             var kernel = buffers.HasAudience
                 ? visibleOnly ? kernels.GenerateVisibleFrameData : kernels.GenerateAllFrameData
@@ -179,11 +181,6 @@ namespace PrismFanlight.Rendering
                 motion.HeightBias,
                 motion.SideScale,
                 motion.ForwardScale));
-            shader.SetVector(FanlightShaderIds.MotionAssetWeights, new Vector4(
-                motion.GetAssetWeight(0),
-                motion.GetAssetWeight(1),
-                motion.GetAssetWeight(2),
-                0f));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)direction.Mode);
             shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, variation.DirectionSpread * realism));
             var target = context.Frame.SwingTargetWorldPosition;

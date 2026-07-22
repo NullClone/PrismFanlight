@@ -42,8 +42,8 @@ struct FanlightRandomData
 
 struct FanlightMotionSample
 {
-    float4 arm;
-    float4 penlight;
+    float4 armDirectionExtension;
+    float4 penlightDirectionBodyLean;
 };
 
 struct PrismArm

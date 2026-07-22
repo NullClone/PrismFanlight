@@ -9,6 +9,12 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
+        private SerializedProperty _referenceArmElevation;
+        private SerializedProperty _referenceArmSide;
+        private SerializedProperty _referenceArmExtension;
+        private SerializedProperty _referencePenlightElevation;
+        private SerializedProperty _referencePenlightSide;
+        private SerializedProperty _referenceBodyLean;
         private SerializedProperty _armElevation;
         private SerializedProperty _armSide;
         private SerializedProperty _armExtension;
@@ -22,6 +28,12 @@ namespace PrismFanlight.Editor
 
         private void OnEnable()
         {
+            _referenceArmElevation = serializedObject.FindProperty(nameof(_referenceArmElevation));
+            _referenceArmSide = serializedObject.FindProperty(nameof(_referenceArmSide));
+            _referenceArmExtension = serializedObject.FindProperty(nameof(_referenceArmExtension));
+            _referencePenlightElevation = serializedObject.FindProperty(nameof(_referencePenlightElevation));
+            _referencePenlightSide = serializedObject.FindProperty(nameof(_referencePenlightSide));
+            _referenceBodyLean = serializedObject.FindProperty(nameof(_referenceBodyLean));
             _armElevation = serializedObject.FindProperty(nameof(_armElevation));
             _armSide = serializedObject.FindProperty(nameof(_armSide));
             _armExtension = serializedObject.FindProperty(nameof(_armExtension));
@@ -34,6 +46,15 @@ namespace PrismFanlight.Editor
         {
             serializedObject.Update();
 
+            EditorGUILayout.LabelField("Reference Pose", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_referenceArmElevation, new GUIContent("Arm Elevation"));
+            EditorGUILayout.PropertyField(_referenceArmSide, new GUIContent("Arm Side"));
+            EditorGUILayout.PropertyField(_referenceArmExtension, new GUIContent("Arm Extension"));
+            EditorGUILayout.PropertyField(_referencePenlightElevation, new GUIContent("Penlight Elevation"));
+            EditorGUILayout.PropertyField(_referencePenlightSide, new GUIContent("Penlight Side"));
+            EditorGUILayout.PropertyField(_referenceBodyLean, new GUIContent("Body Lean"));
+
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField("Motion Curves", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_armElevation, new GUIContent("Arm Elevation"));
             EditorGUILayout.PropertyField(_armSide, new GUIContent("Arm Side"));
@@ -51,6 +72,11 @@ namespace PrismFanlight.Editor
             DrawPhaseValue(_penlightElevation, "Penlight Elevation", -90f, 90f);
             DrawPhaseValue(_penlightSide, "Penlight Side", -180f, 180f);
             DrawPhaseValue(_bodyLean, "Body Lean", -45f, 45f);
+
+            if (GUILayout.Button("Set Reference From Phase"))
+            {
+                SetReferenceFromPhase();
+            }
 
             serializedObject.ApplyModifiedProperties();
 
@@ -116,6 +142,24 @@ namespace PrismFanlight.Editor
             }
 
             return -1;
+        }
+
+        private void SetReferenceFromPhase()
+        {
+            _referenceArmElevation.floatValue = EvaluatePhase(_armElevation, 0f, -90f, 90f);
+            _referenceArmSide.floatValue = EvaluatePhase(_armSide, 0f, -90f, 90f);
+            _referenceArmExtension.floatValue = EvaluatePhase(_armExtension, 0.8f, 0f, 1f);
+            _referencePenlightElevation.floatValue = EvaluatePhase(_penlightElevation, 0f, -90f, 90f);
+            _referencePenlightSide.floatValue = EvaluatePhase(_penlightSide, 0f, -180f, 180f);
+            _referenceBodyLean.floatValue = EvaluatePhase(_bodyLean, 0f, -45f, 45f);
+        }
+
+        private float EvaluatePhase(SerializedProperty property, float fallback, float minimum, float maximum)
+        {
+            var curve = property.animationCurveValue;
+            if (curve == null || curve.length == 0) return fallback;
+            var value = curve.Evaluate(_phase);
+            return float.IsFinite(value) ? Mathf.Clamp(value, minimum, maximum) : fallback;
         }
     }
 }

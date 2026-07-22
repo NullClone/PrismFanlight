@@ -163,8 +163,9 @@ void GenerateVisibleFrameData(uint3 dispatchId : SV_DispatchThreadID)
     if (PrismTryGetVariantVisibleSeat(visibleSlot, id))
     {
         FanlightSeatData seat = _Seats[id];
-        PrismHumanPose pose = PrismComputeHumanPose(seat);
-        PrismArm arm = PrismComputeArm(seat, pose, PrismPenlightGripPivotY(id));
+        PrismHumanPose pose;
+        PrismArm arm;
+        PrismComputeFrameData(seat, PrismPenlightGripPivotY(id), pose, arm);
         _FanlightMatrices[id] = arm.worldMatrix;
 
         if (_AudienceSlots[id] != 0xFFFFFFFFu)
@@ -181,8 +182,9 @@ void GenerateAllFrameData(uint3 dispatchId : SV_DispatchThreadID)
     if (id < (uint)_InstanceCount)
     {
         FanlightSeatData seat = _Seats[id];
-        PrismHumanPose pose = PrismComputeHumanPose(seat);
-        PrismArm arm = PrismComputeArm(seat, pose, PrismPenlightGripPivotY(id));
+        PrismHumanPose pose;
+        PrismArm arm;
+        PrismComputeFrameData(seat, PrismPenlightGripPivotY(id), pose, arm);
         _FanlightMatrices[id] = arm.worldMatrix;
 
         PrismBuildAudienceParts(id, pose, arm);
