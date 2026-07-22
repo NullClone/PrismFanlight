@@ -20,6 +20,13 @@ Shader "Hidden/AudienceIndirect"
         _RimStrength ("Rim Strength", Range(0, 4)) = 1.3
         _PenlightRimTint ("Penlight Rim Tint", Range(0, 1)) = 0.6
 
+        [Header(Perceptual Crowd)]
+        _EdgeSoftness ("Edge Softness", Range(0.5, 4)) = 1.4
+        _RimDirectionality ("Rim Directionality", Range(0, 1)) = 0.85
+        _RimVariation ("Rim Variation", Range(0, 1)) = 0.7
+        _RimPixelRange ("Rim Pixel Range", Vector) = (1.5, 3, 24, 52)
+        _LowerBodyAbsorption ("Lower Body Absorption", Range(0, 1)) = 0.9
+
     }
 
     SubShader
@@ -78,6 +85,11 @@ Shader "Hidden/AudienceIndirect"
                 float _RimPower;
                 float _RimStrength;
                 float _PenlightRimTint;
+                float _EdgeSoftness;
+                float _RimDirectionality;
+                float _RimVariation;
+                float4 _RimPixelRange;
+                float _LowerBodyAbsorption;
             CBUFFER_END
 
             struct Attributes
@@ -90,8 +102,9 @@ Shader "Hidden/AudienceIndirect"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float2 shape : TEXCOORD1;
+                nointerpolation float2 shape : TEXCOORD1;
                 nointerpolation uint seat : TEXCOORD2;
+                nointerpolation float partRadiusPixels : TEXCOORD3;
             };
 
             float4 SeatPenlightColor(uint seat)
@@ -99,10 +112,36 @@ Shader "Hidden/AudienceIndirect"
                 return PrismFanlightSeatColor(seat);
             }
 
+            uint AudienceHash(uint value)
+            {
+                value ^= value >> 16u;
+                value *= 0x7FEB352Du;
+                value ^= value >> 15u;
+                value *= 0x846CA68Bu;
+                value ^= value >> 16u;
+                return value;
+            }
+
+            float AudienceRandom(uint seat, uint salt)
+            {
+                uint assignment = _FanlightColorAssignments[seat];
+                uint value = AudienceHash(assignment ^ salt);
+                return (value & 0x00FFFFFFu) / 16777215.0;
+            }
+
             float SdfCoverage(float d)
             {
-                float aa = max(fwidth(d), 1e-5);
+                float aa = max(fwidth(d) * max(0.5, _EdgeSoftness), 1e-5);
                 return saturate(0.5 - d / aa);
+            }
+
+            float RimSizeMask(float partRadiusPixels)
+            {
+                float minimumEnd = max(_RimPixelRange.y, _RimPixelRange.x + 1e-3);
+                float maximumEnd = max(_RimPixelRange.w, _RimPixelRange.z + 1e-3);
+                float minimum = smoothstep(_RimPixelRange.x, minimumEnd, partRadiusPixels);
+                float maximum = 1.0 - smoothstep(_RimPixelRange.z, maximumEnd, partRadiusPixels);
+                return saturate(minimum * maximum);
             }
 
             Varyings vert(Attributes IN, uint svInstanceID : SV_InstanceID)
@@ -148,6 +187,10 @@ Shader "Hidden/AudienceIndirect"
                 OUT.uv = IN.uv;
                 OUT.shape = float2(type, lenUnits);
                 OUT.seat = seat;
+                OUT.partRadiusPixels = halfWidth
+                    * abs(UNITY_MATRIX_P._m11)
+                    * (_ScreenParams.y * 0.5)
+                    / max(abs(OUT.positionCS.w), 1e-4);
                 return OUT;
             }
 
@@ -159,14 +202,26 @@ Shader "Hidden/AudienceIndirect"
 
                 float coverage;
                 float3 N;
+                float headRandom0 = AudienceRandom(IN.seat, 0xA511E9B3u);
+                float headRandom1 = AudienceRandom(IN.seat, 0x63D83595u);
+                float rimRandom = AudienceRandom(IN.seat, 0xC2B2AE35u);
+                float breakupRandom = AudienceRandom(IN.seat, 0x27D4EB2Fu);
 
                 if (isHead)
                 {
                     float2 q = (uv - 0.5) * 2.0;
-                    float r2 = dot(q, q);
+                    float headWidth = lerp(0.84, 0.96, headRandom0);
+                    float jawWidth = lerp(0.78, 0.92, headRandom1);
+                    float lowerHead = saturate(-q.y);
+                    float upperHead = saturate(q.y);
+                    float width = headWidth
+                        * lerp(1.0, jawWidth, lowerHead)
+                        * lerp(1.0, 0.96, upperHead);
+                    float2 shaped = float2(q.x / max(width, 1e-3), q.y);
+                    float r2 = dot(shaped, shaped);
                     coverage = SdfCoverage(sqrt(r2) - 1.0);
                     float nz = sqrt(saturate(1.0 - r2));
-                    N = normalize(float3(q.x, q.y, nz));
+                    N = normalize(float3(shaped.x, shaped.y, nz));
                 }
                 else
                 {
@@ -181,14 +236,50 @@ Shader "Hidden/AudienceIndirect"
 
                 float3 baseCol = isHead ? _SkinColor.rgb : _ClothColor.rgb;
 
-                float3 L = normalize(_LightDir.xyz);
-                float ndl = dot(N, L) * 0.5 + 0.5;
+                float lightLengthSquared = dot(_LightDir.xyz, _LightDir.xyz);
+                float3 L = lightLengthSquared > 1e-6
+                               ? _LightDir.xyz * rsqrt(lightLengthSquared)
+                               : float3(0.0, 1.0, 0.0);
+                float lightDot = dot(N, L);
+                float ndl = lightDot * 0.5 + 0.5;
                 float shade = lerp(_Ambient, 1.0, ndl);
 
                 float ground = isBody ? lerp(1.0 - _GroundShade, 1.0, saturate(uv.y)) : 1.0;
-                float3 lit = baseCol * shade * ground;
+                float bodyAbsorption = isBody
+                                           ? lerp(1.0, smoothstep(0.08, 0.72, uv.y), _LowerBodyAbsorption)
+                                           : 1.0;
+                float fillVariation = lerp(0.88, 1.04, headRandom1);
+                float3 lit = baseCol * shade * ground * bodyAbsorption * fillVariation;
 
-                float rim = pow(saturate(1.0 - N.z), _RimPower) * _RimStrength;
+                float fresnel = pow(saturate(1.0 - N.z), max(0.5, _RimPower));
+                float directional = lerp(
+                    1.0,
+                    smoothstep(-0.15, 0.45, lightDot),
+                    _RimDirectionality);
+                float seatVariation = lerp(
+                    1.0,
+                    smoothstep(0.15, 0.9, rimRandom),
+                    _RimVariation);
+                float breakupWave = sin(
+                    (isHead ? atan2(N.y, N.x + 1e-6) : uv.y * 3.14159265)
+                    * 1.75
+                    + breakupRandom * 6.28318531) * 0.5 + 0.5;
+                float breakup = lerp(
+                    1.0,
+                    smoothstep(0.2, 0.8, breakupWave),
+                    _RimVariation * 0.55);
+                float partMask = isBody
+                                     ? smoothstep(0.2, 0.72, uv.y)
+                                     : isHead
+                                     ? lerp(0.3, 1.0, smoothstep(0.15, 0.85, uv.y))
+                                     : 1.0;
+                float rim = fresnel
+                    * directional
+                    * seatVariation
+                    * breakup
+                    * partMask
+                    * RimSizeMask(IN.partRadiusPixels)
+                    * _RimStrength;
                 float3 rimCol = lerp(_RimColor.rgb, SeatPenlightColor(IN.seat).rgb, _PenlightRimTint);
 
                 float3 rgb = lit + rim * rimCol;

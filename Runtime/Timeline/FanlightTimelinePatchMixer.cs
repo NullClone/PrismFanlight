@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 
@@ -114,8 +115,8 @@ namespace PrismFanlight.Timeline
             var forwardScale = new FanlightWeightedFloat();
             var wristDelayRatio = new FanlightWeightedFloat();
             var variation = new FanlightWeightedFloat();
-            var assetA = default(global::PrismFanlight.Authoring.FanlightMotionAsset);
-            var assetB = default(global::PrismFanlight.Authoring.FanlightMotionAsset);
+            var assetA = default(FanlightMotionAsset);
+            var assetB = default(FanlightMotionAsset);
             var assetWeights = Vector2.zero;
 
             for (var i = 0; i < samples.Length; i++)
@@ -619,10 +620,10 @@ namespace PrismFanlight.Timeline
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
 
         private static void AddAsset(
-            global::PrismFanlight.Authoring.FanlightMotionAsset asset,
+            FanlightMotionAsset asset,
             float weight,
-            ref global::PrismFanlight.Authoring.FanlightMotionAsset assetA,
-            ref global::PrismFanlight.Authoring.FanlightMotionAsset assetB,
+            ref FanlightMotionAsset assetA,
+            ref FanlightMotionAsset assetB,
             ref Vector2 weights)
         {
             if (assetA == asset)

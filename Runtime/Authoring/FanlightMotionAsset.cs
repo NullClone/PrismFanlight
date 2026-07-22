@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace PrismFanlight.Authoring
@@ -9,6 +10,7 @@ namespace PrismFanlight.Authoring
 
         internal const int SampleCount = 64;
         private const int CurrentBakeFormatVersion = 2;
+
 
         [SerializeField, Range(-90f, 90f)]
         private float _referenceArmElevation = 65f;
@@ -63,8 +65,7 @@ namespace PrismFanlight.Authoring
 
         internal bool HasValidBake => _bakeFormatVersion == CurrentBakeFormatVersion
                                       && _bakedReferencePose.IsValid
-                                      && _bakedSamples != null
-                                      && _bakedSamples.Length == SampleCount;
+                                      && _bakedSamples is { Length: SampleCount };
 
         internal int BakeRevision => _bakeRevision;
 
@@ -131,6 +132,7 @@ namespace PrismFanlight.Authoring
                 new Keyframe(0.42f, -2f),
                 new Keyframe(0.72f, -2f),
                 new Keyframe(1f, 4f));
+
             Bake();
         }
 
@@ -162,6 +164,7 @@ namespace PrismFanlight.Authoring
             }
 
             _bakeFormatVersion = CurrentBakeFormatVersion;
+
             var revision = 17;
             revision = unchecked(revision * 31 + _bakeFormatVersion);
             revision = unchecked(revision * 31 + _bakedReferencePose.ArmDirectionExtension.GetHashCode());
@@ -185,14 +188,18 @@ namespace PrismFanlight.Authoring
                 return false;
             }
 
-            System.Array.Copy(_bakedSamples, 0, destination, destinationIndex, SampleCount);
+            Array.Copy(_bakedSamples, 0, destination, destinationIndex, SampleCount);
             return true;
         }
 
         private static AnimationCurve CreateCurve(params Keyframe[] keys)
         {
             var curve = new AnimationCurve(keys);
-            for (var i = 0; i < curve.length; i++) curve.SmoothTangents(i, 0f);
+            for (var i = 0; i < curve.length; i++)
+            {
+                curve.SmoothTangents(i, 0f);
+            }
+
             return curve;
         }
 
@@ -202,32 +209,41 @@ namespace PrismFanlight.Authoring
             float armExtension,
             float penlightElevationDegrees,
             float penlightSideDegrees,
-            float bodyLeanDegrees) =>
-            new(
-                CreateDirection(armElevationDegrees, armSideDegrees),
+            float bodyLeanDegrees)
+        {
+            var armDirection = CreateDirection(armElevationDegrees, armSideDegrees);
+            var penlightDirection = CreateDirection(penlightElevationDegrees, penlightSideDegrees);
+
+            return new FanlightMotionSample(
+                armDirection,
                 Mathf.Clamp01(armExtension),
-                CreateDirection(penlightElevationDegrees, penlightSideDegrees),
+                penlightDirection,
                 Mathf.Clamp(bodyLeanDegrees, -45f, 45f) * Mathf.Deg2Rad);
+        }
 
         private static Vector3 CreateDirection(float elevationDegrees, float sideDegrees)
         {
             var elevation = elevationDegrees * Mathf.Deg2Rad;
             var side = sideDegrees * Mathf.Deg2Rad;
             var cosElevation = Mathf.Cos(elevation);
+
             return new Vector3(
                 Mathf.Sin(side) * cosElevation,
                 Mathf.Sin(elevation),
                 Mathf.Cos(side) * cosElevation).normalized;
         }
 
-        private static float EvaluateDegrees(AnimationCurve curve, float phase, float minimum, float maximum) =>
-            Evaluate(curve, phase, minimum, maximum, 0f);
+        private static float EvaluateDegrees(AnimationCurve curve, float phase, float minimum, float maximum)
+            => Evaluate(curve, phase, minimum, maximum, 0f);
 
         private static float Evaluate(AnimationCurve curve, float phase, float minimum, float maximum, float fallback)
         {
             if (curve == null || curve.length == 0) return fallback;
+
             var value = curve.Evaluate(phase);
+
             if (float.IsNaN(value) || float.IsInfinity(value)) return fallback;
+
             return Mathf.Clamp(value, minimum, maximum);
         }
     }
