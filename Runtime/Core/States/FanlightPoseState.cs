@@ -9,37 +9,19 @@ namespace PrismFanlight.Core
         // Fields
 
         [SerializeField]
-        private FanlightHandZone _handZone;
+        private Vector3 _readyHandOffset;
 
         [SerializeField]
-        private float _handHeightOffset;
+        private Vector3 _accentHandOffset;
 
         [SerializeField]
-        private float _handForwardOffset;
-
-        [SerializeField, Min(0.01f)]
-        private float _handReachScale;
+        private Vector3 _handArcOffset;
 
         [SerializeField]
-        private float _armLengthMinimum;
+        private Vector3 _readyPenlightDirection;
 
         [SerializeField]
-        private float _armLengthMaximum;
-
-        [SerializeField]
-        private float _angleMinimumRadians;
-
-        [SerializeField]
-        private float _angleMaximumRadians;
-
-        [SerializeField]
-        private float _horizontalRatio;
-
-        [SerializeField]
-        private float _wristFrequencyMultiplier;
-
-        [SerializeField]
-        private float _wristAngleRadians;
+        private Vector3 _accentPenlightDirection;
 
         [SerializeField]
         private float _bodyLean;
@@ -47,27 +29,15 @@ namespace PrismFanlight.Core
 
         // Properties
 
-        internal FanlightHandZone HandZone => _handZone;
+        internal Vector3 ReadyHandOffset => _readyHandOffset;
 
-        internal float HandHeightOffset => _handHeightOffset;
+        internal Vector3 AccentHandOffset => _accentHandOffset;
 
-        internal float HandForwardOffset => _handForwardOffset;
+        internal Vector3 HandArcOffset => _handArcOffset;
 
-        internal float HandReachScale => _handReachScale;
+        internal Vector3 ReadyPenlightDirection => _readyPenlightDirection;
 
-        internal float ArmLengthMinimum => _armLengthMinimum;
-
-        internal float ArmLengthMaximum => _armLengthMaximum;
-
-        internal float AngleMinimumRadians => _angleMinimumRadians;
-
-        internal float AngleMaximumRadians => _angleMaximumRadians;
-
-        internal float HorizontalRatio => _horizontalRatio;
-
-        internal float WristFrequencyMultiplier => _wristFrequencyMultiplier;
-
-        internal float WristAngleRadians => _wristAngleRadians;
+        internal Vector3 AccentPenlightDirection => _accentPenlightDirection;
 
         internal float BodyLean => _bodyLean;
 
@@ -75,35 +45,18 @@ namespace PrismFanlight.Core
         // Methods
 
         internal FanlightPoseState(
-            FanlightHandZone handZone,
-            float handHeightOffset,
-            float handForwardOffset,
-            float handReachScale,
-            float armLengthMinimum,
-            float armLengthMaximum,
-            float angleMinimumRadians,
-            float angleMaximumRadians,
-            float horizontalRatio,
-            float wristFrequencyMultiplier,
-            float wristAngleRadians,
+            Vector3 readyHandOffset,
+            Vector3 accentHandOffset,
+            Vector3 handArcOffset,
+            Vector3 readyPenlightDirection,
+            Vector3 accentPenlightDirection,
             float bodyLean)
         {
-            if (handZone is < FanlightHandZone.Shoulder or > FanlightHandZone.High)
-            {
-                throw new ArgumentOutOfRangeException(nameof(handZone));
-            }
-
-            _handZone = handZone;
-            _handHeightOffset = FanlightStateValidation.RequireRange(handHeightOffset, -1f, 1.5f, nameof(handHeightOffset));
-            _handForwardOffset = FanlightStateValidation.RequireRange(handForwardOffset, -1f, 1f, nameof(handForwardOffset));
-            _handReachScale = FanlightStateValidation.RequireMinimum(handReachScale, 0.01f, nameof(handReachScale));
-            _armLengthMinimum = FanlightStateValidation.RequireRange(armLengthMinimum, 0f, 5f, nameof(armLengthMinimum));
-            _armLengthMaximum = FanlightStateValidation.RequireRange(armLengthMaximum, 0f, 5f, nameof(armLengthMaximum));
-            _angleMinimumRadians = FanlightStateValidation.RequireRange(angleMinimumRadians, 0f, Mathf.PI * 2f, nameof(angleMinimumRadians));
-            _angleMaximumRadians = FanlightStateValidation.RequireRange(angleMaximumRadians, 0f, Mathf.PI * 2f, nameof(angleMaximumRadians));
-            _horizontalRatio = FanlightStateValidation.RequireRange(horizontalRatio, 0f, 1f, nameof(horizontalRatio));
-            _wristFrequencyMultiplier = FanlightStateValidation.RequireRange(wristFrequencyMultiplier, 1f, 64f, nameof(wristFrequencyMultiplier));
-            _wristAngleRadians = FanlightStateValidation.RequireRange(wristAngleRadians, 0f, Mathf.PI, nameof(wristAngleRadians));
+            _readyHandOffset = FanlightStateValidation.RequireFinite(readyHandOffset, nameof(readyHandOffset));
+            _accentHandOffset = FanlightStateValidation.RequireFinite(accentHandOffset, nameof(accentHandOffset));
+            _handArcOffset = FanlightStateValidation.RequireFinite(handArcOffset, nameof(handArcOffset));
+            _readyPenlightDirection = FanlightStateValidation.RequireDirection(readyPenlightDirection, nameof(readyPenlightDirection));
+            _accentPenlightDirection = FanlightStateValidation.RequireDirection(accentPenlightDirection, nameof(accentPenlightDirection));
             _bodyLean = FanlightStateValidation.RequireRange(bodyLean, -1f, 1f, nameof(bodyLean));
         }
     }

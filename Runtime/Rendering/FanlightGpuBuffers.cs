@@ -50,8 +50,6 @@ namespace PrismFanlight.Rendering
 
         internal Bounds LocalBounds { get; private set; }
 
-        internal float MeshPivotY { get; private set; }
-
         internal int PenlightVariantCount { get; private set; }
 
         internal uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
@@ -74,7 +72,6 @@ namespace PrismFanlight.Rendering
             BlockCount = layout.BlockCount;
             PenlightVariantCount = appearance.VariantCount;
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
-            MeshPivotY = appearance.GripPivotYs[0];
             PenlightVariantGripPivotYs = BuildGripPivotVector(appearance.GripPivotYs);
 
             var assignments = BuildVariantAssignments(layout, appearance, out var counts);
@@ -354,7 +351,6 @@ namespace PrismFanlight.Rendering
             SeatCount = 0;
             BlockCount = 0;
             LocalBounds = default;
-            MeshPivotY = 0f;
             PenlightVariantCount = 0;
             PenlightVariantOffsets = Array.Empty<uint>();
             PenlightVariantGripPivotYs = default;

@@ -25,10 +25,6 @@ namespace PrismFanlight.Core
 
         internal static FanlightShowState Validate(FanlightShowState state)
         {
-            if (state.Pose.ArmLengthMinimum > state.Pose.ArmLengthMaximum)
-                throw new InvalidOperationException("Minimum arm length must not exceed maximum arm length.");
-            if (state.Pose.AngleMinimumRadians > state.Pose.AngleMaximumRadians)
-                throw new InvalidOperationException("Minimum pose angle must not exceed maximum pose angle.");
             if (state.Rest.DurationSeconds > state.Rest.CycleSeconds)
                 throw new InvalidOperationException("Rest duration must not exceed its cycle.");
 
@@ -67,9 +63,11 @@ namespace PrismFanlight.Core
             return new FanlightGestureState(
                 Has(patch.Fields, FanlightGestureFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
                 Has(patch.Fields, FanlightGestureFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
+                Has(patch.Fields, FanlightGestureFields.StrokeRatio) ? Lerp(current.StrokeRatio, value.StrokeRatio, weight) : current.StrokeRatio,
                 Has(patch.Fields, FanlightGestureFields.HoldRatio) ? Lerp(current.HoldRatio, value.HoldRatio, weight) : current.HoldRatio,
                 Has(patch.Fields, FanlightGestureFields.Crispness) ? Lerp(current.Crispness, value.Crispness, weight) : current.Crispness,
                 Has(patch.Fields, FanlightGestureFields.FollowThrough) ? Lerp(current.FollowThrough, value.FollowThrough, weight) : current.FollowThrough,
+                Has(patch.Fields, FanlightGestureFields.WristLagRatio) ? Lerp(current.WristLagRatio, value.WristLagRatio, weight) : current.WristLagRatio,
                 Has(patch.Fields, FanlightGestureFields.DownbeatAccent) ? Lerp(current.DownbeatAccent, value.DownbeatAccent, weight) : current.DownbeatAccent);
         }
 
@@ -78,19 +76,12 @@ namespace PrismFanlight.Core
             ValidateMask((int)patch.Fields, (int)FanlightPoseFields.All, nameof(patch));
 
             var value = patch.Value;
-            var discrete = weight >= 0.5f;
             return new FanlightPoseState(
-                Has(patch.Fields, FanlightPoseFields.HandZone) && discrete ? value.HandZone : current.HandZone,
-                Has(patch.Fields, FanlightPoseFields.HandHeightOffset) ? Lerp(current.HandHeightOffset, value.HandHeightOffset, weight) : current.HandHeightOffset,
-                Has(patch.Fields, FanlightPoseFields.HandForwardOffset) ? Lerp(current.HandForwardOffset, value.HandForwardOffset, weight) : current.HandForwardOffset,
-                Has(patch.Fields, FanlightPoseFields.HandReachScale) ? Lerp(current.HandReachScale, value.HandReachScale, weight) : current.HandReachScale,
-                Has(patch.Fields, FanlightPoseFields.ArmLengthMinimum) ? Lerp(current.ArmLengthMinimum, value.ArmLengthMinimum, weight) : current.ArmLengthMinimum,
-                Has(patch.Fields, FanlightPoseFields.ArmLengthMaximum) ? Lerp(current.ArmLengthMaximum, value.ArmLengthMaximum, weight) : current.ArmLengthMaximum,
-                Has(patch.Fields, FanlightPoseFields.AngleMinimumRadians) ? Lerp(current.AngleMinimumRadians, value.AngleMinimumRadians, weight) : current.AngleMinimumRadians,
-                Has(patch.Fields, FanlightPoseFields.AngleMaximumRadians) ? Lerp(current.AngleMaximumRadians, value.AngleMaximumRadians, weight) : current.AngleMaximumRadians,
-                Has(patch.Fields, FanlightPoseFields.HorizontalRatio) ? Lerp(current.HorizontalRatio, value.HorizontalRatio, weight) : current.HorizontalRatio,
-                Has(patch.Fields, FanlightPoseFields.WristFrequencyMultiplier) ? Lerp(current.WristFrequencyMultiplier, value.WristFrequencyMultiplier, weight) : current.WristFrequencyMultiplier,
-                Has(patch.Fields, FanlightPoseFields.WristAngleRadians) ? Lerp(current.WristAngleRadians, value.WristAngleRadians, weight) : current.WristAngleRadians,
+                Has(patch.Fields, FanlightPoseFields.ReadyHandOffset) ? Vector3.LerpUnclamped(current.ReadyHandOffset, value.ReadyHandOffset, weight) : current.ReadyHandOffset,
+                Has(patch.Fields, FanlightPoseFields.AccentHandOffset) ? Vector3.LerpUnclamped(current.AccentHandOffset, value.AccentHandOffset, weight) : current.AccentHandOffset,
+                Has(patch.Fields, FanlightPoseFields.HandArcOffset) ? Vector3.LerpUnclamped(current.HandArcOffset, value.HandArcOffset, weight) : current.HandArcOffset,
+                Has(patch.Fields, FanlightPoseFields.ReadyPenlightDirection) ? FanlightDirectionInterpolation.Interpolate(current.ReadyPenlightDirection, value.ReadyPenlightDirection, weight) : current.ReadyPenlightDirection,
+                Has(patch.Fields, FanlightPoseFields.AccentPenlightDirection) ? FanlightDirectionInterpolation.Interpolate(current.AccentPenlightDirection, value.AccentPenlightDirection, weight) : current.AccentPenlightDirection,
                 Has(patch.Fields, FanlightPoseFields.BodyLean) ? Lerp(current.BodyLean, value.BodyLean, weight) : current.BodyLean);
         }
 

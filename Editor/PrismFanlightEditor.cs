@@ -421,8 +421,8 @@ namespace PrismFanlight.Editor
                 DrawChild(_pose, "_readyHandOffset", "Ready Hand Offset");
                 DrawChild(_pose, "_accentHandOffset", "Accent Hand Offset");
                 DrawChild(_pose, "_handArcOffset", "Hand Arc Offset");
-                DrawChild(_pose, "_readyPenlightDirection", "Ready Penlight Direction");
-                DrawChild(_pose, "_accentPenlightDirection", "Accent Penlight Direction");
+                FanlightPoseStateDrawer.DrawDirection(_pose.FindPropertyRelative("_readyPenlightDirection"), new GUIContent("Ready Penlight Direction"));
+                FanlightPoseStateDrawer.DrawDirection(_pose.FindPropertyRelative("_accentPenlightDirection"), new GUIContent("Accent Penlight Direction"));
                 DrawSlider(_pose, "_bodyLean", "Body Lean", -1f, 1f);
             });
 

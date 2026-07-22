@@ -31,9 +31,11 @@ namespace PrismFanlight.Core
                 return new FanlightGestureState(
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
+                    value.StrokeRatio,
                     value.HoldRatio,
                     value.Crispness,
                     value.FollowThrough,
+                    value.WristLagRatio,
                     value.DownbeatAccent);
             }
             catch (ArgumentException)
@@ -44,38 +46,19 @@ namespace PrismFanlight.Core
 
         internal static FanlightPoseState Validate(FanlightPoseState value)
         {
-            var fallback = FanlightShowStateDefaults.Pose();
-
             try
             {
-                if (value.ArmLengthMinimum > value.ArmLengthMaximum
-                    || value.AngleMinimumRadians > value.AngleMaximumRadians)
-                {
-                    return fallback;
-                }
-
-                var handReachScale = FanlightStateValidation.IsFinite(value.HandReachScale)
-                                     && value.HandReachScale >= 0.01f
-                    ? value.HandReachScale
-                    : fallback.HandReachScale;
-
                 return new FanlightPoseState(
-                    value.HandZone,
-                    value.HandHeightOffset,
-                    value.HandForwardOffset,
-                    handReachScale,
-                    value.ArmLengthMinimum,
-                    value.ArmLengthMaximum,
-                    value.AngleMinimumRadians,
-                    value.AngleMaximumRadians,
-                    value.HorizontalRatio,
-                    value.WristFrequencyMultiplier,
-                    value.WristAngleRadians,
+                    value.ReadyHandOffset,
+                    value.AccentHandOffset,
+                    value.HandArcOffset,
+                    value.ReadyPenlightDirection,
+                    value.AccentPenlightDirection,
                     value.BodyLean);
             }
             catch (ArgumentException)
             {
-                return fallback;
+                return FanlightShowStateDefaults.Pose();
             }
         }
 

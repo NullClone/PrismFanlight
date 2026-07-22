@@ -1,5 +1,6 @@
 using System;
 using PrismFanlight.Core;
+using UnityEngine;
 
 namespace PrismFanlight.Timeline
 {
@@ -110,9 +111,11 @@ namespace PrismFanlight.Timeline
 
             var beatsPerCycle = new FanlightWeightedFloat();
             var phaseOffsetBeats = new FanlightWeightedFloat();
+            var strokeRatio = new FanlightWeightedFloat();
             var holdRatio = new FanlightWeightedFloat();
             var crispness = new FanlightWeightedFloat();
             var followThrough = new FanlightWeightedFloat();
+            var wristLagRatio = new FanlightWeightedFloat();
             var downbeatAccent = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
@@ -121,9 +124,11 @@ namespace PrismFanlight.Timeline
                 var sourceValue = sample.Value.Gesture;
                 if (Has(fields, FanlightGestureFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
                 if (Has(fields, FanlightGestureFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
+                if (Has(fields, FanlightGestureFields.StrokeRatio)) strokeRatio.Add(sourceValue.StrokeRatio, sample.Weight);
                 if (Has(fields, FanlightGestureFields.HoldRatio)) holdRatio.Add(sourceValue.HoldRatio, sample.Weight);
                 if (Has(fields, FanlightGestureFields.Crispness)) crispness.Add(sourceValue.Crispness, sample.Weight);
                 if (Has(fields, FanlightGestureFields.FollowThrough)) followThrough.Add(sourceValue.FollowThrough, sample.Weight);
+                if (Has(fields, FanlightGestureFields.WristLagRatio)) wristLagRatio.Add(sourceValue.WristLagRatio, sample.Weight);
                 if (Has(fields, FanlightGestureFields.DownbeatAccent)) downbeatAccent.Add(sourceValue.DownbeatAccent, sample.Weight);
             }
 
@@ -137,9 +142,11 @@ namespace PrismFanlight.Timeline
             var value = new FanlightGestureState(
                 beatsPerCycle.Value(fallback.BeatsPerCycle),
                 phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
+                strokeRatio.Value(fallback.StrokeRatio),
                 holdRatio.Value(fallback.HoldRatio),
                 crispness.Value(fallback.Crispness),
                 followThrough.Value(fallback.FollowThrough),
+                wristLagRatio.Value(fallback.WristLagRatio),
                 downbeatAccent.Value(fallback.DownbeatAccent)
             );
 
@@ -166,34 +173,28 @@ namespace PrismFanlight.Timeline
         {
             ValidateMask((int)fields, (int)FanlightPoseFields.All);
 
-            var handZone = new FanlightDiscreteValue<FanlightHandZone>();
-            var handHeightOffset = new FanlightWeightedFloat();
-            var handForwardOffset = new FanlightWeightedFloat();
-            var handReachScale = new FanlightWeightedFloat();
-            var armLengthMinimum = new FanlightWeightedFloat();
-            var armLengthMaximum = new FanlightWeightedFloat();
-            var angleMinimumRadians = new FanlightWeightedAngle();
-            var angleMaximumRadians = new FanlightWeightedAngle();
-            var horizontalRatio = new FanlightWeightedFloat();
-            var wristFrequencyMultiplier = new FanlightWeightedFloat();
-            var wristAngleRadians = new FanlightWeightedFloat();
+            var readyHandOffsetX = new FanlightWeightedFloat();
+            var readyHandOffsetY = new FanlightWeightedFloat();
+            var readyHandOffsetZ = new FanlightWeightedFloat();
+            var accentHandOffsetX = new FanlightWeightedFloat();
+            var accentHandOffsetY = new FanlightWeightedFloat();
+            var accentHandOffsetZ = new FanlightWeightedFloat();
+            var handArcOffsetX = new FanlightWeightedFloat();
+            var handArcOffsetY = new FanlightWeightedFloat();
+            var handArcOffsetZ = new FanlightWeightedFloat();
+            var readyPenlightDirection = new FanlightWeightedDirection();
+            var accentPenlightDirection = new FanlightWeightedDirection();
             var bodyLean = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Pose;
-                if (Has(fields, FanlightPoseFields.HandZone)) handZone.Consider(sourceValue.HandZone, sample.Weight, sample.StartSeconds);
-                if (Has(fields, FanlightPoseFields.HandHeightOffset)) handHeightOffset.Add(sourceValue.HandHeightOffset, sample.Weight);
-                if (Has(fields, FanlightPoseFields.HandForwardOffset)) handForwardOffset.Add(sourceValue.HandForwardOffset, sample.Weight);
-                if (Has(fields, FanlightPoseFields.HandReachScale)) handReachScale.Add(sourceValue.HandReachScale, sample.Weight);
-                if (Has(fields, FanlightPoseFields.ArmLengthMinimum)) armLengthMinimum.Add(sourceValue.ArmLengthMinimum, sample.Weight);
-                if (Has(fields, FanlightPoseFields.ArmLengthMaximum)) armLengthMaximum.Add(sourceValue.ArmLengthMaximum, sample.Weight);
-                if (Has(fields, FanlightPoseFields.AngleMinimumRadians)) angleMinimumRadians.AddRadians(sourceValue.AngleMinimumRadians, sample.Weight);
-                if (Has(fields, FanlightPoseFields.AngleMaximumRadians)) angleMaximumRadians.AddRadians(sourceValue.AngleMaximumRadians, sample.Weight);
-                if (Has(fields, FanlightPoseFields.HorizontalRatio)) horizontalRatio.Add(sourceValue.HorizontalRatio, sample.Weight);
-                if (Has(fields, FanlightPoseFields.WristFrequencyMultiplier)) wristFrequencyMultiplier.Add(sourceValue.WristFrequencyMultiplier, sample.Weight);
-                if (Has(fields, FanlightPoseFields.WristAngleRadians)) wristAngleRadians.Add(sourceValue.WristAngleRadians, sample.Weight);
+                if (Has(fields, FanlightPoseFields.ReadyHandOffset)) Add(sourceValue.ReadyHandOffset, sample.Weight, ref readyHandOffsetX, ref readyHandOffsetY, ref readyHandOffsetZ);
+                if (Has(fields, FanlightPoseFields.AccentHandOffset)) Add(sourceValue.AccentHandOffset, sample.Weight, ref accentHandOffsetX, ref accentHandOffsetY, ref accentHandOffsetZ);
+                if (Has(fields, FanlightPoseFields.HandArcOffset)) Add(sourceValue.HandArcOffset, sample.Weight, ref handArcOffsetX, ref handArcOffsetY, ref handArcOffsetZ);
+                if (Has(fields, FanlightPoseFields.ReadyPenlightDirection)) readyPenlightDirection.Add(sourceValue.ReadyPenlightDirection, sample.Weight);
+                if (Has(fields, FanlightPoseFields.AccentPenlightDirection)) accentPenlightDirection.Add(sourceValue.AccentPenlightDirection, sample.Weight);
                 if (Has(fields, FanlightPoseFields.BodyLean)) bodyLean.Add(sourceValue.BodyLean, sample.Weight);
             }
 
@@ -205,17 +206,11 @@ namespace PrismFanlight.Timeline
 
             var fallback = FanlightTimelineDefaults.PoseState();
             var value = new FanlightPoseState(
-                handZone.Value(fallback.HandZone),
-                handHeightOffset.Value(fallback.HandHeightOffset),
-                handForwardOffset.Value(fallback.HandForwardOffset),
-                handReachScale.Value(fallback.HandReachScale),
-                armLengthMinimum.Value(fallback.ArmLengthMinimum),
-                armLengthMaximum.Value(fallback.ArmLengthMaximum),
-                angleMinimumRadians.ValueRadians(fallback.AngleMinimumRadians),
-                angleMaximumRadians.ValueRadians(fallback.AngleMaximumRadians),
-                horizontalRatio.Value(fallback.HorizontalRatio),
-                wristFrequencyMultiplier.Value(fallback.WristFrequencyMultiplier),
-                wristAngleRadians.Value(fallback.WristAngleRadians),
+                Value(fallback.ReadyHandOffset, readyHandOffsetX, readyHandOffsetY, readyHandOffsetZ),
+                Value(fallback.AccentHandOffset, accentHandOffsetX, accentHandOffsetY, accentHandOffsetZ),
+                Value(fallback.HandArcOffset, handArcOffsetX, handArcOffsetY, handArcOffsetZ),
+                readyPenlightDirection.Value(fallback.ReadyPenlightDirection),
+                accentPenlightDirection.Value(fallback.AccentPenlightDirection),
                 bodyLean.Value(fallback.BodyLean)
             );
 
@@ -691,6 +686,27 @@ namespace PrismFanlight.Timeline
         private static bool Has(FanlightPaletteFields fields, FanlightPaletteFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
+
+        private static void Add(
+            Vector3 value,
+            float weight,
+            ref FanlightWeightedFloat x,
+            ref FanlightWeightedFloat y,
+            ref FanlightWeightedFloat z)
+        {
+            x.Add(value.x, weight);
+            y.Add(value.y, weight);
+            z.Add(value.z, weight);
+        }
+
+        private static Vector3 Value(
+            Vector3 fallback,
+            FanlightWeightedFloat x,
+            FanlightWeightedFloat y,
+            FanlightWeightedFloat z) => new(
+            x.Value(fallback.x),
+            y.Value(fallback.y),
+            z.Value(fallback.z));
 
         private static void ValidateMask(int fields, int all)
         {

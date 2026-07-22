@@ -49,12 +49,20 @@ struct PrismArm
 
 struct PrismCrowdRhythm
 {
-    float basePhase;
+    float cyclePhase;
     float bodyPhase;
     float shoulderPhase;
-    float armPhase;
-    float wristPhase;
     float downbeatPulse;
+};
+
+struct PrismAudienceBasis
+{
+    float3 sideWorld;
+    float3 upWorld;
+    float3 forwardWorld;
+    float3 sideLocal;
+    float3 upLocal;
+    float3 forwardLocal;
 };
 
 struct PrismHumanPose

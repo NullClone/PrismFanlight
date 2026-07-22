@@ -33,10 +33,14 @@ float4 _LodCameraPos;
 float4 _SeatPitch;
 float4 _BlockCount;
 float4 _MotionTiming;
-float4 _MotionSwing;
-float4 _MotionShape;
+float4 _GestureTiming;
+float4 _GestureShape;
+float4 _PoseReadyHand;
+float4 _PoseAccentHand;
+float4 _PoseHandArc;
+float4 _PoseReadyDirection;
+float4 _PoseAccentDirection;
 int _SwingMode;
-float4 _SwingWrist;
 float4 _SwingAxis;
 float4 _SwingTargetPos;
 float4x4 _WorldToLocal;
@@ -45,9 +49,8 @@ float4 _MotionNoise;
 float4 _MotionHuman;
 float4 _MotionRest;
 float4 _MotionRestTiming;
-float4 _MotionBeat;
 float4 _MotionBeatSpread;
-float _GripPivotY;
+float _HandPositionSpread;
 int _PenlightVariantCount;
 float4 _PenlightVariantGripPivotYs;
 
@@ -61,7 +64,6 @@ float PrismPenlightGripPivotY(uint seatIndex)
 }
 float4 _AudienceShape;
 float4 _AudienceArm;
-float4 _HandZone;
 float4 _AudienceUpperBody;
 float4 _AudienceMotionBody;
 

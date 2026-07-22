@@ -8,10 +8,12 @@ namespace PrismFanlight.Core
         None = 0,
         BeatsPerCycle = 1 << 0,
         PhaseOffsetBeats = 1 << 1,
-        HoldRatio = 1 << 2,
-        Crispness = 1 << 3,
-        FollowThrough = 1 << 4,
-        DownbeatAccent = 1 << 5,
-        All = BeatsPerCycle | PhaseOffsetBeats | HoldRatio | Crispness | FollowThrough | DownbeatAccent
+        StrokeRatio = 1 << 2,
+        HoldRatio = 1 << 3,
+        Crispness = 1 << 4,
+        FollowThrough = 1 << 5,
+        WristLagRatio = 1 << 6,
+        DownbeatAccent = 1 << 7,
+        All = BeatsPerCycle | PhaseOffsetBeats | StrokeRatio | HoldRatio | Crispness | FollowThrough | WristLagRatio | DownbeatAccent
     }
 }

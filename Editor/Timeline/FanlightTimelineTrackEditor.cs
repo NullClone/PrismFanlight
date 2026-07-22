@@ -203,14 +203,6 @@ namespace PrismFanlight.Editor
         {
             fieldName = string.Empty;
 
-            if (kind == FanlightTimelinePatchKind.Pose
-                && (fieldMask.Pose & FanlightPoseFields.HandZone) != 0
-                && left.Pose.HandZone != right.Pose.HandZone)
-            {
-                fieldName = "Hand Zone";
-                return true;
-            }
-
             if (kind == FanlightTimelinePatchKind.Noise
                 && (fieldMask.Noise & FanlightNoiseFields.Octaves) != 0
                 && left.Noise.Octaves != right.Noise.Octaves)
