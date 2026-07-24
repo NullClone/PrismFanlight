@@ -145,7 +145,6 @@ namespace PrismFanlight.Core
                 return FanlightShowStateDefaults.Direction();
             }
         }
-
     }
 }
 #endif

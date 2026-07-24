@@ -105,9 +105,9 @@ namespace PrismFanlight.Core
                 FanlightIntensityMaskMode.None => true,
                 FanlightIntensityMaskMode.Pulse => EnvelopeEquals(other),
                 FanlightIntensityMaskMode.TravelingWave => EnvelopeEquals(other)
-                                                               && _origin.Equals(other._origin)
-                                                               && _direction.Equals(other._direction)
-                                                               && _wavelength.Equals(other._wavelength),
+                                                           && _origin.Equals(other._origin)
+                                                           && _direction.Equals(other._direction)
+                                                           && _wavelength.Equals(other._wavelength),
                 _ => false
             };
         }

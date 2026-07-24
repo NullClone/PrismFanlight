@@ -82,35 +82,19 @@ namespace PrismFanlight.Editor
 
             _providerTypes.Sort((left, right) => string.Compare(left.FullName, right.FullName, StringComparison.Ordinal));
 
-            _providerLabels = new string[_providerTypes.Count];
+            _providerLabels = new string[_providerTypes.Count + 1];
+            _providerLabels[0] = "None";
 
             for (int i = 0; i < _providerTypes.Count; i++)
             {
-                _providerLabels[i] = ObjectNames.NicifyVariableName(_providerTypes[i].Name);
+                _providerLabels[i + 1] = ObjectNames.NicifyVariableName(_providerTypes[i].Name);
             }
         }
 
         private void DrawProviderClock()
         {
             var provider = _primaryProvider.objectReferenceValue as MonoBehaviour;
-
-            int selectedIndex;
-
-            if (provider == null)
-            {
-                selectedIndex = FindProviderTypeIndex(typeof(UnityTimeProvider));
-
-                AssignProvider(selectedIndex);
-
-                provider = _primaryProvider.objectReferenceValue as MonoBehaviour;
-
-                if (provider == null)
-                {
-                    throw new InvalidOperationException("Primary provider is null.");
-                }
-            }
-
-            selectedIndex = FindProviderTypeIndex(provider.GetType());
+            var selectedIndex = FindProviderTypeIndex(provider?.GetType());
 
             EditorGUI.BeginChangeCheck();
             var nextIndex = EditorGUILayout.Popup("Provider", selectedIndex, _providerLabels);
@@ -119,15 +103,19 @@ namespace PrismFanlight.Editor
                 AssignProvider(nextIndex);
 
                 provider = _primaryProvider.objectReferenceValue as MonoBehaviour;
-                selectedIndex = FindProviderTypeIndex(provider.GetType());
+                selectedIndex = FindProviderTypeIndex(provider?.GetType());
             }
 
             if (_providerTypes.Count == 0)
             {
-                throw new InvalidOperationException("No available time providers found.");
+                EditorGUILayout.HelpBox("No available time providers were found.", MessageType.Error);
             }
 
-            if (provider != null && selectedIndex < 0)
+            if (provider == null)
+            {
+                EditorGUILayout.HelpBox("A Primary Provider is required. Runtime evaluation remains faulted until one is assigned.", MessageType.Error);
+            }
+            else if (selectedIndex < 0)
             {
                 EditorGUILayout.HelpBox($"{provider.GetType().Name} is not an available time provider.", MessageType.Error);
             }
@@ -138,17 +126,31 @@ namespace PrismFanlight.Editor
 
         private int FindProviderTypeIndex(Type providerType)
         {
+            if (providerType == null) return 0;
+
             for (var i = 0; i < _providerTypes.Count; i++)
             {
-                if (_providerTypes[i] == providerType) return i;
+                if (_providerTypes[i] == providerType) return i + 1;
             }
 
-            throw new InvalidOperationException($"Provider type {providerType?.FullName ?? "null"} is not in the list of available providers.");
+            return -1;
         }
 
         private void AssignProvider(int selectedIndex)
         {
-            var providerType = selectedIndex < 0 ? typeof(UnityTimeProvider) : _providerTypes[selectedIndex];
+            if (selectedIndex == 0)
+            {
+                _primaryProvider.objectReferenceValue = null;
+                return;
+            }
+
+            var providerTypeIndex = selectedIndex - 1;
+            if (providerTypeIndex < 0 || providerTypeIndex >= _providerTypes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(selectedIndex));
+            }
+
+            var providerType = _providerTypes[providerTypeIndex];
             var provider = _instance.GetComponent(providerType) as MonoBehaviour;
 
             if (provider == null)

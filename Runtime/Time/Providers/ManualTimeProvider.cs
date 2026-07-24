@@ -15,7 +15,6 @@ namespace PrismFanlight.Time
         [SerializeField]
         private double _rate;
 
-        [SerializeField]
         private FanlightTimeDiscontinuity _nextDiscontinuity;
 
 
