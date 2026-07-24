@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
@@ -40,6 +41,11 @@ namespace PrismFanlight.Editor
                 errors.Add($"Multiple active PlayableDirectors bind PrismFanlight '{target.name}'. Disable or rebind all but one director.");
             }
 
+            if (target != null)
+            {
+                CollectColorBlockErrors(fanlightTrack, target.LayoutAsset, errors);
+            }
+
             options.errorText = AppendErrors(options.errorText, errors);
             return options;
         }
@@ -54,6 +60,19 @@ namespace PrismFanlight.Editor
             {
                 var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
                 return $"This clip does not match {track.GetType().Name}. Replace it with {expectedName}.";
+            }
+
+            try
+            {
+                _ = ((FanlightTimelineClipAsset)clip.asset).Value;
+            }
+            catch (ArgumentException exception)
+            {
+                return exception.Message;
+            }
+            catch (InvalidOperationException exception)
+            {
+                return exception.Message;
             }
 
             var clips = GetClips(track);
@@ -109,6 +128,95 @@ namespace PrismFanlight.Editor
             {
                 errors.Add($"Clips starting at {conflictStart:0.###} seconds assign different {fieldName} values. Change one value or one start time.");
             }
+
+            if (track.timelineAsset != null)
+            {
+                if (track is FanlightMotionTrack && CountTracks<FanlightMotionTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Motion Track.");
+                }
+
+                if (track is FanlightColorTrack && CountTracks<FanlightColorTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Color Track.");
+                }
+
+                if (track is FanlightIntensityTrack && CountTracks<FanlightIntensityTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Intensity Track.");
+                }
+            }
+        }
+
+        private static int CountTracks<T>(TimelineAsset timelineAsset) where T : TrackAsset
+        {
+            var count = 0;
+            foreach (var outputTrack in timelineAsset.GetOutputTracks())
+            {
+                if (outputTrack is T) count++;
+            }
+
+            return count;
+        }
+
+        private static void CollectColorBlockErrors(FanlightTimelineTrackAsset track, FanlightLayoutAsset layout, List<string> errors)
+        {
+            if (track is not FanlightColorTrack) return;
+
+            foreach (var clip in track.GetClips())
+            {
+                if (clip.asset is not FanlightColorClip colorClip) continue;
+
+                FanlightColorState color;
+
+                try
+                {
+                    color = colorClip.Value.Color;
+                }
+                catch (ArgumentException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
+
+                for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+                {
+                    if (color.GetSourceWeight(sourceIndex) <= 0f) continue;
+                    var source = color.GetSource(sourceIndex);
+                    if (source.Mode != FanlightColorMode.BlockPalette) continue;
+
+                    if (layout == null || !layout.IsInitialized)
+                    {
+                        errors.Add($"Clip '{clip.displayName}' uses Block Palette but the binding has no initialized Layout.");
+                        continue;
+                    }
+
+                    if (!IsCompleteBlockPalette(source, layout))
+                    {
+                        errors.Add($"Clip '{clip.displayName}' must map every active Layout Block exactly once by Stable Block ID.");
+                    }
+                }
+            }
+        }
+
+        private static bool IsCompleteBlockPalette(FanlightColorSource source, FanlightLayoutAsset layout)
+        {
+            if (source.BlockPaletteEntryCount != layout.TotalBlockCount) return false;
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+
+            for (var entryIndex = 0; entryIndex < source.BlockPaletteEntryCount; entryIndex++)
+            {
+                var entry = source.GetBlockPaletteEntry(entryIndex);
+                if (!ids.Add(entry.StableBlockId)) return false;
+            }
+
+            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            {
+                if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
+            }
+
+            return true;
         }
 
         private static List<TimelineClip> GetClips(FanlightTimelineTrackAsset track)

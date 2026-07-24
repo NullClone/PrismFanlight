@@ -30,7 +30,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _rest;
         private SerializedProperty _audienceBody;
         private SerializedProperty _direction;
-        private SerializedProperty _palette;
+        private SerializedProperty _color;
+        private SerializedProperty _intensity;
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
         private bool _enableGizmos = true;
@@ -76,7 +77,8 @@ namespace PrismFanlight.Editor
             _rest = serializedObject.FindProperty(nameof(_rest));
             _audienceBody = serializedObject.FindProperty(nameof(_audienceBody));
             _direction = serializedObject.FindProperty(nameof(_direction));
-            _palette = serializedObject.FindProperty(nameof(_palette));
+            _color = serializedObject.FindProperty(nameof(_color));
+            _intensity = serializedObject.FindProperty(nameof(_intensity));
             _visibility = serializedObject.FindProperty(nameof(_visibility));
             _globalSeed = serializedObject.FindProperty(nameof(_globalSeed));
         }
@@ -192,14 +194,14 @@ namespace PrismFanlight.Editor
             {
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Color");
 
-                DrawChild(_palette, "_slot1", "Slot 1");
-                DrawChild(_palette, "_slot2", "Slot 2");
-                DrawChild(_palette, "_slot3", "Slot 3");
-                DrawChild(_palette, "_slot4", "Slot 4");
-                DrawChild(_palette, "_slot5", "Slot 5");
-                DrawChild(_palette, "_slot6", "Slot 6");
-                DrawChild(_palette, "_globalIntensity", "Global Intensity");
-                DrawSlider(_palette, "_randomIntensity", "Random Intensity", 0f, 1f);
+                FanlightColorIntensityEditorUtility.DrawColorState(
+                    _color,
+                    _instance.LayoutAsset,
+                    true);
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Intensity");
+                FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity);
             });
         }
 

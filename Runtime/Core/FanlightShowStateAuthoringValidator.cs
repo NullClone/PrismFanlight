@@ -146,25 +146,6 @@ namespace PrismFanlight.Core
             }
         }
 
-        internal static FanlightPaletteState Validate(FanlightPaletteState value)
-        {
-            try
-            {
-                return new FanlightPaletteState(
-                    value.Slot1,
-                    value.Slot2,
-                    value.Slot3,
-                    value.Slot4,
-                    value.Slot5,
-                    value.Slot6,
-                    value.GlobalIntensity,
-                    value.RandomIntensity);
-            }
-            catch (ArgumentException)
-            {
-                return FanlightShowStateDefaults.Palette();
-            }
-        }
     }
 }
 #endif

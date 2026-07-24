@@ -12,6 +12,15 @@ namespace PrismFanlight.Rendering
 
         private readonly Plane[] _planes = new Plane[6];
         private readonly Vector4[] _frustumPlanes = new Vector4[6];
+        private readonly Vector4[] _colorSourceModes = new Vector4[3];
+        private readonly Vector4[] _colorSourcePalette = new Vector4[18];
+        private readonly Vector4[] _colorSourceA = new Vector4[3];
+        private readonly Vector4[] _colorSourceB = new Vector4[3];
+        private readonly Vector4[] _colorSourceGeometry = new Vector4[3];
+        private readonly Vector4[] _colorSourceParameters = new Vector4[3];
+        private readonly Vector4[] _maskSourceModes = new Vector4[3];
+        private readonly Vector4[] _maskSourceGeometry = new Vector4[3];
+        private readonly Vector4[] _maskSourceParameters = new Vector4[3];
 
 
         // Methods
@@ -82,10 +91,147 @@ namespace PrismFanlight.Rendering
             shader.Dispatch(kernel, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
+        internal void DispatchColor(
+            ComputeShader shader,
+            FanlightGpuKernels kernels,
+            FanlightGpuBuffers buffers,
+            in FanlightGpuDispatchContext context)
+        {
+            var color = context.Sample.State.Color.Validated();
+            buffers.UpdateRuntimeBlockPaletteData(color, context.Layout);
+
+            for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+            {
+                var source = color.GetSource(sourceIndex);
+                var weight = color.GetSourceWeight(sourceIndex);
+                _colorSourceModes[sourceIndex] = new Vector4(
+                    (int)source.Mode,
+                    weight,
+                    sourceIndex * buffers.BlockCount,
+                    0f);
+                _colorSourceA[sourceIndex] = Vector4.zero;
+                _colorSourceB[sourceIndex] = Vector4.zero;
+                _colorSourceGeometry[sourceIndex] = Vector4.zero;
+                _colorSourceParameters[sourceIndex] = Vector4.zero;
+                for (var slotIndex = 0; slotIndex < 6; slotIndex++)
+                {
+                    _colorSourcePalette[sourceIndex * 6 + slotIndex] = Vector4.zero;
+                }
+
+                if (weight <= 0f) continue;
+
+                if (source.Mode == FanlightColorMode.LinearGradient)
+                {
+                    _colorSourceA[sourceIndex] = ToLinearChroma(source.ColorA);
+                    _colorSourceB[sourceIndex] = ToLinearChroma(source.ColorB);
+                    _colorSourceGeometry[sourceIndex] = new Vector4(
+                        source.Origin.x,
+                        source.Origin.y,
+                        source.Direction.x,
+                        source.Direction.y);
+                    _colorSourceParameters[sourceIndex] = new Vector4(source.Width, source.Offset, 0f, 0f);
+                    continue;
+                }
+
+                for (var slotIndex = 0; slotIndex < 6; slotIndex++)
+                {
+                    _colorSourcePalette[sourceIndex * 6 + slotIndex] =
+                        ToLinearChroma(source.GetPaletteSlot(slotIndex));
+                }
+            }
+
+            shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
+            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(
+                context.Layout.BlockCount2D.x,
+                context.Layout.BlockCount2D.y,
+                0f,
+                0f));
+            shader.SetVectorArray(FanlightShaderIds.ColorSourceModes, _colorSourceModes);
+            shader.SetVectorArray(FanlightShaderIds.ColorSourcePalette, _colorSourcePalette);
+            shader.SetVectorArray(FanlightShaderIds.ColorSourceA, _colorSourceA);
+            shader.SetVectorArray(FanlightShaderIds.ColorSourceB, _colorSourceB);
+            shader.SetVectorArray(FanlightShaderIds.ColorSourceGeometry, _colorSourceGeometry);
+            shader.SetVectorArray(FanlightShaderIds.ColorSourceParameters, _colorSourceParameters);
+            shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.StableAssignments, buffers.StableAssignmentBuffer);
+            shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.RuntimeBlockPalettes, buffers.RuntimeBlockPaletteBuffer);
+            shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.ResolvedChroma, buffers.ResolvedChromaBuffer);
+            shader.Dispatch(
+                kernels.ResolveSeatChroma,
+                Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize),
+                1,
+                1);
+        }
+
+        internal void DispatchMask(
+            ComputeShader shader,
+            FanlightGpuKernels kernels,
+            FanlightGpuBuffers buffers,
+            in FanlightGpuDispatchContext context)
+        {
+            var intensity = context.Sample.State.Intensity.Validated();
+
+            for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+            {
+                var mask = intensity.GetSpatialMask(sourceIndex);
+                var weight = intensity.GetSpatialMaskWeight(sourceIndex);
+                _maskSourceModes[sourceIndex] = new Vector4(
+                    (int)mask.Mode,
+                    weight,
+                    weight > 0f
+                    && mask.Mode != FanlightIntensityMaskMode.None
+                    && mask.Invert
+                        ? 1f
+                        : 0f,
+                    0f);
+                _maskSourceGeometry[sourceIndex] = Vector4.zero;
+                _maskSourceParameters[sourceIndex] = Vector4.zero;
+
+                if (weight <= 0f || mask.Mode == FanlightIntensityMaskMode.None) continue;
+
+                if (mask.Mode == FanlightIntensityMaskMode.LinearWipe)
+                {
+                    _maskSourceGeometry[sourceIndex] = new Vector4(
+                        mask.Origin.x,
+                        mask.Origin.y,
+                        mask.Direction.x,
+                        mask.Direction.y);
+                    _maskSourceParameters[sourceIndex] = new Vector4(
+                        mask.Width,
+                        mask.Progress,
+                        0f,
+                        mask.Softness);
+                    continue;
+                }
+
+                _maskSourceGeometry[sourceIndex] = new Vector4(mask.Origin.x, mask.Origin.y, 0f, 0f);
+                _maskSourceParameters[sourceIndex] = new Vector4(0f, 0f, mask.Radius, mask.Softness);
+            }
+
+            shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
+            shader.SetVectorArray(FanlightShaderIds.MaskSourceModes, _maskSourceModes);
+            shader.SetVectorArray(FanlightShaderIds.MaskSourceGeometry, _maskSourceGeometry);
+            shader.SetVectorArray(FanlightShaderIds.MaskSourceParameters, _maskSourceParameters);
+            shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.ResolvedMask, buffers.ResolvedMaskBuffer);
+            shader.Dispatch(
+                kernels.ResolveSeatMask,
+                Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize),
+                1,
+                1);
+        }
+
         private static Vector3 ComputeWorldDirection(FanlightDirectionState direction)
         {
             var yaw = direction.WorldYawDegrees * Mathf.Deg2Rad;
             return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
+        }
+
+        private static Color ToLinearChroma(Color value)
+        {
+            var linear = QualitySettings.activeColorSpace == ColorSpace.Gamma ? value.linear : value;
+            linear.a = 1f;
+            return linear;
         }
 
         private static void SetAudienceParams(ComputeShader shader, in FanlightGpuDispatchContext context)

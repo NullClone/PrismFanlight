@@ -9,7 +9,8 @@ namespace PrismFanlight.Timeline
         Rest = 4,
         AudienceBody = 5,
         Direction = 6,
-        Palette = 7,
-        Visibility = 8
+        Color = 7,
+        Intensity = 8,
+        Visibility = 9
     }
 }

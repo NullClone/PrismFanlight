@@ -342,7 +342,13 @@ namespace PrismFanlight.Editor
             for (var i = block.contiguousSeatStart; i < end; i++)
             {
                 var seat = _compiled.Seats[i];
-                _gpuSeats[i] = new FanlightSeatData(seat.localPosition, seat.planePosition, seat.blockCoordinates, (uint)i);
+                _gpuSeats[i] = new FanlightSeatData(
+                    seat.localPosition,
+                    seat.planePosition,
+                    seat.blockCoordinates,
+                    seat.blockIndex,
+                    seat.placementFlags,
+                    (uint)i);
                 _stableSeatIds[i] = seat.stableSeatId;
             }
 
@@ -367,8 +373,20 @@ namespace PrismFanlight.Editor
                 _boundsTree.Root,
                 _gpuSeats,
                 _stableSeatIds,
+                BuildStableBlockIds(),
                 _gpuBlocks);
             if (Source.SetContentHash(contentHash)) EditorUtility.SetDirty(Source);
+        }
+
+        private string[] BuildStableBlockIds()
+        {
+            var blockIds = new string[Source.TotalBlockCount];
+            for (var i = 0; i < blockIds.Length; i++)
+            {
+                blockIds[i] = Source.GetBlock(i).BlockId;
+            }
+
+            return blockIds;
         }
 
         private ulong ComputeLayoutHash()

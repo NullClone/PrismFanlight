@@ -124,7 +124,7 @@ Shader "Hidden/AudienceIndirect"
 
             float AudienceRandom(uint seat, uint salt)
             {
-                uint assignment = _FanlightColorAssignments[seat];
+                uint assignment = _FanlightStableAssignments[seat];
                 uint value = AudienceHash(assignment ^ salt);
                 return (value & 0x00FFFFFFu) / 16777215.0;
             }

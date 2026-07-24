@@ -4,6 +4,8 @@ namespace PrismFanlight.Rendering
 {
     internal readonly struct FanlightGpuKernels
     {
+        // Fields
+
         internal readonly int ClearIndirectArgs;
         internal readonly int CullBlocks;
         internal readonly int BuildVisibleInstances;
@@ -11,7 +13,11 @@ namespace PrismFanlight.Rendering
         internal readonly int GenerateAllAnimation;
         internal readonly int GenerateVisibleFrameData;
         internal readonly int GenerateAllFrameData;
+        internal readonly int ResolveSeatChroma;
+        internal readonly int ResolveSeatMask;
 
+
+        // Methods
 
         internal FanlightGpuKernels(ComputeShader shader)
         {
@@ -22,6 +28,8 @@ namespace PrismFanlight.Rendering
             GenerateAllAnimation = shader.FindKernel("GenerateAllAnimation");
             GenerateVisibleFrameData = shader.FindKernel("GenerateVisibleFrameData");
             GenerateAllFrameData = shader.FindKernel("GenerateAllFrameData");
+            ResolveSeatChroma = shader.FindKernel("ResolveSeatChroma");
+            ResolveSeatMask = shader.FindKernel("ResolveSeatMask");
         }
     }
 }

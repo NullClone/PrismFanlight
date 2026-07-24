@@ -41,7 +41,13 @@ namespace PrismFanlight.Rendering
 
         internal ComputeBuffer MatrixBuffer { get; private set; }
 
-        internal ComputeBuffer ColorAssignmentBuffer { get; private set; }
+        internal ComputeBuffer StableAssignmentBuffer { get; private set; }
+
+        internal ComputeBuffer ResolvedChromaBuffer { get; private set; }
+
+        internal ComputeBuffer ResolvedMaskBuffer { get; private set; }
+
+        internal ComputeBuffer RuntimeBlockPaletteBuffer { get; private set; }
 
         internal ComputeBuffer RandomBuffer { get; private set; }
 
@@ -101,7 +107,10 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             AudienceSlotBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
-            ColorAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            StableAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
+            ResolvedChromaBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
+            ResolvedMaskBuffer = new ComputeBuffer(SeatCount, sizeof(float), ComputeBufferType.Structured);
+            RuntimeBlockPaletteBuffer = new ComputeBuffer(BlockCount * 3, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
             MotionSampleBuffer = new ComputeBuffer(_motionSamples.Length, FanlightMotionSample.Stride, ComputeBufferType.Structured);
             PenlightArgsBuffer = new GraphicsBuffer(
@@ -175,7 +184,7 @@ namespace PrismFanlight.Rendering
         internal void UpdateRandomData(uint globalSeed, FanlightRuntimeLayout layout)
         {
             if (RandomBuffer == null
-                || ColorAssignmentBuffer == null
+                || StableAssignmentBuffer == null
                 || layout == null
                 || layout.SeatCount != SeatCount
                 || SeatCount <= 0)
@@ -184,7 +193,56 @@ namespace PrismFanlight.Rendering
             }
 
             RandomBuffer.SetData(BuildRandomData(layout, globalSeed));
-            ColorAssignmentBuffer.SetData(BuildColorAssignments(layout, globalSeed));
+            StableAssignmentBuffer.SetData(BuildStableAssignments(layout, globalSeed));
+        }
+
+        internal void UpdateRuntimeBlockPaletteData(FanlightColorState color, FanlightRuntimeLayout layout)
+        {
+            if (RuntimeBlockPaletteBuffer == null
+                || layout == null
+                || layout.BlockCount != BlockCount)
+            {
+                throw new InvalidOperationException("Runtime Block Palette Buffer is not available.");
+            }
+
+            var slots = new uint[BlockCount * 3];
+            var assigned = new bool[BlockCount];
+
+            for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+            {
+                if (color.GetSourceWeight(sourceIndex) <= 0f) continue;
+                var source = color.GetSource(sourceIndex);
+                if (source.Mode != FanlightColorMode.BlockPalette) continue;
+
+                Array.Clear(assigned, 0, assigned.Length);
+                for (var entryIndex = 0; entryIndex < source.BlockPaletteEntryCount; entryIndex++)
+                {
+                    var entry = source.GetBlockPaletteEntry(entryIndex);
+                    var blockIndex = layout.GetBlockIndex(entry.StableBlockId);
+                    if (blockIndex < 0)
+                    {
+                        throw new InvalidOperationException("Block Palette contains an unknown Stable Block ID.");
+                    }
+
+                    if (assigned[blockIndex])
+                    {
+                        throw new InvalidOperationException("Block Palette contains a duplicate Stable Block ID.");
+                    }
+
+                    assigned[blockIndex] = true;
+                    slots[sourceIndex * BlockCount + blockIndex] = (uint)entry.PaletteSlot;
+                }
+
+                for (var blockIndex = 0; blockIndex < assigned.Length; blockIndex++)
+                {
+                    if (!assigned[blockIndex])
+                    {
+                        throw new InvalidOperationException("Block Palette must specify every Block in the active Layout.");
+                    }
+                }
+            }
+
+            RuntimeBlockPaletteBuffer.SetData(slots);
         }
 
         internal bool HasMotionAssetChanges(FanlightMotionState motion)
@@ -475,14 +533,15 @@ namespace PrismFanlight.Rendering
             return data;
         }
 
-        private static uint[] BuildColorAssignments(FanlightRuntimeLayout layout, uint seed)
+        private static uint[] BuildStableAssignments(FanlightRuntimeLayout layout, uint seed)
         {
             var assignments = new uint[layout.SeatCount];
             for (var i = 0; i < assignments.Length; i++)
             {
                 var stableSeatId = layout.StableSeatIds[i];
-                var paletteRandom = Random01(seed, stableSeatId, 27u);
-                var intensityRandom = Random01(seed, stableSeatId, 28u);
+                var laneBase = unchecked((uint)FanlightPenlightAssignment.PersonaAlgorithmVersion) * 64u;
+                var paletteRandom = Random01(seed, stableSeatId, laneBase + 27u);
+                var intensityRandom = Random01(seed, stableSeatId, laneBase + 28u);
                 var paletteIndex = (uint)Mathf.Clamp(
                     Mathf.FloorToInt(paletteRandom * PaletteSlotCount),
                     0,
@@ -528,7 +587,10 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer?.Release();
             AudienceSlotBuffer?.Release();
             MatrixBuffer?.Release();
-            ColorAssignmentBuffer?.Release();
+            StableAssignmentBuffer?.Release();
+            ResolvedChromaBuffer?.Release();
+            ResolvedMaskBuffer?.Release();
+            RuntimeBlockPaletteBuffer?.Release();
             RandomBuffer?.Release();
             MotionSampleBuffer?.Release();
             PenlightArgsBuffer?.Release();
@@ -544,7 +606,10 @@ namespace PrismFanlight.Rendering
             AudienceVisibleIndexBuffer = null;
             AudienceSlotBuffer = null;
             MatrixBuffer = null;
-            ColorAssignmentBuffer = null;
+            StableAssignmentBuffer = null;
+            ResolvedChromaBuffer = null;
+            ResolvedMaskBuffer = null;
+            RuntimeBlockPaletteBuffer = null;
             RandomBuffer = null;
             MotionSampleBuffer = null;
             PenlightArgsBuffer = null;

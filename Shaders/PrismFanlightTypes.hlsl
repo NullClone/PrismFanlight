@@ -5,6 +5,9 @@ struct FanlightSeatData
 {
     float4 localPositionSeed;
     float4 planePositionBlock;
+    int blockIndex;
+    uint placementFlags;
+    float2 padding;
 };
 
 struct FanlightBlockData

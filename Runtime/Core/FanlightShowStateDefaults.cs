@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace PrismFanlight.Core
@@ -64,15 +65,35 @@ namespace PrismFanlight.Core
             0f,
             0f);
 
-        internal static FanlightPaletteState Palette() => new(
-            new Color(8f, 8f, 8f),
-            new Color(8f, 8f, 8f),
-            new Color(8f, 8f, 8f),
-            new Color(8f, 8f, 8f),
-            new Color(8f, 8f, 8f),
-            new Color(8f, 8f, 8f),
+        internal static FanlightColorState Color() => new(
+            new FanlightColorSource(
+                FanlightColorMode.StablePalette,
+                UnityEngine.Color.red,
+                UnityEngine.Color.yellow,
+                UnityEngine.Color.green,
+                UnityEngine.Color.cyan,
+                UnityEngine.Color.blue,
+                UnityEngine.Color.magenta,
+                UnityEngine.Color.white,
+                UnityEngine.Color.white,
+                Vector2.zero,
+                Vector2.right,
+                1f,
+                0f,
+                Array.Empty<FanlightBlockPaletteEntry>()));
+
+        internal static FanlightIntensityState Intensity() => new(
             2f,
-            0f);
+            0f,
+            new FanlightIntensityMask(
+                FanlightIntensityMaskMode.None,
+                Vector2.zero,
+                Vector2.right,
+                1f,
+                1f,
+                1f,
+                0f,
+                false));
 
         internal static FanlightVisibilityState Visibility() => new(true, true);
     }

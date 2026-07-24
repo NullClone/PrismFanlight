@@ -10,13 +10,25 @@ namespace PrismFanlight.Rendering
     {
         internal Vector4 localPositionSeed;
         internal Vector4 planePositionBlock;
+        internal int blockIndex;
+        internal uint placementFlags;
+        internal Vector2 padding;
 
-        internal const int Stride = sizeof(float) * 8;
+        internal const int Stride = sizeof(float) * 12;
 
-        internal FanlightSeatData(Vector3 localPosition, Vector2 planePosition, Vector2 block, uint seed)
+        internal FanlightSeatData(
+            Vector3 localPosition,
+            Vector2 planePosition,
+            Vector2 block,
+            int blockIndex,
+            uint placementFlags,
+            uint seed)
         {
             localPositionSeed = new Vector4(localPosition.x, localPosition.y, localPosition.z, seed);
             planePositionBlock = new Vector4(planePosition.x, planePosition.y, block.x, block.y);
+            this.blockIndex = blockIndex;
+            this.placementFlags = placementFlags;
+            padding = Vector2.zero;
         }
     }
 

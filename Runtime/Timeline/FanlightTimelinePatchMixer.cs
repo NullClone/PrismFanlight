@@ -18,7 +18,8 @@ namespace PrismFanlight.Timeline
                 FanlightTimelinePatchKind.Rest => fields.Rest != FanlightRestFields.None,
                 FanlightTimelinePatchKind.AudienceBody => fields.AudienceBody != FanlightAudienceBodyFields.None,
                 FanlightTimelinePatchKind.Direction => fields.Direction != FanlightDirectionFields.None,
-                FanlightTimelinePatchKind.Palette => fields.Palette != FanlightPaletteFields.None,
+                FanlightTimelinePatchKind.Color => fields.Color != FanlightColorFields.None,
+                FanlightTimelinePatchKind.Intensity => fields.Intensity != FanlightIntensityFields.None,
                 FanlightTimelinePatchKind.Visibility => fields.Visibility != FanlightVisibilityFields.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
@@ -39,7 +40,8 @@ namespace PrismFanlight.Timeline
                 FanlightTimelinePatchKind.Rest => TryBlendRest(fieldMask.Rest, samples, out patch),
                 FanlightTimelinePatchKind.AudienceBody => TryBlendAudienceBody(fieldMask.AudienceBody, samples, out patch),
                 FanlightTimelinePatchKind.Direction => TryBlendDirection(fieldMask.Direction, samples, out patch),
-                FanlightTimelinePatchKind.Palette => TryBlendPalette(fieldMask.Palette, samples, out patch),
+                FanlightTimelinePatchKind.Color => TryBlendColor(fieldMask.Color, samples, out patch),
+                FanlightTimelinePatchKind.Intensity => TryBlendIntensity(fieldMask.Intensity, samples, out patch),
                 FanlightTimelinePatchKind.Visibility => TryBlendVisibility(fieldMask.Visibility, samples, out patch),
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
@@ -88,6 +90,7 @@ namespace PrismFanlight.Timeline
 
             patch = new FanlightShowPatch(
                 new FanlightIntentPatch(fields, value),
+                default,
                 default,
                 default,
                 default,
@@ -159,6 +162,7 @@ namespace PrismFanlight.Timeline
             patch = new FanlightShowPatch(
                 default,
                 new FanlightMotionPatch(fields, value),
+                default,
                 default,
                 default,
                 default,
@@ -243,6 +247,7 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
+                default,
                 default
             );
 
@@ -296,6 +301,7 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 new FanlightNoisePatch(fields, value),
+                default,
                 default,
                 default,
                 default,
@@ -354,6 +360,7 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 new FanlightRestPatch(fields, value),
+                default,
                 default,
                 default,
                 default,
@@ -438,6 +445,7 @@ namespace PrismFanlight.Timeline
                 new FanlightAudienceBodyPatch(fields, value),
                 default,
                 default,
+                default,
                 default
             );
 
@@ -486,59 +494,32 @@ namespace PrismFanlight.Timeline
                 default,
                 new FanlightDirectionPatch(fields, value),
                 default,
+                default,
                 default
             );
 
             return true;
         }
 
-        private static bool TryBlendPalette(
-            FanlightPaletteFields fields,
+        private static bool TryBlendColor(
+            FanlightColorFields fields,
             ReadOnlySpan<FanlightTimelineClipSample> samples,
             out FanlightShowPatch patch)
         {
-            ValidateMask((int)fields, (int)FanlightPaletteFields.All);
-
-            var slot1 = new FanlightWeightedColor();
-            var slot2 = new FanlightWeightedColor();
-            var slot3 = new FanlightWeightedColor();
-            var slot4 = new FanlightWeightedColor();
-            var slot5 = new FanlightWeightedColor();
-            var slot6 = new FanlightWeightedColor();
-            var globalIntensity = new FanlightWeightedFloat();
-            var randomIntensity = new FanlightWeightedFloat();
-
-            for (var i = 0; i < samples.Length; i++)
-            {
-                var sample = samples[i];
-                var sourceValue = sample.Value.Palette;
-                if (Has(fields, FanlightPaletteFields.Slot1)) slot1.Add(sourceValue.Slot1, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.Slot2)) slot2.Add(sourceValue.Slot2, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.Slot3)) slot3.Add(sourceValue.Slot3, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.Slot4)) slot4.Add(sourceValue.Slot4, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.Slot5)) slot5.Add(sourceValue.Slot5, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.Slot6)) slot6.Add(sourceValue.Slot6, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.GlobalIntensity)) globalIntensity.Add(sourceValue.GlobalIntensity, sample.Weight);
-                if (Has(fields, FanlightPaletteFields.RandomIntensity)) randomIntensity.Add(sourceValue.RandomIntensity, sample.Weight);
-            }
-
-            if (fields == FanlightPaletteFields.None)
+            ValidateMask((int)fields, (int)FanlightColorFields.All);
+            if (fields == FanlightColorFields.None)
             {
                 patch = default;
                 return false;
             }
 
-            var fallback = FanlightTimelineDefaults.PaletteState();
-            var value = new FanlightPaletteState(
-                slot1.Value(fallback.Slot1),
-                slot2.Value(fallback.Slot2),
-                slot3.Value(fallback.Slot3),
-                slot4.Value(fallback.Slot4),
-                slot5.Value(fallback.Slot5),
-                slot6.Value(fallback.Slot6),
-                globalIntensity.Value(fallback.GlobalIntensity),
-                randomIntensity.Value(fallback.RandomIntensity)
-            );
+            var sourceA = samples[0].Value.Color.Source;
+            var sourceB = samples.Length > 1 ? samples[1].Value.Color.Source : default;
+            var weights = new Vector3(
+                samples[0].Weight,
+                samples.Length > 1 ? samples[1].Weight : 0f,
+                0f);
+            var value = FanlightColorState.BlendSources(sourceA, sourceB, default, weights);
 
             patch = new FanlightShowPatch(
                 default,
@@ -548,7 +529,72 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                new FanlightPalettePatch(fields, value),
+                new FanlightColorPatch(fields, value),
+                default,
+                default
+            );
+
+            return true;
+        }
+
+        private static bool TryBlendIntensity(
+            FanlightIntensityFields fields,
+            ReadOnlySpan<FanlightTimelineClipSample> samples,
+            out FanlightShowPatch patch)
+        {
+            ValidateMask((int)fields, (int)FanlightIntensityFields.All);
+
+            if (fields == FanlightIntensityFields.None)
+            {
+                patch = default;
+                return false;
+            }
+
+            var baseIntensity = new FanlightWeightedFloat();
+            var randomIntensity = new FanlightWeightedFloat();
+
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var sourceValue = samples[i].Value.Intensity;
+                if (Has(fields, FanlightIntensityFields.BaseIntensity))
+                {
+                    baseIntensity.Add(sourceValue.BaseIntensity, samples[i].Weight);
+                }
+
+                if (Has(fields, FanlightIntensityFields.RandomIntensity))
+                {
+                    randomIntensity.Add(sourceValue.RandomIntensity, samples[i].Weight);
+                }
+            }
+
+            var fallback = FanlightTimelineDefaults.IntensityState();
+            var maskA = Has(fields, FanlightIntensityFields.SpatialMask)
+                ? samples[0].Value.Intensity.SpatialMask
+                : fallback.SpatialMask;
+            var maskB = Has(fields, FanlightIntensityFields.SpatialMask) && samples.Length > 1
+                ? samples[1].Value.Intensity.SpatialMask
+                : default;
+            var maskWeights = Has(fields, FanlightIntensityFields.SpatialMask)
+                ? new Vector3(samples[0].Weight, samples.Length > 1 ? samples[1].Weight : 0f, 0f)
+                : new Vector3(1f, 0f, 0f);
+            var value = FanlightIntensityState.BlendMasks(
+                baseIntensity.Value(fallback.BaseIntensity),
+                randomIntensity.Value(fallback.RandomIntensity),
+                maskA,
+                maskB,
+                default,
+                maskWeights);
+
+            patch = new FanlightShowPatch(
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                new FanlightIntensityPatch(fields, value),
                 default
             );
 
@@ -594,6 +640,7 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
+                default,
                 new FanlightVisibilityPatch(fields, value)
             );
 
@@ -615,7 +662,9 @@ namespace PrismFanlight.Timeline
 
         private static bool Has(FanlightDirectionFields fields, FanlightDirectionFields field) => (fields & field) != 0;
 
-        private static bool Has(FanlightPaletteFields fields, FanlightPaletteFields field) => (fields & field) != 0;
+        private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
+
+        private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
 

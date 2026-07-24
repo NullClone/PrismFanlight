@@ -74,7 +74,10 @@ namespace PrismFanlight
         private FanlightDirectionState _direction = FanlightShowStateDefaults.Direction();
 
         [SerializeField]
-        private FanlightPaletteState _palette = FanlightShowStateDefaults.Palette();
+        private FanlightColorState _color = FanlightShowStateDefaults.Color();
+
+        [SerializeField]
+        private FanlightIntensityState _intensity = FanlightShowStateDefaults.Intensity();
 
         [SerializeField]
         private FanlightVisibilityState _visibility = FanlightShowStateDefaults.Visibility();
@@ -121,7 +124,8 @@ namespace PrismFanlight
             _rest,
             _audienceBody,
             _direction,
-            _palette,
+            _color,
+            _intensity,
             _visibility,
             _globalSeed);
 
@@ -223,7 +227,6 @@ namespace PrismFanlight
             _rest = FanlightShowStateAuthoringValidator.Validate(_rest);
             _audienceBody = FanlightShowStateAuthoringValidator.Validate(_audienceBody);
             _direction = FanlightShowStateAuthoringValidator.Validate(_direction);
-            _palette = FanlightShowStateAuthoringValidator.Validate(_palette);
 #endif
         }
 

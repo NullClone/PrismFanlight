@@ -18,7 +18,8 @@ namespace PrismFanlight.Core
                 Apply(state.Rest, patch.Rest, weight),
                 Apply(state.AudienceBody, patch.AudienceBody, weight),
                 Apply(state.Direction, patch.Direction, weight),
-                Apply(state.Palette, patch.Palette, weight),
+                Apply(state.Color, patch.Color, weight),
+                Apply(state.Intensity, patch.Intensity, weight),
                 Apply(state.Visibility, patch.Visibility, weight),
                 state.GlobalSeed);
         }
@@ -36,7 +37,8 @@ namespace PrismFanlight.Core
                 Apply(state.Rest, new FanlightRestPatch(FanlightRestFields.All, state.Rest), 1f),
                 Apply(state.AudienceBody, new FanlightAudienceBodyPatch(FanlightAudienceBodyFields.All, state.AudienceBody), 1f),
                 Apply(state.Direction, new FanlightDirectionPatch(FanlightDirectionFields.All, state.Direction), 1f),
-                Apply(state.Palette, new FanlightPalettePatch(FanlightPaletteFields.All, state.Palette), 1f),
+                Apply(state.Color, new FanlightColorPatch(FanlightColorFields.All, state.Color), 1f),
+                Apply(state.Intensity, new FanlightIntensityPatch(FanlightIntensityFields.All, state.Intensity), 1f),
                 Apply(state.Visibility, new FanlightVisibilityPatch(FanlightVisibilityFields.All, state.Visibility), 1f),
                 state.GlobalSeed);
         }
@@ -192,20 +194,92 @@ namespace PrismFanlight.Core
                 Has(patch.Fields, FanlightDirectionFields.AimStrength) ? Lerp(current.AimStrength, value.AimStrength, weight) : current.AimStrength);
         }
 
-        internal static FanlightPaletteState Apply(FanlightPaletteState current, FanlightPalettePatch patch, float weight)
+        internal static FanlightColorState Apply(FanlightColorState current, FanlightColorPatch patch, float weight)
         {
-            ValidateMask((int)patch.Fields, (int)FanlightPaletteFields.All, nameof(patch));
+            ValidateMask((int)patch.Fields, (int)FanlightColorFields.All, nameof(patch));
+            if (!Has(patch.Fields, FanlightColorFields.Source)) return current;
+
+            var sourceA = default(FanlightColorSource);
+            var sourceB = default(FanlightColorSource);
+            var sourceC = default(FanlightColorSource);
+            var sourceWeights = Vector3.zero;
+            var value = patch.Value;
+
+            for (var i = 0; i < 3; i++)
+            {
+                AddColorSource(
+                    current.GetSource(i),
+                    current.GetSourceWeight(i) * (1f - weight),
+                    ref sourceA,
+                    ref sourceB,
+                    ref sourceC,
+                    ref sourceWeights);
+                AddColorSource(
+                    value.GetSource(i),
+                    value.GetSourceWeight(i) * weight,
+                    ref sourceA,
+                    ref sourceB,
+                    ref sourceC,
+                    ref sourceWeights);
+            }
+
+            return FanlightColorState.BlendSources(sourceA, sourceB, sourceC, sourceWeights);
+        }
+
+        internal static FanlightIntensityState Apply(
+            FanlightIntensityState current,
+            FanlightIntensityPatch patch,
+            float weight)
+        {
+            ValidateMask((int)patch.Fields, (int)FanlightIntensityFields.All, nameof(patch));
+            if (patch.Fields == FanlightIntensityFields.None) return current;
 
             var value = patch.Value;
-            return new FanlightPaletteState(
-                Has(patch.Fields, FanlightPaletteFields.Slot1) ? Color.LerpUnclamped(current.Slot1, value.Slot1, weight) : current.Slot1,
-                Has(patch.Fields, FanlightPaletteFields.Slot2) ? Color.LerpUnclamped(current.Slot2, value.Slot2, weight) : current.Slot2,
-                Has(patch.Fields, FanlightPaletteFields.Slot3) ? Color.LerpUnclamped(current.Slot3, value.Slot3, weight) : current.Slot3,
-                Has(patch.Fields, FanlightPaletteFields.Slot4) ? Color.LerpUnclamped(current.Slot4, value.Slot4, weight) : current.Slot4,
-                Has(patch.Fields, FanlightPaletteFields.Slot5) ? Color.LerpUnclamped(current.Slot5, value.Slot5, weight) : current.Slot5,
-                Has(patch.Fields, FanlightPaletteFields.Slot6) ? Color.LerpUnclamped(current.Slot6, value.Slot6, weight) : current.Slot6,
-                Has(patch.Fields, FanlightPaletteFields.GlobalIntensity) ? Lerp(current.GlobalIntensity, value.GlobalIntensity, weight) : current.GlobalIntensity,
-                Has(patch.Fields, FanlightPaletteFields.RandomIntensity) ? Lerp(current.RandomIntensity, value.RandomIntensity, weight) : current.RandomIntensity);
+            var maskA = current.GetSpatialMask(0);
+            var maskB = current.GetSpatialMask(1);
+            var maskC = current.GetSpatialMask(2);
+            var maskWeights = new Vector3(
+                current.GetSpatialMaskWeight(0),
+                current.GetSpatialMaskWeight(1),
+                current.GetSpatialMaskWeight(2));
+
+            if (Has(patch.Fields, FanlightIntensityFields.SpatialMask))
+            {
+                maskA = default;
+                maskB = default;
+                maskC = default;
+                maskWeights = Vector3.zero;
+
+                for (var i = 0; i < 3; i++)
+                {
+                    AddIntensityMask(
+                        current.GetSpatialMask(i),
+                        current.GetSpatialMaskWeight(i) * (1f - weight),
+                        ref maskA,
+                        ref maskB,
+                        ref maskC,
+                        ref maskWeights);
+                    AddIntensityMask(
+                        value.GetSpatialMask(i),
+                        value.GetSpatialMaskWeight(i) * weight,
+                        ref maskA,
+                        ref maskB,
+                        ref maskC,
+                        ref maskWeights);
+                }
+            }
+
+            return FanlightIntensityState.BlendMasks(
+                Has(patch.Fields, FanlightIntensityFields.BaseIntensity)
+                    ? Lerp(current.BaseIntensity, value.BaseIntensity, weight)
+                    : current.BaseIntensity,
+                Has(patch.Fields, FanlightIntensityFields.RandomIntensity)
+                    ? Lerp(current.RandomIntensity, value.RandomIntensity, weight)
+                    : current.RandomIntensity,
+                maskA,
+                maskB,
+                maskC,
+                maskWeights);
         }
 
         internal static FanlightVisibilityState Apply(FanlightVisibilityState current, FanlightVisibilityPatch patch, float weight)
@@ -234,7 +308,9 @@ namespace PrismFanlight.Core
 
         private static bool Has(FanlightDirectionFields fields, FanlightDirectionFields field) => (fields & field) != 0;
 
-        private static bool Has(FanlightPaletteFields fields, FanlightPaletteFields field) => (fields & field) != 0;
+        private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
+
+        private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
 
@@ -296,6 +372,110 @@ namespace PrismFanlight.Core
             }
 
             throw new InvalidOperationException("Motion evaluation cannot contain more than three assets.");
+        }
+
+        private static void AddColorSource(
+            FanlightColorSource source,
+            float weight,
+            ref FanlightColorSource sourceA,
+            ref FanlightColorSource sourceB,
+            ref FanlightColorSource sourceC,
+            ref Vector3 weights)
+        {
+            if (weight <= 0.000001f) return;
+
+            if (weights.x > 0f && sourceA.ContentEquals(source))
+            {
+                weights.x += weight;
+                return;
+            }
+
+            if (weights.y > 0f && sourceB.ContentEquals(source))
+            {
+                weights.y += weight;
+                return;
+            }
+
+            if (weights.z > 0f && sourceC.ContentEquals(source))
+            {
+                weights.z += weight;
+                return;
+            }
+
+            if (weights.x <= 0.000001f)
+            {
+                sourceA = source;
+                weights.x = weight;
+                return;
+            }
+
+            if (weights.y <= 0.000001f)
+            {
+                sourceB = source;
+                weights.y = weight;
+                return;
+            }
+
+            if (weights.z <= 0.000001f)
+            {
+                sourceC = source;
+                weights.z = weight;
+                return;
+            }
+
+            throw new InvalidOperationException("Color evaluation cannot contain more than three sources.");
+        }
+
+        private static void AddIntensityMask(
+            FanlightIntensityMask mask,
+            float weight,
+            ref FanlightIntensityMask maskA,
+            ref FanlightIntensityMask maskB,
+            ref FanlightIntensityMask maskC,
+            ref Vector3 weights)
+        {
+            if (weight <= 0.000001f) return;
+
+            if (weights.x > 0f && maskA.ContentEquals(mask))
+            {
+                weights.x += weight;
+                return;
+            }
+
+            if (weights.y > 0f && maskB.ContentEquals(mask))
+            {
+                weights.y += weight;
+                return;
+            }
+
+            if (weights.z > 0f && maskC.ContentEquals(mask))
+            {
+                weights.z += weight;
+                return;
+            }
+
+            if (weights.x <= 0.000001f)
+            {
+                maskA = mask;
+                weights.x = weight;
+                return;
+            }
+
+            if (weights.y <= 0.000001f)
+            {
+                maskB = mask;
+                weights.y = weight;
+                return;
+            }
+
+            if (weights.z <= 0.000001f)
+            {
+                maskC = mask;
+                weights.z = weight;
+                return;
+            }
+
+            throw new InvalidOperationException("Intensity evaluation cannot contain more than three spatial masks.");
         }
     }
 }
