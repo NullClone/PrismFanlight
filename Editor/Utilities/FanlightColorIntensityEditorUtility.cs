@@ -48,8 +48,8 @@ namespace PrismFanlight.Editor
             }
 
             EditorGUILayout.Space();
-            PrismFanlightEditorStyles.DrawSubGroupLabel("Spatial Mask");
-            DrawIntensityMask(state.FindPropertyRelative("_spatialMask"));
+            PrismFanlightEditorStyles.DrawSubGroupLabel("Intensity Pattern");
+            DrawIntensityMask(state.FindPropertyRelative("_mask"));
         }
 
         private static void DrawColorSource(SerializedProperty source)
@@ -119,31 +119,44 @@ namespace PrismFanlight.Editor
         private static void DrawIntensityMask(SerializedProperty mask)
         {
             var mode = mask.FindPropertyRelative("_mode");
-            EditorGUILayout.PropertyField(mode, new GUIContent("Mask Mode"));
+            EditorGUILayout.PropertyField(mode, new GUIContent("Pattern Mode"));
             if (mode.hasMultipleDifferentValues) return;
 
             switch ((FanlightIntensityMaskMode)mode.enumValueIndex)
             {
-                case FanlightIntensityMaskMode.LinearWipe:
+                case FanlightIntensityMaskMode.Pulse:
+                    DrawEnvelope(mask);
+                    break;
+                case FanlightIntensityMaskMode.TravelingWave:
+                    DrawEnvelope(mask);
                     EditorGUILayout.PropertyField(mask.FindPropertyRelative("_origin"), new GUIContent("Origin"));
                     DrawDirection(mask.FindPropertyRelative("_direction"));
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_width"), new GUIContent("Width"));
-                    var progress = mask.FindPropertyRelative("_progress");
-                    EditorGUI.BeginChangeCheck();
-                    var progressValue = EditorGUILayout.Slider("Progress", progress.floatValue, 0f, 1f);
-                    if (EditorGUI.EndChangeCheck()) progress.floatValue = progressValue;
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_softness"), new GUIContent("Softness"));
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_invert"), new GUIContent("Invert"));
-                    break;
-                case FanlightIntensityMaskMode.RadialWipe:
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_origin"), new GUIContent("Origin"));
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_radius"), new GUIContent("Radius"));
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_softness"), new GUIContent("Softness"));
-                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_invert"), new GUIContent("Invert"));
+                    EditorGUILayout.PropertyField(mask.FindPropertyRelative("_wavelength"), new GUIContent("Wavelength"));
                     break;
             }
 
             DrawIntensityMaskValidation(mask, (FanlightIntensityMaskMode)mode.enumValueIndex);
+        }
+
+        private static void DrawEnvelope(SerializedProperty mask)
+        {
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_beatsPerCycle"),
+                new GUIContent("Beats Per Cycle"));
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_phaseOffsetBeats"),
+                new GUIContent("Phase Offset Beats"));
+            DrawRatio(mask.FindPropertyRelative("_minimumIntensityRatio"), "Minimum Intensity Ratio");
+            DrawRatio(mask.FindPropertyRelative("_attackRatio"), "Attack Ratio");
+            DrawRatio(mask.FindPropertyRelative("_holdRatio"), "Hold Ratio");
+            DrawRatio(mask.FindPropertyRelative("_releaseRatio"), "Release Ratio");
+        }
+
+        private static void DrawRatio(SerializedProperty property, string label)
+        {
+            EditorGUI.BeginChangeCheck();
+            var value = EditorGUILayout.Slider(label, property.floatValue, 0f, 1f);
+            if (EditorGUI.EndChangeCheck()) property.floatValue = value;
         }
 
         private static bool IsValidChroma(Color color)
@@ -196,35 +209,47 @@ namespace PrismFanlight.Editor
         {
             if (mode == FanlightIntensityMaskMode.None) return;
 
-            var origin = mask.FindPropertyRelative("_origin").vector2Value;
-            var softness = mask.FindPropertyRelative("_softness").floatValue;
-            var invalid = !IsFinite(origin)
-                          || !float.IsFinite(softness)
-                          || softness < 0f;
-
-            if (mode == FanlightIntensityMaskMode.LinearWipe)
+            if (mode != FanlightIntensityMaskMode.Pulse
+                && mode != FanlightIntensityMaskMode.TravelingWave)
             {
-                var direction = mask.FindPropertyRelative("_direction").vector2Value;
-                var width = mask.FindPropertyRelative("_width").floatValue;
-                var progress = mask.FindPropertyRelative("_progress").floatValue;
-                invalid |= !IsFinite(direction)
-                           || direction.sqrMagnitude <= 0.000001f
-                           || !float.IsFinite(width)
-                           || width <= 0f
-                           || !float.IsFinite(progress)
-                           || progress < 0f
-                           || progress > 1f;
+                EditorGUILayout.HelpBox("Intensity Pattern Mode is invalid.", MessageType.Error);
+                return;
             }
-            else
+
+            var beatsPerCycle = mask.FindPropertyRelative("_beatsPerCycle").floatValue;
+            var phaseOffsetBeats = mask.FindPropertyRelative("_phaseOffsetBeats").floatValue;
+            var minimum = mask.FindPropertyRelative("_minimumIntensityRatio").floatValue;
+            var attack = mask.FindPropertyRelative("_attackRatio").floatValue;
+            var hold = mask.FindPropertyRelative("_holdRatio").floatValue;
+            var release = mask.FindPropertyRelative("_releaseRatio").floatValue;
+            var activeRatio = attack + hold + release;
+            var invalid = !float.IsFinite(beatsPerCycle)
+                          || beatsPerCycle <= 0f
+                          || !float.IsFinite(phaseOffsetBeats)
+                          || !IsRatio(minimum)
+                          || !IsRatio(attack)
+                          || !IsRatio(hold)
+                          || !IsRatio(release)
+                          || !float.IsFinite(activeRatio)
+                          || activeRatio <= 0f
+                          || activeRatio > 1f;
+
+            if (mode == FanlightIntensityMaskMode.TravelingWave)
             {
-                var radius = mask.FindPropertyRelative("_radius").floatValue;
-                invalid |= !float.IsFinite(radius) || radius < 0f;
+                var origin = mask.FindPropertyRelative("_origin").vector2Value;
+                var direction = mask.FindPropertyRelative("_direction").vector2Value;
+                var wavelength = mask.FindPropertyRelative("_wavelength").floatValue;
+                invalid |= !IsFinite(origin)
+                           || !IsFinite(direction)
+                           || direction.sqrMagnitude <= 0.000001f
+                           || !float.IsFinite(wavelength)
+                           || wavelength <= 0f;
             }
 
             if (invalid)
             {
                 EditorGUILayout.HelpBox(
-                    "Spatial Mask fields are outside the valid range for the selected Mode.",
+                    "Intensity Pattern fields are outside the valid range for the selected Mode.",
                     MessageType.Error);
             }
         }
@@ -247,6 +272,11 @@ namespace PrismFanlight.Editor
         private static bool IsFinite(Vector2 value)
         {
             return float.IsFinite(value.x) && float.IsFinite(value.y);
+        }
+
+        private static bool IsRatio(float value)
+        {
+            return float.IsFinite(value) && value >= 0f && value <= 1f;
         }
 
         private static void DrawBlockPaletteValidation(

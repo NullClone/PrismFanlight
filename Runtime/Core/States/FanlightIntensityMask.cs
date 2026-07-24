@@ -12,66 +12,80 @@ namespace PrismFanlight.Core
         private FanlightIntensityMaskMode _mode;
 
         [SerializeField]
+        private float _beatsPerCycle;
+
+        [SerializeField]
+        private float _phaseOffsetBeats;
+
+        [SerializeField]
+        private float _minimumIntensityRatio;
+
+        [SerializeField]
+        private float _attackRatio;
+
+        [SerializeField]
+        private float _holdRatio;
+
+        [SerializeField]
+        private float _releaseRatio;
+
+        [SerializeField]
         private Vector2 _origin;
 
         [SerializeField]
         private Vector2 _direction;
 
         [SerializeField]
-        private float _width;
-
-        [SerializeField]
-        private float _progress;
-
-        [SerializeField]
-        private float _radius;
-
-        [SerializeField]
-        private float _softness;
-
-        [SerializeField]
-        private bool _invert;
+        private float _wavelength;
 
 
         // Properties
 
         internal FanlightIntensityMaskMode Mode => _mode;
 
+        internal float BeatsPerCycle => _beatsPerCycle;
+
+        internal float PhaseOffsetBeats => _phaseOffsetBeats;
+
+        internal float MinimumIntensityRatio => _minimumIntensityRatio;
+
+        internal float AttackRatio => _attackRatio;
+
+        internal float HoldRatio => _holdRatio;
+
+        internal float ReleaseRatio => _releaseRatio;
+
         internal Vector2 Origin => _origin;
 
         internal Vector2 Direction => _direction;
 
-        internal float Width => _width;
-
-        internal float Progress => _progress;
-
-        internal float Radius => _radius;
-
-        internal float Softness => _softness;
-
-        internal bool Invert => _invert;
+        internal float Wavelength => _wavelength;
 
 
         // Methods
 
         internal FanlightIntensityMask(
             FanlightIntensityMaskMode mode,
+            float beatsPerCycle,
+            float phaseOffsetBeats,
+            float minimumIntensityRatio,
+            float attackRatio,
+            float holdRatio,
+            float releaseRatio,
             Vector2 origin,
             Vector2 direction,
-            float width,
-            float progress,
-            float radius,
-            float softness,
-            bool invert)
+            float wavelength)
         {
             _mode = mode;
+            _beatsPerCycle = beatsPerCycle;
+            _phaseOffsetBeats = phaseOffsetBeats;
+            _minimumIntensityRatio = minimumIntensityRatio;
+            _attackRatio = attackRatio;
+            _holdRatio = holdRatio;
+            _releaseRatio = releaseRatio;
             _origin = origin;
             _direction = direction;
-            _width = width;
-            _progress = progress;
-            _radius = radius;
-            _softness = softness;
-            _invert = invert;
+            _wavelength = wavelength;
             ValidateAndNormalize();
         }
 
@@ -89,16 +103,11 @@ namespace PrismFanlight.Core
             return _mode switch
             {
                 FanlightIntensityMaskMode.None => true,
-                FanlightIntensityMaskMode.LinearWipe => _origin.Equals(other._origin)
-                                                        && _direction.Equals(other._direction)
-                                                        && _width.Equals(other._width)
-                                                        && _progress.Equals(other._progress)
-                                                        && _softness.Equals(other._softness)
-                                                        && _invert == other._invert,
-                FanlightIntensityMaskMode.RadialWipe => _origin.Equals(other._origin)
-                                                        && _radius.Equals(other._radius)
-                                                        && _softness.Equals(other._softness)
-                                                        && _invert == other._invert,
+                FanlightIntensityMaskMode.Pulse => EnvelopeEquals(other),
+                FanlightIntensityMaskMode.TravelingWave => EnvelopeEquals(other)
+                                                               && _origin.Equals(other._origin)
+                                                               && _direction.Equals(other._direction)
+                                                               && _wavelength.Equals(other._wavelength),
                 _ => false
             };
         }
@@ -109,20 +118,71 @@ namespace PrismFanlight.Core
             {
                 case FanlightIntensityMaskMode.None:
                     break;
-                case FanlightIntensityMaskMode.LinearWipe:
+                case FanlightIntensityMaskMode.Pulse:
+                    ValidateEnvelope();
+                    break;
+                case FanlightIntensityMaskMode.TravelingWave:
+                    ValidateEnvelope();
                     _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
                     _direction = FanlightStateValidation.RequireDirection(_direction, nameof(_direction));
-                    _width = FanlightStateValidation.RequireMinimumExclusive(_width, 0f, nameof(_width));
-                    _progress = FanlightStateValidation.RequireRange(_progress, 0f, 1f, nameof(_progress));
-                    _softness = FanlightStateValidation.RequireMinimum(_softness, 0f, nameof(_softness));
-                    break;
-                case FanlightIntensityMaskMode.RadialWipe:
-                    _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
-                    _radius = FanlightStateValidation.RequireMinimum(_radius, 0f, nameof(_radius));
-                    _softness = FanlightStateValidation.RequireMinimum(_softness, 0f, nameof(_softness));
+                    _wavelength = FanlightStateValidation.RequireMinimumExclusive(
+                        _wavelength,
+                        0f,
+                        nameof(_wavelength));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(_mode));
+            }
+        }
+
+        private bool EnvelopeEquals(in FanlightIntensityMask other)
+        {
+            return _beatsPerCycle.Equals(other._beatsPerCycle)
+                   && _phaseOffsetBeats.Equals(other._phaseOffsetBeats)
+                   && _minimumIntensityRatio.Equals(other._minimumIntensityRatio)
+                   && _attackRatio.Equals(other._attackRatio)
+                   && _holdRatio.Equals(other._holdRatio)
+                   && _releaseRatio.Equals(other._releaseRatio);
+        }
+
+        private void ValidateEnvelope()
+        {
+            _beatsPerCycle = FanlightStateValidation.RequireMinimumExclusive(
+                _beatsPerCycle,
+                0f,
+                nameof(_beatsPerCycle));
+            _phaseOffsetBeats = FanlightStateValidation.RequireFinite(
+                _phaseOffsetBeats,
+                nameof(_phaseOffsetBeats));
+            _minimumIntensityRatio = FanlightStateValidation.RequireRange(
+                _minimumIntensityRatio,
+                0f,
+                1f,
+                nameof(_minimumIntensityRatio));
+            _attackRatio = FanlightStateValidation.RequireRange(
+                _attackRatio,
+                0f,
+                1f,
+                nameof(_attackRatio));
+            _holdRatio = FanlightStateValidation.RequireRange(
+                _holdRatio,
+                0f,
+                1f,
+                nameof(_holdRatio));
+            _releaseRatio = FanlightStateValidation.RequireRange(
+                _releaseRatio,
+                0f,
+                1f,
+                nameof(_releaseRatio));
+
+            var activeRatio = _attackRatio + _holdRatio + _releaseRatio;
+            if (!FanlightStateValidation.IsFinite(activeRatio)
+                || activeRatio <= 0f
+                || activeRatio > 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(_attackRatio),
+                    "Attack, Hold, and Release Ratio must total more than 0 and no more than 1.");
             }
         }
     }

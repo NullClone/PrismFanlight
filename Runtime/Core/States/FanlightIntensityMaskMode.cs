@@ -3,7 +3,7 @@ namespace PrismFanlight.Core
     internal enum FanlightIntensityMaskMode
     {
         None = 0,
-        LinearWipe = 1,
-        RadialWipe = 2
+        Pulse = 1,
+        TravelingWave = 2
     }
 }

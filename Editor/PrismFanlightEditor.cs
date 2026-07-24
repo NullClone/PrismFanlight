@@ -463,6 +463,24 @@ namespace PrismFanlight.Editor
             PrismFanlightEditorStyles.DrawSubGroupLabel("Advance");
             EditorGUILayout.Space();
 
+            PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
+            {
+                DrawChild(_audienceBody, "_height", "Height");
+                DrawSlider(_audienceBody, "_heightVariation", "Height Variation", 0f, 1f);
+                DrawChild(_audienceBody, "_width", "Width");
+                DrawChild(_audienceBody, "_headSize", "Head Size");
+                DrawSlider(_audienceBody, "_shoulderHeightRatio", "Shoulder Height", 0f, 1f);
+                DrawSlider(_audienceBody, "_shoulderSideOffset", "Shoulder Offset", -1f, 1f);
+                DrawChild(_audienceBody, "_armWidth", "Arm Width");
+                DrawChild(_audienceBody, "_armLengthLimit", "Arm Length Limit");
+                DrawChild(_audienceBody, "_upperBodyLeanMaximumRadians", "Lean Maximum");
+                DrawSlider(_audienceBody, "_upperBodyLean", "Upper Body Lean", 0f, 1f);
+                DrawSlider(_audienceBody, "_bounce", "Bounce", 0f, 1f);
+                DrawSlider(_audienceBody, "_sway", "Sway", 0f, 1f);
+                DrawChild(_audienceBody, "_motionSpeed", "Motion Speed");
+                DrawSlider(_audienceBody, "_leanMotion", "Lean Motion", 0f, 1f);
+            });
+
             PrismFanlightEditorStyles.DrawSection(_variationSection, () =>
             {
                 DrawSlider(_variation, "_seatPosition", "Seat Position", 0f, 1f);
@@ -498,24 +516,6 @@ namespace PrismFanlight.Editor
                 DrawChild(_rest, "_durationSeconds", "Duration Seconds");
                 DrawChild(_rest, "_fadeSeconds", "Fade Seconds");
                 DrawSlider(_rest, "_phaseRandomness", "Phase Randomness", 0f, 1f);
-            });
-
-            PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
-            {
-                DrawChild(_audienceBody, "_height", "Height");
-                DrawSlider(_audienceBody, "_heightVariation", "Height Variation", 0f, 1f);
-                DrawChild(_audienceBody, "_width", "Width");
-                DrawChild(_audienceBody, "_headSize", "Head Size");
-                DrawSlider(_audienceBody, "_shoulderHeightRatio", "Shoulder Height", 0f, 1f);
-                DrawSlider(_audienceBody, "_shoulderSideOffset", "Shoulder Offset", -1f, 1f);
-                DrawChild(_audienceBody, "_armWidth", "Arm Width");
-                DrawChild(_audienceBody, "_armLengthLimit", "Arm Length Limit");
-                DrawChild(_audienceBody, "_upperBodyLeanMaximumRadians", "Lean Maximum");
-                DrawSlider(_audienceBody, "_upperBodyLean", "Upper Body Lean", 0f, 1f);
-                DrawSlider(_audienceBody, "_bounce", "Bounce", 0f, 1f);
-                DrawSlider(_audienceBody, "_sway", "Sway", 0f, 1f);
-                DrawChild(_audienceBody, "_motionSpeed", "Motion Speed");
-                DrawSlider(_audienceBody, "_leanMotion", "Lean Motion", 0f, 1f);
             });
         }
 

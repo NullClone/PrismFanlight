@@ -8,7 +8,7 @@ namespace PrismFanlight.Core
         None = 0,
         BaseIntensity = 1 << 0,
         RandomIntensity = 1 << 1,
-        SpatialMask = 1 << 2,
-        All = BaseIntensity | RandomIntensity | SpatialMask
+        Mask = 1 << 2,
+        All = BaseIntensity | RandomIntensity | Mask
     }
 }

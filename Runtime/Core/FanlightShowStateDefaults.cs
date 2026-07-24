@@ -87,13 +87,15 @@ namespace PrismFanlight.Core
             0f,
             new FanlightIntensityMask(
                 FanlightIntensityMaskMode.None,
-                Vector2.zero,
-                Vector2.right,
-                1f,
-                1f,
                 1f,
                 0f,
-                false));
+                0f,
+                0f,
+                1f,
+                0f,
+                Vector2.zero,
+                Vector2.right,
+                1f));
 
         internal static FanlightVisibilityState Visibility() => new(true, true);
     }

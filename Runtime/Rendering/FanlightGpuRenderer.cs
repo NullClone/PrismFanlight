@@ -30,8 +30,10 @@ namespace PrismFanlight.Rendering
         private bool _colorInitialized;
         private bool _maskInitialized;
         private bool _hasGlobalSeed;
+        private bool _hasMaskBeat;
         private bool _hasCameraContext;
         private uint _globalSeed;
+        private double _lastMaskBeat;
         private FanlightCameraContext _lastCameraContext;
         private Matrix4x4 _lastAnimationLocalToWorld;
         private FanlightColorState _lastColorState;
@@ -208,10 +210,19 @@ namespace PrismFanlight.Rendering
                     _colorInitialized = true;
                 }
 
-                if (!_maskInitialized || !_lastIntensityState.MaskContentEquals(sample.State.Intensity))
+                var intensity = sample.State.Intensity;
+                var completedBeat = sample.MusicalPosition.Beat;
+                var maskInputsChanged = !_maskInitialized
+                                        || !_lastIntensityState.MaskContentEquals(intensity);
+                var maskBeatChanged = intensity.HasDynamicMask()
+                                      && (!_hasMaskBeat || !_lastMaskBeat.Equals(completedBeat));
+
+                if (maskInputsChanged || maskBeatChanged)
                 {
                     _dispatcher.DispatchMask(_computeShader, _kernels, _buffers, context);
-                    _lastIntensityState = sample.State.Intensity;
+                    _lastIntensityState = intensity;
+                    _lastMaskBeat = completedBeat;
+                    _hasMaskBeat = true;
                     _maskInitialized = true;
                 }
             }
@@ -308,7 +319,8 @@ namespace PrismFanlight.Rendering
             if (double.IsNaN(sample.ShowSeconds)
                 || double.IsInfinity(sample.ShowSeconds)
                 || double.IsNaN(sample.AnimationSampleSeconds)
-                || double.IsInfinity(sample.AnimationSampleSeconds))
+                || double.IsInfinity(sample.AnimationSampleSeconds)
+                || !sample.MusicalPosition.IsComplete)
             {
                 throw new ArgumentException("A complete show sample is required.", nameof(sample));
             }
@@ -420,8 +432,10 @@ namespace PrismFanlight.Rendering
             _colorInitialized = false;
             _maskInitialized = false;
             _hasGlobalSeed = false;
+            _hasMaskBeat = false;
             _hasCameraContext = false;
             _globalSeed = 0u;
+            _lastMaskBeat = 0d;
             _lastCameraContext = default;
             _lastAnimationLocalToWorld = Matrix4x4.identity;
             _lastColorState = default;

@@ -235,15 +235,15 @@ namespace PrismFanlight.Core
             if (patch.Fields == FanlightIntensityFields.None) return current;
 
             var value = patch.Value;
-            var maskA = current.GetSpatialMask(0);
-            var maskB = current.GetSpatialMask(1);
-            var maskC = current.GetSpatialMask(2);
+            var maskA = current.GetMask(0);
+            var maskB = current.GetMask(1);
+            var maskC = current.GetMask(2);
             var maskWeights = new Vector3(
-                current.GetSpatialMaskWeight(0),
-                current.GetSpatialMaskWeight(1),
-                current.GetSpatialMaskWeight(2));
+                current.GetMaskWeight(0),
+                current.GetMaskWeight(1),
+                current.GetMaskWeight(2));
 
-            if (Has(patch.Fields, FanlightIntensityFields.SpatialMask))
+            if (Has(patch.Fields, FanlightIntensityFields.Mask))
             {
                 maskA = default;
                 maskB = default;
@@ -253,15 +253,15 @@ namespace PrismFanlight.Core
                 for (var i = 0; i < 3; i++)
                 {
                     AddIntensityMask(
-                        current.GetSpatialMask(i),
-                        current.GetSpatialMaskWeight(i) * (1f - weight),
+                        current.GetMask(i),
+                        current.GetMaskWeight(i) * (1f - weight),
                         ref maskA,
                         ref maskB,
                         ref maskC,
                         ref maskWeights);
                     AddIntensityMask(
-                        value.GetSpatialMask(i),
-                        value.GetSpatialMaskWeight(i) * weight,
+                        value.GetMask(i),
+                        value.GetMaskWeight(i) * weight,
                         ref maskA,
                         ref maskB,
                         ref maskC,

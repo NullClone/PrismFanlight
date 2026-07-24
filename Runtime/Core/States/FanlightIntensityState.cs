@@ -15,13 +15,13 @@ namespace PrismFanlight.Core
         private float _randomIntensity;
 
         [SerializeField]
-        private FanlightIntensityMask _spatialMask;
+        private FanlightIntensityMask _mask;
 
         [NonSerialized]
-        private FanlightIntensityMask _secondarySpatialMask;
+        private FanlightIntensityMask _secondaryMask;
 
         [NonSerialized]
-        private FanlightIntensityMask _tertiarySpatialMask;
+        private FanlightIntensityMask _tertiaryMask;
 
         [NonSerialized]
         private Vector3 _maskWeights;
@@ -33,7 +33,7 @@ namespace PrismFanlight.Core
 
         internal float RandomIntensity => _randomIntensity;
 
-        internal FanlightIntensityMask SpatialMask => _spatialMask;
+        internal FanlightIntensityMask Mask => _mask;
 
 
         // Methods
@@ -41,13 +41,13 @@ namespace PrismFanlight.Core
         internal FanlightIntensityState(
             float baseIntensity,
             float randomIntensity,
-            FanlightIntensityMask spatialMask)
+            FanlightIntensityMask mask)
         {
             _baseIntensity = FanlightStateValidation.RequireMinimum(baseIntensity, 0f, nameof(baseIntensity));
             _randomIntensity = FanlightStateValidation.RequireRange(randomIntensity, 0f, 1f, nameof(randomIntensity));
-            _spatialMask = spatialMask.Validated();
-            _secondarySpatialMask = default;
-            _tertiarySpatialMask = default;
+            _mask = mask.Validated();
+            _secondaryMask = default;
+            _tertiaryMask = default;
             _maskWeights = new Vector3(1f, 0f, 0f);
         }
 
@@ -70,22 +70,22 @@ namespace PrismFanlight.Core
             {
                 _baseIntensity = baseIntensity,
                 _randomIntensity = randomIntensity,
-                _spatialMask = maskA,
-                _secondarySpatialMask = maskB,
-                _tertiarySpatialMask = maskC,
+                _mask = maskA,
+                _secondaryMask = maskB,
+                _tertiaryMask = maskC,
                 _maskWeights = maskWeights
             };
         }
 
-        internal FanlightIntensityMask GetSpatialMask(int index) => index switch
+        internal FanlightIntensityMask GetMask(int index) => index switch
         {
-            0 => _spatialMask,
-            1 => _secondarySpatialMask,
-            2 => _tertiarySpatialMask,
+            0 => _mask,
+            1 => _secondaryMask,
+            2 => _tertiaryMask,
             _ => throw new ArgumentOutOfRangeException(nameof(index))
         };
 
-        internal float GetSpatialMaskWeight(int index)
+        internal float GetMaskWeight(int index)
         {
             var weights = NormalizeWeights(_maskWeights);
             return index switch
@@ -102,25 +102,39 @@ namespace PrismFanlight.Core
             return BlendMasks(
                 _baseIntensity,
                 _randomIntensity,
-                GetSpatialMask(0),
-                GetSpatialMask(1),
-                GetSpatialMask(2),
-                new Vector3(GetSpatialMaskWeight(0), GetSpatialMaskWeight(1), GetSpatialMaskWeight(2)));
+                GetMask(0),
+                GetMask(1),
+                GetMask(2),
+                new Vector3(GetMaskWeight(0), GetMaskWeight(1), GetMaskWeight(2)));
         }
 
         internal bool MaskContentEquals(in FanlightIntensityState other)
         {
             for (var i = 0; i < 3; i++)
             {
-                if (!GetSpatialMaskWeight(i).Equals(other.GetSpatialMaskWeight(i))) return false;
-                if (GetSpatialMaskWeight(i) > 0f
-                    && !GetSpatialMask(i).ContentEquals(other.GetSpatialMask(i)))
+                if (!GetMaskWeight(i).Equals(other.GetMaskWeight(i))) return false;
+                if (GetMaskWeight(i) > 0f
+                    && !GetMask(i).ContentEquals(other.GetMask(i)))
                 {
                     return false;
                 }
             }
 
             return true;
+        }
+
+        internal bool HasDynamicMask()
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                if (GetMaskWeight(i) > 0f
+                    && GetMask(i).Mode != FanlightIntensityMaskMode.None)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Vector3 NormalizeWeights(Vector3 weights)

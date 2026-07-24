@@ -568,13 +568,13 @@ namespace PrismFanlight.Timeline
             }
 
             var fallback = FanlightTimelineDefaults.IntensityState();
-            var maskA = Has(fields, FanlightIntensityFields.SpatialMask)
-                ? samples[0].Value.Intensity.SpatialMask
-                : fallback.SpatialMask;
-            var maskB = Has(fields, FanlightIntensityFields.SpatialMask) && samples.Length > 1
-                ? samples[1].Value.Intensity.SpatialMask
+            var maskA = Has(fields, FanlightIntensityFields.Mask)
+                ? samples[0].Value.Intensity.Mask
+                : fallback.Mask;
+            var maskB = Has(fields, FanlightIntensityFields.Mask) && samples.Length > 1
+                ? samples[1].Value.Intensity.Mask
                 : default;
-            var maskWeights = Has(fields, FanlightIntensityFields.SpatialMask)
+            var maskWeights = Has(fields, FanlightIntensityFields.Mask)
                 ? new Vector3(samples[0].Weight, samples.Length > 1 ? samples[1].Weight : 0f, 0f)
                 : new Vector3(1f, 0f, 0f);
             var value = FanlightIntensityState.BlendMasks(

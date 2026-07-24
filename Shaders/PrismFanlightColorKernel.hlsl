@@ -12,9 +12,11 @@ float4 _ColorSourceA[3];
 float4 _ColorSourceB[3];
 float4 _ColorSourceGeometry[3];
 float4 _ColorSourceParameters[3];
+float _MaskCompletedBeat;
 float4 _MaskSourceModes[3];
+float4 _MaskSourceTiming[3];
+float4 _MaskSourceEnvelope[3];
 float4 _MaskSourceGeometry[3];
-float4 _MaskSourceParameters[3];
 
 float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatData seat)
 {
@@ -41,62 +43,59 @@ float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatDa
     return _ColorSourcePalette[sourceIndex * 6u + blockPaletteSlot].rgb;
 }
 
+float PrismSmooth01(float value)
+{
+    value = saturate(value);
+    return value * value * (3.0 - 2.0 * value);
+}
+
+float PrismEvaluateMaskEnvelope(uint sourceIndex, float phase)
+{
+    float minimum = _MaskSourceEnvelope[sourceIndex].x;
+    float attack = _MaskSourceEnvelope[sourceIndex].y;
+    float hold = _MaskSourceEnvelope[sourceIndex].z;
+    float release = _MaskSourceEnvelope[sourceIndex].w;
+    float attackEnd = attack;
+    float holdEnd = attack + hold;
+    float releaseEnd = holdEnd + release;
+
+    if (attack > 0.0 && phase < attackEnd)
+    {
+        return lerp(minimum, 1.0, PrismSmooth01(phase / attack));
+    }
+
+    if (phase < holdEnd)
+    {
+        return 1.0;
+    }
+
+    if (release > 0.0 && phase < releaseEnd)
+    {
+        return lerp(1.0, minimum, PrismSmooth01((phase - holdEnd) / release));
+    }
+
+    return minimum;
+}
+
 float PrismEvaluateMaskSource(uint sourceIndex, FanlightSeatData seat)
 {
     uint mode = (uint)round(_MaskSourceModes[sourceIndex].x);
-    float invert = _MaskSourceModes[sourceIndex].z;
-    float mask = 1.0;
+    if (mode == 0u) return 1.0;
 
-    if (mode == 1u)
+    float beatsPerCycle = max(_MaskSourceTiming[sourceIndex].x, 0.000001);
+    float phaseOffsetBeats = _MaskSourceTiming[sourceIndex].y;
+    float phase = (_MaskCompletedBeat + phaseOffsetBeats) / beatsPerCycle;
+
+    if (mode == 2u)
     {
         float2 origin = _MaskSourceGeometry[sourceIndex].xy;
         float2 direction = _MaskSourceGeometry[sourceIndex].zw;
-        float width = _MaskSourceParameters[sourceIndex].x;
-        float progress = _MaskSourceParameters[sourceIndex].y;
-        float softness = _MaskSourceParameters[sourceIndex].w;
-
-        if (progress <= 0.0)
-        {
-            mask = 0.0;
-        }
-        else if (progress >= 1.0)
-        {
-            mask = 1.0;
-        }
-        else
-        {
-            float distance = dot(seat.localPositionSeed.xz - origin, direction) + width * 0.5;
-            float edge = lerp(-softness, width + softness, progress);
-            mask = softness > 0.0
-                ? 1.0 - smoothstep(edge, edge + softness, distance)
-                : distance <= edge ? 1.0 : 0.0;
-        }
-    }
-    else if (mode == 2u)
-    {
-        float2 origin = _MaskSourceGeometry[sourceIndex].xy;
-        float radius = _MaskSourceParameters[sourceIndex].z;
-        float softness = _MaskSourceParameters[sourceIndex].w;
-        float distance = length(seat.localPositionSeed.xz - origin);
-
-        if (radius <= 0.0)
-        {
-            mask = 0.0;
-        }
-        else
-        {
-            mask = softness > 0.0
-                ? 1.0 - smoothstep(radius, radius + softness, distance)
-                : distance <= radius ? 1.0 : 0.0;
-        }
+        float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
+        float spatialPhase = dot(seat.localPositionSeed.xz - origin, direction) / wavelength;
+        phase -= spatialPhase;
     }
 
-    if (invert >= 0.5)
-    {
-        mask = 1.0 - mask;
-    }
-
-    return saturate(mask);
+    return saturate(PrismEvaluateMaskEnvelope(sourceIndex, frac(phase)));
 }
 
 #endif

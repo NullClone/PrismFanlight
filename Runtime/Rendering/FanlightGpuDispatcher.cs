@@ -19,8 +19,9 @@ namespace PrismFanlight.Rendering
         private readonly Vector4[] _colorSourceGeometry = new Vector4[3];
         private readonly Vector4[] _colorSourceParameters = new Vector4[3];
         private readonly Vector4[] _maskSourceModes = new Vector4[3];
+        private readonly Vector4[] _maskSourceTiming = new Vector4[3];
+        private readonly Vector4[] _maskSourceEnvelope = new Vector4[3];
         private readonly Vector4[] _maskSourceGeometry = new Vector4[3];
-        private readonly Vector4[] _maskSourceParameters = new Vector4[3];
 
 
         // Methods
@@ -173,45 +174,49 @@ namespace PrismFanlight.Rendering
 
             for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
             {
-                var mask = intensity.GetSpatialMask(sourceIndex);
-                var weight = intensity.GetSpatialMaskWeight(sourceIndex);
+                var mask = intensity.GetMask(sourceIndex);
+                var weight = intensity.GetMaskWeight(sourceIndex);
                 _maskSourceModes[sourceIndex] = new Vector4(
                     (int)mask.Mode,
                     weight,
-                    weight > 0f
-                    && mask.Mode != FanlightIntensityMaskMode.None
-                    && mask.Invert
-                        ? 1f
-                        : 0f,
+                    0f,
                     0f);
+                _maskSourceTiming[sourceIndex] = Vector4.zero;
+                _maskSourceEnvelope[sourceIndex] = Vector4.zero;
                 _maskSourceGeometry[sourceIndex] = Vector4.zero;
-                _maskSourceParameters[sourceIndex] = Vector4.zero;
 
                 if (weight <= 0f || mask.Mode == FanlightIntensityMaskMode.None) continue;
 
-                if (mask.Mode == FanlightIntensityMaskMode.LinearWipe)
+                _maskSourceTiming[sourceIndex] = new Vector4(
+                    mask.BeatsPerCycle,
+                    mask.PhaseOffsetBeats,
+                    0f,
+                    0f);
+                _maskSourceEnvelope[sourceIndex] = new Vector4(
+                    mask.MinimumIntensityRatio,
+                    mask.AttackRatio,
+                    mask.HoldRatio,
+                    mask.ReleaseRatio);
+
+                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave)
                 {
+                    _maskSourceTiming[sourceIndex].z = mask.Wavelength;
                     _maskSourceGeometry[sourceIndex] = new Vector4(
                         mask.Origin.x,
                         mask.Origin.y,
                         mask.Direction.x,
                         mask.Direction.y);
-                    _maskSourceParameters[sourceIndex] = new Vector4(
-                        mask.Width,
-                        mask.Progress,
-                        0f,
-                        mask.Softness);
-                    continue;
                 }
-
-                _maskSourceGeometry[sourceIndex] = new Vector4(mask.Origin.x, mask.Origin.y, 0f, 0f);
-                _maskSourceParameters[sourceIndex] = new Vector4(0f, 0f, mask.Radius, mask.Softness);
             }
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
+            shader.SetFloat(
+                FanlightShaderIds.MaskCompletedBeat,
+                (float)context.Sample.MusicalPosition.Beat);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceModes, _maskSourceModes);
+            shader.SetVectorArray(FanlightShaderIds.MaskSourceTiming, _maskSourceTiming);
+            shader.SetVectorArray(FanlightShaderIds.MaskSourceEnvelope, _maskSourceEnvelope);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceGeometry, _maskSourceGeometry);
-            shader.SetVectorArray(FanlightShaderIds.MaskSourceParameters, _maskSourceParameters);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.ResolvedMask, buffers.ResolvedMaskBuffer);
             shader.Dispatch(
