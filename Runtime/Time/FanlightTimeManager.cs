@@ -16,16 +16,7 @@ namespace PrismFanlight.Time
         private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
 
         [SerializeField]
-        private ShowTimePrimaryMode _primaryMode = ShowTimePrimaryMode.UnityTime;
-
-        [SerializeField]
         private MonoBehaviour _primaryProvider;
-
-        [SerializeField]
-        private double _manualSeconds;
-
-        [SerializeField]
-        private double _manualRate;
 
         [SerializeField]
         private FanlightTempoMap _tempoMap;
@@ -43,12 +34,8 @@ namespace PrismFanlight.Time
         private double _defaultOffsetSeconds;
 
 
-        private readonly UnityUnscaledTimeSource _unityTime = new();
         private ShowTimeCoordinator _coordinator;
-        private UnityTimeProvider _unityProvider;
-        private ManualTimeProvider _manualProvider;
         private FanlightShowTimeFault _lastFault;
-        private string _lastFailureCode = string.Empty;
 
 
         // Properties
@@ -58,6 +45,7 @@ namespace PrismFanlight.Time
         internal bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
 
         internal bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
+
 
         // Methods
 
@@ -69,7 +57,12 @@ namespace PrismFanlight.Time
         {
             _defaultBpm = Math.Max(1e-6d, _defaultBpm);
             _defaultBeatsPerBar = Math.Max(1, _defaultBeatsPerBar);
-            if (_defaultBeatUnit is not (1 or 2 or 4 or 8 or 16)) _defaultBeatUnit = 4;
+
+            if (_defaultBeatUnit is not (1 or 2 or 4 or 8 or 16))
+            {
+                _defaultBeatUnit = 4;
+            }
+
             _coordinator = null;
         }
 
@@ -101,20 +94,10 @@ namespace PrismFanlight.Time
             if (_coordinator == null)
             {
                 failureCode = "CoordinatorUnavailable";
-                _lastFailureCode = failureCode;
                 return false;
             }
 
-            var result = _coordinator.TryRequestPrimaryReacquire(out failureCode);
-            _lastFailureCode = failureCode;
-            return result;
-        }
-
-        internal void SetManualTime(double seconds, double rate = 0d)
-        {
-            _manualSeconds = seconds;
-            _manualRate = rate;
-            _manualProvider?.Set(seconds, rate);
+            return _coordinator.TryRequestPrimaryReacquire(out failureCode);
         }
 
 
@@ -127,7 +110,6 @@ namespace PrismFanlight.Time
             if (provider == null)
             {
                 _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
-                _lastFailureCode = "PrimaryProviderMissing";
                 _coordinator = null;
                 return;
             }
@@ -147,7 +129,6 @@ namespace PrismFanlight.Time
             catch (Exception exception)
             {
                 _lastFault = FanlightShowTimeFault.TempoMapUnavailable;
-                _lastFailureCode = exception.Message;
                 _coordinator = null;
                 return;
             }
@@ -155,26 +136,11 @@ namespace PrismFanlight.Time
             _coordinator = new ShowTimeCoordinator(
                 NegativeTimePolicy,
                 provider,
-                tempo,
-                _unityTime);
+                tempo);
 
             _lastFault = FanlightShowTimeFault.None;
-            _lastFailureCode = string.Empty;
         }
 
-        private IShowTimeProvider ResolveProvider()
-        {
-            switch (_primaryMode)
-            {
-                case ShowTimePrimaryMode.Manual:
-                    _manualProvider ??= new ManualTimeProvider();
-                    _manualProvider.Set(_manualSeconds, _manualRate);
-                    return _manualProvider;
-                case ShowTimePrimaryMode.Provider:
-                    return _primaryProvider as IShowTimeProvider;
-                default:
-                    return _unityProvider ??= new UnityTimeProvider(_unityTime);
-            }
-        }
+        private IShowTimeProvider ResolveProvider() => _primaryProvider as IShowTimeProvider;
     }
 }

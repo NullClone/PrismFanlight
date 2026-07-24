@@ -132,17 +132,6 @@ namespace PrismFanlight
 
         // Methods
 
-        private void Reset()
-        {
-            if (_timeManager == null)
-            {
-                if (!gameObject.TryGetComponent(out _timeManager))
-                {
-                    _timeManager = gameObject.AddComponent<FanlightTimeManager>();
-                }
-            }
-        }
-
         private void OnEnable()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;

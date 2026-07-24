@@ -9,7 +9,6 @@ namespace PrismFanlight.Time
 
         private readonly IShowTimeProvider _primary;
         private readonly IShowTempoMapResolver _tempoMap;
-        private readonly UnityUnscaledTimeSource _unscaledTime;
         private long _lastEvaluationId = long.MinValue;
         private bool _hasCachedResult;
         private bool _cachedSuccess;
@@ -39,13 +38,11 @@ namespace PrismFanlight.Time
         internal ShowTimeCoordinator(
             ShowNegativeTimePolicy negativeTimePolicy,
             IShowTimeProvider primary,
-            IShowTempoMapResolver tempoMap,
-            UnityUnscaledTimeSource unscaledTime)
+            IShowTempoMapResolver tempoMap)
         {
             NegativeTimePolicy = negativeTimePolicy;
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _tempoMap = tempoMap ?? throw new ArgumentNullException(nameof(tempoMap));
-            _unscaledTime = unscaledTime ?? throw new ArgumentNullException(nameof(unscaledTime));
         }
 
         internal bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
@@ -132,7 +129,7 @@ namespace PrismFanlight.Time
                     }
 
                     _fallbackActive = true;
-                    _fallbackStartUnitySeconds = _unscaledTime.Seconds;
+                    _fallbackStartUnitySeconds = UnityEngine.Time.unscaledTimeAsDouble;
 
                     return CacheSuccess(CreateFallback(FanlightTimeDiscontinuity.AuthorityChanged), out sample, out fault);
                 }
@@ -194,12 +191,14 @@ namespace PrismFanlight.Time
 
         private FanlightShowTimeSample CreateFallback(FanlightTimeDiscontinuity discontinuity)
         {
-            var seconds = _lastPrimary.Seconds + (_unscaledTime.Seconds - _fallbackStartUnitySeconds) * _lastPrimary.Rate;
+            var seconds = _lastPrimary.Seconds + (UnityEngine.Time.unscaledTimeAsDouble - _fallbackStartUnitySeconds) * _lastPrimary.Rate;
+
             var provider = new ShowTimeProviderSample(
                 seconds,
                 _lastPrimary.Rate,
                 _lastPrimary.Rate == 0d ? FanlightClockStatus.Holding : FanlightClockStatus.Ready,
                 discontinuity);
+
             return CreateSample(provider, true, _primaryAvailable, discontinuity);
         }
 
@@ -209,13 +208,24 @@ namespace PrismFanlight.Time
             bool primaryAvailable,
             FanlightTimeDiscontinuity discontinuity)
         {
-            var seconds = NegativeTimePolicy == ShowNegativeTimePolicy.ClampToZero
-                ? Math.Max(0d, provider.Seconds)
-                : provider.Seconds;
+            var seconds = 0d;
+
+            if (NegativeTimePolicy == ShowNegativeTimePolicy.ClampToZero)
+            {
+                seconds = Math.Max(0d, provider.Seconds);
+            }
+
+            if (NegativeTimePolicy == ShowNegativeTimePolicy.AllowPreroll)
+            {
+                seconds = provider.Seconds;
+            }
+
             var musical = _tempoMap.Evaluate(seconds);
 
             if (!IsFinite(musical.Seconds) || Math.Abs(musical.Seconds - seconds) > 1e-9)
+            {
                 throw new InvalidOperationException("Tempo Map returned an inconsistent musical position.");
+            }
 
             return new FanlightShowTimeSample(
                 seconds,

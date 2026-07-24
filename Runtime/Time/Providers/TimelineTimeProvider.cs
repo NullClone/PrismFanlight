@@ -5,6 +5,7 @@ using UnityEngine.Playables;
 
 namespace PrismFanlight.Time
 {
+    [DisallowMultipleComponent]
     [AddComponentMenu("Prism Fanlight/Time Providers/Timeline Time Provider")]
     public sealed class TimelineTimeProvider : MonoBehaviour, IShowTimeProvider
     {
