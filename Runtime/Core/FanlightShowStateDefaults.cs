@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Authoring;
 using UnityEngine;
 
 namespace PrismFanlight.Core
@@ -14,8 +15,10 @@ namespace PrismFanlight.Core
             0.5f,
             0.3f);
 
-        internal static FanlightMotionState Motion() => new(
-            null,
+        internal static FanlightMotionState Motion() => Motion(null);
+
+        internal static FanlightMotionState Motion(FanlightMotionAsset motionAsset) => new(
+            motionAsset,
             1f,
             0f,
             1f,

@@ -86,10 +86,10 @@ namespace PrismFanlight
         private uint _globalSeed = 1u;
 
 
-        private readonly FanlightGpuRenderer _renderer = new();
-        private readonly Dictionary<object, FanlightShowContribution> _scheduledContributions = new();
-        private readonly FanlightContributionBuffer _contributionBuffer = new(16);
-        private readonly FanlightShowEvaluator _showEvaluator = new();
+        private FanlightGpuRenderer _renderer;
+        private Dictionary<object, FanlightShowContribution> _scheduledContributions;
+        private FanlightContributionBuffer _contributionBuffer;
+        private FanlightShowEvaluator _showEvaluator;
         private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _renderSample;
@@ -112,9 +112,9 @@ namespace PrismFanlight
 
         private FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
 
-        internal bool IsReady => _renderer.IsReady;
+        internal bool IsReady => _renderer is { IsReady: true };
 
-        internal FanlightRendererFault RendererFault => _renderer.Fault;
+        internal FanlightRendererFault RendererFault => _renderer?.Fault ?? FanlightRendererFault.MissingResource;
 
         internal FanlightShowState BaseState => new(
             _intent,
@@ -132,8 +132,21 @@ namespace PrismFanlight
 
         // Methods
 
+#if UNITY_EDITOR
+        private void Reset()
+        {
+            var defaultMotionAsset = Resources.Load<FanlightMotionAsset>("Default Motion Drum");
+            if (defaultMotionAsset != null)
+            {
+                _motion = FanlightShowStateDefaults.Motion(defaultMotionAsset);
+            }
+        }
+#endif
+
         private void OnEnable()
         {
+            EnsureRuntimeState();
+
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 
@@ -165,6 +178,7 @@ namespace PrismFanlight
                 return;
             }
 
+            EnsureRuntimeState();
             _evaluationId++;
 
             if (!_timeManager.TrySample(_evaluationId, out var time, out _))
@@ -226,12 +240,13 @@ namespace PrismFanlight
                 throw new ArgumentNullException(nameof(sourceToken));
             }
 
+            EnsureRuntimeState();
             _scheduledContributions[sourceToken] = contribution;
         }
 
         internal void ClearScheduledContribution(object sourceToken)
         {
-            if (sourceToken != null) _scheduledContributions.Remove(sourceToken);
+            if (sourceToken != null) _scheduledContributions?.Remove(sourceToken);
         }
 
         internal void SetLayoutAssetForEditor(FanlightLayoutAsset layoutAsset)
@@ -251,6 +266,11 @@ namespace PrismFanlight
             Dispose();
         }
 
+        internal void SetTimeManager(FanlightTimeManager timeManager)
+        {
+            _timeManager = timeManager;
+        }
+
 #if UNITY_EDITOR
         internal void SetEditorLayoutPreview(FanlightRuntimeLayout preview, int changedBlockIndex)
         {
@@ -263,6 +283,7 @@ namespace PrismFanlight
 
             _editorLayoutBlocked = false;
             _editorPreviewLayout = preview;
+            EnsureRuntimeState();
             _renderer.ApplyEditorLayoutPreview(preview, changedBlockIndex);
         }
 
@@ -294,6 +315,7 @@ namespace PrismFanlight
 
         private void PrepareRenderFrame(in FanlightShowSample sample)
         {
+            EnsureRuntimeState();
             _hasRenderFrame = false;
 
             var runtimeLayout = GetRuntimeLayout();
@@ -337,7 +359,7 @@ namespace PrismFanlight
 
         private void RenderCamera(Camera camera)
         {
-            if (!_hasRenderFrame || !_renderer.IsReady || !ShouldRenderCamera(camera)) return;
+            if (!_hasRenderFrame || _renderer == null || !_renderer.IsReady || !ShouldRenderCamera(camera)) return;
 
             var cameraContext = new FanlightCameraContext(
                 camera.cameraType == CameraType.SceneView ? "camera.scene-view" : "camera.primary",
@@ -368,8 +390,8 @@ namespace PrismFanlight
 
         private void ClearScheduledContributions()
         {
-            _scheduledContributions.Clear();
-            _contributionBuffer.Clear();
+            _scheduledContributions?.Clear();
+            _contributionBuffer?.Clear();
         }
 
         private void Dispose()
@@ -377,7 +399,15 @@ namespace PrismFanlight
             _hasRenderFrame = false;
             _renderSample = default;
             _renderFrame = default;
-            _renderer.Dispose();
+            _renderer?.Dispose();
+        }
+
+        private void EnsureRuntimeState()
+        {
+            _renderer ??= new FanlightGpuRenderer();
+            _scheduledContributions ??= new Dictionary<object, FanlightShowContribution>();
+            _contributionBuffer ??= new FanlightContributionBuffer(16);
+            _showEvaluator ??= new FanlightShowEvaluator();
         }
 
         private FanlightRuntimeLayout GetRuntimeLayout()
