@@ -8,8 +8,10 @@ namespace PrismFanlight.Time
         AllowPreroll = 1
     }
 
-    internal readonly struct ShowTimeProviderSample
+    public readonly struct ShowTimeProviderSample
     {
+        // Properties
+
         internal double Seconds { get; }
 
         internal double Rate { get; }
@@ -26,6 +28,8 @@ namespace PrismFanlight.Time
             && ((Status == FanlightClockStatus.Ready && Rate != 0d)
                 || (Status == FanlightClockStatus.Holding && Rate == 0d));
 
+
+        // Methods
 
         internal ShowTimeProviderSample(
             double seconds,

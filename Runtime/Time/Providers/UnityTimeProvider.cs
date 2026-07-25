@@ -1,11 +1,10 @@
+using System;
 using PrismFanlight.Core;
-using UnityEngine;
 
 namespace PrismFanlight.Time
 {
-    [DisallowMultipleComponent]
-    [AddComponentMenu("Prism Fanlight/Time Providers/Unity Time Provider")]
-    public sealed class UnityTimeProvider : MonoBehaviour, IShowTimeProvider
+    [Serializable]
+    public sealed class UnityTimeProvider : IShowTimeProvider
     {
         ShowTimeProviderSample IShowTimeProvider.Sample()
         {

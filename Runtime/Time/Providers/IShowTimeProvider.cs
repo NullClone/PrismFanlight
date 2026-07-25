@@ -1,7 +1,6 @@
 ﻿namespace PrismFanlight.Time
 {
-    // TODO: コンポーネントじゃないほうがいいかも
-    internal interface IShowTimeProvider
+    public interface IShowTimeProvider
     {
         ShowTimeProviderSample Sample();
     }

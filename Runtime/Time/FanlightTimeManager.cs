@@ -15,8 +15,8 @@ namespace PrismFanlight.Time
         [SerializeField]
         private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
 
-        [SerializeField]
-        private MonoBehaviour _primaryProvider;
+        [SerializeReference]
+        private IShowTimeProvider _provider = new UnityTimeProvider();
 
         [SerializeField]
         private FanlightTempoMap _tempoMap;
@@ -105,9 +105,7 @@ namespace PrismFanlight.Time
         {
             if (_coordinator != null) return;
 
-            var provider = ResolveProvider();
-
-            if (provider == null)
+            if (_provider == null)
             {
                 _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
                 _coordinator = null;
@@ -135,12 +133,10 @@ namespace PrismFanlight.Time
 
             _coordinator = new ShowTimeCoordinator(
                 NegativeTimePolicy,
-                provider,
+                _provider,
                 tempo);
 
             _lastFault = FanlightShowTimeFault.None;
         }
-
-        private IShowTimeProvider ResolveProvider() => _primaryProvider as IShowTimeProvider;
     }
 }
