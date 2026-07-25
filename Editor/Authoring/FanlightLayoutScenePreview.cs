@@ -12,8 +12,8 @@ namespace PrismFanlight.Editor
 
         private const float BlockPlanePickDistance = 4.99f;
 
-        private static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
-        private static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
+        internal static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
+        internal static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
         private static readonly Dictionary<string, string> SelectedBlockIds = new(StringComparer.Ordinal);
 
         private readonly List<int> _visibleBlocks = new();

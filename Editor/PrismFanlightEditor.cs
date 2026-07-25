@@ -34,8 +34,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _intensity;
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
-        private bool _enableGizmos = true;
 
+        private bool _enableGizmos = true;
         private UnityEditor.Editor _layoutEditor;
 
         private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
@@ -102,6 +102,19 @@ namespace PrismFanlight.Editor
             if (_instance.LayoutAsset != null)
             {
                 _layoutScenePreview.Draw(_instance);
+            }
+
+            var mode = _direction.FindPropertyRelative("_mode");
+            if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
+            {
+                Handles.color = FanlightLayoutScenePreview.SelectedColor;
+
+                var yaw = _direction.FindPropertyRelative("_worldYawDegrees");
+                var rotation = Quaternion.Euler(0, yaw.floatValue, 0);
+                var size = new Vector3(0.75f, 0.75f, 1f);
+                PrismFanlightGizmoUtility.DrawWireArrow(_instance.transform.position, rotation, size, true);
+
+                Handles.matrix = Matrix4x4.identity;
             }
         }
 
