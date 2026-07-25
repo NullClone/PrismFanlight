@@ -9,6 +9,19 @@ namespace PrismFanlight.Editor
 {
     internal static class FanlightColorIntensityEditorUtility
     {
+        // Fields
+
+        private static readonly string[] PaletteSlotOptions =
+        {
+            "Slot 1",
+            "Slot 2",
+            "Slot 3",
+            "Slot 4",
+            "Slot 5",
+            "Slot 6"
+        };
+
+
         // Methods
 
         internal static void DrawColorState(
@@ -17,28 +30,25 @@ namespace PrismFanlight.Editor
             bool requireLayout = false)
         {
             var source = state.FindPropertyRelative("_source");
-            DrawColorSource(source);
+            DrawColorSource(source, layout);
             DrawBlockPaletteValidation(source, layout, requireLayout);
         }
 
         internal static void DrawIntensityState(SerializedProperty state)
         {
             var baseIntensity = state.FindPropertyRelative("_baseIntensity");
-            EditorGUILayout.PropertyField(baseIntensity, new GUIContent("Base Intensity"));
-            if (!baseIntensity.hasMultipleDifferentValues
-                && (!float.IsFinite(baseIntensity.floatValue) || baseIntensity.floatValue < 0f))
+            EditorGUILayout.PropertyField(baseIntensity, new GUIContent("Intensity"));
+
+            if (!baseIntensity.hasMultipleDifferentValues && (!float.IsFinite(baseIntensity.floatValue) || baseIntensity.floatValue < 0f))
             {
                 EditorGUILayout.HelpBox("Base Intensity must be a finite value of 0 or greater.", MessageType.Error);
             }
 
             var randomIntensity = state.FindPropertyRelative("_randomIntensity");
             EditorGUI.BeginChangeCheck();
-            var randomValue = EditorGUILayout.Slider(
-                "Random Intensity",
-                randomIntensity.floatValue,
-                0f,
-                1f);
+            var randomValue = EditorGUILayout.Slider("Random Intensity", randomIntensity.floatValue, 0f, 1f);
             if (EditorGUI.EndChangeCheck()) randomIntensity.floatValue = randomValue;
+
             if (!randomIntensity.hasMultipleDifferentValues
                 && (!float.IsFinite(randomIntensity.floatValue)
                     || randomIntensity.floatValue < 0f
@@ -48,11 +58,65 @@ namespace PrismFanlight.Editor
             }
 
             EditorGUILayout.Space();
-            PrismFanlightEditorStyles.DrawSubGroupLabel("Intensity Pattern");
+
             DrawIntensityMask(state.FindPropertyRelative("_mask"));
         }
 
-        private static void DrawColorSource(SerializedProperty source)
+        internal static bool IsBlockPalette(SerializedProperty state)
+        {
+            if (state == null) return false;
+
+            var mode = state.FindPropertyRelative("_source").FindPropertyRelative("_mode");
+            return !mode.hasMultipleDifferentValues
+                   && (FanlightColorMode)mode.enumValueIndex == FanlightColorMode.BlockPalette;
+        }
+
+        internal static void DrawSelectedBlockColor(
+            SerializedProperty state,
+            FanlightLayoutAsset layout,
+            int blockIndex)
+        {
+            if (!IsBlockPalette(state)
+                || layout == null
+                || !layout.IsInitialized
+                || blockIndex < 0
+                || blockIndex >= layout.TotalBlockCount)
+            {
+                return;
+            }
+
+            var source = state.FindPropertyRelative("_source");
+            var entries = source.FindPropertyRelative("_blockPaletteEntries");
+
+            if (!HasCompleteBlockPaletteMapping(entries, layout))
+            {
+                EditorGUILayout.HelpBox(
+                    "Synchronize the Layout Blocks to create the complete Stable Block ID mapping.",
+                    MessageType.Warning);
+
+                if (GUILayout.Button("Synchronize Block IDs"))
+                {
+                    SynchronizeBlockPaletteEntries(entries, layout);
+                }
+
+                if (!HasCompleteBlockPaletteMapping(entries, layout)) return;
+            }
+
+            var blockId = layout.GetBlock(blockIndex).BlockId;
+            var entryIndex = FindBlockPaletteEntry(entries, blockId);
+
+            if (entryIndex < 0) return;
+
+            var entry = entries.GetArrayElementAtIndex(entryIndex);
+            var paletteSlot = entry.FindPropertyRelative("_paletteSlot");
+            EditorGUI.BeginChangeCheck();
+            var nextSlot = EditorGUILayout.Popup("Palette Slot", paletteSlot.intValue, PaletteSlotOptions);
+            if (EditorGUI.EndChangeCheck()) paletteSlot.intValue = nextSlot;
+
+            DrawChroma(source.FindPropertyRelative($"_slot{paletteSlot.intValue + 1}"), "Slot Color");
+        }
+
+        private static void DrawColorSource(SerializedProperty source, FanlightLayoutAsset layout)
         {
             var mode = source.FindPropertyRelative("_mode");
             EditorGUILayout.PropertyField(mode, new GUIContent("Color Mode"));
@@ -73,14 +137,93 @@ namespace PrismFanlight.Editor
                     break;
                 case FanlightColorMode.BlockPalette:
                     DrawPalette(source);
-                    EditorGUILayout.PropertyField(
-                        source.FindPropertyRelative("_blockPaletteEntries"),
-                        new GUIContent("Block Palette Entries"),
-                        true);
+                    EditorGUILayout.Space();
+                    if (layout != null && layout.IsInitialized && GUILayout.Button("Synchronize Block IDs"))
+                    {
+                        SynchronizeBlockPaletteEntries(source.FindPropertyRelative("_blockPaletteEntries"), layout);
+                    }
+
+                    EditorGUILayout.PropertyField(source.FindPropertyRelative("_blockPaletteEntries"), new GUIContent("Block Palette Entries"), true);
+
                     break;
             }
 
             DrawColorSourceValidation(source, (FanlightColorMode)mode.enumValueIndex);
+        }
+
+        private static int FindBlockPaletteEntry(SerializedProperty entries, string blockId)
+        {
+            for (var i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                if (string.Equals(
+                        entry.FindPropertyRelative("_stableBlockId").stringValue,
+                        blockId,
+                        StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool HasCompleteBlockPaletteMapping(
+            SerializedProperty entries,
+            FanlightLayoutAsset layout)
+        {
+            if (entries == null
+                || layout == null
+                || !layout.IsInitialized
+                || entries.arraySize != layout.TotalBlockCount)
+            {
+                return false;
+            }
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                var id = entry.FindPropertyRelative("_stableBlockId").stringValue;
+                var slot = entry.FindPropertyRelative("_paletteSlot").intValue;
+                if (string.IsNullOrEmpty(id) || slot < 0 || slot > 5 || !ids.Add(id)) return false;
+            }
+
+            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            {
+                if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
+            }
+
+            return true;
+        }
+
+        private static void SynchronizeBlockPaletteEntries(
+            SerializedProperty entries,
+            FanlightLayoutAsset layout)
+        {
+            var slotsByBlockId = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            for (var i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                var id = entry.FindPropertyRelative("_stableBlockId").stringValue;
+                var slot = entry.FindPropertyRelative("_paletteSlot").intValue;
+                if (!string.IsNullOrEmpty(id) && slot >= 0 && slot <= 5)
+                {
+                    slotsByBlockId.TryAdd(id, slot);
+                }
+            }
+
+            entries.arraySize = layout.TotalBlockCount;
+
+            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            {
+                var blockId = layout.GetBlock(blockIndex).BlockId;
+                var entry = entries.GetArrayElementAtIndex(blockIndex);
+                entry.FindPropertyRelative("_stableBlockId").stringValue = blockId;
+                entry.FindPropertyRelative("_paletteSlot").intValue =
+                    slotsByBlockId.TryGetValue(blockId, out var slot) ? slot : 0;
+            }
         }
 
         private static void DrawPalette(SerializedProperty source)
@@ -180,9 +323,7 @@ namespace PrismFanlight.Editor
             return Mathf.Abs(value - 1f) <= 0.0001f;
         }
 
-        private static void DrawColorSourceValidation(
-            SerializedProperty source,
-            FanlightColorMode mode)
+        private static void DrawColorSourceValidation(SerializedProperty source, FanlightColorMode mode)
         {
             if (mode != FanlightColorMode.LinearGradient) return;
 
@@ -203,9 +344,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawIntensityMaskValidation(
-            SerializedProperty mask,
-            FanlightIntensityMaskMode mode)
+        private static void DrawIntensityMaskValidation(SerializedProperty mask, FanlightIntensityMaskMode mode)
         {
             if (mode == FanlightIntensityMaskMode.None) return;
 

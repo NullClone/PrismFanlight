@@ -26,8 +26,15 @@ namespace PrismFanlight.Core
 
         internal FanlightBlockPaletteEntry(string stableBlockId, int paletteSlot)
         {
-            if (string.IsNullOrEmpty(stableBlockId)) throw new ArgumentException("A Stable Block ID is required.", nameof(stableBlockId));
-            if (paletteSlot < 0 || paletteSlot > 5) throw new ArgumentOutOfRangeException(nameof(paletteSlot));
+            if (string.IsNullOrEmpty(stableBlockId))
+            {
+                //throw new ArgumentException("A Stable Block ID is required.", nameof(stableBlockId));
+            }
+
+            if (paletteSlot < 0 || paletteSlot > 5)
+            {
+                throw new ArgumentOutOfRangeException(nameof(paletteSlot));
+            }
 
             _stableBlockId = stableBlockId;
             _paletteSlot = paletteSlot;
