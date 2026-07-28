@@ -238,10 +238,11 @@ namespace PrismFanlight.Editor
             var baseCenter = layout.GetBlockBaseCenterLocal(block);
             var worldCenter = fanlight.transform.TransformPoint(baseCenter + placement.position);
             var worldRotation = fanlight.transform.rotation * placement.Rotation;
+            var handleRotation = Tools.pivotRotation == PivotRotation.Local ? worldRotation : Quaternion.identity;
 
             EditorGUI.BeginChangeCheck();
 
-            var nextCenter = Handles.PositionHandle(worldCenter, worldRotation);
+            var nextCenter = Handles.PositionHandle(worldCenter, handleRotation);
             var nextRotation = Handles.RotationHandle(worldRotation, nextCenter);
 
             if (!EditorGUI.EndChangeCheck()) return;
