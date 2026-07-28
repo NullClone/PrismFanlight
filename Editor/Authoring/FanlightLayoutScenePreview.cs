@@ -20,6 +20,11 @@ namespace PrismFanlight.Editor
         private readonly Plane[] _planes = new Plane[6];
 
 
+        // Properties
+
+        internal bool IsSelected { get; private set; }
+
+
         // Methods
 
         internal static int GetSelectedBlockIndex(FanlightLayoutAsset layout)
@@ -34,27 +39,28 @@ namespace PrismFanlight.Editor
             return -1;
         }
 
-        internal void Draw(PrismFanlight fanlight)
+        internal bool Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
 
-            if (layout == null || !layout.IsInitialized) return;
+            if (layout == null || !layout.IsInitialized) return fanlight;
 
             if (FanlightLayoutIdRegistry.IsDuplicate(layout))
             {
                 fanlight.SetEditorLayoutBlocked(true);
-                return;
+                return false;
             }
 
             fanlight.SetEditorLayoutBlocked(false);
 
             var session = FanlightLayoutEditSession.Get(layout);
 
-            if (session == null) return;
+            if (session == null) return false;
 
             if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
             {
                 fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+
                 EditorApplication.QueuePlayerLoopUpdate();
             }
 
@@ -63,6 +69,7 @@ namespace PrismFanlight.Editor
             if (camera != null)
             {
                 GeometryUtility.CalculateFrustumPlanes(camera, _planes);
+
                 session.QueryVisible(_planes, fanlight.transform.localToWorldMatrix, _visibleBlocks);
             }
             else
@@ -91,8 +98,10 @@ namespace PrismFanlight.Editor
                 if (!Application.isPlaying && DoBlockButton(controlId, p0, p1, p2, p3, isSelected))
                 {
                     SelectedBlockIds[layout.LayoutId.Value] = layout.GetBlock(blockIndex).BlockId;
+
                     selected = blockIndex;
                     isSelected = true;
+
                     SceneView.RepaintAll();
                 }
 
@@ -104,7 +113,10 @@ namespace PrismFanlight.Editor
             {
                 DrawSelectedSeatDots(transform, session, selected);
                 DrawTransformHandle(fanlight, layout, session, selected);
+                return true;
             }
+
+            return false;
         }
 
         internal void ResetSelected(FanlightLayoutAsset layout)

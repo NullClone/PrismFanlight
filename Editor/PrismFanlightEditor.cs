@@ -1,5 +1,6 @@
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
+using PrismFanlight.Rendering;
 using UnityEditor;
 using UnityEngine;
 
@@ -39,6 +40,7 @@ namespace PrismFanlight.Editor
         private UnityEditor.Editor _layoutEditor;
 
         private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
+        private bool _hasSelectedLayout = false;
 
         private static readonly PrismFanlightSection _intentSection = new(new GUIContent("Intent"));
         private static readonly PrismFanlightSection _motionSection = new(new GUIContent("Motion"));
@@ -101,7 +103,7 @@ namespace PrismFanlight.Editor
 
             if (_instance.LayoutAsset != null)
             {
-                _layoutScenePreview.Draw(_instance);
+                _hasSelectedLayout = _layoutScenePreview.Draw(_instance);
             }
 
             var mode = _direction.FindPropertyRelative("_mode");
@@ -138,6 +140,26 @@ namespace PrismFanlight.Editor
             DrawAdvanceSection();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private bool HasFrameBounds()
+        {
+            return _hasSelectedLayout;
+        }
+
+        private Bounds OnGetFrameBounds()
+        {
+            var layout = _instance.LayoutAsset;
+            var blockIndex = FanlightLayoutScenePreview.GetSelectedBlockIndex(layout);
+            var session = FanlightLayoutEditSession.Get(layout);
+
+            if (blockIndex < 0 || session == null)
+            {
+                return new Bounds(_instance.transform.position, Vector3.one);
+            }
+
+            var localBounds = session.GetBlockBounds(blockIndex);
+            return FanlightGeometryBuilder.TransformBounds(_instance.transform.localToWorldMatrix, localBounds);
         }
 
         private void DrawRenderingSection()
