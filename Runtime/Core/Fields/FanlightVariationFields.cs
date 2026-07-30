@@ -6,19 +6,14 @@ namespace PrismFanlight.Core
     internal enum FanlightVariationFields
     {
         None = 0,
-        SeatPosition = 1 << 0,
-        BodyHeight = 1 << 1,
-        ArmLength = 1 << 2,
-        Angle = 1 << 3,
-        DirectionSpread = 1 << 4,
-        ReactionDelaySeconds = 1 << 5,
-        BeatJitter = 1 << 6,
-        BlockDelayXBeats = 1 << 7,
-        BlockDelayYBeats = 1 << 8,
-        EnergyResponse = 1 << 9,
-        Speed = 1 << 10,
-        BeatReactionDelaySeconds = 1 << 11,
-        HandZone = 1 << 12,
-        All = SeatPosition | BodyHeight | ArmLength | Angle | DirectionSpread | ReactionDelaySeconds | BeatJitter | BlockDelayXBeats | BlockDelayYBeats | EnergyResponse | Speed | BeatReactionDelaySeconds | HandZone
+        StandingPositionSpread = 1 << 0,
+        HeightVariation = 1 << 1,
+        ArmExtensionVariation = 1 << 2,
+        PenlightDirectionSpread = 1 << 3,
+        ReactionDelaySeconds = 1 << 4,
+        BeatJitterBeats = 1 << 5,
+        EnergyResponse = 1 << 6,
+        HandPositionSpread = 1 << 7,
+        All = StandingPositionSpread | HeightVariation | ArmExtensionVariation | PenlightDirectionSpread | ReactionDelaySeconds | BeatJitterBeats | EnergyResponse | HandPositionSpread
     }
 }

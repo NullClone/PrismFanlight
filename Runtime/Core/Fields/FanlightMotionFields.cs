@@ -9,12 +9,14 @@ namespace PrismFanlight.Core
         MotionAsset = 1 << 0,
         BeatsPerCycle = 1 << 1,
         PhaseOffsetBeats = 1 << 2,
-        MotionAmount = 1 << 3,
-        HeightBias = 1 << 4,
-        SideScale = 1 << 5,
-        ForwardScale = 1 << 6,
-        WristDelayRatio = 1 << 7,
-        Variation = 1 << 8,
-        All = MotionAsset | BeatsPerCycle | PhaseOffsetBeats | MotionAmount | HeightBias | SideScale | ForwardScale | WristDelayRatio | Variation
+        BlockDelayXBeats = 1 << 3,
+        BlockDelayYBeats = 1 << 4,
+        MotionAmount = 1 << 5,
+        HeightBias = 1 << 6,
+        SideScale = 1 << 7,
+        ForwardScale = 1 << 8,
+        WristDelayRatio = 1 << 9,
+        Variation = 1 << 10,
+        All = MotionAsset | BeatsPerCycle | PhaseOffsetBeats | BlockDelayXBeats | BlockDelayYBeats | MotionAmount | HeightBias | SideScale | ForwardScale | WristDelayRatio | Variation
     }
 }

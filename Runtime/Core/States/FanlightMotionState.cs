@@ -19,6 +19,12 @@ namespace PrismFanlight.Core
         private float _phaseOffsetBeats;
 
         [SerializeField]
+        private float _blockDelayXBeats;
+
+        [SerializeField]
+        private float _blockDelayYBeats;
+
+        [SerializeField]
         private float _motionAmount;
 
         [SerializeField]
@@ -54,6 +60,10 @@ namespace PrismFanlight.Core
 
         internal float PhaseOffsetBeats => _phaseOffsetBeats;
 
+        internal float BlockDelayXBeats => _blockDelayXBeats;
+
+        internal float BlockDelayYBeats => _blockDelayYBeats;
+
         internal float MotionAmount => _motionAmount;
 
         internal float HeightBias => _heightBias;
@@ -73,6 +83,8 @@ namespace PrismFanlight.Core
             FanlightMotionAsset motionAsset,
             float beatsPerCycle,
             float phaseOffsetBeats,
+            float blockDelayXBeats,
+            float blockDelayYBeats,
             float motionAmount,
             float heightBias,
             float sideScale,
@@ -83,6 +95,8 @@ namespace PrismFanlight.Core
             _motionAsset = motionAsset;
             _beatsPerCycle = FanlightStateValidation.RequireRange(beatsPerCycle, 0.001f, 64f, nameof(beatsPerCycle));
             _phaseOffsetBeats = FanlightStateValidation.RequireRange(phaseOffsetBeats, -64f, 64f, nameof(phaseOffsetBeats));
+            _blockDelayXBeats = FanlightStateValidation.RequireRange(blockDelayXBeats, -64f, 64f, nameof(blockDelayXBeats));
+            _blockDelayYBeats = FanlightStateValidation.RequireRange(blockDelayYBeats, -64f, 64f, nameof(blockDelayYBeats));
             _motionAmount = FanlightStateValidation.RequireRange(motionAmount, 0f, 2f, nameof(motionAmount));
             _heightBias = FanlightStateValidation.RequireRange(heightBias, -1f, 1f, nameof(heightBias));
             _sideScale = FanlightStateValidation.RequireRange(sideScale, 0f, 2f, nameof(sideScale));
@@ -101,6 +115,8 @@ namespace PrismFanlight.Core
             Vector3 assetWeights,
             float beatsPerCycle,
             float phaseOffsetBeats,
+            float blockDelayXBeats,
+            float blockDelayYBeats,
             float motionAmount,
             float heightBias,
             float sideScale,
@@ -112,6 +128,8 @@ namespace PrismFanlight.Core
                 assetA,
                 beatsPerCycle,
                 phaseOffsetBeats,
+                blockDelayXBeats,
+                blockDelayYBeats,
                 motionAmount,
                 heightBias,
                 sideScale,

@@ -169,7 +169,7 @@ namespace PrismFanlight.Editor
                 DrawRenderingLayerMask();
 
                 EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight"));
+                EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
 
                 var appearance = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAppearanceProfile;
                 if (appearance == null)
@@ -182,8 +182,8 @@ namespace PrismFanlight.Editor
                 }
 
                 EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_material);
-                EditorGUILayout.PropertyField(_audienceMaterial);
+                EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
+                EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
 
                 if (_material.objectReferenceValue == null || _audienceMaterial.objectReferenceValue == null)
                 {
@@ -280,6 +280,8 @@ namespace PrismFanlight.Editor
 
                 DrawChild(_motion, "_beatsPerCycle", "Beats Per Cycle");
                 DrawChild(_motion, "_phaseOffsetBeats", "Phase Offset");
+                DrawChild(_motion, "_blockDelayXBeats", "Block Delay X");
+                DrawChild(_motion, "_blockDelayYBeats", "Block Delay Y");
             });
         }
 
@@ -430,20 +432,16 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
             {
-                DrawChild(_audienceBody, "_height", "Height");
-                DrawSlider(_audienceBody, "_heightVariation", "Height Variation", 0f, 1f);
-                DrawChild(_audienceBody, "_width", "Width");
+                DrawChild(_audienceBody, "_height", "Body Height");
+                DrawChild(_audienceBody, "_width", "Body Width");
                 DrawChild(_audienceBody, "_headSize", "Head Size");
-                DrawSlider(_audienceBody, "_shoulderHeightRatio", "Shoulder Height", 0f, 1f);
-                DrawSlider(_audienceBody, "_shoulderSideOffset", "Shoulder Offset", -1f, 1f);
                 DrawChild(_audienceBody, "_armWidth", "Arm Width");
                 DrawChild(_audienceBody, "_armLengthLimit", "Arm Length Limit");
-                DrawChild(_audienceBody, "_upperBodyLeanMaximumRadians", "Lean Maximum");
-                DrawSlider(_audienceBody, "_upperBodyLean", "Upper Body Lean", 0f, 1f);
+                DrawSlider(_audienceBody, "_shoulderHeightRatio", "Shoulder Height", 0f, 1f);
+                DrawSlider(_audienceBody, "_shoulderSideOffset", "Shoulder Offset", -1f, 1f);
+                EditorGUILayout.Space();
                 DrawSlider(_audienceBody, "_bounce", "Bounce", 0f, 1f);
                 DrawSlider(_audienceBody, "_sway", "Sway", 0f, 1f);
-                DrawChild(_audienceBody, "_motionSpeed", "Motion Speed");
-                DrawSlider(_audienceBody, "_leanMotion", "Lean Motion", 0f, 1f);
             });
 
             PrismFanlightEditorStyles.DrawSection(_directionSection, () =>
@@ -469,19 +467,14 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection(_variationSection, () =>
             {
-                DrawSlider(_variation, "_seatPosition", "Seat Position", 0f, 1f);
-                DrawSlider(_variation, "_bodyHeight", "Body Height", 0f, 1f);
-                DrawSlider(_variation, "_armLength", "Arm Length", 0f, 1f);
-                DrawSlider(_variation, "_angle", "Angle", 0f, 1f);
-                DrawSlider(_variation, "_directionSpread", "Direction Spread", 0f, 1f);
+                DrawSlider(_variation, "_standingPositionSpread", "Position Spread", 0f, 1f);
+                DrawSlider(_variation, "_heightVariation", "Audience Height", 0f, 1f);
+                DrawSlider(_variation, "_armExtensionVariation", "Arm Extension", 0f, 1f);
+                DrawSlider(_variation, "_penlightDirectionSpread", "Direction Spread", 0f, 1f);
                 DrawChild(_variation, "_reactionDelaySeconds", "Reaction Delay");
-                DrawChild(_variation, "_beatJitter", "Beat Jitter");
-                DrawChild(_variation, "_blockDelayXBeats", "Block Delay X");
-                DrawChild(_variation, "_blockDelayYBeats", "Block Delay Y");
+                DrawChild(_variation, "_beatJitterBeats", "Beat Jitter");
                 DrawSlider(_variation, "_energyResponse", "Energy Response", 0f, 1f);
-                DrawChild(_variation, "_speed", "Speed");
-                DrawChild(_variation, "_beatReactionDelaySeconds", "Beat Reaction Delay");
-                DrawSlider(_variation, "_handZone", "Hand Position Spread", 0f, 0.5f);
+                DrawSlider(_variation, "_handPositionSpread", "Hand Position Spread", 0f, 0.5f);
             });
 
             PrismFanlightEditorStyles.DrawSection(_noiseSection, () =>

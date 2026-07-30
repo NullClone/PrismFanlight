@@ -104,6 +104,8 @@ namespace PrismFanlight.Core
                 assetWeights,
                 Has(patch.Fields, FanlightMotionFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
                 Has(patch.Fields, FanlightMotionFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
+                Has(patch.Fields, FanlightMotionFields.BlockDelayXBeats) ? Lerp(current.BlockDelayXBeats, value.BlockDelayXBeats, weight) : current.BlockDelayXBeats,
+                Has(patch.Fields, FanlightMotionFields.BlockDelayYBeats) ? Lerp(current.BlockDelayYBeats, value.BlockDelayYBeats, weight) : current.BlockDelayYBeats,
                 Has(patch.Fields, FanlightMotionFields.MotionAmount) ? Lerp(current.MotionAmount, value.MotionAmount, weight) : current.MotionAmount,
                 Has(patch.Fields, FanlightMotionFields.HeightBias) ? Lerp(current.HeightBias, value.HeightBias, weight) : current.HeightBias,
                 Has(patch.Fields, FanlightMotionFields.SideScale) ? Lerp(current.SideScale, value.SideScale, weight) : current.SideScale,
@@ -118,19 +120,14 @@ namespace PrismFanlight.Core
 
             var value = patch.Value;
             return new FanlightVariationState(
-                Has(patch.Fields, FanlightVariationFields.SeatPosition) ? Lerp(current.SeatPosition, value.SeatPosition, weight) : current.SeatPosition,
-                Has(patch.Fields, FanlightVariationFields.BodyHeight) ? Lerp(current.BodyHeight, value.BodyHeight, weight) : current.BodyHeight,
-                Has(patch.Fields, FanlightVariationFields.ArmLength) ? Lerp(current.ArmLength, value.ArmLength, weight) : current.ArmLength,
-                Has(patch.Fields, FanlightVariationFields.Angle) ? Lerp(current.Angle, value.Angle, weight) : current.Angle,
-                Has(patch.Fields, FanlightVariationFields.DirectionSpread) ? Lerp(current.DirectionSpread, value.DirectionSpread, weight) : current.DirectionSpread,
+                Has(patch.Fields, FanlightVariationFields.StandingPositionSpread) ? Lerp(current.StandingPositionSpread, value.StandingPositionSpread, weight) : current.StandingPositionSpread,
+                Has(patch.Fields, FanlightVariationFields.HeightVariation) ? Lerp(current.HeightVariation, value.HeightVariation, weight) : current.HeightVariation,
+                Has(patch.Fields, FanlightVariationFields.ArmExtensionVariation) ? Lerp(current.ArmExtensionVariation, value.ArmExtensionVariation, weight) : current.ArmExtensionVariation,
+                Has(patch.Fields, FanlightVariationFields.PenlightDirectionSpread) ? Lerp(current.PenlightDirectionSpread, value.PenlightDirectionSpread, weight) : current.PenlightDirectionSpread,
                 Has(patch.Fields, FanlightVariationFields.ReactionDelaySeconds) ? Lerp(current.ReactionDelaySeconds, value.ReactionDelaySeconds, weight) : current.ReactionDelaySeconds,
-                Has(patch.Fields, FanlightVariationFields.BeatJitter) ? Lerp(current.BeatJitter, value.BeatJitter, weight) : current.BeatJitter,
-                Has(patch.Fields, FanlightVariationFields.BlockDelayXBeats) ? Lerp(current.BlockDelayXBeats, value.BlockDelayXBeats, weight) : current.BlockDelayXBeats,
-                Has(patch.Fields, FanlightVariationFields.BlockDelayYBeats) ? Lerp(current.BlockDelayYBeats, value.BlockDelayYBeats, weight) : current.BlockDelayYBeats,
+                Has(patch.Fields, FanlightVariationFields.BeatJitterBeats) ? Lerp(current.BeatJitterBeats, value.BeatJitterBeats, weight) : current.BeatJitterBeats,
                 Has(patch.Fields, FanlightVariationFields.EnergyResponse) ? Lerp(current.EnergyResponse, value.EnergyResponse, weight) : current.EnergyResponse,
-                Has(patch.Fields, FanlightVariationFields.Speed) ? Lerp(current.Speed, value.Speed, weight) : current.Speed,
-                Has(patch.Fields, FanlightVariationFields.BeatReactionDelaySeconds) ? Lerp(current.BeatReactionDelaySeconds, value.BeatReactionDelaySeconds, weight) : current.BeatReactionDelaySeconds,
-                Has(patch.Fields, FanlightVariationFields.HandZone) ? Lerp(current.HandZone, value.HandZone, weight) : current.HandZone);
+                Has(patch.Fields, FanlightVariationFields.HandPositionSpread) ? Lerp(current.HandPositionSpread, value.HandPositionSpread, weight) : current.HandPositionSpread);
         }
 
         internal static FanlightNoiseState Apply(FanlightNoiseState current, FanlightNoisePatch patch, float weight)
@@ -168,19 +165,14 @@ namespace PrismFanlight.Core
             var value = patch.Value;
             return new FanlightAudienceBodyState(
                 Has(patch.Fields, FanlightAudienceBodyFields.Height) ? Lerp(current.Height, value.Height, weight) : current.Height,
-                Has(patch.Fields, FanlightAudienceBodyFields.HeightVariation) ? Lerp(current.HeightVariation, value.HeightVariation, weight) : current.HeightVariation,
                 Has(patch.Fields, FanlightAudienceBodyFields.Width) ? Lerp(current.Width, value.Width, weight) : current.Width,
                 Has(patch.Fields, FanlightAudienceBodyFields.HeadSize) ? Lerp(current.HeadSize, value.HeadSize, weight) : current.HeadSize,
                 Has(patch.Fields, FanlightAudienceBodyFields.ShoulderHeightRatio) ? Lerp(current.ShoulderHeightRatio, value.ShoulderHeightRatio, weight) : current.ShoulderHeightRatio,
                 Has(patch.Fields, FanlightAudienceBodyFields.ShoulderSideOffset) ? Lerp(current.ShoulderSideOffset, value.ShoulderSideOffset, weight) : current.ShoulderSideOffset,
                 Has(patch.Fields, FanlightAudienceBodyFields.ArmWidth) ? Lerp(current.ArmWidth, value.ArmWidth, weight) : current.ArmWidth,
                 Has(patch.Fields, FanlightAudienceBodyFields.ArmLengthLimit) ? Lerp(current.ArmLengthLimit, value.ArmLengthLimit, weight) : current.ArmLengthLimit,
-                Has(patch.Fields, FanlightAudienceBodyFields.UpperBodyLeanMaximumRadians) ? Lerp(current.UpperBodyLeanMaximumRadians, value.UpperBodyLeanMaximumRadians, weight) : current.UpperBodyLeanMaximumRadians,
-                Has(patch.Fields, FanlightAudienceBodyFields.UpperBodyLean) ? Lerp(current.UpperBodyLean, value.UpperBodyLean, weight) : current.UpperBodyLean,
                 Has(patch.Fields, FanlightAudienceBodyFields.Bounce) ? Lerp(current.Bounce, value.Bounce, weight) : current.Bounce,
-                Has(patch.Fields, FanlightAudienceBodyFields.Sway) ? Lerp(current.Sway, value.Sway, weight) : current.Sway,
-                Has(patch.Fields, FanlightAudienceBodyFields.MotionSpeed) ? Lerp(current.MotionSpeed, value.MotionSpeed, weight) : current.MotionSpeed,
-                Has(patch.Fields, FanlightAudienceBodyFields.LeanMotion) ? Lerp(current.LeanMotion, value.LeanMotion, weight) : current.LeanMotion);
+                Has(patch.Fields, FanlightAudienceBodyFields.Sway) ? Lerp(current.Sway, value.Sway, weight) : current.Sway);
         }
 
         internal static FanlightDirectionState Apply(FanlightDirectionState current, FanlightDirectionPatch patch, float weight)

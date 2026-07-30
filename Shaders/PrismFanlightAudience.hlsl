@@ -13,7 +13,7 @@ FanlightAudiencePart PrismMakeAudiencePart(float3 p0, float3 p1, float halfWidth
 
 void PrismBuildAudienceParts(uint seatId, PrismHumanPose human, PrismArm arm)
 {
-    float scale = _AudienceUpperBody.z;
+    float scale = _AudienceWorldScale;
     float3 feetW = mul(_LocalToWorld, float4(human.feetLocal, 1.0)).xyz;
     float3 neckW = mul(_LocalToWorld, float4(human.neckLocal, 1.0)).xyz;
     float3 shoulderW = mul(_LocalToWorld, float4(human.shoulderLocal, 1.0)).xyz;

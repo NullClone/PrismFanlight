@@ -112,6 +112,8 @@ namespace PrismFanlight.Timeline
 
             var beatsPerCycle = new FanlightWeightedFloat();
             var phaseOffsetBeats = new FanlightWeightedFloat();
+            var blockDelayXBeats = new FanlightWeightedFloat();
+            var blockDelayYBeats = new FanlightWeightedFloat();
             var motionAmount = new FanlightWeightedFloat();
             var heightBias = new FanlightWeightedFloat();
             var sideScale = new FanlightWeightedFloat();
@@ -129,6 +131,8 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightMotionFields.MotionAsset)) AddAsset(sourceValue.MotionAsset, sample.Weight, ref assetA, ref assetB, ref assetWeights);
                 if (Has(fields, FanlightMotionFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
                 if (Has(fields, FanlightMotionFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
+                if (Has(fields, FanlightMotionFields.BlockDelayXBeats)) blockDelayXBeats.Add(sourceValue.BlockDelayXBeats, sample.Weight);
+                if (Has(fields, FanlightMotionFields.BlockDelayYBeats)) blockDelayYBeats.Add(sourceValue.BlockDelayYBeats, sample.Weight);
                 if (Has(fields, FanlightMotionFields.MotionAmount)) motionAmount.Add(sourceValue.MotionAmount, sample.Weight);
                 if (Has(fields, FanlightMotionFields.HeightBias)) heightBias.Add(sourceValue.HeightBias, sample.Weight);
                 if (Has(fields, FanlightMotionFields.SideScale)) sideScale.Add(sourceValue.SideScale, sample.Weight);
@@ -151,6 +155,8 @@ namespace PrismFanlight.Timeline
                 Has(fields, FanlightMotionFields.MotionAsset) ? new Vector3(assetWeights.x, assetWeights.y, 0f) : new Vector3(1f, 0f, 0f),
                 beatsPerCycle.Value(fallback.BeatsPerCycle),
                 phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
+                blockDelayXBeats.Value(fallback.BlockDelayXBeats),
+                blockDelayYBeats.Value(fallback.BlockDelayYBeats),
                 motionAmount.Value(fallback.MotionAmount),
                 heightBias.Value(fallback.HeightBias),
                 sideScale.Value(fallback.SideScale),
@@ -182,37 +188,27 @@ namespace PrismFanlight.Timeline
         {
             ValidateMask((int)fields, (int)FanlightVariationFields.All);
 
-            var seatPosition = new FanlightWeightedFloat();
-            var bodyHeight = new FanlightWeightedFloat();
-            var armLength = new FanlightWeightedFloat();
-            var angle = new FanlightWeightedFloat();
-            var directionSpread = new FanlightWeightedFloat();
+            var standingPositionSpread = new FanlightWeightedFloat();
+            var heightVariation = new FanlightWeightedFloat();
+            var armExtensionVariation = new FanlightWeightedFloat();
+            var penlightDirectionSpread = new FanlightWeightedFloat();
             var reactionDelaySeconds = new FanlightWeightedFloat();
-            var beatJitter = new FanlightWeightedFloat();
-            var blockDelayXBeats = new FanlightWeightedFloat();
-            var blockDelayYBeats = new FanlightWeightedFloat();
+            var beatJitterBeats = new FanlightWeightedFloat();
             var energyResponse = new FanlightWeightedFloat();
-            var speed = new FanlightWeightedFloat();
-            var beatReactionDelaySeconds = new FanlightWeightedFloat();
-            var handZone = new FanlightWeightedFloat();
+            var handPositionSpread = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Variation;
-                if (Has(fields, FanlightVariationFields.SeatPosition)) seatPosition.Add(sourceValue.SeatPosition, sample.Weight);
-                if (Has(fields, FanlightVariationFields.BodyHeight)) bodyHeight.Add(sourceValue.BodyHeight, sample.Weight);
-                if (Has(fields, FanlightVariationFields.ArmLength)) armLength.Add(sourceValue.ArmLength, sample.Weight);
-                if (Has(fields, FanlightVariationFields.Angle)) angle.Add(sourceValue.Angle, sample.Weight);
-                if (Has(fields, FanlightVariationFields.DirectionSpread)) directionSpread.Add(sourceValue.DirectionSpread, sample.Weight);
+                if (Has(fields, FanlightVariationFields.StandingPositionSpread)) standingPositionSpread.Add(sourceValue.StandingPositionSpread, sample.Weight);
+                if (Has(fields, FanlightVariationFields.HeightVariation)) heightVariation.Add(sourceValue.HeightVariation, sample.Weight);
+                if (Has(fields, FanlightVariationFields.ArmExtensionVariation)) armExtensionVariation.Add(sourceValue.ArmExtensionVariation, sample.Weight);
+                if (Has(fields, FanlightVariationFields.PenlightDirectionSpread)) penlightDirectionSpread.Add(sourceValue.PenlightDirectionSpread, sample.Weight);
                 if (Has(fields, FanlightVariationFields.ReactionDelaySeconds)) reactionDelaySeconds.Add(sourceValue.ReactionDelaySeconds, sample.Weight);
-                if (Has(fields, FanlightVariationFields.BeatJitter)) beatJitter.Add(sourceValue.BeatJitter, sample.Weight);
-                if (Has(fields, FanlightVariationFields.BlockDelayXBeats)) blockDelayXBeats.Add(sourceValue.BlockDelayXBeats, sample.Weight);
-                if (Has(fields, FanlightVariationFields.BlockDelayYBeats)) blockDelayYBeats.Add(sourceValue.BlockDelayYBeats, sample.Weight);
+                if (Has(fields, FanlightVariationFields.BeatJitterBeats)) beatJitterBeats.Add(sourceValue.BeatJitterBeats, sample.Weight);
                 if (Has(fields, FanlightVariationFields.EnergyResponse)) energyResponse.Add(sourceValue.EnergyResponse, sample.Weight);
-                if (Has(fields, FanlightVariationFields.Speed)) speed.Add(sourceValue.Speed, sample.Weight);
-                if (Has(fields, FanlightVariationFields.BeatReactionDelaySeconds)) beatReactionDelaySeconds.Add(sourceValue.BeatReactionDelaySeconds, sample.Weight);
-                if (Has(fields, FanlightVariationFields.HandZone)) handZone.Add(sourceValue.HandZone, sample.Weight);
+                if (Has(fields, FanlightVariationFields.HandPositionSpread)) handPositionSpread.Add(sourceValue.HandPositionSpread, sample.Weight);
             }
 
             if (fields == FanlightVariationFields.None)
@@ -223,19 +219,14 @@ namespace PrismFanlight.Timeline
 
             var fallback = FanlightTimelineDefaults.VariationState();
             var value = new FanlightVariationState(
-                seatPosition.Value(fallback.SeatPosition),
-                bodyHeight.Value(fallback.BodyHeight),
-                armLength.Value(fallback.ArmLength),
-                angle.Value(fallback.Angle),
-                directionSpread.Value(fallback.DirectionSpread),
+                standingPositionSpread.Value(fallback.StandingPositionSpread),
+                heightVariation.Value(fallback.HeightVariation),
+                armExtensionVariation.Value(fallback.ArmExtensionVariation),
+                penlightDirectionSpread.Value(fallback.PenlightDirectionSpread),
                 reactionDelaySeconds.Value(fallback.ReactionDelaySeconds),
-                beatJitter.Value(fallback.BeatJitter),
-                blockDelayXBeats.Value(fallback.BlockDelayXBeats),
-                blockDelayYBeats.Value(fallback.BlockDelayYBeats),
+                beatJitterBeats.Value(fallback.BeatJitterBeats),
                 energyResponse.Value(fallback.EnergyResponse),
-                speed.Value(fallback.Speed),
-                beatReactionDelaySeconds.Value(fallback.BeatReactionDelaySeconds),
-                handZone.Value(fallback.HandZone)
+                handPositionSpread.Value(fallback.HandPositionSpread)
             );
 
             patch = new FanlightShowPatch(
@@ -378,38 +369,28 @@ namespace PrismFanlight.Timeline
             ValidateMask((int)fields, (int)FanlightAudienceBodyFields.All);
 
             var height = new FanlightWeightedFloat();
-            var heightVariation = new FanlightWeightedFloat();
             var width = new FanlightWeightedFloat();
             var headSize = new FanlightWeightedFloat();
             var shoulderHeightRatio = new FanlightWeightedFloat();
             var shoulderSideOffset = new FanlightWeightedFloat();
             var armWidth = new FanlightWeightedFloat();
             var armLengthLimit = new FanlightWeightedFloat();
-            var upperBodyLeanMaximumRadians = new FanlightWeightedFloat();
-            var upperBodyLean = new FanlightWeightedFloat();
             var bounce = new FanlightWeightedFloat();
             var sway = new FanlightWeightedFloat();
-            var motionSpeed = new FanlightWeightedFloat();
-            var leanMotion = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.AudienceBody;
                 if (Has(fields, FanlightAudienceBodyFields.Height)) height.Add(sourceValue.Height, sample.Weight);
-                if (Has(fields, FanlightAudienceBodyFields.HeightVariation)) heightVariation.Add(sourceValue.HeightVariation, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.Width)) width.Add(sourceValue.Width, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.HeadSize)) headSize.Add(sourceValue.HeadSize, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.ShoulderHeightRatio)) shoulderHeightRatio.Add(sourceValue.ShoulderHeightRatio, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.ShoulderSideOffset)) shoulderSideOffset.Add(sourceValue.ShoulderSideOffset, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.ArmWidth)) armWidth.Add(sourceValue.ArmWidth, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.ArmLengthLimit)) armLengthLimit.Add(sourceValue.ArmLengthLimit, sample.Weight);
-                if (Has(fields, FanlightAudienceBodyFields.UpperBodyLeanMaximumRadians)) upperBodyLeanMaximumRadians.Add(sourceValue.UpperBodyLeanMaximumRadians, sample.Weight);
-                if (Has(fields, FanlightAudienceBodyFields.UpperBodyLean)) upperBodyLean.Add(sourceValue.UpperBodyLean, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.Bounce)) bounce.Add(sourceValue.Bounce, sample.Weight);
                 if (Has(fields, FanlightAudienceBodyFields.Sway)) sway.Add(sourceValue.Sway, sample.Weight);
-                if (Has(fields, FanlightAudienceBodyFields.MotionSpeed)) motionSpeed.Add(sourceValue.MotionSpeed, sample.Weight);
-                if (Has(fields, FanlightAudienceBodyFields.LeanMotion)) leanMotion.Add(sourceValue.LeanMotion, sample.Weight);
             }
 
             if (fields == FanlightAudienceBodyFields.None)
@@ -421,19 +402,14 @@ namespace PrismFanlight.Timeline
             var fallback = FanlightTimelineDefaults.AudienceBodyState();
             var value = new FanlightAudienceBodyState(
                 height.Value(fallback.Height),
-                heightVariation.Value(fallback.HeightVariation),
                 width.Value(fallback.Width),
                 headSize.Value(fallback.HeadSize),
                 shoulderHeightRatio.Value(fallback.ShoulderHeightRatio),
                 shoulderSideOffset.Value(fallback.ShoulderSideOffset),
                 armWidth.Value(fallback.ArmWidth),
                 armLengthLimit.Value(fallback.ArmLengthLimit),
-                upperBodyLeanMaximumRadians.Value(fallback.UpperBodyLeanMaximumRadians),
-                upperBodyLean.Value(fallback.UpperBodyLean),
                 bounce.Value(fallback.Bounce),
-                sway.Value(fallback.Sway),
-                motionSpeed.Value(fallback.MotionSpeed),
-                leanMotion.Value(fallback.LeanMotion)
+                sway.Value(fallback.Sway)
             );
 
             patch = new FanlightShowPatch(

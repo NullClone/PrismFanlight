@@ -9,104 +9,69 @@ namespace PrismFanlight.Core
         // Fields
 
         [SerializeField]
-        private float _seatPosition;
+        private float _standingPositionSpread;
 
         [SerializeField]
-        private float _bodyHeight;
+        private float _heightVariation;
 
         [SerializeField]
-        private float _armLength;
+        private float _armExtensionVariation;
 
         [SerializeField]
-        private float _angle;
-
-        [SerializeField]
-        private float _directionSpread;
+        private float _penlightDirectionSpread;
 
         [SerializeField]
         private float _reactionDelaySeconds;
 
         [SerializeField]
-        private float _beatJitter;
-
-        [SerializeField]
-        private float _blockDelayXBeats;
-
-        [SerializeField]
-        private float _blockDelayYBeats;
+        private float _beatJitterBeats;
 
         [SerializeField]
         private float _energyResponse;
 
         [SerializeField]
-        private float _speed;
-
-        [SerializeField]
-        private float _beatReactionDelaySeconds;
-
-        [SerializeField]
-        private float _handZone;
+        private float _handPositionSpread;
 
 
         // Properties
 
-        internal float SeatPosition => _seatPosition;
+        internal float StandingPositionSpread => _standingPositionSpread;
 
-        internal float BodyHeight => _bodyHeight;
+        internal float HeightVariation => _heightVariation;
 
-        internal float ArmLength => _armLength;
+        internal float ArmExtensionVariation => _armExtensionVariation;
 
-        internal float Angle => _angle;
-
-        internal float DirectionSpread => _directionSpread;
+        internal float PenlightDirectionSpread => _penlightDirectionSpread;
 
         internal float ReactionDelaySeconds => _reactionDelaySeconds;
 
-        internal float BeatJitter => _beatJitter;
-
-        internal float BlockDelayXBeats => _blockDelayXBeats;
-
-        internal float BlockDelayYBeats => _blockDelayYBeats;
+        internal float BeatJitterBeats => _beatJitterBeats;
 
         internal float EnergyResponse => _energyResponse;
 
-        internal float Speed => _speed;
-
-        internal float BeatReactionDelaySeconds => _beatReactionDelaySeconds;
-
-        internal float HandZone => _handZone;
+        internal float HandPositionSpread => _handPositionSpread;
 
 
         // Methods
 
         internal FanlightVariationState(
-            float seatPosition,
-            float bodyHeight,
-            float armLength,
-            float angle,
-            float directionSpread,
+            float standingPositionSpread,
+            float heightVariation,
+            float armExtensionVariation,
+            float penlightDirectionSpread,
             float reactionDelaySeconds,
-            float beatJitter,
-            float blockDelayXBeats,
-            float blockDelayYBeats,
+            float beatJitterBeats,
             float energyResponse,
-            float speed,
-            float beatReactionDelaySeconds,
-            float handZone)
+            float handPositionSpread)
         {
-            _seatPosition = FanlightStateValidation.RequireRange(seatPosition, 0f, 1f, nameof(seatPosition));
-            _bodyHeight = FanlightStateValidation.RequireRange(bodyHeight, 0f, 1f, nameof(bodyHeight));
-            _armLength = FanlightStateValidation.RequireRange(armLength, 0f, 1f, nameof(armLength));
-            _angle = FanlightStateValidation.RequireRange(angle, 0f, 1f, nameof(angle));
-            _directionSpread = FanlightStateValidation.RequireRange(directionSpread, 0f, 1f, nameof(directionSpread));
+            _standingPositionSpread = FanlightStateValidation.RequireRange(standingPositionSpread, 0f, 1f, nameof(standingPositionSpread));
+            _heightVariation = FanlightStateValidation.RequireRange(heightVariation, 0f, 1f, nameof(heightVariation));
+            _armExtensionVariation = FanlightStateValidation.RequireRange(armExtensionVariation, 0f, 1f, nameof(armExtensionVariation));
+            _penlightDirectionSpread = FanlightStateValidation.RequireRange(penlightDirectionSpread, 0f, 1f, nameof(penlightDirectionSpread));
             _reactionDelaySeconds = FanlightStateValidation.RequireRange(reactionDelaySeconds, 0f, 10f, nameof(reactionDelaySeconds));
-            _beatJitter = FanlightStateValidation.RequireRange(beatJitter, 0f, 8f, nameof(beatJitter));
-            _blockDelayXBeats = FanlightStateValidation.RequireRange(blockDelayXBeats, -64f, 64f, nameof(blockDelayXBeats));
-            _blockDelayYBeats = FanlightStateValidation.RequireRange(blockDelayYBeats, -64f, 64f, nameof(blockDelayYBeats));
+            _beatJitterBeats = FanlightStateValidation.RequireRange(beatJitterBeats, 0f, 8f, nameof(beatJitterBeats));
             _energyResponse = FanlightStateValidation.RequireRange(energyResponse, 0f, 1f, nameof(energyResponse));
-            _speed = FanlightStateValidation.RequireRange(speed, 0f, 4f, nameof(speed));
-            _beatReactionDelaySeconds = FanlightStateValidation.RequireRange(beatReactionDelaySeconds, 0f, 10f, nameof(beatReactionDelaySeconds));
-            _handZone = FanlightStateValidation.RequireRange(handZone, 0f, 0.5f, nameof(handZone));
+            _handPositionSpread = FanlightStateValidation.RequireRange(handPositionSpread, 0f, 0.5f, nameof(handPositionSpread));
         }
     }
 }

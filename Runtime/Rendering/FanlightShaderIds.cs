@@ -61,7 +61,7 @@ namespace PrismFanlight.Rendering
 
         internal static readonly int AudienceShape = Shader.PropertyToID("_AudienceShape");
         internal static readonly int AudienceArm = Shader.PropertyToID("_AudienceArm");
-        internal static readonly int AudienceUpperBody = Shader.PropertyToID("_AudienceUpperBody");
+        internal static readonly int AudienceWorldScale = Shader.PropertyToID("_AudienceWorldScale");
         internal static readonly int AudienceMotionBody = Shader.PropertyToID("_AudienceMotionBody");
 
         internal static readonly int BaseIntensity = Shader.PropertyToID("_FanlightBaseIntensity");

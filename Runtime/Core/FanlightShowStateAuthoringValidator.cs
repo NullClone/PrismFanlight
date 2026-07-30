@@ -32,6 +32,8 @@ namespace PrismFanlight.Core
                     value.MotionAsset,
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
+                    value.BlockDelayXBeats,
+                    value.BlockDelayYBeats,
                     value.MotionAmount,
                     value.HeightBias,
                     value.SideScale,
@@ -50,19 +52,14 @@ namespace PrismFanlight.Core
             try
             {
                 return new FanlightVariationState(
-                    value.SeatPosition,
-                    value.BodyHeight,
-                    value.ArmLength,
-                    value.Angle,
-                    value.DirectionSpread,
+                    value.StandingPositionSpread,
+                    value.HeightVariation,
+                    value.ArmExtensionVariation,
+                    value.PenlightDirectionSpread,
                     value.ReactionDelaySeconds,
-                    value.BeatJitter,
-                    value.BlockDelayXBeats,
-                    value.BlockDelayYBeats,
+                    value.BeatJitterBeats,
                     value.EnergyResponse,
-                    value.Speed,
-                    value.BeatReactionDelaySeconds,
-                    value.HandZone);
+                    value.HandPositionSpread);
             }
             catch (ArgumentException)
             {
@@ -114,19 +111,14 @@ namespace PrismFanlight.Core
             {
                 return new FanlightAudienceBodyState(
                     value.Height,
-                    value.HeightVariation,
                     value.Width,
                     value.HeadSize,
                     value.ShoulderHeightRatio,
                     value.ShoulderSideOffset,
                     value.ArmWidth,
                     value.ArmLengthLimit,
-                    value.UpperBodyLeanMaximumRadians,
-                    value.UpperBodyLean,
                     value.Bounce,
-                    value.Sway,
-                    value.MotionSpeed,
-                    value.LeanMotion);
+                    value.Sway);
             }
             catch (ArgumentException)
             {

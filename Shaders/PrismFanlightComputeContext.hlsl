@@ -62,7 +62,7 @@ float PrismPenlightGripPivotY(uint seatIndex)
 }
 float4 _AudienceShape;
 float4 _AudienceArm;
-float4 _AudienceUpperBody;
+float _AudienceWorldScale;
 float4 _AudienceMotionBody;
 
 uint PrismSeatIndex(FanlightSeatData seat)

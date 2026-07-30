@@ -21,6 +21,8 @@ namespace PrismFanlight.Core
             motionAsset,
             1f,
             0f,
+            0f,
+            0f,
             1f,
             0f,
             1f,
@@ -36,11 +38,6 @@ namespace PrismFanlight.Core
             0f,
             0f,
             0f,
-            0f,
-            0f,
-            0f,
-            1f,
-            0f,
             0f);
 
         internal static FanlightNoiseState Noise() => new(0f, 0f, 0f, 0f, 1, 0f);
@@ -49,7 +46,6 @@ namespace PrismFanlight.Core
 
         internal static FanlightAudienceBodyState AudienceBody() => new(
             1.7f,
-            0f,
             0.5f,
             0.2f,
             0.75f,
@@ -57,10 +53,6 @@ namespace PrismFanlight.Core
             0.1f,
             1f,
             0f,
-            0f,
-            0f,
-            0f,
-            1f,
             0f);
 
         internal static FanlightDirectionState Direction() => new(
@@ -86,7 +78,7 @@ namespace PrismFanlight.Core
                 Array.Empty<FanlightBlockPaletteEntry>()));
 
         internal static FanlightIntensityState Intensity() => new(
-            2f,
+            20f,
             0f,
             new FanlightIntensityMask(
                 FanlightIntensityMaskMode.None,

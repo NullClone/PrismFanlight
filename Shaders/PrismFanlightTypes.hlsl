@@ -60,8 +60,6 @@ struct PrismCrowdRhythm
 {
     float cyclePhase;
     float bodyPhase;
-    float shoulderPhase;
-    float downbeatPulse;
 };
 
 struct PrismAudienceBasis
