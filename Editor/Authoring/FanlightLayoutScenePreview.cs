@@ -20,11 +20,6 @@ namespace PrismFanlight.Editor
         private readonly Plane[] _planes = new Plane[6];
 
 
-        // Properties
-
-        internal bool IsSelected { get; private set; }
-
-
         // Methods
 
         internal static int GetSelectedBlockIndex(FanlightLayoutAsset layout)

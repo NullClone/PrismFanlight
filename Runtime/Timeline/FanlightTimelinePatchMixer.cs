@@ -253,22 +253,16 @@ namespace PrismFanlight.Timeline
             ValidateMask((int)fields, (int)FanlightNoiseFields.All);
 
             var phaseAmount = new FanlightWeightedFloat();
-            var phaseSpeed = new FanlightWeightedFloat();
-            var axisAmount = new FanlightWeightedFloat();
-            var axisSpeed = new FanlightWeightedFloat();
-            var octaves = new FanlightDiscreteValue<int>();
-            var persistence = new FanlightWeightedFloat();
+            var positionAmount = new FanlightWeightedFloat();
+            var directionAmount = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Noise;
                 if (Has(fields, FanlightNoiseFields.PhaseAmount)) phaseAmount.Add(sourceValue.PhaseAmount, sample.Weight);
-                if (Has(fields, FanlightNoiseFields.PhaseSpeed)) phaseSpeed.Add(sourceValue.PhaseSpeed, sample.Weight);
-                if (Has(fields, FanlightNoiseFields.AxisAmount)) axisAmount.Add(sourceValue.AxisAmount, sample.Weight);
-                if (Has(fields, FanlightNoiseFields.AxisSpeed)) axisSpeed.Add(sourceValue.AxisSpeed, sample.Weight);
-                if (Has(fields, FanlightNoiseFields.Octaves)) octaves.Consider(sourceValue.Octaves, sample.Weight, sample.StartSeconds);
-                if (Has(fields, FanlightNoiseFields.Persistence)) persistence.Add(sourceValue.Persistence, sample.Weight);
+                if (Has(fields, FanlightNoiseFields.PositionAmount)) positionAmount.Add(sourceValue.PositionAmount, sample.Weight);
+                if (Has(fields, FanlightNoiseFields.DirectionAmount)) directionAmount.Add(sourceValue.DirectionAmount, sample.Weight);
             }
 
             if (fields == FanlightNoiseFields.None)
@@ -280,11 +274,12 @@ namespace PrismFanlight.Timeline
             var fallback = FanlightTimelineDefaults.NoiseState();
             var value = new FanlightNoiseState(
                 phaseAmount.Value(fallback.PhaseAmount),
-                phaseSpeed.Value(fallback.PhaseSpeed),
-                axisAmount.Value(fallback.AxisAmount),
-                axisSpeed.Value(fallback.AxisSpeed),
-                octaves.Value(fallback.Octaves),
-                persistence.Value(fallback.Persistence)
+                fallback.PhaseRate,
+                positionAmount.Value(fallback.PositionAmount),
+                directionAmount.Value(fallback.DirectionAmount),
+                fallback.SpatialRate,
+                fallback.Octaves,
+                fallback.Persistence
             );
 
             patch = new FanlightShowPatch(

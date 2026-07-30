@@ -317,7 +317,7 @@ namespace PrismFanlight.Rendering
             }
 
             var worldDirection = ComputeWorldDirection(direction);
-            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(intent.Reach, asynchrony, noise.PhaseAmount * realism, noise.PhaseSpeed));
+            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(intent.Reach, asynchrony, noise.PhaseAmount * realism, noise.PhaseRate));
             shader.SetVector(FanlightShaderIds.MotionCycle, new Vector4(
                 motion.BeatsPerCycle,
                 motion.PhaseOffsetBeats,
@@ -338,10 +338,11 @@ namespace PrismFanlight.Rendering
                 variation.PenlightDirectionSpread * realism,
                 0f));
             shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(
-                noise.AxisAmount * realism,
-                noise.AxisSpeed,
-                noise.Octaves,
+                noise.PositionAmount * realism,
+                noise.DirectionAmount * realism,
+                noise.SpatialRate,
                 noise.Persistence));
+            shader.SetInt(FanlightShaderIds.MotionNoiseOctaves, noise.Octaves);
             shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(
                 intent.Energy * 2f,
                 variation.EnergyResponse * realism,

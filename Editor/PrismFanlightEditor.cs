@@ -479,10 +479,18 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSection(_noiseSection, () =>
             {
-                DrawChild(_noise, "_phaseAmount", "Phase Amount");
-                DrawChild(_noise, "_phaseSpeed", "Phase Speed");
-                DrawChild(_noise, "_axisAmount", "Axis Amount");
-                DrawChild(_noise, "_axisSpeed", "Axis Speed");
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Phase");
+                DrawSlider(_noise, "_phaseAmount", "Amount (rad)", 0f, 4f);
+                DrawSlider(_noise, "_phaseRate", "Rate", 0f, 16f);
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Spatial");
+                DrawSlider(_noise, "_positionAmount", "Position (m)", 0f, 0.2f);
+                DrawSlider(_noise, "_directionAmount", "Direction (rad)", 0f, 0.4f);
+                DrawSlider(_noise, "_spatialRate", "Rate", 0f, 16f);
+
+                EditorGUILayout.Space();
+                PrismFanlightEditorStyles.DrawSubGroupLabel("Detail");
                 DrawChild(_noise, "_octaves", "Octaves");
                 DrawSlider(_noise, "_persistence", "Persistence", 0f, 1f);
             });

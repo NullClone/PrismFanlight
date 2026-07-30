@@ -53,6 +53,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int WorldToLocal = Shader.PropertyToID("_WorldToLocal");
         internal static readonly int MotionVariation = Shader.PropertyToID("_MotionVariation");
         internal static readonly int MotionNoise = Shader.PropertyToID("_MotionNoise");
+        internal static readonly int MotionNoiseOctaves = Shader.PropertyToID("_MotionNoiseOctaves");
         internal static readonly int MotionHuman = Shader.PropertyToID("_MotionHuman");
         internal static readonly int MotionRest = Shader.PropertyToID("_MotionRest");
         internal static readonly int MotionRestTiming = Shader.PropertyToID("_MotionRestTiming");

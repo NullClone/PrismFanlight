@@ -311,14 +311,6 @@ namespace PrismFanlight.Editor
         {
             fieldName = string.Empty;
 
-            if (kind == FanlightTimelinePatchKind.Noise
-                && (fieldMask.Noise & FanlightNoiseFields.Octaves) != 0
-                && left.Noise.Octaves != right.Noise.Octaves)
-            {
-                fieldName = "Octaves";
-                return true;
-            }
-
             if (kind == FanlightTimelinePatchKind.Direction
                 && (fieldMask.Direction & FanlightDirectionFields.Mode) != 0
                 && left.Direction.Mode != right.Direction.Mode)

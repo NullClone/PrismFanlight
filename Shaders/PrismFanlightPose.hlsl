@@ -13,8 +13,6 @@ float3 PrismComputeSeatAnchor(FanlightSeatData seat)
 
 PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 {
-    int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
-    float noisePersistence = max(0.001, _MotionNoise.w);
     float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z * _MotionCycle.w;
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
     float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.x * _MotionCycle.w;
@@ -24,10 +22,14 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
     float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.yz);
     float delayedBeat = _FanlightBeat.y - beatReaction - seatBeatJitter - blockBeatDelay;
     float personaTiming = (PrismRandom(seat, 6u) * 2.0 - 1.0) * 0.5 * _MotionTiming.y * _MotionCycle.w;
-    float phaseNoise = FbmNoise21(
-        float2(PrismRandom(seat, 7u) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w),
-        noiseOctaves,
-        noisePersistence) * _MotionTiming.z * _MotionCycle.w / (2.0 * PRISM_FANLIGHT_PI);
+    float phaseNoise = 0.0;
+    if (_MotionTiming.z > 0.000001)
+    {
+        phaseNoise = FbmNoise21(
+            float2(PrismRandom(seat, 7u) * 2000.0 - 1000.0, _FanlightTime * _MotionTiming.w),
+            clamp(_MotionNoiseOctaves, 1, 4),
+            saturate(_MotionNoise.w)) * _MotionTiming.z / (2.0 * PRISM_FANLIGHT_PI);
+    }
     float cyclePhase = frac((delayedBeat + _MotionCycle.y) / max(0.001, _MotionCycle.x) + personaTiming + phaseNoise);
     float bodyPhase = cyclePhase * 2.0 * PRISM_FANLIGHT_PI;
 

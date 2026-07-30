@@ -73,9 +73,10 @@ namespace PrismFanlight.Core
             {
                 return new FanlightNoiseState(
                     value.PhaseAmount,
-                    value.PhaseSpeed,
-                    value.AxisAmount,
-                    value.AxisSpeed,
+                    value.PhaseRate,
+                    value.PositionAmount,
+                    value.DirectionAmount,
+                    value.SpatialRate,
                     value.Octaves,
                     value.Persistence);
             }

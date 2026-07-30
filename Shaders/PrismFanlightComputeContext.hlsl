@@ -44,6 +44,7 @@ float4 _SwingTargetPos;
 float4x4 _WorldToLocal;
 float4 _MotionVariation;
 float4 _MotionNoise;
+int _MotionNoiseOctaves;
 float4 _MotionHuman;
 float4 _MotionRest;
 float4 _MotionRestTiming;

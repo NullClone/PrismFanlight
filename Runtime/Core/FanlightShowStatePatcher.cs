@@ -33,7 +33,14 @@ namespace PrismFanlight.Core
                 Apply(state.Intent, new FanlightIntentPatch(FanlightIntentFields.All, state.Intent), 1f),
                 Apply(state.Motion, new FanlightMotionPatch(FanlightMotionFields.All, state.Motion), 1f),
                 Apply(state.Variation, new FanlightVariationPatch(FanlightVariationFields.All, state.Variation), 1f),
-                Apply(state.Noise, new FanlightNoisePatch(FanlightNoiseFields.All, state.Noise), 1f),
+                new FanlightNoiseState(
+                    state.Noise.PhaseAmount,
+                    state.Noise.PhaseRate,
+                    state.Noise.PositionAmount,
+                    state.Noise.DirectionAmount,
+                    state.Noise.SpatialRate,
+                    state.Noise.Octaves,
+                    state.Noise.Persistence),
                 Apply(state.Rest, new FanlightRestPatch(FanlightRestFields.All, state.Rest), 1f),
                 Apply(state.AudienceBody, new FanlightAudienceBodyPatch(FanlightAudienceBodyFields.All, state.AudienceBody), 1f),
                 Apply(state.Direction, new FanlightDirectionPatch(FanlightDirectionFields.All, state.Direction), 1f),
@@ -137,11 +144,12 @@ namespace PrismFanlight.Core
             var value = patch.Value;
             return new FanlightNoiseState(
                 Has(patch.Fields, FanlightNoiseFields.PhaseAmount) ? Lerp(current.PhaseAmount, value.PhaseAmount, weight) : current.PhaseAmount,
-                Has(patch.Fields, FanlightNoiseFields.PhaseSpeed) ? Lerp(current.PhaseSpeed, value.PhaseSpeed, weight) : current.PhaseSpeed,
-                Has(patch.Fields, FanlightNoiseFields.AxisAmount) ? Lerp(current.AxisAmount, value.AxisAmount, weight) : current.AxisAmount,
-                Has(patch.Fields, FanlightNoiseFields.AxisSpeed) ? Lerp(current.AxisSpeed, value.AxisSpeed, weight) : current.AxisSpeed,
-                Has(patch.Fields, FanlightNoiseFields.Octaves) && weight >= 0.5f ? value.Octaves : current.Octaves,
-                Has(patch.Fields, FanlightNoiseFields.Persistence) ? Lerp(current.Persistence, value.Persistence, weight) : current.Persistence);
+                current.PhaseRate,
+                Has(patch.Fields, FanlightNoiseFields.PositionAmount) ? Lerp(current.PositionAmount, value.PositionAmount, weight) : current.PositionAmount,
+                Has(patch.Fields, FanlightNoiseFields.DirectionAmount) ? Lerp(current.DirectionAmount, value.DirectionAmount, weight) : current.DirectionAmount,
+                current.SpatialRate,
+                current.Octaves,
+                current.Persistence);
         }
 
         internal static FanlightRestState Apply(FanlightRestState current, FanlightRestPatch patch, float weight)

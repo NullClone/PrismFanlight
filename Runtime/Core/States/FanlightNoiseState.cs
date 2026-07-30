@@ -12,13 +12,16 @@ namespace PrismFanlight.Core
         private float _phaseAmount;
 
         [SerializeField]
-        private float _phaseSpeed;
+        private float _phaseRate;
 
         [SerializeField]
-        private float _axisAmount;
+        private float _positionAmount;
 
         [SerializeField]
-        private float _axisSpeed;
+        private float _directionAmount;
+
+        [SerializeField]
+        private float _spatialRate;
 
         [SerializeField]
         private int _octaves;
@@ -31,11 +34,13 @@ namespace PrismFanlight.Core
 
         internal float PhaseAmount => _phaseAmount;
 
-        internal float PhaseSpeed => _phaseSpeed;
+        internal float PhaseRate => _phaseRate;
 
-        internal float AxisAmount => _axisAmount;
+        internal float PositionAmount => _positionAmount;
 
-        internal float AxisSpeed => _axisSpeed;
+        internal float DirectionAmount => _directionAmount;
+
+        internal float SpatialRate => _spatialRate;
 
         internal int Octaves => _octaves;
 
@@ -44,12 +49,20 @@ namespace PrismFanlight.Core
 
         // Methods
 
-        internal FanlightNoiseState(float phaseAmount, float phaseSpeed, float axisAmount, float axisSpeed, int octaves, float persistence)
+        internal FanlightNoiseState(
+            float phaseAmount,
+            float phaseRate,
+            float positionAmount,
+            float directionAmount,
+            float spatialRate,
+            int octaves,
+            float persistence)
         {
             _phaseAmount = FanlightStateValidation.RequireRange(phaseAmount, 0f, 4f, nameof(phaseAmount));
-            _phaseSpeed = FanlightStateValidation.RequireRange(phaseSpeed, 0f, 16f, nameof(phaseSpeed));
-            _axisAmount = FanlightStateValidation.RequireRange(axisAmount, 0f, 4f, nameof(axisAmount));
-            _axisSpeed = FanlightStateValidation.RequireRange(axisSpeed, 0f, 16f, nameof(axisSpeed));
+            _phaseRate = FanlightStateValidation.RequireRange(phaseRate, 0f, 16f, nameof(phaseRate));
+            _positionAmount = FanlightStateValidation.RequireRange(positionAmount, 0f, 0.2f, nameof(positionAmount));
+            _directionAmount = FanlightStateValidation.RequireRange(directionAmount, 0f, 0.4f, nameof(directionAmount));
+            _spatialRate = FanlightStateValidation.RequireRange(spatialRate, 0f, 16f, nameof(spatialRate));
             if (octaves < 1 || octaves > 4) throw new ArgumentOutOfRangeException(nameof(octaves));
             _octaves = octaves;
             _persistence = FanlightStateValidation.RequireRange(persistence, 0f, 1f, nameof(persistence));

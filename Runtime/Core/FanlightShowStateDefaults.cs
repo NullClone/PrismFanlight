@@ -40,7 +40,7 @@ namespace PrismFanlight.Core
             0f,
             0f);
 
-        internal static FanlightNoiseState Noise() => new(0f, 0f, 0f, 0f, 1, 0f);
+        internal static FanlightNoiseState Noise() => new(0f, 0f, 0f, 0f, 0f, 1, 0f);
 
         internal static FanlightRestState Rest() => new(0f, 0f, 1f, 0f, 0f, 0f);
 

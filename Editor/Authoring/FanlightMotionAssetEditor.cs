@@ -21,6 +21,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _penlightElevation;
         private SerializedProperty _penlightSide;
         private SerializedProperty _bodyLean;
+
         private float _phase;
 
 
