@@ -2,6 +2,7 @@ using System;
 using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight.Timeline
 {
@@ -15,6 +16,7 @@ namespace PrismFanlight.Timeline
         private int _trackPriority;
         private int _trackOrder;
         private PlayableDirector _director;
+        private TrackAsset _track;
         private bool _contextAcquired;
         private double[] _clipStartSeconds = Array.Empty<double>();
         private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
@@ -30,13 +32,14 @@ namespace PrismFanlight.Timeline
 
             if (_lastTarget != target)
             {
-                ClearRegistration();
-                _lastTarget = target;
+                ChangeTarget(target);
             }
 
             if (target == null) return;
 
+            target.CancelTimelineRelease(this);
             AcquireContext();
+            target.MarkScheduledTimelineEvaluation();
 
             if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask))
             {
@@ -120,11 +123,28 @@ namespace PrismFanlight.Timeline
             }
         }
 
-        public override void OnBehaviourPause(Playable playable, FrameData info) => ClearRegistration();
+        public override void OnPlayableDestroy(Playable playable)
+        {
+            if (_lastTarget == null)
+            {
+                ReleaseContext();
+                return;
+            }
 
-        public override void OnGraphStop(Playable playable) => ClearRegistration();
+            if (IsCurrentBinding())
+            {
+                _lastTarget.ScheduleTimelineRelease(this, ReleaseContext);
+            }
+            else
+            {
+                _lastTarget.CancelTimelineRelease(this);
+                _lastTarget.ClearScheduledContribution(this);
+                _lastTarget.ClearHeldTimelineState();
+                ReleaseContext();
+            }
 
-        public override void OnPlayableDestroy(Playable playable) => ClearRegistration();
+            _lastTarget = null;
+        }
 
         internal void Configure(
             FanlightTimelinePatchKind patchKind,
@@ -132,7 +152,8 @@ namespace PrismFanlight.Timeline
             int trackPriority,
             int trackOrder,
             double[] clipStartSeconds,
-            PlayableDirector director)
+            PlayableDirector director,
+            TrackAsset track)
         {
             _patchKind = patchKind;
             _fieldMask = fieldMask;
@@ -140,6 +161,7 @@ namespace PrismFanlight.Timeline
             _trackOrder = trackOrder;
             _clipStartSeconds = clipStartSeconds ?? Array.Empty<double>();
             _director = director;
+            _track = track;
         }
 
         private void EnsureSampleCapacity(int capacity)
@@ -153,14 +175,17 @@ namespace PrismFanlight.Timeline
             if (count > 0) Array.Clear(_samples, 0, count);
         }
 
-        private void ClearContribution()
+        private void ChangeTarget(PrismFanlight target)
         {
             if (_lastTarget != null)
             {
+                _lastTarget.CancelTimelineRelease(this);
                 _lastTarget.ClearScheduledContribution(this);
+                _lastTarget.ClearHeldTimelineState();
             }
 
-            _lastTarget = null;
+            ReleaseContext();
+            _lastTarget = target;
         }
 
         private void AcquireContext()
@@ -171,14 +196,21 @@ namespace PrismFanlight.Timeline
             _contextAcquired = true;
         }
 
-        private void ClearRegistration()
+        private void ReleaseContext()
         {
-            ClearContribution();
-
             if (!_contextAcquired) return;
 
             FanlightSequenceContextRegistry.Release(_director);
             _contextAcquired = false;
+        }
+
+        private bool IsCurrentBinding()
+        {
+            if (_director == null || _track == null || _lastTarget == null) return false;
+
+            var binding = _director.GetGenericBinding(_track);
+            if (binding == _lastTarget) return true;
+            return binding is GameObject gameObject && gameObject.GetComponent<PrismFanlight>() == _lastTarget;
         }
     }
 }

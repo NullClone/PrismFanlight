@@ -1,5 +1,7 @@
 using PrismFanlight.Time;
+using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight.Timeline
 {
@@ -8,6 +10,8 @@ namespace PrismFanlight.Timeline
         // Fields
 
         private PrismFanlight _lastTarget;
+        private PlayableDirector _director;
+        private TrackAsset _track;
 
 
         // Properties
@@ -23,8 +27,7 @@ namespace PrismFanlight.Timeline
 
             if (_lastTarget != target)
             {
-                ClearCandidate();
-                _lastTarget = target;
+                ChangeTarget(target);
             }
 
             if (target == null || Definition == null) return;
@@ -34,25 +37,45 @@ namespace PrismFanlight.Timeline
                 new FanlightTempoCandidate(playable.GetTime(), Definition));
         }
 
-        public override void OnBehaviourPause(Playable playable, FrameData info) => ClearCandidate();
-
-        public override void OnGraphStop(Playable playable) => ClearCandidate();
-
-        public override void OnPlayableDestroy(Playable playable) => ClearCandidate();
-
-        internal void Configure(FanlightTempoRuntimeDefinition definition)
+        public override void OnPlayableDestroy(Playable playable)
         {
-            Definition = definition;
+            if (_lastTarget != null && !IsCurrentBinding())
+            {
+                _lastTarget.ClearScheduledTempoCandidate(this);
+                _lastTarget.ClearHeldTimelineState();
+            }
+
+            _lastTarget = null;
         }
 
-        private void ClearCandidate()
+        internal void Configure(
+            FanlightTempoRuntimeDefinition definition,
+            PlayableDirector director,
+            TrackAsset track)
+        {
+            Definition = definition;
+            _director = director;
+            _track = track;
+        }
+
+        private void ChangeTarget(PrismFanlight target)
         {
             if (_lastTarget != null)
             {
                 _lastTarget.ClearScheduledTempoCandidate(this);
+                _lastTarget.ClearHeldTimelineState();
             }
 
-            _lastTarget = null;
+            _lastTarget = target;
+        }
+
+        private bool IsCurrentBinding()
+        {
+            if (_director == null || _track == null || _lastTarget == null) return false;
+
+            var binding = _director.GetGenericBinding(_track);
+            if (binding == _lastTarget) return true;
+            return binding is GameObject gameObject && gameObject.GetComponent<PrismFanlight>() == _lastTarget;
         }
     }
 }

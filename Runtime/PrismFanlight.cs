@@ -92,6 +92,7 @@ namespace PrismFanlight
         private FanlightGpuRenderer _renderer;
         private Dictionary<object, FanlightShowContribution> _scheduledContributions;
         private Dictionary<object, FanlightTempoCandidate> _scheduledTempoCandidates;
+        private Dictionary<object, Action> _scheduledTimelineReleases;
         private FanlightContributionBuffer _contributionBuffer;
         private FanlightShowEvaluator _showEvaluator;
         private FanlightTempoScopeResolver _tempoScopeResolver;
@@ -103,8 +104,11 @@ namespace PrismFanlight
         private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _renderSample;
+        private FanlightShowSample _heldTimelineSample;
         private FanlightFrameContext _renderFrame;
         private bool _hasRenderFrame;
+        private bool _hasHeldTimelineState;
+        private bool _timelineEvaluatedSinceLastUpdate;
         private FanlightRuntimeLayout _assetRuntimeLayout;
 
 
@@ -182,6 +186,8 @@ namespace PrismFanlight
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
+                ReleaseScheduledTimelineResources();
+                ClearHeldTimelineState();
                 Dispose();
                 return;
             }
@@ -190,6 +196,8 @@ namespace PrismFanlight
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
+                ReleaseScheduledTimelineResources();
+                ClearHeldTimelineState();
                 Dispose();
                 return;
             }
@@ -201,12 +209,27 @@ namespace PrismFanlight
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
+                ReleaseScheduledTimelineResources();
+                ClearHeldTimelineState();
                 Dispose();
                 return;
             }
 
             EnsureTempoScopeResolver();
+            var timelineEvaluated = ConsumeTimelineEvaluationFlag();
             var tempoCandidateCount = SnapshotAndClearTempoCandidates();
+
+            if (!timelineEvaluated
+                && clock.Status == FanlightClockStatus.Holding
+                && _hasHeldTimelineState)
+            {
+                ClearScheduledContributions();
+                _timeFault = FanlightShowTimeFault.None;
+                _sequenceFault = string.Empty;
+                PrepareRenderFrame(_heldTimelineSample);
+                ReleaseScheduledTimelineResources();
+                return;
+            }
 
             if (!_tempoScopeResolver.TryResolve(
                     clock,
@@ -215,6 +238,8 @@ namespace PrismFanlight
                     out _timeFault))
             {
                 ClearScheduledContributions();
+                ReleaseScheduledTimelineResources();
+                ClearHeldTimelineState();
                 Dispose();
                 return;
             }
@@ -241,12 +266,25 @@ namespace PrismFanlight
             {
                 _sequenceFault = exception.Message;
                 ClearScheduledContributions();
+                ReleaseScheduledTimelineResources();
+                ClearHeldTimelineState();
                 Dispose();
                 return;
             }
 
+            if (timelineEvaluated)
+            {
+                _heldTimelineSample = sample;
+                _hasHeldTimelineState = true;
+            }
+            else if (clock.Status != FanlightClockStatus.Holding)
+            {
+                ClearHeldTimelineState();
+            }
+
             _timeFault = FanlightShowTimeFault.None;
             PrepareRenderFrame(sample);
+            ReleaseScheduledTimelineResources();
         }
 
         private void OnDisable()
@@ -254,6 +292,8 @@ namespace PrismFanlight
             UnregisterRenderCallbacks();
             ClearScheduledTempoCandidates();
             ClearScheduledContributions();
+            ReleaseScheduledTimelineResources();
+            ClearHeldTimelineState();
             Dispose();
         }
 
@@ -262,6 +302,8 @@ namespace PrismFanlight
             UnregisterRenderCallbacks();
             ClearScheduledTempoCandidates();
             ClearScheduledContributions();
+            ReleaseScheduledTimelineResources();
+            ClearHeldTimelineState();
             Dispose();
         }
 
@@ -283,6 +325,7 @@ namespace PrismFanlight
             _tempoScopeResolver = null;
             _tempoScopeManager = null;
             _tempoScopeRevision = int.MinValue;
+            ClearHeldTimelineState();
         }
 
         internal void SetScheduledTempoCandidate(object sourceToken, in FanlightTempoCandidate candidate)
@@ -294,6 +337,7 @@ namespace PrismFanlight
 
             EnsureRuntimeState();
             _scheduledTempoCandidates[sourceToken] = candidate;
+            _timelineEvaluatedSinceLastUpdate = true;
         }
 
         internal void ClearScheduledTempoCandidate(object sourceToken)
@@ -310,11 +354,50 @@ namespace PrismFanlight
 
             EnsureRuntimeState();
             _scheduledContributions[sourceToken] = contribution;
+            _timelineEvaluatedSinceLastUpdate = true;
         }
 
         internal void ClearScheduledContribution(object sourceToken)
         {
             if (sourceToken != null) _scheduledContributions?.Remove(sourceToken);
+        }
+
+        internal void MarkScheduledTimelineEvaluation()
+        {
+            _timelineEvaluatedSinceLastUpdate = true;
+        }
+
+        internal void ClearHeldTimelineState()
+        {
+            _hasHeldTimelineState = false;
+            _heldTimelineSample = default;
+        }
+
+        internal void ScheduleTimelineRelease(object sourceToken, Action release)
+        {
+            if (sourceToken == null)
+            {
+                throw new ArgumentNullException(nameof(sourceToken));
+            }
+
+            if (release == null)
+            {
+                throw new ArgumentNullException(nameof(release));
+            }
+
+            if (!isActiveAndEnabled)
+            {
+                release();
+                return;
+            }
+
+            EnsureRuntimeState();
+            _scheduledTimelineReleases[sourceToken] = release;
+        }
+
+        internal void CancelTimelineRelease(object sourceToken)
+        {
+            if (sourceToken != null) _scheduledTimelineReleases?.Remove(sourceToken);
         }
 
         internal void SetLayoutAssetForEditor(FanlightLayoutAsset layoutAsset)
@@ -336,6 +419,7 @@ namespace PrismFanlight
 
         internal void SetTimeManager(FanlightTimeManager timeManager)
         {
+            if (_timeManager != timeManager) ClearHeldTimelineState();
             _timeManager = timeManager;
         }
 
@@ -460,6 +544,7 @@ namespace PrismFanlight
         {
             _scheduledContributions?.Clear();
             _contributionBuffer?.Clear();
+            _timelineEvaluatedSinceLastUpdate = false;
         }
 
         private void ClearScheduledTempoCandidates()
@@ -485,6 +570,7 @@ namespace PrismFanlight
             _renderer ??= new FanlightGpuRenderer();
             _scheduledContributions ??= new Dictionary<object, FanlightShowContribution>();
             _scheduledTempoCandidates ??= new Dictionary<object, FanlightTempoCandidate>();
+            _scheduledTimelineReleases ??= new Dictionary<object, Action>();
             _tempoCandidateSnapshot ??= Array.Empty<FanlightTempoCandidate>();
             _contributionBuffer ??= new FanlightContributionBuffer(16);
             _showEvaluator ??= new FanlightShowEvaluator();
@@ -526,6 +612,25 @@ namespace PrismFanlight
 
             _scheduledTempoCandidates.Clear();
             return count;
+        }
+
+        private bool ConsumeTimelineEvaluationFlag()
+        {
+            var value = _timelineEvaluatedSinceLastUpdate;
+            _timelineEvaluatedSinceLastUpdate = false;
+            return value;
+        }
+
+        private void ReleaseScheduledTimelineResources()
+        {
+            if (_scheduledTimelineReleases == null || _scheduledTimelineReleases.Count == 0) return;
+
+            foreach (var release in _scheduledTimelineReleases.Values)
+            {
+                release();
+            }
+
+            _scheduledTimelineReleases.Clear();
         }
 
         private FanlightRuntimeLayout GetRuntimeLayout()

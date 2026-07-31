@@ -50,7 +50,14 @@ namespace PrismFanlight.Timeline
             }
 
             var mixer = ScriptPlayable<FanlightTempoMixerBehaviour>.Create(graph, inputCount);
-            mixer.GetBehaviour().Configure(definition);
+            var director = graph.GetResolver() as PlayableDirector;
+
+            if (director == null)
+            {
+                throw new InvalidOperationException("Tempo Track requires a PlayableDirector graph resolver.");
+            }
+
+            mixer.GetBehaviour().Configure(definition, director, this);
             return mixer;
         }
 

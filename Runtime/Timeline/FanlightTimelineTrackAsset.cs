@@ -61,7 +61,8 @@ namespace PrismFanlight.Timeline
                 _trackPriority,
                 GetTrackOrder(),
                 clipStartSeconds,
-                director);
+                director,
+                this);
 
             return mixer;
         }
