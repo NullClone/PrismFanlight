@@ -292,7 +292,7 @@ namespace PrismFanlight.Rendering
             shader.SetMatrix(FanlightShaderIds.WorldToLocal, context.WorldToLocal);
             shader.SetFloat(FanlightShaderIds.Time, (float)sample.AnimationSampleSeconds);
             shader.SetVector(FanlightShaderIds.Beat, new Vector4(
-                (float)musical.Seconds,
+                (float)musical.SequenceLocalSeconds,
                 (float)musical.Beat,
                 (float)musical.BeatPhase,
                 (float)musical.BarPhase));

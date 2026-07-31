@@ -1,6 +1,8 @@
-﻿namespace PrismFanlight.Core
+using PrismFanlight.Core;
+
+namespace PrismFanlight.Time
 {
-    internal readonly struct FanlightShowTimeSample
+    internal readonly struct FanlightClockSample
     {
         // Properties
 
@@ -16,19 +18,16 @@
 
         internal bool IsPrimaryAvailable { get; }
 
-        internal FanlightMusicalPosition MusicalPosition { get; }
-
 
         // Methods
 
-        internal FanlightShowTimeSample(
+        internal FanlightClockSample(
             double seconds,
             double rate,
             FanlightClockStatus status,
             FanlightTimeDiscontinuity discontinuity,
             bool isFallbackActive,
-            bool isPrimaryAvailable,
-            FanlightMusicalPosition musicalPosition)
+            bool isPrimaryAvailable)
         {
             Seconds = seconds;
             Rate = rate;
@@ -36,16 +35,6 @@
             Discontinuity = discontinuity;
             IsFallbackActive = isFallbackActive;
             IsPrimaryAvailable = isPrimaryAvailable;
-            MusicalPosition = musicalPosition;
         }
-
-        internal bool IsComplete =>
-            IsFinite(Seconds)
-            && IsFinite(Rate)
-            && ((Status == FanlightClockStatus.Ready && Rate != 0d)
-                || (Status == FanlightClockStatus.Holding && Rate == 0d))
-            && MusicalPosition.IsComplete;
-
-        private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     }
 }

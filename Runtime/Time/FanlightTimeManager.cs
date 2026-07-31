@@ -1,12 +1,11 @@
 using System;
-using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 
 namespace PrismFanlight.Time
 {
     [ExecuteAlways]
-    [HelpURL("https://github.com/NullClone/PrismFanlight")]
+    [HelpURL(PrismFanlight.HelpUrl)]
     [AddComponentMenu("Prism Fanlight/Fanlight Time Manager")]
     public sealed class FanlightTimeManager : MonoBehaviour
     {
@@ -18,9 +17,6 @@ namespace PrismFanlight.Time
         [SerializeReference]
         private IShowTimeProvider _provider = new UnityTimeProvider();
 
-        [SerializeField]
-        private FanlightTempoMap _tempoMap;
-
         [SerializeField, Min(1e-6f)]
         private double _defaultBpm = 120d;
 
@@ -28,14 +24,15 @@ namespace PrismFanlight.Time
         private int _defaultBeatsPerBar = 4;
 
         [SerializeField]
-        private int _defaultBeatUnit = 4;
+        private FanlightBeatUnit _defaultBeatUnit = FanlightBeatUnit.u4;
 
         [SerializeField]
-        private double _defaultOffsetSeconds;
+        private double _defaultMusicalOriginSeconds;
 
 
         private ShowTimeCoordinator _coordinator;
         private FanlightShowTimeFault _lastFault;
+        private int _defaultTempoRevision;
 
 
         // Properties
@@ -45,6 +42,16 @@ namespace PrismFanlight.Time
         internal bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
 
         internal bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
+
+        internal double DefaultBpm => _defaultBpm;
+
+        internal int DefaultBeatsPerBar => _defaultBeatsPerBar;
+
+        internal int DefaultBeatUnit => (int)_defaultBeatUnit;
+
+        internal double DefaultMusicalOriginSeconds => _defaultMusicalOriginSeconds;
+
+        internal int DefaultTempoRevision => _defaultTempoRevision;
 
 
         // Methods
@@ -58,31 +65,30 @@ namespace PrismFanlight.Time
             _defaultBpm = Math.Max(1e-6d, _defaultBpm);
             _defaultBeatsPerBar = Math.Max(1, _defaultBeatsPerBar);
 
-            if (_defaultBeatUnit is not (1 or 2 or 4 or 8 or 16))
+            if (_defaultBeatUnit is not (FanlightBeatUnit.u1 or FanlightBeatUnit.u2 or FanlightBeatUnit.u4 or FanlightBeatUnit.u8 or FanlightBeatUnit.u16))
             {
-                _defaultBeatUnit = 4;
+                _defaultBeatUnit = FanlightBeatUnit.u4;
             }
 
+            _defaultTempoRevision = _defaultTempoRevision == int.MaxValue ? 1 : _defaultTempoRevision + 1;
             _coordinator = null;
         }
 
 
-        internal bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
+        internal bool TrySampleClock(long evaluationId, out FanlightClockSample sample, out FanlightShowTimeFault fault)
         {
             EnsureCoordinator();
 
             if (_coordinator == null)
             {
                 sample = default;
-                fault = _lastFault == FanlightShowTimeFault.None
-                    ? FanlightShowTimeFault.CoordinatorUnavailable
-                    : _lastFault;
+                fault = _lastFault == FanlightShowTimeFault.None ? FanlightShowTimeFault.CoordinatorUnavailable : _lastFault;
                 _lastFault = fault;
 
                 return false;
             }
 
-            var success = _coordinator.TrySample(evaluationId, out sample, out fault);
+            var success = _coordinator.TrySampleClock(evaluationId, out sample, out fault);
             _lastFault = fault;
             return success;
         }
@@ -112,30 +118,7 @@ namespace PrismFanlight.Time
                 return;
             }
 
-            IShowTempoMapResolver tempo;
-
-            try
-            {
-                tempo = _tempoMap != null
-                    ? new FanlightTempoMapResolver(_tempoMap)
-                    : new ConstantTempoMapResolver(
-                        _defaultBpm,
-                        _defaultBeatsPerBar,
-                        _defaultBeatUnit,
-                        _defaultOffsetSeconds);
-            }
-            catch (Exception)
-            {
-                _lastFault = FanlightShowTimeFault.TempoMapUnavailable;
-                _coordinator = null;
-                return;
-            }
-
-            _coordinator = new ShowTimeCoordinator(
-                NegativeTimePolicy,
-                _provider,
-                tempo);
-
+            _coordinator = new ShowTimeCoordinator(NegativeTimePolicy, _provider);
             _lastFault = FanlightShowTimeFault.None;
         }
     }

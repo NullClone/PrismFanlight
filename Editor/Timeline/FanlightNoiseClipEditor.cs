@@ -23,10 +23,12 @@ namespace PrismFanlight.Editor
             serializedObject.Update();
 
             PrismFanlightEditorStyles.DrawSubGroupLabel("Phase");
+
             DrawSlider("_phaseAmount", "Amount (rad)", 0f, 4f);
 
             EditorGUILayout.Space();
             PrismFanlightEditorStyles.DrawSubGroupLabel("Spatial");
+
             DrawSlider("_positionAmount", "Position (m)", 0f, 0.2f);
             DrawSlider("_directionAmount", "Direction (rad)", 0f, 0.4f);
 

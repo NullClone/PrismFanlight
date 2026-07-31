@@ -14,11 +14,15 @@ namespace PrismFanlight.Timeline
         private FanlightTimelineFieldMask _fieldMask;
         private int _trackPriority;
         private int _trackOrder;
+        private PlayableDirector _director;
+        private bool _contextAcquired;
         private double[] _clipStartSeconds = Array.Empty<double>();
         private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
 
 
         // Methods
+
+        public override void OnGraphStart(Playable playable) => AcquireContext();
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
@@ -26,15 +30,13 @@ namespace PrismFanlight.Timeline
 
             if (_lastTarget != target)
             {
-                if (_lastTarget != null)
-                {
-                    _lastTarget.ClearScheduledContribution(this);
-                }
-
+                ClearRegistration();
                 _lastTarget = target;
             }
 
             if (target == null) return;
+
+            AcquireContext();
 
             if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask))
             {
@@ -104,6 +106,7 @@ namespace PrismFanlight.Timeline
                 target.SetScheduledContribution(
                     this,
                     new FanlightShowContribution(
+                        FanlightSequenceContextRegistry.GetContext(_director),
                         _trackPriority,
                         _trackOrder,
                         double.MinValue,
@@ -117,20 +120,26 @@ namespace PrismFanlight.Timeline
             }
         }
 
-        public override void OnPlayableDestroy(Playable playable) => ClearContribution();
+        public override void OnBehaviourPause(Playable playable, FrameData info) => ClearRegistration();
+
+        public override void OnGraphStop(Playable playable) => ClearRegistration();
+
+        public override void OnPlayableDestroy(Playable playable) => ClearRegistration();
 
         internal void Configure(
             FanlightTimelinePatchKind patchKind,
             FanlightTimelineFieldMask fieldMask,
             int trackPriority,
             int trackOrder,
-            double[] clipStartSeconds)
+            double[] clipStartSeconds,
+            PlayableDirector director)
         {
             _patchKind = patchKind;
             _fieldMask = fieldMask;
             _trackPriority = trackPriority;
             _trackOrder = trackOrder;
             _clipStartSeconds = clipStartSeconds ?? Array.Empty<double>();
+            _director = director;
         }
 
         private void EnsureSampleCapacity(int capacity)
@@ -152,6 +161,24 @@ namespace PrismFanlight.Timeline
             }
 
             _lastTarget = null;
+        }
+
+        private void AcquireContext()
+        {
+            if (_contextAcquired) return;
+
+            FanlightSequenceContextRegistry.Acquire(_director);
+            _contextAcquired = true;
+        }
+
+        private void ClearRegistration()
+        {
+            ClearContribution();
+
+            if (!_contextAcquired) return;
+
+            FanlightSequenceContextRegistry.Release(_director);
+            _contextAcquired = false;
         }
     }
 }

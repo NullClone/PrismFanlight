@@ -438,16 +438,25 @@ namespace PrismFanlight.Editor
                 {
                     EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
                 }
+
+                if (_instance.TimeFault == FanlightShowTimeFault.TempoConflict)
+                {
+                    EditorGUILayout.HelpBox("Tempo Conflict: two or more Tempo Tracks are active for this Prism Fanlight.", MessageType.Error);
+                }
+                else if (_instance.TimeFault != FanlightShowTimeFault.None)
+                {
+                    EditorGUILayout.HelpBox($"Time Fault: {_instance.TimeFault}", MessageType.Error);
+                }
+
+                if (!string.IsNullOrEmpty(_instance.SequenceFault))
+                {
+                    EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
+                }
             });
         }
 
         private void DrawAdvanceSection()
         {
-            //CoreEditorUtils.DrawSplitter();
-            //EditorGUILayout.Space();
-            //PrismFanlightEditorStyles.DrawSubGroupLabel("Advance");
-            //EditorGUILayout.Space();
-
             PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
             {
                 DrawChild(_audienceBody, "_height", "Body Height");

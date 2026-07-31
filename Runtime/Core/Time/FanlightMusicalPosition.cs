@@ -4,7 +4,7 @@
     {
         // Properties
 
-        internal double Seconds { get; }
+        internal double SequenceLocalSeconds { get; }
 
         internal double Beat { get; }
 
@@ -25,7 +25,7 @@
         // Methods
 
         internal FanlightMusicalPosition(
-            double seconds,
+            double sequenceLocalSeconds,
             double beat,
             long bar,
             double beatInBar,
@@ -35,7 +35,7 @@
             int beatsPerBar,
             int beatUnit)
         {
-            Seconds = seconds;
+            SequenceLocalSeconds = sequenceLocalSeconds;
             Beat = beat;
             Bar = bar;
             BeatInBar = beatInBar;
@@ -47,7 +47,7 @@
         }
 
         internal bool IsComplete =>
-            IsFinite(Seconds)
+            IsFinite(SequenceLocalSeconds)
             && IsFinite(Beat)
             && IsFinite(BeatInBar)
             && IsFinite(BeatPhase)

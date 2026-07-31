@@ -91,8 +91,15 @@ namespace PrismFanlight
 
         private FanlightGpuRenderer _renderer;
         private Dictionary<object, FanlightShowContribution> _scheduledContributions;
+        private Dictionary<object, FanlightTempoCandidate> _scheduledTempoCandidates;
         private FanlightContributionBuffer _contributionBuffer;
         private FanlightShowEvaluator _showEvaluator;
+        private FanlightTempoScopeResolver _tempoScopeResolver;
+        private FanlightTempoCandidate[] _tempoCandidateSnapshot;
+        private FanlightTimeManager _tempoScopeManager;
+        private int _tempoScopeRevision = int.MinValue;
+        private FanlightShowTimeFault _timeFault;
+        private string _sequenceFault = string.Empty;
         private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _renderSample;
@@ -118,6 +125,10 @@ namespace PrismFanlight
         internal bool IsReady => _renderer is { IsReady: true };
 
         internal FanlightRendererFault RendererFault => _renderer?.Fault ?? FanlightRendererFault.MissingResource;
+
+        internal FanlightShowTimeFault TimeFault => _timeFault;
+
+        internal string SequenceFault => _sequenceFault;
 
         internal FanlightShowState BaseState => new(
             _intent,
@@ -169,6 +180,7 @@ namespace PrismFanlight
         {
             if (!enabled || !SystemInfo.supportsComputeShaders)
             {
+                ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
                 Dispose();
                 return;
@@ -176,6 +188,7 @@ namespace PrismFanlight
 
             if (_timeManager == null || _evaluationId == long.MaxValue)
             {
+                ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
                 Dispose();
                 return;
@@ -184,7 +197,22 @@ namespace PrismFanlight
             EnsureRuntimeState();
             _evaluationId++;
 
-            if (!_timeManager.TrySample(_evaluationId, out var time, out _))
+            if (!_timeManager.TrySampleClock(_evaluationId, out var clock, out _timeFault))
+            {
+                ClearScheduledTempoCandidates();
+                ClearScheduledContributions();
+                Dispose();
+                return;
+            }
+
+            EnsureTempoScopeResolver();
+            var tempoCandidateCount = SnapshotAndClearTempoCandidates();
+
+            if (!_tempoScopeResolver.TryResolve(
+                    clock,
+                    _tempoCandidateSnapshot.AsSpan(0, tempoCandidateCount),
+                    out var time,
+                    out _timeFault))
             {
                 ClearScheduledContributions();
                 Dispose();
@@ -198,16 +226,33 @@ namespace PrismFanlight
                 _contributionBuffer.Add(contribution);
             }
 
+            _scheduledContributions.Clear();
+
             var options = new FanlightEvaluationOptions(AnimationUpdate.Mode == FanlightGpuUpdateMode.FixedRate ? AnimationUpdate.TargetFrameRate : 0d, 1e-6d);
             var request = new FanlightShowEvaluationRequest(time, BaseState, _contributionBuffer.AsMemory(), options);
-            var sample = _showEvaluator.Evaluate(request);
+            FanlightShowSample sample;
 
+            try
+            {
+                sample = _showEvaluator.Evaluate(request);
+                _sequenceFault = string.Empty;
+            }
+            catch (InvalidOperationException exception)
+            {
+                _sequenceFault = exception.Message;
+                ClearScheduledContributions();
+                Dispose();
+                return;
+            }
+
+            _timeFault = FanlightShowTimeFault.None;
             PrepareRenderFrame(sample);
         }
 
         private void OnDisable()
         {
             UnregisterRenderCallbacks();
+            ClearScheduledTempoCandidates();
             ClearScheduledContributions();
             Dispose();
         }
@@ -215,6 +260,7 @@ namespace PrismFanlight
         private void OnDestroy()
         {
             UnregisterRenderCallbacks();
+            ClearScheduledTempoCandidates();
             ClearScheduledContributions();
             Dispose();
         }
@@ -234,6 +280,25 @@ namespace PrismFanlight
             _audienceBody = FanlightShowStateAuthoringValidator.Validate(_audienceBody);
             _direction = FanlightShowStateAuthoringValidator.Validate(_direction);
 #endif
+            _tempoScopeResolver = null;
+            _tempoScopeManager = null;
+            _tempoScopeRevision = int.MinValue;
+        }
+
+        internal void SetScheduledTempoCandidate(object sourceToken, in FanlightTempoCandidate candidate)
+        {
+            if (sourceToken == null)
+            {
+                throw new ArgumentNullException(nameof(sourceToken));
+            }
+
+            EnsureRuntimeState();
+            _scheduledTempoCandidates[sourceToken] = candidate;
+        }
+
+        internal void ClearScheduledTempoCandidate(object sourceToken)
+        {
+            if (sourceToken != null) _scheduledTempoCandidates?.Remove(sourceToken);
         }
 
         internal void SetScheduledContribution(object sourceToken, in FanlightShowContribution contribution)
@@ -397,6 +462,16 @@ namespace PrismFanlight
             _contributionBuffer?.Clear();
         }
 
+        private void ClearScheduledTempoCandidates()
+        {
+            _scheduledTempoCandidates?.Clear();
+
+            if (_tempoCandidateSnapshot != null && _tempoCandidateSnapshot.Length > 0)
+            {
+                Array.Clear(_tempoCandidateSnapshot, 0, _tempoCandidateSnapshot.Length);
+            }
+        }
+
         private void Dispose()
         {
             _hasRenderFrame = false;
@@ -409,8 +484,48 @@ namespace PrismFanlight
         {
             _renderer ??= new FanlightGpuRenderer();
             _scheduledContributions ??= new Dictionary<object, FanlightShowContribution>();
+            _scheduledTempoCandidates ??= new Dictionary<object, FanlightTempoCandidate>();
+            _tempoCandidateSnapshot ??= Array.Empty<FanlightTempoCandidate>();
             _contributionBuffer ??= new FanlightContributionBuffer(16);
             _showEvaluator ??= new FanlightShowEvaluator();
+        }
+
+        private void EnsureTempoScopeResolver()
+        {
+            if (_tempoScopeResolver != null
+                && _tempoScopeManager == _timeManager
+                && _tempoScopeRevision == _timeManager.DefaultTempoRevision)
+            {
+                return;
+            }
+
+            _tempoScopeResolver = new FanlightTempoScopeResolver(
+                _timeManager.DefaultBpm,
+                _timeManager.DefaultBeatsPerBar,
+                _timeManager.DefaultBeatUnit,
+                _timeManager.DefaultMusicalOriginSeconds);
+            _tempoScopeManager = _timeManager;
+            _tempoScopeRevision = _timeManager.DefaultTempoRevision;
+        }
+
+        private int SnapshotAndClearTempoCandidates()
+        {
+            var count = _scheduledTempoCandidates.Count;
+
+            if (_tempoCandidateSnapshot.Length < count)
+            {
+                Array.Resize(ref _tempoCandidateSnapshot, count);
+            }
+
+            var index = 0;
+
+            foreach (var candidate in _scheduledTempoCandidates.Values)
+            {
+                _tempoCandidateSnapshot[index++] = candidate;
+            }
+
+            _scheduledTempoCandidates.Clear();
+            return count;
         }
 
         private FanlightRuntimeLayout GetRuntimeLayout()

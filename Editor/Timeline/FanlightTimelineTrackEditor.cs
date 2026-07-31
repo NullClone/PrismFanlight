@@ -5,7 +5,6 @@ using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
 using UnityEngine;
-using UnityEngine.Playables;
 using UnityEngine.Timeline;
 using Object = UnityEngine.Object;
 
@@ -14,8 +13,6 @@ namespace PrismFanlight.Editor
     [CustomTimelineEditor(typeof(FanlightTimelineTrackAsset))]
     internal sealed class FanlightTimelineTrackEditor : TrackEditor
     {
-        // Methods
-
         public override TrackDrawOptions GetTrackOptions(TrackAsset track, Object binding)
         {
             var options = base.GetTrackOptions(track, binding);
@@ -36,14 +33,17 @@ namespace PrismFanlight.Editor
             {
                 errors.Add("Track binding has the wrong type. Bind this track to a PrismFanlight component.");
             }
-            else if (HasMultipleDirectorBindings(target))
-            {
-                errors.Add($"Multiple active PlayableDirectors bind PrismFanlight '{target.name}'. Disable or rebind all but one director.");
-            }
 
             if (target != null)
             {
                 CollectColorBlockErrors(fanlightTrack, target.LayoutAsset, errors);
+                CollectTempoRequirementErrors(fanlightTrack, target, errors);
+
+                FanlightControlBindingValidator.CollectErrors(
+                    fanlightTrack.timelineAsset,
+                    TimelineEditor.inspectedDirector,
+                    target,
+                    errors);
             }
 
             options.errorText = AppendErrors(options.errorText, errors);
@@ -199,6 +199,38 @@ namespace PrismFanlight.Editor
             }
         }
 
+        private static void CollectTempoRequirementErrors(
+            FanlightTimelineTrackAsset track,
+            PrismFanlight target,
+            List<string> errors)
+        {
+            if (track.timelineAsset == null || CountTracks<FanlightTempoTrack>(track.timelineAsset) > 0) return;
+
+            if (track is FanlightMotionTrack)
+            {
+                errors.Add("A song Timeline containing a Motion Track requires one Fanlight Tempo Track.");
+                return;
+            }
+
+            if (track is not FanlightIntensityTrack) return;
+
+            if (target.BaseState.Intensity.HasDynamicMask())
+            {
+                errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                return;
+            }
+
+            foreach (var clip in track.GetClips())
+            {
+                if (clip.asset is FanlightIntensityClip intensityClip
+                    && intensityClip.Value.Intensity.HasDynamicMask())
+                {
+                    errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                    return;
+                }
+            }
+        }
+
         private static bool IsCompleteBlockPalette(FanlightColorSource source, FanlightLayoutAsset layout)
         {
             if (source.BlockPaletteEntryCount != layout.TotalBlockCount) return false;
@@ -326,44 +358,6 @@ namespace PrismFanlight.Editor
         {
             if (binding is PrismFanlight target) return target;
             return binding is GameObject gameObject ? gameObject.GetComponent<PrismFanlight>() : null;
-        }
-
-        private static bool HasMultipleDirectorBindings(PrismFanlight target)
-        {
-            var bindingCount = 0;
-            var directors = Resources.FindObjectsOfTypeAll<PlayableDirector>();
-
-            for (var i = 0; i < directors.Length; i++)
-            {
-                var director = directors[i];
-
-                if (director == null
-                    || !director.enabled
-                    || !director.gameObject.activeInHierarchy
-                    || !director.gameObject.scene.IsValid()
-                    || director.playableAsset is not TimelineAsset timelineAsset)
-                {
-                    continue;
-                }
-
-                var bindsTarget = false;
-
-                foreach (var outputTrack in timelineAsset.GetOutputTracks())
-                {
-                    if (outputTrack is not FanlightTimelineTrackAsset) continue;
-                    if (ResolveBinding(director.GetGenericBinding(outputTrack)) != target) continue;
-
-                    bindsTarget = true;
-                    break;
-                }
-
-                if (!bindsTarget) continue;
-
-                bindingCount++;
-                if (bindingCount > 1) return true;
-            }
-
-            return false;
         }
 
         private static string AppendErrors(string current, List<string> errors)
