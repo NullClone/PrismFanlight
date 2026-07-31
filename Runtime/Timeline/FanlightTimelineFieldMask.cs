@@ -24,8 +24,6 @@ namespace PrismFanlight.Timeline
 
         internal FanlightIntensityFields Intensity { get; }
 
-        internal FanlightVisibilityFields Visibility { get; }
-
 
         // Methods
 
@@ -38,8 +36,7 @@ namespace PrismFanlight.Timeline
             FanlightAudienceBodyFields audienceBody,
             FanlightDirectionFields direction,
             FanlightColorFields color,
-            FanlightIntensityFields intensity,
-            FanlightVisibilityFields visibility)
+            FanlightIntensityFields intensity)
         {
             Intent = intent;
             Motion = motion;
@@ -50,37 +47,33 @@ namespace PrismFanlight.Timeline
             Direction = direction;
             Color = color;
             Intensity = intensity;
-            Visibility = visibility;
         }
 
         internal static FanlightTimelineFieldMask From(FanlightIntentFields fields) =>
-            new(fields, default, default, default, default, default, default, default, default, default);
+            new(fields, default, default, default, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightMotionFields fields) =>
-            new(default, fields, default, default, default, default, default, default, default, default);
+            new(default, fields, default, default, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightVariationFields fields) =>
-            new(default, default, fields, default, default, default, default, default, default, default);
+            new(default, default, fields, default, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightNoiseFields fields) =>
-            new(default, default, default, fields, default, default, default, default, default, default);
+            new(default, default, default, fields, default, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightRestFields fields) =>
-            new(default, default, default, default, fields, default, default, default, default, default);
+            new(default, default, default, default, fields, default, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightAudienceBodyFields fields) =>
-            new(default, default, default, default, default, fields, default, default, default, default);
+            new(default, default, default, default, default, fields, default, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightDirectionFields fields) =>
-            new(default, default, default, default, default, default, fields, default, default, default);
+            new(default, default, default, default, default, default, fields, default, default);
 
         internal static FanlightTimelineFieldMask From(FanlightColorFields fields) =>
-            new(default, default, default, default, default, default, default, fields, default, default);
+            new(default, default, default, default, default, default, default, fields, default);
 
         internal static FanlightTimelineFieldMask From(FanlightIntensityFields fields) =>
-            new(default, default, default, default, default, default, default, default, fields, default);
-
-        internal static FanlightTimelineFieldMask From(FanlightVisibilityFields fields) =>
-            new(default, default, default, default, default, default, default, default, default, fields);
+            new(default, default, default, default, default, default, default, default, fields);
     }
 }

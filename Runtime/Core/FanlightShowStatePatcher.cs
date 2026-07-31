@@ -20,7 +20,7 @@ namespace PrismFanlight.Core
                 Apply(state.Direction, patch.Direction, weight),
                 Apply(state.Color, patch.Color, weight),
                 Apply(state.Intensity, patch.Intensity, weight),
-                Apply(state.Visibility, patch.Visibility, weight),
+                state.Visibility,
                 state.GlobalSeed);
         }
 
@@ -46,7 +46,7 @@ namespace PrismFanlight.Core
                 Apply(state.Direction, new FanlightDirectionPatch(FanlightDirectionFields.All, state.Direction), 1f),
                 Apply(state.Color, new FanlightColorPatch(FanlightColorFields.All, state.Color), 1f),
                 Apply(state.Intensity, new FanlightIntensityPatch(FanlightIntensityFields.All, state.Intensity), 1f),
-                Apply(state.Visibility, new FanlightVisibilityPatch(FanlightVisibilityFields.All, state.Visibility), 1f),
+                state.Visibility,
                 state.GlobalSeed);
         }
 
@@ -282,18 +282,6 @@ namespace PrismFanlight.Core
                 maskWeights);
         }
 
-        internal static FanlightVisibilityState Apply(FanlightVisibilityState current, FanlightVisibilityPatch patch, float weight)
-        {
-            ValidateMask((int)patch.Fields, (int)FanlightVisibilityFields.All, nameof(patch));
-
-            var value = patch.Value;
-            var discrete = weight >= 0.5f;
-            return new FanlightVisibilityState(
-                Has(patch.Fields, FanlightVisibilityFields.PenlightsEnabled) && discrete ? value.PenlightsEnabled : current.PenlightsEnabled,
-                Has(patch.Fields, FanlightVisibilityFields.AudienceBodiesEnabled) && discrete ? value.AudienceBodiesEnabled : current.AudienceBodiesEnabled);
-        }
-
-
         private static bool Has(FanlightIntentFields fields, FanlightIntentFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightMotionFields fields, FanlightMotionFields field) => (fields & field) != 0;
@@ -311,9 +299,6 @@ namespace PrismFanlight.Core
         private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
-
-        private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
-
 
         private static void ValidateMask(int fields, int all, string name)
         {

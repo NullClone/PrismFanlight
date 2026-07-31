@@ -20,7 +20,6 @@ namespace PrismFanlight.Timeline
                 FanlightTimelinePatchKind.Direction => fields.Direction != FanlightDirectionFields.None,
                 FanlightTimelinePatchKind.Color => fields.Color != FanlightColorFields.None,
                 FanlightTimelinePatchKind.Intensity => fields.Intensity != FanlightIntensityFields.None,
-                FanlightTimelinePatchKind.Visibility => fields.Visibility != FanlightVisibilityFields.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
         }
@@ -42,7 +41,6 @@ namespace PrismFanlight.Timeline
                 FanlightTimelinePatchKind.Direction => TryBlendDirection(fieldMask.Direction, samples, out patch),
                 FanlightTimelinePatchKind.Color => TryBlendColor(fieldMask.Color, samples, out patch),
                 FanlightTimelinePatchKind.Intensity => TryBlendIntensity(fieldMask.Intensity, samples, out patch),
-                FanlightTimelinePatchKind.Visibility => TryBlendVisibility(fieldMask.Visibility, samples, out patch),
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
         }
@@ -90,7 +88,6 @@ namespace PrismFanlight.Timeline
 
             patch = new FanlightShowPatch(
                 new FanlightIntentPatch(fields, value),
-                default,
                 default,
                 default,
                 default,
@@ -174,7 +171,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 default
             );
 
@@ -238,7 +234,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                default,
                 default
             );
 
@@ -287,7 +282,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 new FanlightNoisePatch(fields, value),
-                default,
                 default,
                 default,
                 default,
@@ -346,7 +340,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 new FanlightRestPatch(fields, value),
-                default,
                 default,
                 default,
                 default,
@@ -416,7 +409,6 @@ namespace PrismFanlight.Timeline
                 new FanlightAudienceBodyPatch(fields, value),
                 default,
                 default,
-                default,
                 default
             );
 
@@ -465,7 +457,6 @@ namespace PrismFanlight.Timeline
                 default,
                 new FanlightDirectionPatch(fields, value),
                 default,
-                default,
                 default
             );
 
@@ -501,7 +492,6 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 new FanlightColorPatch(fields, value),
-                default,
                 default
             );
 
@@ -565,54 +555,7 @@ namespace PrismFanlight.Timeline
                 default,
                 default,
                 default,
-                new FanlightIntensityPatch(fields, value),
-                default
-            );
-
-            return true;
-        }
-
-        private static bool TryBlendVisibility(
-            FanlightVisibilityFields fields,
-            ReadOnlySpan<FanlightTimelineClipSample> samples,
-            out FanlightShowPatch patch)
-        {
-            ValidateMask((int)fields, (int)FanlightVisibilityFields.All);
-
-            var penlightsEnabled = new FanlightDiscreteValue<bool>();
-            var audienceBodiesEnabled = new FanlightDiscreteValue<bool>();
-
-            for (var i = 0; i < samples.Length; i++)
-            {
-                var sample = samples[i];
-                var sourceValue = sample.Value.Visibility;
-                if (Has(fields, FanlightVisibilityFields.PenlightsEnabled)) penlightsEnabled.Consider(sourceValue.PenlightsEnabled, sample.Weight, sample.StartSeconds);
-                if (Has(fields, FanlightVisibilityFields.AudienceBodiesEnabled)) audienceBodiesEnabled.Consider(sourceValue.AudienceBodiesEnabled, sample.Weight, sample.StartSeconds);
-            }
-
-            if (fields == FanlightVisibilityFields.None)
-            {
-                patch = default;
-                return false;
-            }
-
-            var fallback = FanlightTimelineDefaults.VisibilityState();
-            var value = new FanlightVisibilityState(
-                penlightsEnabled.Value(fallback.PenlightsEnabled),
-                audienceBodiesEnabled.Value(fallback.AudienceBodiesEnabled)
-            );
-
-            patch = new FanlightShowPatch(
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                default,
-                new FanlightVisibilityPatch(fields, value)
+                new FanlightIntensityPatch(fields, value)
             );
 
             return true;
@@ -636,8 +579,6 @@ namespace PrismFanlight.Timeline
         private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
-
-        private static bool Has(FanlightVisibilityFields fields, FanlightVisibilityFields field) => (fields & field) != 0;
 
         private static void AddAsset(
             FanlightMotionAsset asset,

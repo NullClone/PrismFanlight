@@ -10,7 +10,6 @@ namespace PrismFanlight.Timeline
         AudienceBody = 5,
         Direction = 6,
         Color = 7,
-        Intensity = 8,
-        Visibility = 9
+        Intensity = 8
     }
 }

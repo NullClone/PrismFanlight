@@ -319,22 +319,6 @@ namespace PrismFanlight.Editor
                 return true;
             }
 
-            if (kind == FanlightTimelinePatchKind.Visibility
-                && (fieldMask.Visibility & FanlightVisibilityFields.PenlightsEnabled) != 0
-                && left.Visibility.PenlightsEnabled != right.Visibility.PenlightsEnabled)
-            {
-                fieldName = "Penlights Enabled";
-                return true;
-            }
-
-            if (kind == FanlightTimelinePatchKind.Visibility
-                && (fieldMask.Visibility & FanlightVisibilityFields.AudienceBodiesEnabled) != 0
-                && left.Visibility.AudienceBodiesEnabled != right.Visibility.AudienceBodiesEnabled)
-            {
-                fieldName = "Audience Bodies Enabled";
-                return true;
-            }
-
             return false;
         }
 

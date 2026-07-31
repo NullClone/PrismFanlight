@@ -23,7 +23,5 @@ namespace PrismFanlight.Timeline
         internal static FanlightColorState ColorState() => FanlightShowStateDefaults.Color();
 
         internal static FanlightIntensityState IntensityState() => FanlightShowStateDefaults.Intensity();
-
-        internal static FanlightVisibilityState VisibilityState() => FanlightShowStateDefaults.Visibility();
     }
 }
