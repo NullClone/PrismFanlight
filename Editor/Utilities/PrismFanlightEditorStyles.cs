@@ -1,5 +1,6 @@
 using System;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
@@ -20,9 +21,7 @@ namespace PrismFanlight.Editor
 
         internal static void DrawSection(PrismFanlightSection section, Action draw)
         {
-            section.DrawHeader();
-
-            if (EditorGUILayout.BeginFadeGroup(section.anim.faded))
+            if (section.DrawHeader())
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
@@ -31,8 +30,6 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.Space();
                 }
             }
-
-            EditorGUILayout.EndFadeGroup();
         }
 
         internal static void DrawSubGroupLabel(string title)

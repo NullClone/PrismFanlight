@@ -10,11 +10,14 @@ using UnityEngine.Rendering;
 namespace PrismFanlight
 {
     [ExecuteAlways]
-    [HelpURL("https://github.com/NullClone/PrismFanlight")]
+    [HelpURL(HelpUrl)]
     [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
+
+        public const string HelpUrl = "https://github.com/NullClone/PrismFanlight";
+
 
         [SerializeField]
         private Material _material;

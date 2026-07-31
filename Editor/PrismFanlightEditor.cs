@@ -2,6 +2,7 @@ using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
@@ -424,11 +425,10 @@ namespace PrismFanlight.Editor
 
         private void DrawAdvanceSection()
         {
-            PrismFanlightEditorUtility.DrawSplitter();
-
-            EditorGUILayout.Space();
-            PrismFanlightEditorStyles.DrawSubGroupLabel("Advance");
-            EditorGUILayout.Space();
+            //CoreEditorUtils.DrawSplitter();
+            //EditorGUILayout.Space();
+            //PrismFanlightEditorStyles.DrawSubGroupLabel("Advance");
+            //EditorGUILayout.Space();
 
             PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
             {

@@ -1,4 +1,4 @@
-﻿using UnityEditor.AnimatedValues;
+﻿using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
@@ -7,11 +7,9 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        internal bool expand;
-
-        internal readonly AnimBool anim;
-
         private readonly GUIContent title;
+
+        private bool expand;
 
 
         // Methods
@@ -19,17 +17,16 @@ namespace PrismFanlight.Editor
         internal PrismFanlightSection(GUIContent title)
         {
             this.title = title;
-
-            anim = new AnimBool(expand)
-            {
-                speed = 12f,
-                target = expand
-            };
         }
 
-        internal void DrawHeader()
+        internal bool DrawHeader()
         {
-            anim.target = expand = PrismFanlightEditorUtility.DrawHeader(title, expand);
+            CoreEditorUtils.DrawSplitter();
+            expand = CoreEditorUtils.DrawHeaderFoldout(
+                title: title,
+                state: expand,
+                documentationURL: PrismFanlight.HelpUrl);
+            return expand;
         }
     }
 }
