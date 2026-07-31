@@ -2,7 +2,6 @@ using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using UnityEditor;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
@@ -37,11 +36,13 @@ namespace PrismFanlight.Editor
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
 
-        private bool _enableGizmos = true;
         private UnityEditor.Editor _layoutEditor;
+        private UnityEditor.Editor _materialEditor;
+        private UnityEditor.Editor _audienceMaterialEditor;
 
+        private bool _enableGizmos = true;
+        private bool _hasSelectedLayout;
         private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
-        private bool _hasSelectedLayout = false;
 
         private static readonly PrismFanlightSection _intentSection = new(new GUIContent("Intent"));
         private static readonly PrismFanlightSection _motionSection = new(new GUIContent("Motion"));
@@ -96,6 +97,18 @@ namespace PrismFanlight.Editor
                 DestroyImmediate(_layoutEditor);
                 _layoutEditor = null;
             }
+
+            if (_audienceMaterialEditor != null)
+            {
+                DestroyImmediate(_audienceMaterialEditor);
+                _audienceMaterialEditor = null;
+            }
+
+            if (_materialEditor != null)
+            {
+                DestroyImmediate(_materialEditor);
+                _materialEditor = null;
+            }
         }
 
         private void OnSceneGUI()
@@ -139,6 +152,11 @@ namespace PrismFanlight.Editor
             DrawLayoutSection();
             DrawTimeSection();
             DrawAdvanceSection();
+
+            EditorGUILayout.Space();
+
+            DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
+            DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -506,6 +524,42 @@ namespace PrismFanlight.Editor
             });
         }
 
+
+        private static void DrawMaterialEditor(SerializedProperty property, string materialName, ref UnityEditor.Editor materialEditor)
+        {
+            if (property.hasMultipleDifferentValues)
+            {
+                if (materialEditor != null)
+                {
+                    DestroyImmediate(materialEditor);
+                    materialEditor = null;
+                }
+
+                EditorGUILayout.HelpBox($"Material Inspector is unavailable while selected objects use different {materialName} Materials.", MessageType.Info);
+                return;
+            }
+
+            var material = property.objectReferenceValue as Material;
+            if (material == null)
+            {
+                if (materialEditor != null)
+                {
+                    DestroyImmediate(materialEditor);
+                    materialEditor = null;
+                }
+
+                return;
+            }
+
+            CreateCachedEditor(material, typeof(MaterialEditor), ref materialEditor);
+
+            if (materialEditor is not MaterialEditor editor) return;
+
+            EditorGUILayout.Space();
+
+            editor.DrawHeader();
+            editor.OnInspectorGUI();
+        }
 
         private static void DrawUpdateTiming(SerializedProperty timing, string label)
         {

@@ -9,7 +9,7 @@ namespace PrismFanlight.Editor
         [MenuItem("GameObject/Create Other/Prism Fanlight", false, 100)]
         private static void CreateMyCustomObject(MenuCommand command)
         {
-            var obj = new GameObject("Prism Fanlight", typeof(PrismFanlight), typeof(FanlightTimeManager));
+            var obj = new GameObject("Prism Fanlight", typeof(FanlightTimeManager), typeof(PrismFanlight));
 
             GameObjectUtility.SetParentAndAlign(obj, command.context as GameObject);
 
