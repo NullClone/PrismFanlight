@@ -124,7 +124,7 @@ namespace PrismFanlight.Time
                         _defaultBeatUnit,
                         _defaultOffsetSeconds);
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 _lastFault = FanlightShowTimeFault.TempoMapUnavailable;
                 _coordinator = null;
