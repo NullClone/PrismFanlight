@@ -190,12 +190,12 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
 
-                var appearance = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAppearanceProfile;
-                if (appearance == null)
+                var penlightAsset = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAsset;
+                if (penlightAsset == null)
                 {
-                    EditorGUILayout.HelpBox("Penlight Appearance is required.", MessageType.Error);
+                    EditorGUILayout.HelpBox("Penlight Asset is required.", MessageType.Error);
                 }
-                else if (!appearance.TryValidate(out var error))
+                else if (!penlightAsset.TryValidate(out var error))
                 {
                     EditorGUILayout.HelpBox(error, MessageType.Error);
                 }

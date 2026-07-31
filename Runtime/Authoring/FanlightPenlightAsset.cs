@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [CreateAssetMenu(fileName = "Penlight Appearance", menuName = "Prism Fanlight/Penlight Appearance Profile")]
-    public sealed class FanlightPenlightAppearanceProfile : ScriptableObject
+    [CreateAssetMenu(fileName = "Penlight", menuName = "Prism Fanlight/Penlight Asset")]
+    public sealed class FanlightPenlightAsset : ScriptableObject
     {
         // Fields
 
@@ -35,7 +35,7 @@ namespace PrismFanlight.Authoring
         {
             if (VariantCount < 1 || VariantCount > MaximumVariantCount)
             {
-                error = $"Appearance profile must contain between 1 and {MaximumVariantCount} variants.";
+                error = $"Penlight Asset must contain between 1 and {MaximumVariantCount} variants.";
                 return false;
             }
 

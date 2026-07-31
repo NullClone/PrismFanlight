@@ -44,7 +44,7 @@ namespace PrismFanlight
         private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.EveryFrame();
 
         [SerializeField]
-        private FanlightPenlightAppearanceProfile _penlightAppearanceProfile;
+        private FanlightPenlightAsset _penlightAppearanceProfile;
 
         [SerializeField]
         private FanlightLayoutAsset _layoutAsset;

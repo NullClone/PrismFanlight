@@ -1,6 +1,5 @@
 using System;
 using UnityEditor;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 namespace PrismFanlight.Editor

@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56e1d72868814f048b52e4626dd31d98, type: 3}
   m_Name: Default Penlight
-  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Authoring.FanlightPenlightAppearanceProfile
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Authoring.FanlightPenlightAsset
   _profileId: 495a1d9c40dc418f8e940081be7fab3f
   _profileVersion: 1
   _assignmentSchemaVersion: 1

@@ -19,7 +19,7 @@ namespace PrismFanlight.Rendering
         private FanlightGpuKernels _kernels;
         private FanlightRuntimeLayout _layout;
         private FanlightPenlightRuntimeAppearance _appearance;
-        private FanlightPenlightAppearanceProfile _appearanceProfile;
+        private FanlightPenlightAsset _penlightAsset;
         private Material _penlightMaterial;
         private Material _audienceMaterial;
         private ComputeShader _computeShader;
@@ -51,7 +51,7 @@ namespace PrismFanlight.Rendering
 
         internal void Load(
             FanlightRuntimeLayout layout,
-            FanlightPenlightAppearanceProfile appearanceProfile,
+            FanlightPenlightAsset penlightAsset,
             Material penlightMaterial,
             Material audienceMaterial,
             ComputeShader computeShader)
@@ -68,24 +68,24 @@ namespace PrismFanlight.Rendering
                 return;
             }
 
-            if (appearanceProfile == null || penlightMaterial == null || computeShader == null)
+            if (penlightAsset == null || penlightMaterial == null || computeShader == null)
             {
                 FailLoad(FanlightRendererFault.MissingResource);
                 return;
             }
 
-            if (!appearanceProfile.TryValidate(out _)
-                || appearanceProfile.VariantCount > 1 && !layout.HasStableSeatIds)
+            if (!penlightAsset.TryValidate(out _)
+                || penlightAsset.VariantCount > 1 && !layout.HasStableSeatIds)
             {
                 FailLoad(FanlightRendererFault.InvalidLayout);
                 return;
             }
 
-            var appearanceHash = appearanceProfile.GetRuntimeContentHash();
+            var appearanceHash = penlightAsset.GetRuntimeContentHash();
             var appearance = _appearance;
-            if (appearance == null || _appearanceProfile != appearanceProfile || appearance.ContentHash != appearanceHash)
+            if (appearance == null || _penlightAsset != penlightAsset || appearance.ContentHash != appearanceHash)
             {
-                appearance = FanlightPenlightRuntimeAppearance.Create(appearanceProfile);
+                appearance = FanlightPenlightRuntimeAppearance.Create(penlightAsset);
             }
 
             if (appearance == null)
@@ -114,7 +114,7 @@ namespace PrismFanlight.Rendering
                 }
 
                 _appearance = appearance;
-                _appearanceProfile = appearanceProfile;
+                _penlightAsset = penlightAsset;
                 _penlightMaterial = penlightMaterial;
                 _audienceMaterial = audienceMaterial;
                 Fault = FanlightRendererFault.None;
@@ -124,7 +124,7 @@ namespace PrismFanlight.Rendering
             ReleaseResources();
 
             _appearance = appearance;
-            _appearanceProfile = appearanceProfile;
+            _penlightAsset = penlightAsset;
             _penlightMaterial = penlightMaterial;
             _audienceMaterial = audienceMaterial;
             _computeShader = computeShader;
@@ -421,7 +421,7 @@ namespace PrismFanlight.Rendering
             _kernels = default;
             _layout = null;
             _appearance = null;
-            _appearanceProfile = null;
+            _penlightAsset = null;
             _penlightMaterial = null;
             _audienceMaterial = null;
             _computeShader = null;
