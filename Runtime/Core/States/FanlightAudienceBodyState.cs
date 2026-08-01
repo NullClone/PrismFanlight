@@ -17,10 +17,10 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _headSize;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _shoulderHeightRatio;
 
-        [SerializeField]
+        [SerializeField, Range(-1f, 1f)]
         private float _shoulderSideOffset;
 
         [SerializeField]
@@ -29,10 +29,10 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _armLengthLimit;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _bounce;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _sway;
 
 

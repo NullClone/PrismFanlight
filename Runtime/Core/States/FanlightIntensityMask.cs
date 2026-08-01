@@ -17,16 +17,16 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _phaseOffsetBeats;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _minimumIntensityRatio;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _attackRatio;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _holdRatio;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _releaseRatio;
 
         [SerializeField]

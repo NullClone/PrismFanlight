@@ -1,5 +1,6 @@
 using PrismFanlight.Timeline;
 using UnityEditor;
+using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
@@ -24,21 +25,21 @@ namespace PrismFanlight.Editor
 
             PrismFanlightEditorStyles.DrawSubGroupLabel("Phase");
 
-            DrawSlider("_phaseAmount", "Amount (rad)", 0f, 4f);
+            DrawChild("_phaseAmount", "Amount (rad)");
 
             EditorGUILayout.Space();
             PrismFanlightEditorStyles.DrawSubGroupLabel("Spatial");
 
-            DrawSlider("_positionAmount", "Position (m)", 0f, 0.2f);
-            DrawSlider("_directionAmount", "Direction (rad)", 0f, 0.4f);
+            DrawChild("_positionAmount", "Position (m)");
+            DrawChild("_directionAmount", "Direction (rad)");
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawSlider(string propertyName, string label, float minimum, float maximum)
+        private void DrawChild(string propertyName, string label)
         {
             var property = _value.FindPropertyRelative(propertyName);
-            property.floatValue = EditorGUILayout.Slider(label, property.floatValue, minimum, maximum);
+            EditorGUILayout.PropertyField(property, new GUIContent(label));
         }
     }
 }

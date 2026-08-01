@@ -24,22 +24,22 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _blockDelayYBeats;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 2f)]
         private float _motionAmount;
 
-        [SerializeField]
+        [SerializeField, Range(-1f, 1f)]
         private float _heightBias;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 2f)]
         private float _sideScale;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 2f)]
         private float _forwardScale;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 0.5f)]
         private float _wristDelayRatio;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _variation;
 
         [NonSerialized]

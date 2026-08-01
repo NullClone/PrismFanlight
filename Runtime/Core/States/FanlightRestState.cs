@@ -8,10 +8,10 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _probability;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _motionLevel;
 
         [SerializeField]
@@ -23,7 +23,7 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _fadeSeconds;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _phaseRandomness;
 
 

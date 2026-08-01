@@ -8,16 +8,16 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _standingPositionSpread;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _heightVariation;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _armExtensionVariation;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _penlightDirectionSpread;
 
         [SerializeField]
@@ -26,10 +26,10 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _beatJitterBeats;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _energyResponse;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 0.5f)]
         private float _handPositionSpread;
 
 

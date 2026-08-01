@@ -8,19 +8,19 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _energy;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _participation;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _synchronization;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _realism;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _reach;
 
 

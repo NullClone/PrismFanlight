@@ -11,7 +11,7 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _baseIntensity;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _randomIntensity;
 
         [SerializeField]

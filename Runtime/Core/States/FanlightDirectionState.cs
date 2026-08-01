@@ -14,7 +14,7 @@ namespace PrismFanlight.Core
         [SerializeField]
         private float _worldYawDegrees;
 
-        [SerializeField]
+        [SerializeField, Range(0f, 1f)]
         private float _aimStrength;
 
 

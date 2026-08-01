@@ -43,9 +43,7 @@ namespace PrismFanlight.Editor
             }
 
             var randomIntensity = state.FindPropertyRelative("_randomIntensity");
-            EditorGUI.BeginChangeCheck();
-            var randomValue = EditorGUILayout.Slider("Random Intensity", randomIntensity.floatValue, 0f, 1f);
-            if (EditorGUI.EndChangeCheck()) randomIntensity.floatValue = randomValue;
+            EditorGUILayout.PropertyField(randomIntensity, new GUIContent("Random Intensity"));
 
             if (!randomIntensity.hasMultipleDifferentValues
                 && (!float.IsFinite(randomIntensity.floatValue) || randomIntensity.floatValue < 0f || randomIntensity.floatValue > 1f))
@@ -280,17 +278,18 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(
                 mask.FindPropertyRelative("_phaseOffsetBeats"),
                 new GUIContent("Phase Offset Beats"));
-            DrawRatio(mask.FindPropertyRelative("_minimumIntensityRatio"), "Minimum Intensity Ratio");
-            DrawRatio(mask.FindPropertyRelative("_attackRatio"), "Attack Ratio");
-            DrawRatio(mask.FindPropertyRelative("_holdRatio"), "Hold Ratio");
-            DrawRatio(mask.FindPropertyRelative("_releaseRatio"), "Release Ratio");
-        }
-
-        private static void DrawRatio(SerializedProperty property, string label)
-        {
-            EditorGUI.BeginChangeCheck();
-            var value = EditorGUILayout.Slider(label, property.floatValue, 0f, 1f);
-            if (EditorGUI.EndChangeCheck()) property.floatValue = value;
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_minimumIntensityRatio"),
+                new GUIContent("Minimum Intensity Ratio"));
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_attackRatio"),
+                new GUIContent("Attack Ratio"));
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_holdRatio"),
+                new GUIContent("Hold Ratio"));
+            EditorGUILayout.PropertyField(
+                mask.FindPropertyRelative("_releaseRatio"),
+                new GUIContent("Release Ratio"));
         }
 
         private static bool IsValidChroma(Color color)
