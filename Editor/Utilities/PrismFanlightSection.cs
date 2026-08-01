@@ -1,5 +1,8 @@
-﻿using UnityEditor.Rendering;
+﻿using UnityEditor;
+using UnityEditor.Rendering;
+using UnityEditor.Timeline;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight.Editor
 {
@@ -7,12 +10,14 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        private readonly GUIContent title;
+        protected readonly GUIContent title;
 
-        private bool expand;
+        protected bool expand;
 
 
         // Methods
+
+        internal PrismFanlightSection(string title) : this(new GUIContent(title)) { }
 
         internal PrismFanlightSection(GUIContent title)
         {
@@ -22,11 +27,91 @@ namespace PrismFanlight.Editor
         internal bool DrawHeader()
         {
             CoreEditorUtils.DrawSplitter();
+
             expand = CoreEditorUtils.DrawHeaderFoldout(
                 title: title,
                 state: expand,
                 documentationURL: PrismFanlight.HelpUrl);
+
             return expand;
+        }
+    }
+
+    internal class PrismFanlightSection<TTrack> : PrismFanlightSection where TTrack : TrackAsset, new()
+    {
+        internal PrismFanlightSection(string title) : base(new GUIContent(title)) { }
+
+        internal bool DrawHeader(PrismFanlight fanlight)
+        {
+            CoreEditorUtils.DrawSplitter();
+
+            expand = CoreEditorUtils.DrawHeaderFoldout(
+                title: title,
+                state: expand,
+                documentationURL: PrismFanlight.HelpUrl,
+                customMenuContextAction: menu => AddTimelineTrackMenuItem(menu, fanlight));
+
+            return expand;
+        }
+
+
+        private static void AddTimelineTrackMenuItem(GenericMenu menu, PrismFanlight fanlight)
+        {
+            var content = new GUIContent("Add to Timeline");
+
+            if (!CanAddTimelineTrack(fanlight))
+            {
+                menu.AddDisabledItem(content);
+                return;
+            }
+
+            menu.AddItem(content, false, () => AddTimelineTrack(fanlight));
+        }
+
+        private static bool CanAddTimelineTrack(PrismFanlight fanlight)
+        {
+            if (fanlight == null) return false;
+
+            var timeline = TimelineEditor.inspectedAsset;
+            var director = TimelineEditor.inspectedDirector;
+
+            if (timeline == null || director == null) return false;
+
+            foreach (var track in timeline.GetOutputTracks())
+            {
+                if (track is not TTrack) continue;
+
+                if (director.GetGenericBinding(track) == fanlight)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void AddTimelineTrack(PrismFanlight fanlight)
+        {
+            if (!CanAddTimelineTrack(fanlight)) return;
+
+            var timeline = TimelineEditor.inspectedAsset;
+            var director = TimelineEditor.inspectedDirector;
+
+            var undoName = $"Add {ObjectNames.NicifyVariableName(typeof(TTrack).Name)}";
+
+            Undo.RegisterCompleteObjectUndo(timeline, undoName);
+            Undo.RecordObject(director, undoName);
+
+            var track = timeline.CreateTrack<TTrack>();
+
+            Undo.RegisterCreatedObjectUndo(track, undoName);
+
+            director.SetGenericBinding(track, fanlight);
+
+            EditorUtility.SetDirty(timeline);
+            EditorUtility.SetDirty(director);
+
+            TimelineEditor.Refresh(RefreshReason.ContentsAddedOrRemoved);
         }
     }
 }

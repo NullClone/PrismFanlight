@@ -1,6 +1,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight.Editor
 {
@@ -30,6 +31,20 @@ namespace PrismFanlight.Editor
                 }
             }
         }
+
+        internal static void DrawSection<TTrack>(PrismFanlightSection<TTrack> section, Action draw, PrismFanlight fanlight) where TTrack : TrackAsset, new()
+        {
+            if (section.DrawHeader(fanlight))
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    draw();
+
+                    EditorGUILayout.Space();
+                }
+            }
+        }
+
 
         internal static void DrawSubGroupLabel(string title)
         {
