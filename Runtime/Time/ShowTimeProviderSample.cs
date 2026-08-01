@@ -12,13 +12,13 @@ namespace PrismFanlight.Time
     {
         // Properties
 
-        internal double Seconds { get; }
+        public double Seconds { get; }
 
-        internal double Rate { get; }
+        public double Rate { get; }
 
-        internal FanlightClockStatus Status { get; }
+        public FanlightClockStatus Status { get; }
 
-        internal FanlightTimeDiscontinuity Discontinuity { get; }
+        public FanlightTimeDiscontinuity Discontinuity { get; }
 
         internal bool IsValid =>
             !double.IsNaN(Seconds)
@@ -26,12 +26,18 @@ namespace PrismFanlight.Time
             && !double.IsNaN(Rate)
             && !double.IsInfinity(Rate)
             && ((Status == FanlightClockStatus.Ready && Rate != 0d)
-                || (Status == FanlightClockStatus.Holding && Rate == 0d));
+                || (Status == FanlightClockStatus.Holding && Rate == 0d))
+            && Discontinuity is FanlightTimeDiscontinuity.None
+                or FanlightTimeDiscontinuity.Seek
+                or FanlightTimeDiscontinuity.Loop
+                or FanlightTimeDiscontinuity.Reverse
+                or FanlightTimeDiscontinuity.AuthorityChanged
+                or FanlightTimeDiscontinuity.Reconnected;
 
 
         // Methods
 
-        internal ShowTimeProviderSample(
+        public ShowTimeProviderSample(
             double seconds,
             double rate,
             FanlightClockStatus status,

@@ -87,7 +87,7 @@ namespace PrismFanlight.Editor
 
         private static void AddTimelineTrackMenuItem(GenericMenu menu, PrismFanlight fanlight)
         {
-            var content = new GUIContent("Add to Timeline");
+            var content = new GUIContent("Add Track to Timeline");
 
             if (!CanAddTimelineTrack(fanlight))
             {
