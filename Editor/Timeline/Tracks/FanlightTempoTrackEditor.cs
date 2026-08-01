@@ -3,12 +3,11 @@ using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.Timeline;
-using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
     [CustomTimelineEditor(typeof(FanlightTempoTrack))]
-    internal sealed class FanlightTempoTrackTimelineEditor : TrackEditor
+    internal sealed class FanlightTempoTrackEditor : TrackEditor
     {
         // Methods
 

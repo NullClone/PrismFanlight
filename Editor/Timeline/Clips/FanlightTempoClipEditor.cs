@@ -6,7 +6,7 @@ using UnityEngine.Timeline;
 namespace PrismFanlight.Editor
 {
     [CustomTimelineEditor(typeof(FanlightTempoClip))]
-    internal sealed class FanlightTempoClipTimelineEditor : ClipEditor
+    internal sealed class FanlightTempoClipEditor : ClipEditor
     {
         // Methods
 
