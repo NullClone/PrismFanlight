@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEditor.Timeline;
 using UnityEngine;
@@ -6,6 +7,35 @@ using UnityEngine.Timeline;
 
 namespace PrismFanlight.Editor
 {
+    internal static class PrismFanlightSectionExtensions
+    {
+        internal static void DrawSection(this PrismFanlightSection section, Action draw)
+        {
+            if (section.DrawHeader())
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    draw();
+
+                    EditorGUILayout.Space();
+                }
+            }
+        }
+
+        internal static void DrawSection<TTrack>(this PrismFanlightSection<TTrack> section, Action draw, PrismFanlight fanlight) where TTrack : TrackAsset, new()
+        {
+            if (section.DrawHeader(fanlight))
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    draw();
+
+                    EditorGUILayout.Space();
+                }
+            }
+        }
+    }
+
     internal class PrismFanlightSection
     {
         // Fields
