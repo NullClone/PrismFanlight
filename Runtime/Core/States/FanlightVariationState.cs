@@ -8,22 +8,22 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Label("Position Spread"), Range(0f, 1f)]
         private float _standingPositionSpread;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Label("Audience Height"), Range(0f, 1f)]
         private float _heightVariation;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Label("Arm Extension"), Range(0f, 1f)]
         private float _armExtensionVariation;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Label("Direction Spread"), Range(0f, 1f)]
         private float _penlightDirectionSpread;
 
-        [SerializeField]
+        [SerializeField, Label("Reaction Delay")]
         private float _reactionDelaySeconds;
 
-        [SerializeField]
+        [SerializeField, Label("Beat Jitter")]
         private float _beatJitterBeats;
 
         [SerializeField, Range(0f, 1f)]

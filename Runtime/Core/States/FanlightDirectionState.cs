@@ -11,10 +11,10 @@ namespace PrismFanlight.Core
         [SerializeField]
         private FanlightDirectionMode _mode;
 
-        [SerializeField]
+        [SerializeField, Label("Direction (Fallback)")]
         private float _worldYawDegrees;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Label("Strength"), Range(0f, 1f)]
         private float _aimStrength;
 
 

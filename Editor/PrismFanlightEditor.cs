@@ -230,8 +230,8 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
                 PrismFanlightEditorStyles.DrawSubGroupLabel("Visibility");
 
-                DrawChild(_visibility, "_penlightsEnabled", "Enable Penlights");
-                DrawChild(_visibility, "_audienceBodiesEnabled", "Enable Audience");
+                DrawChild(_visibility, "_penlightsEnabled");
+                DrawChild(_visibility, "_audienceBodiesEnabled");
 
                 EditorGUI.BeginChangeCheck();
                 _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
@@ -271,39 +271,34 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection(_intentSection, () =>
             {
-                DrawChild(_intent, "_energy", "Energy");
-                DrawChild(_intent, "_participation", "Participation");
-                DrawChild(_intent, "_synchronization", "Synchronization");
-                DrawChild(_intent, "_realism", "Realism");
-                DrawChild(_intent, "_reach", "Reach");
+                DrawChild(_intent, "_energy");
+                DrawChild(_intent, "_participation");
+                DrawChild(_intent, "_synchronization");
+                DrawChild(_intent, "_realism");
+                DrawChild(_intent, "_reach");
             }, _instance);
 
 
             PrismFanlightEditorStyles.DrawSection(_motionSection, () =>
             {
                 var motionAsset = _motion.FindPropertyRelative("_motionAsset");
-                EditorGUILayout.PropertyField(motionAsset, new GUIContent("Motion Asset"));
+                EditorGUILayout.PropertyField(motionAsset);
 
                 if (motionAsset.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
                 }
 
-                EditorGUILayout.Space();
-
-                DrawChild(_motion, "_motionAmount", "Motion Amount");
-                DrawChild(_motion, "_heightBias", "Height Bias");
-                DrawChild(_motion, "_sideScale", "Side Scale");
-                DrawChild(_motion, "_forwardScale", "Forward Scale");
-                DrawChild(_motion, "_wristDelayRatio", "Wrist Delay");
-                DrawChild(_motion, "_variation", "Variation");
-
-                EditorGUILayout.Space();
-
-                DrawChild(_motion, "_beatsPerCycle", "Beats Per Cycle");
-                DrawChild(_motion, "_phaseOffsetBeats", "Phase Offset");
-                DrawChild(_motion, "_blockDelayXBeats", "Block Delay X");
-                DrawChild(_motion, "_blockDelayYBeats", "Block Delay Y");
+                DrawChild(_motion, "_motionAmount");
+                DrawChild(_motion, "_heightBias");
+                DrawChild(_motion, "_sideScale");
+                DrawChild(_motion, "_forwardScale");
+                DrawChild(_motion, "_wristDelayRatio");
+                DrawChild(_motion, "_variation");
+                DrawChild(_motion, "_beatsPerCycle");
+                DrawChild(_motion, "_phaseOffsetBeats");
+                DrawChild(_motion, "_blockDelayXBeats");
+                DrawChild(_motion, "_blockDelayYBeats");
             }, _instance);
         }
 
@@ -462,77 +457,68 @@ namespace PrismFanlight.Editor
         {
             PrismFanlightEditorStyles.DrawSection(_audienceSection, () =>
             {
-                DrawChild(_audienceBody, "_height", "Body Height");
-                DrawChild(_audienceBody, "_width", "Body Width");
-                DrawChild(_audienceBody, "_headSize", "Head Size");
-                DrawChild(_audienceBody, "_armWidth", "Arm Width");
-                DrawChild(_audienceBody, "_armLengthLimit", "Arm Length Limit");
-                DrawChild(_audienceBody, "_shoulderHeightRatio", "Shoulder Height");
-                DrawChild(_audienceBody, "_shoulderSideOffset", "Shoulder Offset");
-                EditorGUILayout.Space();
-                DrawChild(_audienceBody, "_bounce", "Bounce");
-                DrawChild(_audienceBody, "_sway", "Sway");
+                DrawChild(_audienceBody, "_height");
+                DrawChild(_audienceBody, "_width");
+                DrawChild(_audienceBody, "_headSize");
+                DrawChild(_audienceBody, "_armWidth");
+                DrawChild(_audienceBody, "_armLengthLimit");
+                DrawChild(_audienceBody, "_shoulderHeightRatio");
+                DrawChild(_audienceBody, "_shoulderSideOffset");
+                DrawChild(_audienceBody, "_bounce");
+                DrawChild(_audienceBody, "_sway");
             }, _instance);
 
             PrismFanlightEditorStyles.DrawSection(_directionSection, () =>
             {
+                EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
+                EditorGUILayout.Space();
+
                 var mode = _direction.FindPropertyRelative("_mode");
+
                 EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
 
                 if (!mode.hasMultipleDifferentValues)
                 {
                     if (mode.enumValueIndex == (int)FanlightDirectionMode.Target)
                     {
-                        EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
+                        DrawChild(_direction, "_aimStrength");
+                    }
 
-                        DrawChild(_direction, "_aimStrength", "Strength");
-                        DrawChild(_direction, "_worldYawDegrees", "Fallback Direction");
-                    }
-                    else
-                    {
-                        DrawChild(_direction, "_worldYawDegrees", "Direction");
-                    }
+                    DrawChild(_direction, "_worldYawDegrees");
                 }
             }, _instance);
 
             PrismFanlightEditorStyles.DrawSection(_variationSection, () =>
             {
-                DrawChild(_variation, "_standingPositionSpread", "Position Spread");
-                DrawChild(_variation, "_heightVariation", "Audience Height");
-                DrawChild(_variation, "_armExtensionVariation", "Arm Extension");
-                DrawChild(_variation, "_penlightDirectionSpread", "Direction Spread");
-                DrawChild(_variation, "_reactionDelaySeconds", "Reaction Delay");
-                DrawChild(_variation, "_beatJitterBeats", "Beat Jitter");
-                DrawChild(_variation, "_energyResponse", "Energy Response");
-                DrawChild(_variation, "_handPositionSpread", "Hand Position Spread");
+                DrawChild(_variation, "_standingPositionSpread");
+                DrawChild(_variation, "_heightVariation");
+                DrawChild(_variation, "_armExtensionVariation");
+                DrawChild(_variation, "_penlightDirectionSpread");
+                DrawChild(_variation, "_reactionDelaySeconds");
+                DrawChild(_variation, "_beatJitterBeats");
+                DrawChild(_variation, "_energyResponse");
+                DrawChild(_variation, "_handPositionSpread");
             }, _instance);
 
             PrismFanlightEditorStyles.DrawSection(_noiseSection, () =>
             {
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Phase");
-                DrawChild(_noise, "_phaseAmount", "Amount (rad)");
-                DrawChild(_noise, "_phaseRate", "Rate");
-
-                EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Spatial");
-                DrawChild(_noise, "_positionAmount", "Position (m)");
-                DrawChild(_noise, "_directionAmount", "Direction (rad)");
-                DrawChild(_noise, "_spatialRate", "Rate");
-
-                EditorGUILayout.Space();
-                PrismFanlightEditorStyles.DrawSubGroupLabel("Detail");
-                DrawChild(_noise, "_octaves", "Octaves");
-                DrawChild(_noise, "_persistence", "Persistence");
+                DrawChild(_noise, "_phaseAmount");
+                DrawChild(_noise, "_phaseRate");
+                DrawChild(_noise, "_positionAmount");
+                DrawChild(_noise, "_directionAmount");
+                DrawChild(_noise, "_spatialRate");
+                DrawChild(_noise, "_octaves");
+                DrawChild(_noise, "_persistence");
             }, _instance);
 
             PrismFanlightEditorStyles.DrawSection(_restSection, () =>
             {
-                DrawChild(_rest, "_probability", "Probability");
-                DrawChild(_rest, "_motionLevel", "Motion Level");
-                DrawChild(_rest, "_cycleSeconds", "Cycle Seconds");
-                DrawChild(_rest, "_durationSeconds", "Duration Seconds");
-                DrawChild(_rest, "_fadeSeconds", "Fade Seconds");
-                DrawChild(_rest, "_phaseRandomness", "Phase Randomness");
+                DrawChild(_rest, "_probability");
+                DrawChild(_rest, "_motionLevel");
+                DrawChild(_rest, "_cycleSeconds");
+                DrawChild(_rest, "_durationSeconds");
+                DrawChild(_rest, "_fadeSeconds");
+                DrawChild(_rest, "_phaseRandomness");
             }, _instance);
         }
 
@@ -587,10 +573,9 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawChild(SerializedProperty parent, string propertyName, string label)
+        private static void DrawChild(SerializedProperty parent, string propertyName)
         {
-            EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName), new GUIContent(label));
+            EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
         }
-
     }
 }

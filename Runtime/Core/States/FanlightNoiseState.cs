@@ -8,12 +8,14 @@ namespace PrismFanlight.Core
     {
         // Fields
 
+        [Header("Phase")]
         [SerializeField, Range(0f, 4f)]
         private float _phaseAmount;
 
         [SerializeField, Range(0f, 16f)]
         private float _phaseRate;
 
+        [Header("Spatial")]
         [SerializeField, Range(0f, 0.2f)]
         private float _positionAmount;
 
@@ -23,6 +25,7 @@ namespace PrismFanlight.Core
         [SerializeField, Range(0f, 16f)]
         private float _spatialRate;
 
+        [Header("Detail")]
         [SerializeField]
         private int _octaves;
 

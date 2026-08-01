@@ -12,18 +12,7 @@ namespace PrismFanlight.Core
         [SerializeField]
         private FanlightMotionAsset _motionAsset;
 
-        [SerializeField]
-        private float _beatsPerCycle;
-
-        [SerializeField]
-        private float _phaseOffsetBeats;
-
-        [SerializeField]
-        private float _blockDelayXBeats;
-
-        [SerializeField]
-        private float _blockDelayYBeats;
-
+        [Space]
         [SerializeField, Range(0f, 2f)]
         private float _motionAmount;
 
@@ -41,6 +30,20 @@ namespace PrismFanlight.Core
 
         [SerializeField, Range(0f, 1f)]
         private float _variation;
+
+        [Space]
+        [SerializeField]
+        private float _beatsPerCycle;
+
+        [SerializeField]
+        private float _phaseOffsetBeats;
+
+        [SerializeField]
+        private float _blockDelayXBeats;
+
+        [SerializeField]
+        private float _blockDelayYBeats;
+
 
         [NonSerialized]
         private FanlightMotionAsset _secondaryMotionAsset;

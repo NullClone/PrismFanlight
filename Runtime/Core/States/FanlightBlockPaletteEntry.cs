@@ -28,7 +28,7 @@ namespace PrismFanlight.Core
         {
             if (string.IsNullOrEmpty(stableBlockId))
             {
-                //throw new ArgumentException("A Stable Block ID is required.", nameof(stableBlockId));
+                throw new ArgumentException("A Stable Block ID is required.", nameof(stableBlockId));
             }
 
             if (paletteSlot < 0 || paletteSlot > 5)
