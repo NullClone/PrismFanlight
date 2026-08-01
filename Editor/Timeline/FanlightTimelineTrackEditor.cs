@@ -106,17 +106,35 @@ namespace PrismFanlight.Editor
 
             var expectedClipType = GetExpectedClipType(track);
             var clips = GetClips(track);
+            var clipValuesValid = true;
 
             for (var i = 0; i < clips.Count; i++)
             {
                 var clip = clips[i];
 
-                if (clip.asset != null && expectedClipType != null && expectedClipType.IsInstanceOfType(clip.asset)) continue;
+                if (clip.asset == null || expectedClipType == null || !expectedClipType.IsInstanceOfType(clip.asset))
+                {
+                    var actualName = clip.asset == null ? "missing asset" : clip.asset.GetType().Name;
+                    var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
+                    errors.Add($"Clip '{clip.displayName}' uses {actualName}. Replace it with {expectedName}.");
+                    clipValuesValid = false;
+                    continue;
+                }
 
-                var actualName = clip.asset == null ? "missing asset" : clip.asset.GetType().Name;
-                var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
-                errors.Add($"Clip '{clip.displayName}' uses {actualName}. Replace it with {expectedName}.");
-                break;
+                try
+                {
+                    _ = ((FanlightTimelineClipAsset)clip.asset).Value;
+                }
+                catch (ArgumentException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    clipValuesValid = false;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    clipValuesValid = false;
+                }
             }
 
             if (TryFindTripleOverlap(clips, out var overlapStart))
@@ -124,7 +142,8 @@ namespace PrismFanlight.Editor
                 errors.Add($"Three or more clips overlap at {overlapStart:0.###} seconds, including extrapolation. Move or trim clips so at most two are active.");
             }
 
-            if (TryFindDiscreteConflict(track, clips, null, out var conflictStart, out var fieldName))
+            if (clipValuesValid
+                && TryFindDiscreteConflict(track, clips, null, out var conflictStart, out var fieldName))
             {
                 errors.Add($"Clips starting at {conflictStart:0.###} seconds assign different {fieldName} values. Change one value or one start time.");
             }
@@ -178,6 +197,11 @@ namespace PrismFanlight.Editor
                     errors.Add($"Clip '{clip.displayName}': {exception.Message}");
                     continue;
                 }
+                catch (InvalidOperationException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
 
                 for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
                 {
@@ -222,11 +246,23 @@ namespace PrismFanlight.Editor
 
             foreach (var clip in track.GetClips())
             {
-                if (clip.asset is FanlightIntensityClip intensityClip
-                    && intensityClip.Value.Intensity.HasDynamicMask())
+                if (clip.asset is not FanlightIntensityClip intensityClip) continue;
+
+                try
                 {
-                    errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
-                    return;
+                    if (intensityClip.Value.Intensity.HasDynamicMask())
+                    {
+                        errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                        return;
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
+                catch (InvalidOperationException)
+                {
+                    continue;
                 }
             }
         }

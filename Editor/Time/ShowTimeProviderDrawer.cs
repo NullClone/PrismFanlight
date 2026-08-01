@@ -3,6 +3,7 @@ using System.Linq;
 using PrismFanlight.Time;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -98,12 +99,12 @@ namespace PrismFanlight.Editor
 
             _types = TypeCache.GetTypesDerivedFrom<IShowTimeProvider>()
                 .Where(type => type.IsClass
-                    && (type.IsPublic || type.IsNestedPublic)
-                    && !type.IsAbstract
-                    && !type.ContainsGenericParameters
-                    && type.IsSerializable
-                    && !typeof(UnityEngine.Object).IsAssignableFrom(type)
-                    && type.GetConstructor(Type.EmptyTypes) != null)
+                               && (type.IsPublic || type.IsNestedPublic)
+                               && !type.IsAbstract
+                               && !type.ContainsGenericParameters
+                               && type.IsSerializable
+                               && !typeof(Object).IsAssignableFrom(type)
+                               && type.GetConstructor(Type.EmptyTypes) != null)
                 .OrderBy(type => type.FullName, StringComparer.Ordinal)
                 .ToArray();
 

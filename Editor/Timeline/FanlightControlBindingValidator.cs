@@ -22,7 +22,11 @@ namespace PrismFanlight.Editor
 
                     if (control.prefabGameObject != null)
                     {
-                        errors.Add($"Control Clip '{clip.displayName}' generates a Prefab and cannot define Fanlight Sequence ownership.");
+                        if (FanlightSequenceContextRegistry.DefinesFanlightOwnership(control))
+                        {
+                            errors.Add($"Control Clip '{clip.displayName}' generates a Prefab and cannot define Fanlight Sequence ownership.");
+                        }
+
                         continue;
                     }
 

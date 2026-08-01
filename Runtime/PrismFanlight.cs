@@ -109,6 +109,10 @@ namespace PrismFanlight
         private bool _hasRenderFrame;
         private bool _hasHeldTimelineState;
         private bool _timelineEvaluatedSinceLastUpdate;
+        private bool _timelineFaultReportedSinceLastUpdate;
+        private string _reportedTimelineFault = string.Empty;
+        private bool _baseStateValid;
+        private string _baseStateFault = string.Empty;
         private FanlightRuntimeLayout _assetRuntimeLayout;
 
 
@@ -164,6 +168,7 @@ namespace PrismFanlight
         private void OnEnable()
         {
             EnsureRuntimeState();
+            ValidateBaseState();
 
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
@@ -203,6 +208,13 @@ namespace PrismFanlight
             }
 
             EnsureRuntimeState();
+
+            if (!_baseStateValid)
+            {
+                StopForSequenceFault(_baseStateFault);
+                return;
+            }
+
             _evaluationId++;
 
             if (!_timeManager.TrySampleClock(_evaluationId, out var clock, out _timeFault))
@@ -218,6 +230,12 @@ namespace PrismFanlight
             EnsureTempoScopeResolver();
             var timelineEvaluated = ConsumeTimelineEvaluationFlag();
             var tempoCandidateCount = SnapshotAndClearTempoCandidates();
+
+            if (TryConsumeReportedTimelineFault(out var timelineFault))
+            {
+                StopForSequenceFault(timelineFault);
+                return;
+            }
 
             if (!timelineEvaluated
                 && clock.Status == FanlightClockStatus.Holding
@@ -264,11 +282,12 @@ namespace PrismFanlight
             }
             catch (InvalidOperationException exception)
             {
-                _sequenceFault = exception.Message;
-                ClearScheduledContributions();
-                ReleaseScheduledTimelineResources();
-                ClearHeldTimelineState();
-                Dispose();
+                StopForSequenceFault(exception.Message);
+                return;
+            }
+            catch (ArgumentException exception)
+            {
+                StopForSequenceFault(exception.Message);
                 return;
             }
 
@@ -322,6 +341,7 @@ namespace PrismFanlight
             _audienceBody = FanlightShowStateAuthoringValidator.Validate(_audienceBody);
             _direction = FanlightShowStateAuthoringValidator.Validate(_direction);
 #endif
+            ValidateBaseState();
             _tempoScopeResolver = null;
             _tempoScopeManager = null;
             _tempoScopeRevision = int.MinValue;
@@ -364,6 +384,19 @@ namespace PrismFanlight
 
         internal void MarkScheduledTimelineEvaluation()
         {
+            _timelineEvaluatedSinceLastUpdate = true;
+        }
+
+        internal void ReportTimelineFault(string fault)
+        {
+            if (!_timelineFaultReportedSinceLastUpdate)
+            {
+                _reportedTimelineFault = string.IsNullOrEmpty(fault)
+                    ? "Timeline evaluation contains an invalid value."
+                    : fault;
+            }
+
+            _timelineFaultReportedSinceLastUpdate = true;
             _timelineEvaluatedSinceLastUpdate = true;
         }
 
@@ -545,6 +578,8 @@ namespace PrismFanlight
             _scheduledContributions?.Clear();
             _contributionBuffer?.Clear();
             _timelineEvaluatedSinceLastUpdate = false;
+            _timelineFaultReportedSinceLastUpdate = false;
+            _reportedTimelineFault = string.Empty;
         }
 
         private void ClearScheduledTempoCandidates()
@@ -574,6 +609,26 @@ namespace PrismFanlight
             _tempoCandidateSnapshot ??= Array.Empty<FanlightTempoCandidate>();
             _contributionBuffer ??= new FanlightContributionBuffer(16);
             _showEvaluator ??= new FanlightShowEvaluator();
+        }
+
+        private void ValidateBaseState()
+        {
+            try
+            {
+                _ = FanlightShowStatePatcher.Validate(BaseState);
+                _baseStateValid = true;
+                _baseStateFault = string.Empty;
+            }
+            catch (ArgumentException exception)
+            {
+                _baseStateValid = false;
+                _baseStateFault = exception.Message;
+            }
+            catch (InvalidOperationException exception)
+            {
+                _baseStateValid = false;
+                _baseStateFault = exception.Message;
+            }
         }
 
         private void EnsureTempoScopeResolver()
@@ -619,6 +674,27 @@ namespace PrismFanlight
             var value = _timelineEvaluatedSinceLastUpdate;
             _timelineEvaluatedSinceLastUpdate = false;
             return value;
+        }
+
+        private bool TryConsumeReportedTimelineFault(out string fault)
+        {
+            fault = _reportedTimelineFault;
+            var reported = _timelineFaultReportedSinceLastUpdate;
+            _timelineFaultReportedSinceLastUpdate = false;
+            _reportedTimelineFault = string.Empty;
+            return reported;
+        }
+
+        private void StopForSequenceFault(string fault)
+        {
+            _sequenceFault = string.IsNullOrEmpty(fault)
+                ? "Timeline evaluation contains an invalid value."
+                : fault;
+            ClearScheduledTempoCandidates();
+            ClearScheduledContributions();
+            ReleaseScheduledTimelineResources();
+            ClearHeldTimelineState();
+            Dispose();
         }
 
         private void ReleaseScheduledTimelineResources()

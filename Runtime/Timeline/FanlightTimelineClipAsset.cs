@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -22,7 +23,21 @@ namespace PrismFanlight.Timeline
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {
             var playable = ScriptPlayable<FanlightTimelinePlayableBehaviour>.Create(graph);
-            playable.GetBehaviour().Configure(Value);
+            var behaviour = playable.GetBehaviour();
+
+            try
+            {
+                behaviour.Configure(Value);
+            }
+            catch (ArgumentException exception)
+            {
+                behaviour.ConfigureFault(exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                behaviour.ConfigureFault(exception.Message);
+            }
+
             return playable;
         }
     }

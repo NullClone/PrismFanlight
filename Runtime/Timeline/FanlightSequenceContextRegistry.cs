@@ -14,6 +14,7 @@ namespace PrismFanlight.Timeline
         private static readonly Dictionary<PlayableDirector, int> ActiveReferences = new();
         private static readonly Dictionary<PlayableDirector, PlayableDirector> Parents = new();
         private static readonly Dictionary<PlayableDirector, FanlightSequenceContext> Contexts = new();
+        private static readonly Dictionary<PlayableDirector, PlayableGraph> PreparedGraphs = new();
 
         private static PlayableDirector[] _knownDirectors = Array.Empty<PlayableDirector>();
 
@@ -27,19 +28,34 @@ namespace PrismFanlight.Timeline
 
             ActiveReferences.Clear();
             Parents.Clear();
+            PreparedGraphs.Clear();
             _knownDirectors = Array.Empty<PlayableDirector>();
         }
 
-        internal static void Acquire(PlayableDirector director)
+        internal static void Acquire(PlayableDirector director, PlayableGraph graph)
         {
-            if (director == null)
+            if (director == null || !graph.IsValid())
             {
-                throw new InvalidOperationException("A PlayableDirector graph resolver is required for Sequence Context.");
+                throw new InvalidOperationException("A valid PlayableDirector graph is required for Sequence Context.");
             }
 
-            ActiveReferences.TryGetValue(director, out var count);
-            ActiveReferences[director] = count + 1;
+            if (ActiveReferences.TryGetValue(director, out var count))
+            {
+                ActiveReferences[director] = count + 1;
 
+                if (!PreparedGraphs.TryGetValue(director, out var preparedGraph)
+                    || !preparedGraph.Equals(graph))
+                {
+                    PreparedGraphs[director] = graph;
+                    CaptureKnownDirectors();
+                    RefreshRelationships();
+                }
+
+                return;
+            }
+
+            ActiveReferences.Add(director, 1);
+            PreparedGraphs[director] = graph;
             CaptureKnownDirectors();
             RefreshRelationships();
         }
@@ -51,12 +67,11 @@ namespace PrismFanlight.Timeline
             if (count > 1)
             {
                 ActiveReferences[director] = count - 1;
-            }
-            else
-            {
-                ActiveReferences.Remove(director);
+                return;
             }
 
+            ActiveReferences.Remove(director);
+            PreparedGraphs.Remove(director);
             RefreshRelationships();
         }
 
@@ -67,14 +82,33 @@ namespace PrismFanlight.Timeline
                 throw new InvalidOperationException("Sequence Context is not registered for this PlayableDirector evaluation.");
             }
 
-            RefreshRelationships();
-
             if (!Contexts.TryGetValue(director, out var context) || context.IsReleased)
             {
                 throw new InvalidOperationException("Sequence Context could not be resolved.");
             }
 
             return context;
+        }
+
+        internal static bool DefinesFanlightOwnership(ControlPlayableAsset control)
+        {
+            if (control == null || !control.updateDirector || control.prefabGameObject == null) return false;
+
+            var directors = control.searchHierarchy
+                ? control.prefabGameObject.GetComponentsInChildren<PlayableDirector>(true)
+                : control.prefabGameObject.GetComponents<PlayableDirector>();
+
+            for (var directorIndex = 0; directorIndex < directors.Length; directorIndex++)
+            {
+                if (directors[directorIndex].playableAsset is not TimelineAsset timeline) continue;
+
+                foreach (var track in timeline.GetOutputTracks())
+                {
+                    if (track is FanlightTimelineTrackAsset) return true;
+                }
+            }
+
+            return false;
         }
 
         private static void CaptureKnownDirectors()
@@ -188,9 +222,10 @@ namespace PrismFanlight.Timeline
                 foreach (var clip in track.GetClips())
                 {
                     if (clip.asset is not ControlPlayableAsset control || !control.updateDirector) continue;
+
                     if (control.prefabGameObject != null)
                     {
-                        if (ActiveReferences.ContainsKey(parent))
+                        if (DefinesFanlightOwnership(control))
                         {
                             throw new InvalidOperationException("Prefab-generating Control Clips cannot define Fanlight Sequence ownership.");
                         }
