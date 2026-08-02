@@ -157,7 +157,7 @@ namespace PrismFanlight
 #if UNITY_EDITOR
         private void Reset()
         {
-            var defaultMotionAsset = Resources.Load<FanlightMotionAsset>("Default Motion Drum");
+            var defaultMotionAsset = Resources.Load<FanlightMotionAsset>("Default Motion Drum Asset");
             if (defaultMotionAsset != null)
             {
                 _motion = FanlightShowStateDefaults.Motion(defaultMotionAsset);
