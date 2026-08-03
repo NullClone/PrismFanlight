@@ -98,65 +98,66 @@ namespace PrismFanlight.Editor
         private void DrawPresetGenerator()
         {
             EditorGUILayout.Space();
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            EditorGUILayout.LabelField("Preset", EditorStyles.boldLabel);
+
+            _preset = (MotionPreset)GUILayout.Toolbar((int)_preset, PresetNames);
+
+            switch (_preset)
             {
-                EditorGUILayout.LabelField("Preset Generator", EditorStyles.boldLabel);
-                _preset = (MotionPreset)GUILayout.Toolbar((int)_preset, PresetNames);
+                case MotionPreset.Wiper:
+                    _wiperSweepAngle = EditorGUILayout.Slider("Sweep Angle", _wiperSweepAngle, 20f, 75f);
+                    _wiperArmElevation = EditorGUILayout.Slider("Arm Elevation", _wiperArmElevation, 20f, 70f);
+                    _wiperArmExtension = EditorGUILayout.Slider("Arm Extension", _wiperArmExtension, 0.5f, 1f);
+                    _wiperPenlightElevation = EditorGUILayout.Slider(
+                        "Penlight Elevation",
+                        _wiperPenlightElevation,
+                        30f,
+                        90f);
+                    break;
+                case MotionPreset.Sasage:
+                    _sasageLowElevation = EditorGUILayout.Slider(
+                        "Low Arm Elevation",
+                        _sasageLowElevation,
+                        -10f,
+                        45f);
+                    _sasageHighElevation = EditorGUILayout.Slider(
+                        "High Arm Elevation",
+                        _sasageHighElevation,
+                        30f,
+                        90f);
+                    _sasageLowExtension = EditorGUILayout.Slider(
+                        "Low Arm Extension",
+                        _sasageLowExtension,
+                        0.4f,
+                        0.9f);
+                    _sasageHighExtension = EditorGUILayout.Slider(
+                        "High Arm Extension",
+                        _sasageHighExtension,
+                        0.7f,
+                        1f);
+                    _sasageHoldRatio = EditorGUILayout.Slider(
+                        "Top Hold Ratio",
+                        _sasageHoldRatio,
+                        0.1f,
+                        0.55f);
+                    EditorGUILayout.HelpBox(
+                        "Recommended: Beats Per Cycle 4 to 8, Wrist Delay Ratio 0 to 0.03.",
+                        MessageType.Info);
+                    break;
+            }
 
-                switch (_preset)
-                {
-                    case MotionPreset.Wiper:
-                        _wiperSweepAngle = EditorGUILayout.Slider("Sweep Angle", _wiperSweepAngle, 20f, 75f);
-                        _wiperArmElevation = EditorGUILayout.Slider("Arm Elevation", _wiperArmElevation, 20f, 70f);
-                        _wiperArmExtension = EditorGUILayout.Slider("Arm Extension", _wiperArmExtension, 0.5f, 1f);
-                        _wiperPenlightElevation = EditorGUILayout.Slider(
-                            "Penlight Elevation",
-                            _wiperPenlightElevation,
-                            30f,
-                            90f);
-                        EditorGUILayout.HelpBox(
-                            "Recommended: Beats Per Cycle 2, Wrist Delay Ratio 0.04 to 0.08.",
-                            MessageType.Info);
-                        break;
-                    case MotionPreset.Sasage:
-                        _sasageLowElevation = EditorGUILayout.Slider(
-                            "Low Arm Elevation",
-                            _sasageLowElevation,
-                            -10f,
-                            45f);
-                        _sasageHighElevation = EditorGUILayout.Slider(
-                            "High Arm Elevation",
-                            _sasageHighElevation,
-                            30f,
-                            90f);
-                        _sasageLowExtension = EditorGUILayout.Slider(
-                            "Low Arm Extension",
-                            _sasageLowExtension,
-                            0.4f,
-                            0.9f);
-                        _sasageHighExtension = EditorGUILayout.Slider(
-                            "High Arm Extension",
-                            _sasageHighExtension,
-                            0.7f,
-                            1f);
-                        _sasageHoldRatio = EditorGUILayout.Slider(
-                            "Top Hold Ratio",
-                            _sasageHoldRatio,
-                            0.1f,
-                            0.55f);
-                        EditorGUILayout.HelpBox(
-                            "Recommended: Beats Per Cycle 4 to 8, Wrist Delay Ratio 0 to 0.03.",
-                            MessageType.Info);
-                        break;
-                }
-
-                if (GUILayout.Button("Generate and Bake")) GeneratePreset();
+            if (GUILayout.Button("Generate"))
+            {
+                GeneratePreset();
             }
         }
 
         private void DrawReferencePose()
         {
+            EditorGUILayout.Space();
+
             _showReferencePose = EditorGUILayout.Foldout(_showReferencePose, "Reference Pose", true);
+
             if (!_showReferencePose) return;
 
             using (new EditorGUI.IndentLevelScope())
@@ -173,7 +174,9 @@ namespace PrismFanlight.Editor
         private void DrawAmplitude()
         {
             EditorGUILayout.Space();
+
             _showAmplitude = EditorGUILayout.Foldout(_showAmplitude, "Channel Amplitude", true);
+
             if (!_showAmplitude) return;
 
             using (new EditorGUI.IndentLevelScope())
@@ -190,7 +193,7 @@ namespace PrismFanlight.Editor
         private void DrawNormalizedCurves()
         {
             EditorGUILayout.Space();
-            _showCurves = EditorGUILayout.Foldout(_showCurves, "Normalized Curves (-1 to 1)", true);
+            _showCurves = EditorGUILayout.Foldout(_showCurves, "Animation Curves", true);
             if (!_showCurves) return;
 
             using (new EditorGUI.IndentLevelScope())
@@ -278,11 +281,6 @@ namespace PrismFanlight.Editor
                 serializedObject.Update();
             }
 
-            DrawBakeStatus(motionAsset);
-        }
-
-        private static void DrawBakeStatus(FanlightMotionAsset motionAsset)
-        {
             EditorGUILayout.HelpBox(
                 motionAsset.HasValidBake
                     ? "64 periodic samples are stored inside this asset."

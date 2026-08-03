@@ -16,7 +16,7 @@ namespace PrismFanlight
     {
         // Fields
 
-        public const string HelpUrl = "https://github.com/NullClone/PrismFanlight";
+        public const string HelpUrl = ""; //https://github.com/NullClone/PrismFanlight
 
 
         [SerializeField]

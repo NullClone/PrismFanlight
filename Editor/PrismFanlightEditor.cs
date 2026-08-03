@@ -278,7 +278,58 @@ namespace PrismFanlight.Editor
             _motionSection.DrawSection(() =>
             {
                 var motionAsset = _motion.FindPropertyRelative("_motionAsset");
-                EditorGUILayout.PropertyField(motionAsset);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.PropertyField(motionAsset);
+
+                    if (GUILayout.Button("New", GUILayout.Width(45)))
+                    {
+                        var path = EditorUtility.SaveFilePanelInProject(
+                            "Create Fanlight Motion Asset",
+                            "New Fanlight Motion",
+                            "asset",
+                            "Choose where to save the motion authoring asset.");
+
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            var newMotionAsset = CreateInstance<FanlightMotionAsset>();
+                            AssetDatabase.CreateAsset(newMotionAsset, path);
+                            AssetDatabase.SaveAssets();
+
+                            motionAsset.objectReferenceValue = newMotionAsset;
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
+                    {
+                        if (GUILayout.Button("Clone", GUILayout.Width(50)))
+                        {
+                            var originalMotionAsset = motionAsset.objectReferenceValue as FanlightMotionAsset;
+                            if (originalMotionAsset != null)
+                            {
+                                var originalPath = AssetDatabase.GetAssetPath(originalMotionAsset);
+                                var defaultPath = AssetDatabase.GenerateUniqueAssetPath(originalPath);
+                                var defaultName = System.IO.Path.GetFileNameWithoutExtension(defaultPath);
+
+                                var path = EditorUtility.SaveFilePanelInProject(
+                                    "Clone Fanlight Motion Asset",
+                                    defaultName,
+                                    "asset",
+                                    "Choose where to save the motion authoring asset.");
+
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    var newMotionAsset = Instantiate(originalMotionAsset);
+                                    AssetDatabase.CreateAsset(newMotionAsset, path);
+                                    AssetDatabase.SaveAssets();
+
+                                    motionAsset.objectReferenceValue = newMotionAsset;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 if (motionAsset.objectReferenceValue == null)
                 {
