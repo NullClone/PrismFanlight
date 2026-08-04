@@ -62,7 +62,7 @@ namespace PrismFanlight.Rendering
                 return;
             }
 
-            if (layout == null || !layout.HasValidTopology)
+            if (layout == null)
             {
                 FailLoad(FanlightRendererFault.InvalidLayout);
                 return;
@@ -74,14 +74,31 @@ namespace PrismFanlight.Rendering
                 return;
             }
 
-            if (!penlightAsset.TryValidate(out _)
+            var appearanceHash = penlightAsset.GetRuntimeContentHash();
+            var allocateAudience = audienceMaterial != null;
+
+            if (_isInitialized
+                && ReferenceEquals(_layout, layout)
+                && _appearance != null
+                && _appearance.ContentHash == appearanceHash
+                && _penlightAsset == penlightAsset
+                && _penlightMaterial == penlightMaterial
+                && _audienceMaterial == audienceMaterial
+                && _computeShader == computeShader
+                && _audienceAllocated == allocateAudience)
+            {
+                Fault = FanlightRendererFault.None;
+                return;
+            }
+
+            if (!layout.HasValidTopology
+                || !penlightAsset.TryValidate(out _)
                 || penlightAsset.VariantCount > 1 && !layout.HasStableSeatIds)
             {
                 FailLoad(FanlightRendererFault.InvalidLayout);
                 return;
             }
 
-            var appearanceHash = penlightAsset.GetRuntimeContentHash();
             var appearance = _appearance;
             if (appearance == null || _penlightAsset != penlightAsset || appearance.ContentHash != appearanceHash)
             {
@@ -94,7 +111,6 @@ namespace PrismFanlight.Rendering
                 return;
             }
 
-            var allocateAudience = audienceMaterial != null;
             if (_isInitialized
                 && _appearance != null
                 && _appearance.ContentHash == appearance.ContentHash
@@ -106,13 +122,13 @@ namespace PrismFanlight.Rendering
                 if (_layout.ContentHash != layout.ContentHash)
                 {
                     _buffers.UpdateStaticData(appearance, layout);
-                    _layout = layout;
                     _animationInitialized = false;
                     _colorInitialized = false;
                     _maskInitialized = false;
                     _scheduler.Reset();
                 }
 
+                _layout = layout;
                 _appearance = appearance;
                 _penlightAsset = penlightAsset;
                 _penlightMaterial = penlightMaterial;
@@ -289,7 +305,14 @@ namespace PrismFanlight.Rendering
 
         internal bool ApplyEditorLayoutPreview(FanlightRuntimeLayout layout, int changedBlockIndex)
         {
-            if (!_isInitialized || !layout.HasSameTopology(_layout)) return false;
+            if (!_isInitialized
+                || layout == null
+                || !layout.HasValidTopology
+                || !layout.HasSameTopology(_layout)
+                || layout.StableSeatIdHash != _layout.StableSeatIdHash)
+            {
+                return false;
+            }
 
             if (changedBlockIndex >= 0)
             {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using Unity.Mathematics;
 using UnityEngine;
@@ -29,7 +30,17 @@ namespace PrismFanlight.Rendering
             StableSeatIds = stableSeatIds ?? Array.Empty<ulong>();
             StableBlockIds = stableBlockIds ?? Array.Empty<string>();
             Blocks = blocks ?? Array.Empty<FanlightBakedBlockData>();
-            StableSeatIdHash = ComputeStableSeatIdHash(StableSeatIds);
+            StableSeatIdHash = ComputeStableSeatIdHash(
+                StableSeatIds,
+                Seats,
+                Blocks.Length,
+                out var hasValidSeatBlockIndices);
+            HasValidTopology = SeatCount > 0
+                               && BlockCount > 0
+                               && BlockSeatCount > 0
+                               && HasStableSeatIds
+                               && hasValidSeatBlockIndices
+                               && HasValidStableBlockIds(StableBlockIds, BlockCount);
         }
 
         internal string LayoutId { get; }
@@ -62,12 +73,7 @@ namespace PrismFanlight.Rendering
 
         internal bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
 
-        internal bool HasValidTopology => SeatCount > 0
-                                          && BlockCount > 0
-                                          && BlockSeatCount > 0
-                                          && HasStableSeatIds
-                                          && HasValidSeatBlockIndices()
-                                          && HasValidStableBlockIds();
+        internal bool HasValidTopology { get; }
 
         internal bool HasSameTopology(FanlightRuntimeLayout other)
         {
@@ -136,39 +142,43 @@ namespace PrismFanlight.Rendering
             return -1;
         }
 
-        private bool HasValidStableBlockIds()
+        private static bool HasValidStableBlockIds(string[] stableBlockIds, int blockCount)
         {
-            if (StableBlockIds.Length != BlockCount) return false;
-            for (var i = 0; i < StableBlockIds.Length; i++)
+            if (stableBlockIds.Length != blockCount) return false;
+
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < stableBlockIds.Length; i++)
             {
-                if (string.IsNullOrEmpty(StableBlockIds[i])) return false;
-                for (var j = 0; j < i; j++)
-                {
-                    if (string.Equals(StableBlockIds[i], StableBlockIds[j], StringComparison.Ordinal)) return false;
-                }
+                var stableBlockId = stableBlockIds[i];
+                if (string.IsNullOrEmpty(stableBlockId) || !used.Add(stableBlockId)) return false;
             }
 
             return true;
         }
 
-        private bool HasValidSeatBlockIndices()
+        private static ulong ComputeStableSeatIdHash(
+            ulong[] stableSeatIds,
+            FanlightSeatData[] seats,
+            int blockCount,
+            out bool hasValidSeatBlockIndices)
         {
-            for (var i = 0; i < Seats.Length; i++)
-            {
-                if (Seats[i].blockIndex < 0 || Seats[i].blockIndex >= BlockCount) return false;
-            }
-
-            return true;
-        }
-
-        private static ulong ComputeStableSeatIdHash(ulong[] stableSeatIds)
-        {
+            hasValidSeatBlockIndices = stableSeatIds != null
+                                       && seats != null
+                                       && stableSeatIds.Length == seats.Length
+                                       && blockCount > 0;
             if (stableSeatIds == null || stableSeatIds.Length == 0) return 0UL;
+
             var hash = 14695981039346656037UL;
             for (var i = 0; i < stableSeatIds.Length; i++)
             {
                 var value = stableSeatIds[i];
                 if (value == 0UL) return 0UL;
+                if (hasValidSeatBlockIndices
+                    && (seats[i].blockIndex < 0 || seats[i].blockIndex >= blockCount))
+                {
+                    hasValidSeatBlockIndices = false;
+                }
+
                 for (var byteIndex = 0; byteIndex < 8; byteIndex++)
                 {
                     hash ^= (byte)(value >> (byteIndex * 8));
