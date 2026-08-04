@@ -435,7 +435,6 @@ namespace PrismFanlight.Editor
 
             #endregion
 
-
             #region Audience Section
 
             _audienceSection.DrawSection(() =>

@@ -32,9 +32,11 @@ namespace PrismFanlight.Timeline
 
             if (target == null || Definition == null) return;
 
+            var sequencePlayable = playable.GetGraph().GetRootPlayable(0);
+
             target.SetScheduledTempoCandidate(
                 this,
-                new FanlightTempoCandidate(playable.GetTime(), Definition));
+                new FanlightTempoCandidate(sequencePlayable.GetTime(), Definition));
         }
 
         public override void OnPlayableDestroy(Playable playable)
