@@ -1,9 +1,11 @@
+using System.IO;
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PrismFanlight.Editor
 {
@@ -53,7 +55,7 @@ namespace PrismFanlight.Editor
         private static readonly PrismFanlightSection<FanlightMotionTrack> _motionSection = new("Motion");
         private static readonly PrismFanlightSection<FanlightColorTrack> _colorSection = new("Color");
         private static readonly PrismFanlightSection<FanlightIntensityTrack> _intensitySection = new("Intensity");
-        private static readonly PrismFanlightSection<FanlightTempoTrack> _timeSection = new("Time");
+        private static readonly PrismFanlightSection<FanlightTempoTrack> _tempoSection = new("Tempo");
         private static readonly PrismFanlightSection<FanlightAudienceBodyTrack> _audienceSection = new("Audience");
         private static readonly PrismFanlightSection<FanlightDirectionTrack> _directionSection = new("Direction");
         private static readonly PrismFanlightSection<FanlightVariationTrack> _variationSection = new("Variation");
@@ -126,42 +128,43 @@ namespace PrismFanlight.Editor
             var mode = _direction.FindPropertyRelative("_mode");
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
             {
-                Handles.color = FanlightLayoutScenePreview.SelectedColor;
+                const bool cross = true;
 
-                var yaw = _direction.FindPropertyRelative("_worldYawDegrees");
-                var rotation = Quaternion.Euler(0, yaw.floatValue, 0);
+                var pos = _instance.transform.position;
+                var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_worldYawDegrees").floatValue, 0);
                 var size = new Vector3(0.75f, 0.75f, 1f);
-                PrismFanlightGizmoUtility.DrawWireArrow(_instance.transform.position, rotation, size, true);
+
+                // Draw Direction Gizmo
+
+                Handles.color = FanlightLayoutScenePreview.SelectedColor;
+                Handles.matrix = Matrix4x4.TRS(pos, rotation, size);
+
+                var points = new Vector3[]
+                {
+                    new(0.0f, 0.0f, -1.0f),
+                    new(0.0f, 0.5f, -1.0f),
+                    new(0.0f, 0.5f, 0.0f),
+                    new(0.0f, 1.0f, 0.0f),
+                    new(0.0f, 0.0f, 1.0f),
+                };
+
+                var addAngle = cross ? 90.0f : 180.0f;
+                var loop = cross ? 4 : 2;
+
+                for (int j = 0; j < loop; j++)
+                {
+                    for (int i = 0; i < points.Length - 1; i++)
+                    {
+                        Handles.DrawLine(points[i], points[i + 1]);
+                    }
+
+                    rotation *= Quaternion.AngleAxis(addAngle, Vector3.forward);
+
+                    Handles.matrix = Matrix4x4.TRS(pos, rotation, size);
+                }
 
                 Handles.matrix = Matrix4x4.identity;
             }
-        }
-
-        public override void OnInspectorGUI()
-        {
-            if (!_instance) return;
-
-            serializedObject.Update();
-
-            if (!SystemInfo.supportsComputeShaders)
-            {
-                EditorGUILayout.HelpBox("Compute shaders are not supported on this platform.", MessageType.Error);
-                EditorGUILayout.Space();
-            }
-
-            DrawRenderingSection();
-            DrawGeneralSection();
-            DrawEmissionSection();
-            DrawLayoutSection();
-            DrawTimeSection();
-            DrawAdvanceSection();
-
-            EditorGUILayout.Space();
-
-            DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
-            DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
-
-            serializedObject.ApplyModifiedProperties();
         }
 
         private bool HasFrameBounds()
@@ -184,11 +187,24 @@ namespace PrismFanlight.Editor
             return FanlightGeometryBuilder.TransformBounds(_instance.transform.localToWorldMatrix, localBounds);
         }
 
-        private void DrawRenderingSection()
+
+        public override void OnInspectorGUI()
         {
+            if (!_instance) return;
+
+            serializedObject.Update();
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                EditorGUILayout.HelpBox("Compute shaders are not supported on this platform.", MessageType.Error);
+                EditorGUILayout.Space();
+            }
+
+            #region Rendering Section
+
             _renderingSection.DrawSection(() =>
             {
-                DrawRenderingLayerMask();
+                DrawRenderingLayerMask(_renderingLayerMask);
 
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
@@ -236,35 +252,11 @@ namespace PrismFanlight.Editor
                     SceneView.RepaintAll();
                 }
             });
-        }
 
-        private void DrawRenderingLayerMask()
-        {
-            EditorGUI.BeginChangeCheck();
+            #endregion
 
-#if UNITY_6000_0_OR_NEWER
-            var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)_renderingLayerMask.longValue);
-#else
-            string[] renderingLayerMaskNames = null;
+            #region Intent Section
 
-            if (GraphicsSettings.currentRenderPipeline != null)
-            {
-                renderingLayerMaskNames = GraphicsSettings.currentRenderPipeline.renderingLayerMaskNames;
-            }
-
-            if (renderingLayerMaskNames == null || renderingLayerMaskNames.Length == 0) return;
-            
-            var mask = (uint)EditorGUILayout.MaskField(new GUIContent("Rendering Layer"), (int)_renderingLayerMask.longValue, renderingLayerMaskNames);
-#endif
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                _renderingLayerMask.longValue = mask;
-            }
-        }
-
-        private void DrawGeneralSection()
-        {
             _intentSection.DrawSection(() =>
             {
                 DrawChild(_intent, "_energy");
@@ -274,6 +266,9 @@ namespace PrismFanlight.Editor
                 DrawChild(_intent, "_reach");
             }, _instance);
 
+            #endregion
+
+            #region Motion Section
 
             _motionSection.DrawSection(() =>
             {
@@ -285,48 +280,14 @@ namespace PrismFanlight.Editor
 
                     if (GUILayout.Button("New", GUILayout.Width(45)))
                     {
-                        var path = EditorUtility.SaveFilePanelInProject(
-                            "Create Fanlight Motion Asset",
-                            "New Fanlight Motion",
-                            "asset",
-                            "Choose where to save the motion authoring asset.");
-
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            var newMotionAsset = CreateInstance<FanlightMotionAsset>();
-                            AssetDatabase.CreateAsset(newMotionAsset, path);
-                            AssetDatabase.SaveAssets();
-
-                            motionAsset.objectReferenceValue = newMotionAsset;
-                        }
+                        CreateMotionAsset(motionAsset);
                     }
 
                     using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
                     {
                         if (GUILayout.Button("Clone", GUILayout.Width(50)))
                         {
-                            var originalMotionAsset = motionAsset.objectReferenceValue as FanlightMotionAsset;
-                            if (originalMotionAsset != null)
-                            {
-                                var originalPath = AssetDatabase.GetAssetPath(originalMotionAsset);
-                                var defaultPath = AssetDatabase.GenerateUniqueAssetPath(originalPath);
-                                var defaultName = System.IO.Path.GetFileNameWithoutExtension(defaultPath);
-
-                                var path = EditorUtility.SaveFilePanelInProject(
-                                    "Clone Fanlight Motion Asset",
-                                    defaultName,
-                                    "asset",
-                                    "Choose where to save the motion authoring asset.");
-
-                                if (!string.IsNullOrEmpty(path))
-                                {
-                                    var newMotionAsset = Instantiate(originalMotionAsset);
-                                    AssetDatabase.CreateAsset(newMotionAsset, path);
-                                    AssetDatabase.SaveAssets();
-
-                                    motionAsset.objectReferenceValue = newMotionAsset;
-                                }
-                            }
+                            CloneMotionAsset(motionAsset);
                         }
                     }
                 }
@@ -347,23 +308,29 @@ namespace PrismFanlight.Editor
                 DrawChild(_motion, "_blockDelayXBeats");
                 DrawChild(_motion, "_blockDelayYBeats");
             }, _instance);
-        }
 
-        private void DrawEmissionSection()
-        {
+            #endregion
+
+            #region Color Section
+
             _colorSection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawColorState(_color, _instance.LayoutAsset, true);
             }, _instance);
 
+            #endregion
+
+            #region Intensity Section
+
             _intensitySection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity);
             }, _instance);
-        }
 
-        private void DrawLayoutSection()
-        {
+            #endregion
+
+            #region Layout Section
+
             _layoutSection.DrawSection(() =>
             {
                 EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
@@ -437,43 +404,14 @@ namespace PrismFanlight.Editor
                     }
                 }
             });
-        }
 
-        private void CreateLayoutAsset()
-        {
-            var path = EditorUtility.SaveFilePanelInProject(
-                "Create Fanlight Layout Asset",
-                "FanlightLayout",
-                "asset",
-                "Choose where to save the layout authoring asset.");
+            #endregion
 
-            if (string.IsNullOrEmpty(path)) return;
+            #region Tempo Section
 
-            var asset = CreateInstance<FanlightLayoutAsset>();
-
-            AssetDatabase.CreateAsset(asset, path);
-            Undo.RegisterCreatedObjectUndo(asset, "Create Fanlight Layout Asset");
-            AssetDatabase.SaveAssets();
-
-            if (_instance != null)
-            {
-                Undo.RecordObject(_instance, "Assign Fanlight Layout Asset");
-
-                _instance.SetLayoutAssetForEditor(asset);
-
-                EditorUtility.SetDirty(_instance);
-            }
-
-            Selection.activeObject = asset;
-            FanlightLayoutIdRegistry.Invalidate();
-        }
-
-        private void DrawTimeSection()
-        {
-            _timeSection.DrawSection(() =>
+            _tempoSection.DrawSection(() =>
             {
                 EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
-                EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Global Seed"));
 
                 if (_timeManager.objectReferenceValue == null)
                 {
@@ -494,10 +432,12 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
                 }
             }, _instance);
-        }
 
-        private void DrawAdvanceSection()
-        {
+            #endregion
+
+
+            #region Audience Section
+
             _audienceSection.DrawSection(() =>
             {
                 DrawChild(_audienceBody, "_height");
@@ -510,6 +450,10 @@ namespace PrismFanlight.Editor
                 DrawChild(_audienceBody, "_bounce");
                 DrawChild(_audienceBody, "_sway");
             }, _instance);
+
+            #endregion
+
+            #region Direction Section
 
             _directionSection.DrawSection(() =>
             {
@@ -531,6 +475,10 @@ namespace PrismFanlight.Editor
                 }
             }, _instance);
 
+            #endregion
+
+            #region Variation Section
+
             _variationSection.DrawSection(() =>
             {
                 DrawChild(_variation, "_standingPositionSpread");
@@ -543,8 +491,14 @@ namespace PrismFanlight.Editor
                 DrawChild(_variation, "_handPositionSpread");
             }, _instance);
 
+            #endregion
+
+            #region Noise Section
+
             _noiseSection.DrawSection(() =>
             {
+                EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Seed"));
+
                 DrawChild(_noise, "_phaseAmount");
                 DrawChild(_noise, "_phaseRate");
                 DrawChild(_noise, "_positionAmount");
@@ -553,6 +507,10 @@ namespace PrismFanlight.Editor
                 DrawChild(_noise, "_octaves");
                 DrawChild(_noise, "_persistence");
             }, _instance);
+
+            #endregion
+
+            #region Rest Section
 
             _restSection.DrawSection(() =>
             {
@@ -563,8 +521,38 @@ namespace PrismFanlight.Editor
                 DrawChild(_rest, "_fadeSeconds");
                 DrawChild(_rest, "_phaseRandomness");
             }, _instance);
+
+            #endregion
+
+            EditorGUILayout.Space();
+
+            DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
+            DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
+
+            serializedObject.ApplyModifiedProperties();
         }
 
+        private static void DrawRenderingLayerMask(SerializedProperty property)
+        {
+            if (GraphicsSettings.currentRenderPipeline == null) return;
+
+            EditorGUI.BeginChangeCheck();
+
+#if UNITY_6000_0_OR_NEWER
+            var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)property.longValue);
+#else
+            var renderingLayerMaskNames = GraphicsSettings.currentRenderPipeline.renderingLayerMaskNames;
+
+            if (renderingLayerMaskNames == null || renderingLayerMaskNames.Length == 0) return;
+
+            var mask = (uint)EditorGUILayout.MaskField(new GUIContent("Rendering Layer"), (int)property.longValue, renderingLayerMaskNames);
+#endif
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.longValue = mask;
+            }
+        }
 
         private static void DrawMaterialEditor(SerializedProperty property, string materialName, ref UnityEditor.Editor materialEditor)
         {
@@ -619,6 +607,97 @@ namespace PrismFanlight.Editor
         private static void DrawChild(SerializedProperty parent, string propertyName)
         {
             EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
+        }
+
+
+        private void CreateMotionAsset(SerializedProperty motionAsset)
+        {
+            var path = EditorUtility.SaveFilePanelInProject(
+                "Create Fanlight Motion Asset",
+                "New Fanlight Motion",
+                "asset",
+                "Choose where to save the motion authoring asset.");
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                var newMotionAsset = CreateInstance<FanlightMotionAsset>();
+                AssetDatabase.CreateAsset(newMotionAsset, path);
+                AssetDatabase.SaveAssets();
+
+                if (_instance != null)
+                {
+                    Undo.RecordObject(_instance, "Assign Fanlight Motion Asset");
+
+                    motionAsset.objectReferenceValue = newMotionAsset;
+
+                    EditorUtility.SetDirty(_instance);
+                }
+
+                Selection.activeObject = newMotionAsset;
+            }
+        }
+
+        private void CloneMotionAsset(SerializedProperty motionAsset)
+        {
+            var originalMotionAsset = motionAsset.objectReferenceValue as FanlightMotionAsset;
+            if (originalMotionAsset != null)
+            {
+                var originalPath = AssetDatabase.GetAssetPath(originalMotionAsset);
+                var defaultPath = AssetDatabase.GenerateUniqueAssetPath(originalPath);
+                var defaultName = Path.GetFileNameWithoutExtension(defaultPath);
+
+                var path = EditorUtility.SaveFilePanelInProject(
+                    "Clone Fanlight Motion Asset",
+                    defaultName,
+                    "asset",
+                    "Choose where to save the motion authoring asset.");
+
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var newMotionAsset = Instantiate(originalMotionAsset);
+                    AssetDatabase.CreateAsset(newMotionAsset, path);
+                    AssetDatabase.SaveAssets();
+
+                    if (_instance != null)
+                    {
+                        Undo.RecordObject(_instance, "Assign Fanlight Motion Asset");
+
+                        motionAsset.objectReferenceValue = newMotionAsset;
+
+                        EditorUtility.SetDirty(_instance);
+                    }
+
+                    Selection.activeObject = newMotionAsset;
+                }
+            }
+        }
+
+        private void CreateLayoutAsset()
+        {
+            var path = EditorUtility.SaveFilePanelInProject(
+                "Create Fanlight Layout Asset",
+                "New Fanlight Layout",
+                "asset",
+                "Choose where to save the layout authoring asset.");
+
+            if (string.IsNullOrEmpty(path)) return;
+
+            var asset = CreateInstance<FanlightLayoutAsset>();
+
+            AssetDatabase.CreateAsset(asset, path);
+            AssetDatabase.SaveAssets();
+
+            if (_instance != null)
+            {
+                Undo.RecordObject(_instance, "Assign Fanlight Layout Asset");
+
+                _instance.SetLayoutAssetForEditor(asset);
+
+                EditorUtility.SetDirty(_instance);
+            }
+
+            Selection.activeObject = asset;
+            FanlightLayoutIdRegistry.Invalidate();
         }
     }
 }

@@ -1,4 +1,4 @@
-Shader "Hidden/AudienceIndirect"
+Shader "Prism Fanlight/AudienceIndirect"
 {
     Properties
     {
