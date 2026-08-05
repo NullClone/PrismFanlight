@@ -31,11 +31,9 @@ Material:
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap:
-    RenderType: Opaque
+  stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
-  - SHADOWCASTER
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -140,6 +138,8 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Gradient_MinMax: {r: -2, g: 1.5, b: 0, a: 0}
     - _Min: {r: 0, g: 1.15, b: 0, a: 0}
+    - _Remap_In: {r: -2, g: 1, b: 0, a: 0}
+    - _Remap_Out: {r: 0, g: 1, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Vector2: {r: -2, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
