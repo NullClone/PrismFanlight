@@ -48,10 +48,10 @@ namespace PrismFanlight.Core
             1.7f,
             0.5f,
             0.2f,
-            0.75f,
-            0f,
+            0.8f,
+            0.16f,
             0.1f,
-            1f,
+            0.6f,
             0f,
             0f);
 
@@ -86,8 +86,8 @@ namespace PrismFanlight.Core
                 0f,
                 0f,
                 0f,
-                1f,
                 0f,
+                1f,
                 Vector2.zero,
                 Vector2.right,
                 1f));

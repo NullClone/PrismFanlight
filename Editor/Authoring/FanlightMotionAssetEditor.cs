@@ -97,6 +97,8 @@ namespace PrismFanlight.Editor
 
         private void DrawPresetGenerator()
         {
+            // TODO: プリセットのデフォルトの値を調整する
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Preset", EditorStyles.boldLabel);
 

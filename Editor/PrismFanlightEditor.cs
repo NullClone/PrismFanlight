@@ -4,6 +4,7 @@ using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -197,6 +198,10 @@ namespace PrismFanlight.Editor
                 DrawRenderingLayerMask(_renderingLayerMask);
 
                 EditorGUILayout.Space();
+
+                DrawUpdateTiming(_updateMode, "Update Mode");
+
+                EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
 
                 var penlightAsset = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAsset;
@@ -209,7 +214,6 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.HelpBox(error, MessageType.Error);
                 }
 
-                EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
                 EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
 
@@ -220,19 +224,17 @@ namespace PrismFanlight.Editor
 
                 EditorGUILayout.Space();
 
-                DrawUpdateTiming(_updateMode, "Update Mode");
+                DrawChild(_visibility, "_penlightsEnabled");
+                DrawChild(_visibility, "_audienceBodiesEnabled");
 
-                EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
                 if (_enableCulling.boolValue)
                 {
-                    EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+                    }
                 }
-
-                EditorGUILayout.Space();
-
-                DrawChild(_visibility, "_penlightsEnabled");
-                DrawChild(_visibility, "_audienceBodiesEnabled");
 
                 EditorGUI.BeginChangeCheck();
                 _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
@@ -322,7 +324,18 @@ namespace PrismFanlight.Editor
 
             _layoutSection.DrawSection(() =>
             {
-                EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+
+                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                    {
+                        if (GUILayout.Button("New", GUILayout.Width(60)))
+                        {
+                            CreateLayoutAsset();
+                        }
+                    }
+                }
 
                 if (_layoutAsset.hasMultipleDifferentValues)
                 {
@@ -331,7 +344,6 @@ namespace PrismFanlight.Editor
                 }
 
                 var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
-
                 if (layout == null)
                 {
                     if (_layoutEditor != null)
@@ -343,14 +355,6 @@ namespace PrismFanlight.Editor
                     _instance.SetEditorLayoutBlocked(false);
 
                     EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
-
-                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-                    {
-                        if (GUILayout.Button("Create Layout Asset"))
-                        {
-                            CreateLayoutAsset();
-                        }
-                    }
                 }
                 else
                 {
@@ -358,13 +362,12 @@ namespace PrismFanlight.Editor
 
                     if (_layoutEditor != null)
                     {
-                        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                        CoreEditorUtils.DrawSplitter();
+                        EditorGUILayout.Space();
 
                         _layoutEditor.serializedObject.Update();
                         _layoutEditor.OnInspectorGUI();
                         _layoutEditor.serializedObject.ApplyModifiedProperties();
-
-                        EditorGUILayout.EndVertical();
                     }
 
                     if (!layout.IsInitialized)
@@ -668,24 +671,25 @@ namespace PrismFanlight.Editor
                 "asset",
                 "Choose where to save the layout authoring asset.");
 
-            if (string.IsNullOrEmpty(path)) return;
-
-            var asset = CreateInstance<FanlightLayoutAsset>();
-
-            AssetDatabase.CreateAsset(asset, path);
-            AssetDatabase.SaveAssets();
-
-            if (_instance != null)
+            if (!string.IsNullOrEmpty(path))
             {
-                Undo.RecordObject(_instance, "Assign Fanlight Layout Asset");
+                var newLayoutAsset = CreateInstance<FanlightLayoutAsset>();
 
-                _instance.SetLayoutAssetForEditor(asset);
+                AssetDatabase.CreateAsset(newLayoutAsset, path);
+                AssetDatabase.SaveAssets();
 
-                EditorUtility.SetDirty(_instance);
+                if (_instance != null)
+                {
+                    Undo.RecordObject(_instance, "Assign Fanlight Layout Asset");
+
+                    _instance.SetLayoutAssetForEditor(newLayoutAsset);
+
+                    EditorUtility.SetDirty(_instance);
+                }
+
+                Selection.activeObject = newLayoutAsset;
+                FanlightLayoutIdRegistry.Invalidate();
             }
-
-            Selection.activeObject = asset;
-            FanlightLayoutIdRegistry.Invalidate();
         }
     }
 }
