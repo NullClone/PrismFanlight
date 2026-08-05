@@ -8,7 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Audience
-  m_Shader: {fileID: 4800000, guid: 36c41ff508796da4d90981c61529ba1f, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: edbb3f1be70615740b3d3ed93fc46134,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -16,7 +17,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2450
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
@@ -87,15 +88,16 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddPrecomputedVelocity: 0
-    - _AlphaClip: 0
-    - _AlphaToMask: 0
+    - _AlphaClip: 1
+    - _AlphaToMask: 1
     - _Ambient: 0.429
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
+    - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _Cull: 2
+    - _Cull: 0
     - _Cutoff: 0.5
     - _DepthCutoff: 0.55
     - _DepthFake: 1
@@ -137,14 +139,19 @@ Material:
     - _XRMotionVectorsPass: 1
     - _YCutoff: 0.4
     - _YCutoffSmooth: 0.05
+    - _ZTest: 4
     - _ZWrite: 1
+    - _ZWriteControl: 0
     m_Colors:
+    - _Audiecne_Color: {r: 0, g: 0, b: 0, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _ClothColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
     - _Color: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _LightDir: {r: 0.35, g: 0.55, b: 0.75, a: 0}
     - _LightDir2D: {r: 0.5, g: 1, b: 0, a: 0}
+    - _Remap_In: {r: -2, g: 1, b: 0, a: 0}
+    - _Remap_Out: {r: 0, g: 1, b: 0, a: 0}
     - _RimColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
     - _RimPixelRange: {r: -4.2, g: 3, b: 24, a: 52}
     - _SkinColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}

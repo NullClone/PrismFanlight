@@ -1,4 +1,5 @@
-Shader "Prism Fanlight/AudienceIndirect"
+// このシェーダーは将来的に削除され、ShaderGraphに移行されます
+Shader "Prism Fanlight/Obsolete/Audience Indirect"
 {
     Properties
     {
@@ -196,6 +197,8 @@ Shader "Prism Fanlight/AudienceIndirect"
 
             half4 frag(Varyings IN) : SV_Target
             {
+                // 現在の観客の描画処理は重めです
+
                 float2 uv = IN.uv;
                 bool isHead = IN.shape.x >= 1.5;
                 bool isBody = IN.shape.x < 0.5;
