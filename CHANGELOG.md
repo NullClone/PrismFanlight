@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [1.6.0] - 2026-08-01
+## [1.6.0] - 2026-08-05
 
 ### ✨正式リリース✨
 ### ⚠️注意️ : 以前のバージョンと互換性はありません⚠️
