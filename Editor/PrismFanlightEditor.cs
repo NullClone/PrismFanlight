@@ -23,8 +23,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _renderingLayerMask;
         private SerializedProperty _enableCulling;
         private SerializedProperty _cullingCamera;
-        private SerializedProperty _visibilityUpdate;
-        private SerializedProperty _animationUpdate;
+        private SerializedProperty _updateMode;
         private SerializedProperty _layoutAsset;
         private SerializedProperty _swingTarget;
         private SerializedProperty _timeManager;
@@ -77,8 +76,7 @@ namespace PrismFanlight.Editor
             _renderingLayerMask = serializedObject.FindProperty(nameof(_renderingLayerMask));
             _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
-            _visibilityUpdate = serializedObject.FindProperty(nameof(_visibilityUpdate));
-            _animationUpdate = serializedObject.FindProperty(nameof(_animationUpdate));
+            _updateMode = serializedObject.FindProperty(nameof(_updateMode));
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
             _timeManager = serializedObject.FindProperty(nameof(_timeManager));
@@ -128,7 +126,7 @@ namespace PrismFanlight.Editor
             var mode = _direction.FindPropertyRelative("_mode");
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
             {
-                const bool cross = true;
+                const bool cross = false;
 
                 var pos = _instance.transform.position;
                 var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_worldYawDegrees").floatValue, 0);
@@ -230,8 +228,7 @@ namespace PrismFanlight.Editor
 
                 EditorGUILayout.Space();
 
-                DrawUpdateTiming(_animationUpdate, "Animation Update");
-                DrawUpdateTiming(_visibilityUpdate, "Visibility Update");
+                DrawUpdateTiming(_updateMode, "Update Mode");
 
                 EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));

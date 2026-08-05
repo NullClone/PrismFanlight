@@ -186,7 +186,6 @@ namespace PrismFanlight.Rendering
             bool cullingEnabled,
             int layer,
             uint renderingLayerMask,
-            in FanlightGpuUpdateTiming visibilityTiming,
             in FanlightGpuUpdateTiming animationTiming)
         {
             if (!_isInitialized) return;
@@ -273,13 +272,7 @@ namespace PrismFanlight.Rendering
             var visibilityTransformChanged = cullingEnabled
                                              && (!_hasVisibilityContext
                                                  || frame.LocalToWorld != _lastVisibilityLocalToWorld);
-            var forceVisibility = visibilityContextChanged || visibilityTransformChanged;
-            var visibilityUpdated = cullingEnabled
-                ? _scheduler.ShouldUpdateVisibility(
-                    visibilityTiming,
-                    (float)sample.ShowSeconds,
-                    forceVisibility)
-                : forceVisibility;
+            var visibilityUpdated = visibilityContextChanged || visibilityTransformChanged;
 
             if (visibilityUpdated)
             {

@@ -31,16 +31,13 @@ namespace PrismFanlight
         private uint _renderingLayerMask = 1u;
 
         [SerializeField]
-        private bool _enableCulling = false;
+        private bool _enableCulling;
 
         [SerializeField]
         private Camera _cullingCamera;
 
         [SerializeField]
-        private FanlightGpuUpdateTiming _visibilityUpdate = FanlightGpuUpdateTiming.FixedRate(60f);
-
-        [SerializeField]
-        private FanlightGpuUpdateTiming _animationUpdate = FanlightGpuUpdateTiming.FixedRate(60f);
+        private FanlightGpuUpdateTiming _updateMode = FanlightGpuUpdateTiming.FixedRate(60f);
 
         [SerializeField]
         private FanlightPenlightAsset _penlightAppearanceProfile;
@@ -122,9 +119,7 @@ namespace PrismFanlight
 
         internal FanlightLayoutAsset LayoutAsset => _layoutAsset;
 
-        private FanlightGpuUpdateTiming VisibilityUpdate => _visibilityUpdate.Validated();
-
-        private FanlightGpuUpdateTiming AnimationUpdate => _animationUpdate.Validated();
+        private FanlightGpuUpdateTiming AnimationUpdate => _updateMode.Validated();
 
         internal bool IsReady => _renderer is { IsReady: true };
 
@@ -512,7 +507,6 @@ namespace PrismFanlight
                 _enableCulling && _cullingCamera != null,
                 gameObject.layer,
                 _renderingLayerMask,
-                VisibilityUpdate,
                 AnimationUpdate);
         }
 
@@ -529,7 +523,7 @@ namespace PrismFanlight
         {
             _scheduledTempoCandidates?.Clear();
 
-            if (_tempoCandidateSnapshot != null && _tempoCandidateSnapshot.Length > 0)
+            if (_tempoCandidateSnapshot is { Length: > 0 })
             {
                 Array.Clear(_tempoCandidateSnapshot, 0, _tempoCandidateSnapshot.Length);
             }
