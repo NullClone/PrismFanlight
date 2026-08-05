@@ -1,9 +1,7 @@
 #pragma kernel ClearIndirectArgs
 #pragma kernel CullBlocks
 #pragma kernel BuildVisibleInstances
-#pragma kernel GenerateVisibleAnimation
 #pragma kernel GenerateAllAnimation
-#pragma kernel GenerateVisibleFrameData
 #pragma kernel GenerateAllFrameData
 #pragma kernel ResolveSeatChroma
 #pragma kernel ResolveSeatMask
@@ -158,37 +156,6 @@ void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupInd
     }
 }
 
-bool PrismTryGetVariantVisibleSeat(uint capacitySlot, out uint seatIndex)
-{
-    seatIndex = 0u;
-    for (uint variantIndex = 0u; variantIndex < (uint)_PenlightVariantCount; variantIndex++)
-    {
-        uint start = _PenlightVariantOffsets[variantIndex];
-        uint end = variantIndex + 1u < (uint)_PenlightVariantCount
-            ? _PenlightVariantOffsets[variantIndex + 1u]
-            : (uint)_InstanceCount;
-        if (capacitySlot < start || capacitySlot >= end) continue;
-
-        uint visibleCount = _PenlightArgs[variantIndex].instanceCount;
-        uint relativeSlot = capacitySlot - start;
-        if (relativeSlot >= visibleCount) return false;
-        seatIndex = _PenlightVisibleIndices[capacitySlot];
-        return true;
-    }
-
-    return false;
-}
-
-[numthreads(128, 1, 1)]
-void GenerateVisibleAnimation(uint3 dispatchId : SV_DispatchThreadID)
-{
-    uint visibleSlot = dispatchId.x;
-    uint id;
-    if (!PrismTryGetVariantVisibleSeat(visibleSlot, id)) return;
-    FanlightSeatData seat = _Seats[id];
-    _FanlightMatrices[id] = PrismComputeMatrix(seat, PrismPenlightGripPivotY(id));
-}
-
 [numthreads(128, 1, 1)]
 void GenerateAllAnimation(uint3 dispatchId : SV_DispatchThreadID)
 {
@@ -197,27 +164,6 @@ void GenerateAllAnimation(uint3 dispatchId : SV_DispatchThreadID)
 
     FanlightSeatData seat = _Seats[id];
     _FanlightMatrices[id] = PrismComputeMatrix(seat, PrismPenlightGripPivotY(id));
-}
-
-[numthreads(128, 1, 1)]
-void GenerateVisibleFrameData(uint3 dispatchId : SV_DispatchThreadID)
-{
-    uint visibleSlot = dispatchId.x;
-
-    uint id;
-    if (PrismTryGetVariantVisibleSeat(visibleSlot, id))
-    {
-        FanlightSeatData seat = _Seats[id];
-        PrismHumanPose pose;
-        PrismArm arm;
-        PrismComputeFrameData(seat, PrismPenlightGripPivotY(id), pose, arm);
-        _FanlightMatrices[id] = arm.worldMatrix;
-
-        if (_AudienceSlots[id] != 0xFFFFFFFFu)
-        {
-            PrismBuildAudienceParts(id, pose, arm);
-        }
-    }
 }
 
 [numthreads(128, 1, 1)]

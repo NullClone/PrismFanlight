@@ -31,11 +31,15 @@ namespace PrismFanlight.Rendering
         private bool _maskInitialized;
         private bool _hasGlobalSeed;
         private bool _hasMaskBeat;
-        private bool _hasCameraContext;
+        private bool _hasVisibilityContext;
+        private bool _lastCullingEnabled;
         private uint _globalSeed;
         private double _lastMaskBeat;
-        private FanlightCameraContext _lastCameraContext;
+        private Camera _lastCullingCamera;
+        private Matrix4x4 _lastCullingViewMatrix;
+        private Matrix4x4 _lastCullingProjectionMatrix;
         private Matrix4x4 _lastAnimationLocalToWorld;
+        private Matrix4x4 _lastVisibilityLocalToWorld;
         private FanlightColorState _lastColorState;
         private FanlightIntensityState _lastIntensityState;
 
@@ -125,6 +129,7 @@ namespace PrismFanlight.Rendering
                     _animationInitialized = false;
                     _colorInitialized = false;
                     _maskInitialized = false;
+                    _hasVisibilityContext = false;
                     _scheduler.Reset();
                 }
 
@@ -177,7 +182,10 @@ namespace PrismFanlight.Rendering
         internal void Render(
             in FanlightShowSample sample,
             in FanlightFrameContext frame,
-            in FanlightCameraContext camera,
+            Camera cullingCamera,
+            bool cullingEnabled,
+            int layer,
+            uint renderingLayerMask,
             in FanlightGpuUpdateTiming visibilityTiming,
             in FanlightGpuUpdateTiming animationTiming)
         {
@@ -215,7 +223,7 @@ namespace PrismFanlight.Rendering
             }
 
             var worldBounds = FanlightGeometryBuilder.TransformBounds(frame.LocalToWorld, _buffers.LocalBounds);
-            var context = new FanlightGpuDispatchContext(_layout, sample, frame, camera, worldBounds);
+            var context = new FanlightGpuDispatchContext(_layout, sample, frame);
 
             try
             {
@@ -253,22 +261,41 @@ namespace PrismFanlight.Rendering
                 return;
             }
 
-            var discontinuity = sample.Discontinuity != FanlightTimeDiscontinuity.None;
-            if (discontinuity)
+            if (sample.Discontinuity != FanlightTimeDiscontinuity.None)
             {
                 _scheduler.Reset();
                 _animationInitialized = false;
             }
 
             var refreshAllAnimation = !_animationInitialized || frame.LocalToWorld != _lastAnimationLocalToWorld;
-            var cameraChanged = !_hasCameraContext || HasCameraChanged(camera, _lastCameraContext);
-            var visibilityUpdated = refreshAllAnimation
-                                    || cameraChanged
-                                    || _scheduler.ShouldUpdateVisibility(visibilityTiming, (float)sample.ShowSeconds);
+            var visibilityContextChanged = !_hasVisibilityContext
+                                           || HasVisibilityContextChanged(cullingCamera, cullingEnabled);
+            var visibilityTransformChanged = cullingEnabled
+                                             && (!_hasVisibilityContext
+                                                 || frame.LocalToWorld != _lastVisibilityLocalToWorld);
+            var forceVisibility = visibilityContextChanged || visibilityTransformChanged;
+            var visibilityUpdated = cullingEnabled
+                ? _scheduler.ShouldUpdateVisibility(
+                    visibilityTiming,
+                    (float)sample.ShowSeconds,
+                    forceVisibility)
+                : forceVisibility;
 
             if (visibilityUpdated)
             {
-                _dispatcher.DispatchVisibility(_computeShader, _kernels, _buffers, context);
+                _dispatcher.DispatchVisibility(
+                    _computeShader,
+                    _kernels,
+                    _buffers,
+                    context,
+                    cullingCamera,
+                    cullingEnabled);
+                _lastCullingEnabled = cullingEnabled;
+                _lastCullingCamera = cullingCamera;
+                _lastCullingViewMatrix = cullingEnabled ? cullingCamera.worldToCameraMatrix : default;
+                _lastCullingProjectionMatrix = cullingEnabled ? cullingCamera.projectionMatrix : default;
+                _lastVisibilityLocalToWorld = frame.LocalToWorld;
+                _hasVisibilityContext = true;
             }
 
             if (_scheduler.ShouldUpdateAnimation(
@@ -277,13 +304,10 @@ namespace PrismFanlight.Rendering
                     refreshAllAnimation))
             {
                 _buffers.UpdateMotionData(sample.State.Motion);
-                _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context, !refreshAllAnimation);
+                _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context);
                 _animationInitialized = true;
                 _lastAnimationLocalToWorld = frame.LocalToWorld;
             }
-
-            _lastCameraContext = camera;
-            _hasCameraContext = true;
 
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
             SetEmissionProperties(_properties, sample.State.Intensity);
@@ -292,14 +316,14 @@ namespace PrismFanlight.Rendering
 
             if (sample.State.Visibility.PenlightsEnabled)
             {
-                DrawPenlights(camera, worldBounds);
+                DrawPenlights(layer, renderingLayerMask, worldBounds);
             }
 
             if (sample.State.Visibility.AudienceBodiesEnabled && _audienceMaterial != null)
             {
                 var audienceBounds = worldBounds;
                 audienceBounds.Expand(2f);
-                DrawAudience(camera, audienceBounds, sample.State.Intensity);
+                DrawAudience(layer, renderingLayerMask, audienceBounds, sample.State.Intensity);
             }
         }
 
@@ -327,6 +351,7 @@ namespace PrismFanlight.Rendering
             _animationInitialized = false;
             _colorInitialized = false;
             _maskInitialized = false;
+            _hasVisibilityContext = false;
             _scheduler.Reset();
             return true;
         }
@@ -355,27 +380,26 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        private static bool HasCameraChanged(
-            in FanlightCameraContext current,
-            in FanlightCameraContext previous)
+        private bool HasVisibilityContextChanged(Camera cullingCamera, bool cullingEnabled)
         {
-            return !string.Equals(current.CameraId, previous.CameraId, StringComparison.Ordinal)
-                   || current.Camera != previous.Camera
-                   || current.ViewMatrix != previous.ViewMatrix
-                   || current.ProjectionMatrix != previous.ProjectionMatrix
-                   || current.WorldPosition != previous.WorldPosition
-                   || current.CullingEnabled != previous.CullingEnabled;
+            if (cullingEnabled != _lastCullingEnabled) return true;
+            if (!cullingEnabled) return false;
+
+            return cullingCamera != _lastCullingCamera
+                   || cullingCamera.worldToCameraMatrix != _lastCullingViewMatrix
+                   || cullingCamera.projectionMatrix != _lastCullingProjectionMatrix;
         }
 
-        private void DrawPenlights(in FanlightCameraContext camera, Bounds worldBounds)
+        private void DrawPenlights(int layer, uint renderingLayerMask, Bounds worldBounds)
         {
             for (var variantIndex = 0; variantIndex < _appearance.VariantCount; variantIndex++)
             {
                 _properties.SetInt(FanlightShaderIds.VisibleIndexBase, (int)_buffers.PenlightVariantOffsets[variantIndex]);
                 var renderParams = new RenderParams(_penlightMaterial)
                 {
-                    camera = camera.Camera,
-                    renderingLayerMask = camera.RenderingLayerMask,
+                    camera = null, // すべてのカメラに対して描画
+                    layer = layer,
+                    renderingLayerMask = renderingLayerMask,
                     receiveShadows = false,
                     worldBounds = worldBounds,
                     matProps = _properties
@@ -391,7 +415,8 @@ namespace PrismFanlight.Rendering
         }
 
         private void DrawAudience(
-            in FanlightCameraContext camera,
+            int layer,
+            uint renderingLayerMask,
             Bounds worldBounds,
             FanlightIntensityState intensity)
         {
@@ -403,8 +428,9 @@ namespace PrismFanlight.Rendering
 
             var renderParams = new RenderParams(_audienceMaterial)
             {
-                camera = camera.Camera,
-                renderingLayerMask = camera.RenderingLayerMask,
+                camera = null, // すべてのカメラに対して描画
+                layer = layer,
+                renderingLayerMask = renderingLayerMask,
                 receiveShadows = false,
                 worldBounds = worldBounds,
                 matProps = _audienceProperties
@@ -456,11 +482,15 @@ namespace PrismFanlight.Rendering
             _maskInitialized = false;
             _hasGlobalSeed = false;
             _hasMaskBeat = false;
-            _hasCameraContext = false;
+            _hasVisibilityContext = false;
+            _lastCullingEnabled = false;
             _globalSeed = 0u;
             _lastMaskBeat = 0d;
-            _lastCameraContext = default;
+            _lastCullingCamera = null;
+            _lastCullingViewMatrix = Matrix4x4.identity;
+            _lastCullingProjectionMatrix = Matrix4x4.identity;
             _lastAnimationLocalToWorld = Matrix4x4.identity;
+            _lastVisibilityLocalToWorld = Matrix4x4.identity;
             _lastColorState = default;
             _lastIntensityState = default;
             _scheduler.Reset();

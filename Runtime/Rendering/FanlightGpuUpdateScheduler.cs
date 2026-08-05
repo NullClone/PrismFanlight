@@ -14,8 +14,14 @@ namespace PrismFanlight.Rendering
             _animation.Reset();
         }
 
-        internal bool ShouldUpdateVisibility(FanlightGpuUpdateTiming timing, float clock)
+        internal bool ShouldUpdateVisibility(FanlightGpuUpdateTiming timing, float clock, bool force)
         {
+            if (force)
+            {
+                _visibility.MarkUpdated(clock);
+                return true;
+            }
+
             return ShouldUpdate(ref _visibility, timing.Validated(), clock);
         }
 
