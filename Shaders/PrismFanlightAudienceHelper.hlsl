@@ -1,8 +1,6 @@
 #ifndef PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
 #define PRISM_FANLIGHT_AUDIENCE_HELPER_INCLUDED
 
-#include "PrismFanlightColor.hlsl"
-
 struct PrismFanlightAudiencePart
 {
     float4 p0HalfWidth;
@@ -54,60 +52,52 @@ void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positio
 
 void GetAudienceBodyCoverage_float(float2 uv, float capT, out float coverage)
 {
-    float across = abs(uv.x * 2.0 - 1.0);
-    float dEnd = min(uv.y, 1.0 - uv.y);
-    float t = max(1e-3, capT);
+    float t = saturate(capT);
+    float distance;
 
-    coverage = 1.0;
-    if (dEnd < t)
+    if (t >= 0.5)
     {
-        float yy = (t - dEnd) / t;
-        coverage = (across * across + yy * yy) <= 1.0 ? 1.0 : 0.0;
+        float2 sdfPoint = (uv - 0.5) * 2.0;
+        distance = length(sdfPoint) - 1.0;
     }
+    else
+    {
+        float inverseT = rcp(max(t, 1e-3));
+        float2 sdfPoint = float2((uv.x - 0.5) * 2.0, uv.y * inverseT);
+        float centerY = clamp(sdfPoint.y, 1.0, inverseT - 1.0);
+        distance = length(float2(sdfPoint.x, sdfPoint.y - centerY)) - 1.0;
+    }
+
+    float antialias = max(fwidth(distance), 1e-4);
+    coverage = saturate(0.5 - distance / antialias);
 }
 
 void GetAudienceBodyRim_float(
     float2 uv,
     float partType,
-    float depthFake,
-    float2 lightDir2D,
+    float2 rimDirection,
     float rimThickness,
     float rimSmoothness,
-    float yCutoff,
-    float yCutoffSmooth,
+    float bodyYCutoff,
+    float bodyYCutoffSmoothness,
     out float rim)
 {
-    float nx = uv.x * 2.0 - 1.0;
-    float z = sqrt(max(0.0, 1.0 - nx * nx));
-    float3 fakeNormal = normalize(float3(nx, 0.0, z * depthFake));
-
-    float2 l2 = normalize(lightDir2D);
-    float3 lightDir = normalize(float3(l2.x, l2.y, 0.5));
-    float ndl = saturate(dot(fakeNormal, lightDir));
-
-    float edgeMask = 1.0 - smoothstep(rimThickness - rimSmoothness, rimThickness + rimSmoothness, z);
-    float yMask = (partType < 0.5) ? smoothstep(yCutoff, yCutoff + yCutoffSmooth, uv.y) : 1.0;
-    rim = ndl * edgeMask * yMask;
-}
-
-void GetAudienceBodyShade_float(float2 uv, float depthFake, float2 lightDir2D, float ambient, out float shade)
-{
-    float nx = uv.x * 2.0 - 1.0;
-    float z = sqrt(max(0.0, 1.0 - nx * nx));
-    float3 fakeNormal = normalize(float3(nx, 0.0, z * depthFake));
-
-    float2 l2 = normalize(lightDir2D);
-    float3 lightDir = normalize(float3(l2.x, l2.y, 0.5));
-    float ndl = saturate(dot(fakeNormal, lightDir));
-
-    shade = lerp(saturate(ambient), 1.0, ndl);
-}
-
-void GetAudienceBodyColor_float(float instanceId, out float4 color)
-{
-    uint global = (uint)max(0.0, instanceId);
-    uint seat = _VisibleIndices[global / 3u];
-    color = PrismFanlightSeatColor(seat);
+    float x = uv.x * 2.0 - 1.0;
+    float z = sqrt(saturate(1.0 - x * x));
+    float directionLengthSquared = dot(rimDirection, rimDirection);
+    float2 normalizedDirection = directionLengthSquared > 1e-6
+        ? rimDirection * rsqrt(directionLengthSquared)
+        : float2(0.0, 1.0);
+    float smoothness = max(rimSmoothness, 1e-4);
+    float edgeMask = 1.0 - smoothstep(
+        saturate(rimThickness) - smoothness,
+        saturate(rimThickness) + smoothness,
+        z);
+    float directionMask = saturate(dot(float2(x, z), normalizedDirection));
+    float bodyMask = partType < 0.5
+        ? smoothstep(bodyYCutoff, bodyYCutoff + bodyYCutoffSmoothness, uv.y)
+        : 1.0;
+    rim = edgeMask * directionMask * bodyMask;
 }
 
 #endif
