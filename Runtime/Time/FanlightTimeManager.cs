@@ -1,35 +1,23 @@
 using System;
-using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 
 namespace PrismFanlight.Time
 {
     [ExecuteAlways]
-    [HelpURL("https://github.com/NullClone/PrismFanlight")]
+    [HelpURL(PrismFanlight.HelpUrl)]
     [AddComponentMenu("Prism Fanlight/Fanlight Time Manager")]
     public sealed class FanlightTimeManager : MonoBehaviour
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, Label("Negative Time")]
         private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
 
-        [SerializeField]
-        private ShowTimePrimaryMode _primaryMode = ShowTimePrimaryMode.UnityTime;
+        [SerializeReference]
+        private IShowTimeProvider _provider = new UnityTimeProvider();
 
-        [SerializeField]
-        private MonoBehaviour _primaryProvider;
-
-        [SerializeField]
-        private double _manualSeconds;
-
-        [SerializeField]
-        private double _manualRate;
-
-        [SerializeField]
-        private FanlightTempoMap _tempoMap;
-
+        [Space]
         [SerializeField, Min(1e-6f)]
         private double _defaultBpm = 120d;
 
@@ -37,18 +25,15 @@ namespace PrismFanlight.Time
         private int _defaultBeatsPerBar = 4;
 
         [SerializeField]
-        private int _defaultBeatUnit = 4;
+        private FanlightBeatUnit _defaultBeatUnit = FanlightBeatUnit.u4;
 
         [SerializeField]
-        private double _defaultOffsetSeconds;
+        private double _defaultMusicalOriginSeconds;
 
 
-        private readonly UnityUnscaledTimeSource _unityTime = new();
         private ShowTimeCoordinator _coordinator;
-        private UnityTimeProvider _unityProvider;
-        private ManualTimeProvider _manualProvider;
         private FanlightShowTimeFault _lastFault;
-        private string _lastFailureCode = string.Empty;
+        private int _defaultTempoRevision;
 
 
         // Properties
@@ -58,6 +43,17 @@ namespace PrismFanlight.Time
         internal bool IsFallbackActive => _coordinator?.IsFallbackActive ?? false;
 
         internal bool IsPrimaryAvailable => _coordinator?.IsPrimaryAvailable ?? false;
+
+        internal double DefaultBpm => _defaultBpm;
+
+        internal int DefaultBeatsPerBar => _defaultBeatsPerBar;
+
+        internal int DefaultBeatUnit => (int)_defaultBeatUnit;
+
+        internal double DefaultMusicalOriginSeconds => _defaultMusicalOriginSeconds;
+
+        internal int DefaultTempoRevision => _defaultTempoRevision;
+
 
         // Methods
 
@@ -69,27 +65,31 @@ namespace PrismFanlight.Time
         {
             _defaultBpm = Math.Max(1e-6d, _defaultBpm);
             _defaultBeatsPerBar = Math.Max(1, _defaultBeatsPerBar);
-            if (_defaultBeatUnit is not (1 or 2 or 4 or 8 or 16)) _defaultBeatUnit = 4;
+
+            if (_defaultBeatUnit is not (FanlightBeatUnit.u1 or FanlightBeatUnit.u2 or FanlightBeatUnit.u4 or FanlightBeatUnit.u8 or FanlightBeatUnit.u16))
+            {
+                _defaultBeatUnit = FanlightBeatUnit.u4;
+            }
+
+            _defaultTempoRevision = _defaultTempoRevision == int.MaxValue ? 1 : _defaultTempoRevision + 1;
             _coordinator = null;
         }
 
 
-        internal bool TrySample(long evaluationId, out FanlightShowTimeSample sample, out FanlightShowTimeFault fault)
+        internal bool TrySampleClock(long evaluationId, out FanlightClockSample sample, out FanlightShowTimeFault fault)
         {
             EnsureCoordinator();
 
             if (_coordinator == null)
             {
                 sample = default;
-                fault = _lastFault == FanlightShowTimeFault.None
-                    ? FanlightShowTimeFault.CoordinatorUnavailable
-                    : _lastFault;
+                fault = _lastFault == FanlightShowTimeFault.None ? FanlightShowTimeFault.CoordinatorUnavailable : _lastFault;
                 _lastFault = fault;
 
                 return false;
             }
 
-            var success = _coordinator.TrySample(evaluationId, out sample, out fault);
+            var success = _coordinator.TrySampleClock(evaluationId, out sample, out fault);
             _lastFault = fault;
             return success;
         }
@@ -101,20 +101,10 @@ namespace PrismFanlight.Time
             if (_coordinator == null)
             {
                 failureCode = "CoordinatorUnavailable";
-                _lastFailureCode = failureCode;
                 return false;
             }
 
-            var result = _coordinator.TryRequestPrimaryReacquire(out failureCode);
-            _lastFailureCode = failureCode;
-            return result;
-        }
-
-        internal void SetManualTime(double seconds, double rate = 0d)
-        {
-            _manualSeconds = seconds;
-            _manualRate = rate;
-            _manualProvider?.Set(seconds, rate);
+            return _coordinator.TryRequestPrimaryReacquire(out failureCode);
         }
 
 
@@ -122,59 +112,15 @@ namespace PrismFanlight.Time
         {
             if (_coordinator != null) return;
 
-            var provider = ResolveProvider();
-
-            if (provider == null)
+            if (_provider == null)
             {
                 _lastFault = FanlightShowTimeFault.CoordinatorUnavailable;
-                _lastFailureCode = "PrimaryProviderMissing";
                 _coordinator = null;
                 return;
             }
 
-            IShowTempoMapResolver tempo;
-
-            try
-            {
-                tempo = _tempoMap != null
-                    ? new FanlightTempoMapResolver(_tempoMap)
-                    : new ConstantTempoMapResolver(
-                        _defaultBpm,
-                        _defaultBeatsPerBar,
-                        _defaultBeatUnit,
-                        _defaultOffsetSeconds);
-            }
-            catch (Exception exception)
-            {
-                _lastFault = FanlightShowTimeFault.TempoMapUnavailable;
-                _lastFailureCode = exception.Message;
-                _coordinator = null;
-                return;
-            }
-
-            _coordinator = new ShowTimeCoordinator(
-                NegativeTimePolicy,
-                provider,
-                tempo,
-                _unityTime);
-
+            _coordinator = new ShowTimeCoordinator(NegativeTimePolicy, _provider);
             _lastFault = FanlightShowTimeFault.None;
-            _lastFailureCode = string.Empty;
-        }
-
-        private IShowTimeProvider ResolveProvider()
-        {
-            switch (_primaryMode)
-            {
-                case ShowTimePrimaryMode.Manual:
-                    _manualProvider ??= new ManualTimeProvider();
-                    _manualProvider.Set(_manualSeconds, _manualRate);
-                    return _manualProvider;
-                case ShowTimePrimaryMode.Provider:
-                    return _primaryProvider as IShowTimeProvider;
-                default:
-                    return _unityProvider ??= new UnityTimeProvider(_unityTime);
-            }
         }
     }
 }

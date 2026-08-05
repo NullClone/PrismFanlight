@@ -4,19 +4,12 @@ namespace PrismFanlight.Rendering
 {
     internal sealed class FanlightGpuUpdateScheduler
     {
-        private UpdateLane _visibility;
         private UpdateLane _animation;
 
 
         internal void Reset()
         {
-            _visibility.Reset();
             _animation.Reset();
-        }
-
-        internal bool ShouldUpdateVisibility(FanlightGpuUpdateTiming timing, float clock)
-        {
-            return ShouldUpdate(ref _visibility, timing.Validated(), clock);
         }
 
         internal bool ShouldUpdateAnimation(FanlightGpuUpdateTiming timing, float clock, bool force)

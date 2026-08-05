@@ -5,6 +5,43 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [1.6.0] - 2026-08-01
+
+### ✨正式リリース✨
+### ⚠️注意️ : 以前のバージョンと互換性はありません⚠️
+
+### Added
+- 色のモードを追加しました
+  - Color Palette
+  - Linear Gradient
+  - Block Palette
+- 強度のモードを追加しました
+  - Pulse
+  - Traveling Wave
+- モーションのプリセットを追加しました
+  - Drum
+  - Wiper
+  - Sasage
+- テンポをタイムラインから制御できるようにしました
+- レイアウトの設定をオーバーレイから操作できるようにしました
+
+### Changed
+- インスペクターの操作性を大幅に改善しました
+- 時間をプロバイダーで制御するように統一しました
+- すべてのパラメーターを整理し、見た目をクリップと統一しました
+- シーンビュー上で選択しているブロックに対する動作を改善しました
+- カメラの処理を見直し、パフォーマンスが大幅に向上しました
+- 観客シェーダーをシェーダーグラフに移行
+
+### Fixed
+- 未使用の変数の警告が出ていたため修正
+
+### Removed
+- プロバイダーをコンポーネントで管理しないようにしました
+- TimelineでのVisibility機能を削除
+- VisibilityUpdateを廃止
+- 観客の従来のシェーダーを非推奨
+
 ## [1.5.0] - 2026-07-22
 
 ### Added
@@ -51,6 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - チカチカする問題を修正
 
+
 ## [1.2.0] - 2026-07-12
 
 ### <b>Timelineを完全にサポートしました！！</b>
@@ -67,6 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - 通常プレビューを廃止
 
+
 ## [1.1.0] - 2026-07-11
 
 ### Added
@@ -80,6 +119,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 - 不要なパラメーターを削除
+
 
 ## [1.0.0] - 2026-06-03
 

@@ -1,25 +1,18 @@
+using System;
 using PrismFanlight.Core;
 
 namespace PrismFanlight.Time
 {
-    internal sealed class UnityTimeProvider : IShowTimeProvider
+    [Serializable]
+    public sealed class UnityTimeProvider : IShowTimeProvider
     {
-        // Fields
-
-        private readonly UnityUnscaledTimeSource _time;
-
-
-        // Methods
-
-        internal UnityTimeProvider(UnityUnscaledTimeSource time)
+        ShowTimeProviderSample IShowTimeProvider.Sample()
         {
-            _time = time;
+            return new ShowTimeProviderSample(
+                UnityEngine.Time.unscaledTimeAsDouble,
+                1d,
+                FanlightClockStatus.Ready,
+                FanlightTimeDiscontinuity.None);
         }
-
-        public ShowTimeProviderSample Sample() => new(
-            _time.Seconds,
-            1d,
-            FanlightClockStatus.Ready,
-            FanlightTimeDiscontinuity.None);
     }
 }

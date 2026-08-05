@@ -25,6 +25,16 @@ namespace PrismFanlight.Core
             return value;
         }
 
+        internal static float RequireMinimumExclusive(float value, float minimum, string name)
+        {
+            if (!IsFinite(value) || value <= minimum)
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
+
+            return value;
+        }
+
         internal static float RequireFinite(float value, string name)
         {
             if (!IsFinite(value))
@@ -55,6 +65,16 @@ namespace PrismFanlight.Core
             return value;
         }
 
+        internal static Vector2 RequireFinite(Vector2 value, string name)
+        {
+            if (!IsFinite(value))
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
+
+            return value;
+        }
+
         internal static Vector3 RequireDirection(Vector3 value, string name)
         {
             RequireFinite(value, name);
@@ -65,6 +85,20 @@ namespace PrismFanlight.Core
             }
 
             var scale = Mathf.Max(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
+            var scaled = value / scale;
+            return scaled / scaled.magnitude;
+        }
+
+        internal static Vector2 RequireDirection(Vector2 value, string name)
+        {
+            RequireFinite(value, name);
+
+            if (value.sqrMagnitude <= 0.000001f)
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
+
+            var scale = Mathf.Max(Mathf.Abs(value.x), Mathf.Abs(value.y));
             var scaled = value / scale;
             return scaled / scaled.magnitude;
         }
@@ -80,5 +114,7 @@ namespace PrismFanlight.Core
         internal static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 
         internal static bool IsFinite(Vector3 value) => IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+        internal static bool IsFinite(Vector2 value) => IsFinite(value.x) && IsFinite(value.y);
     }
 }

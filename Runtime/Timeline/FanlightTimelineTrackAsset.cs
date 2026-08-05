@@ -48,12 +48,21 @@ namespace PrismFanlight.Timeline
             }
 
             var mixer = ScriptPlayable<FanlightTimelineMixerBehaviour>.Create(graph, inputCount);
+            var director = graph.GetResolver() as PlayableDirector;
+
+            if (director == null)
+            {
+                throw new InvalidOperationException("Timeline Track requires a PlayableDirector graph resolver.");
+            }
+
             mixer.GetBehaviour().Configure(
                 PatchKind,
                 FieldMask,
                 _trackPriority,
                 GetTrackOrder(),
-                clipStartSeconds);
+                clipStartSeconds,
+                director,
+                this);
 
             return mixer;
         }

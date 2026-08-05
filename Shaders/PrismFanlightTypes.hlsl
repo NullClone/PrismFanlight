@@ -5,6 +5,9 @@ struct FanlightSeatData
 {
     float4 localPositionSeed;
     float4 planePositionBlock;
+    int blockIndex;
+    uint placementFlags;
+    float2 padding;
 };
 
 struct FanlightBlockData
@@ -57,8 +60,6 @@ struct PrismCrowdRhythm
 {
     float cyclePhase;
     float bodyPhase;
-    float shoulderPhase;
-    float downbeatPulse;
 };
 
 struct PrismAudienceBasis

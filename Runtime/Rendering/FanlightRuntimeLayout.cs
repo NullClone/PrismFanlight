@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using Unity.Mathematics;
 using UnityEngine;
@@ -16,6 +17,7 @@ namespace PrismFanlight.Rendering
             Bounds localBounds,
             FanlightSeatData[] seats,
             ulong[] stableSeatIds,
+            string[] stableBlockIds,
             FanlightBakedBlockData[] blocks)
         {
             LayoutId = layoutId ?? string.Empty;
@@ -26,8 +28,19 @@ namespace PrismFanlight.Rendering
             LocalBounds = localBounds;
             Seats = seats ?? Array.Empty<FanlightSeatData>();
             StableSeatIds = stableSeatIds ?? Array.Empty<ulong>();
+            StableBlockIds = stableBlockIds ?? Array.Empty<string>();
             Blocks = blocks ?? Array.Empty<FanlightBakedBlockData>();
-            StableSeatIdHash = ComputeStableSeatIdHash(StableSeatIds);
+            StableSeatIdHash = ComputeStableSeatIdHash(
+                StableSeatIds,
+                Seats,
+                Blocks.Length,
+                out var hasValidSeatBlockIndices);
+            HasValidTopology = SeatCount > 0
+                               && BlockCount > 0
+                               && BlockSeatCount > 0
+                               && HasStableSeatIds
+                               && hasValidSeatBlockIndices
+                               && HasValidStableBlockIds(StableBlockIds, BlockCount);
         }
 
         internal string LayoutId { get; }
@@ -48,6 +61,8 @@ namespace PrismFanlight.Rendering
 
         internal ulong StableSeatIdHash { get; }
 
+        internal string[] StableBlockIds { get; }
+
         internal FanlightBakedBlockData[] Blocks { get; }
 
         internal int SeatCount => Seats.Length;
@@ -58,7 +73,7 @@ namespace PrismFanlight.Rendering
 
         internal bool HasStableSeatIds => StableSeatIds.Length == SeatCount && StableSeatIdHash != 0UL;
 
-        internal bool HasValidTopology => SeatCount > 0 && BlockCount > 0 && BlockSeatCount > 0 && HasStableSeatIds;
+        internal bool HasValidTopology { get; }
 
         internal bool HasSameTopology(FanlightRuntimeLayout other)
         {
@@ -76,18 +91,26 @@ namespace PrismFanlight.Rendering
             var artifact = layout.ActiveBake;
             var seats = new FanlightSeatData[artifact.SeatCount];
             var stableSeatIds = new ulong[artifact.SeatCount];
+            var stableBlockIds = new string[artifact.BlockCount];
             var blocks = new FanlightBakedBlockData[artifact.BlockCount];
 
             for (var i = 0; i < seats.Length; i++)
             {
                 var source = artifact.GetSeat(i);
-                seats[i] = new FanlightSeatData(source.localPosition, source.planePosition, source.blockCoordinates, (uint)i);
+                seats[i] = new FanlightSeatData(
+                    source.localPosition,
+                    source.planePosition,
+                    source.blockCoordinates,
+                    source.blockIndex,
+                    source.placementFlags,
+                    (uint)i);
                 stableSeatIds[i] = source.stableSeatId;
             }
 
             for (var i = 0; i < blocks.Length; i++)
             {
                 var source = artifact.GetBlock(i);
+                stableBlockIds[i] = source.blockId;
                 blocks[i] = new FanlightBakedBlockData(
                     source.localBounds.center,
                     source.localBounds.extents.magnitude,
@@ -104,17 +127,58 @@ namespace PrismFanlight.Rendering
                 artifact.LocalBounds,
                 seats,
                 stableSeatIds,
+                stableBlockIds,
                 blocks);
         }
 
-        private static ulong ComputeStableSeatIdHash(ulong[] stableSeatIds)
+        internal int GetBlockIndex(string stableBlockId)
         {
+            if (string.IsNullOrEmpty(stableBlockId)) return -1;
+            for (var i = 0; i < StableBlockIds.Length; i++)
+            {
+                if (string.Equals(StableBlockIds[i], stableBlockId, StringComparison.Ordinal)) return i;
+            }
+
+            return -1;
+        }
+
+        private static bool HasValidStableBlockIds(string[] stableBlockIds, int blockCount)
+        {
+            if (stableBlockIds.Length != blockCount) return false;
+
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < stableBlockIds.Length; i++)
+            {
+                var stableBlockId = stableBlockIds[i];
+                if (string.IsNullOrEmpty(stableBlockId) || !used.Add(stableBlockId)) return false;
+            }
+
+            return true;
+        }
+
+        private static ulong ComputeStableSeatIdHash(
+            ulong[] stableSeatIds,
+            FanlightSeatData[] seats,
+            int blockCount,
+            out bool hasValidSeatBlockIndices)
+        {
+            hasValidSeatBlockIndices = stableSeatIds != null
+                                       && seats != null
+                                       && stableSeatIds.Length == seats.Length
+                                       && blockCount > 0;
             if (stableSeatIds == null || stableSeatIds.Length == 0) return 0UL;
+
             var hash = 14695981039346656037UL;
             for (var i = 0; i < stableSeatIds.Length; i++)
             {
                 var value = stableSeatIds[i];
                 if (value == 0UL) return 0UL;
+                if (hasValidSeatBlockIndices
+                    && (seats[i].blockIndex < 0 || seats[i].blockIndex >= blockCount))
+                {
+                    hasValidSeatBlockIndices = false;
+                }
+
                 for (var byteIndex = 0; byteIndex < 8; byteIndex++)
                 {
                     hash ^= (byte)(value >> (byteIndex * 8));

@@ -1,6 +1,6 @@
 ﻿namespace PrismFanlight.Core
 {
-    internal enum FanlightTimeDiscontinuity
+    public enum FanlightTimeDiscontinuity
     {
         None = 0,
         Seek = 1,

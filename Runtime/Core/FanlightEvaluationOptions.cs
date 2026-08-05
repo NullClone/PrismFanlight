@@ -16,9 +16,15 @@ namespace PrismFanlight.Core
         internal FanlightEvaluationOptions(double animationSampleRate, double quantizationEpsilon)
         {
             if (double.IsNaN(animationSampleRate) || double.IsInfinity(animationSampleRate))
+            {
                 throw new ArgumentOutOfRangeException(nameof(animationSampleRate));
+            }
+
             if (double.IsNaN(quantizationEpsilon) || double.IsInfinity(quantizationEpsilon) || quantizationEpsilon < 0d)
+            {
                 throw new ArgumentOutOfRangeException(nameof(quantizationEpsilon));
+            }
+
             AnimationSampleRate = animationSampleRate;
             QuantizationEpsilon = quantizationEpsilon;
         }

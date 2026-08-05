@@ -5,8 +5,8 @@ using UnityEngine.Playables;
 
 namespace PrismFanlight.Time
 {
-    [AddComponentMenu("Prism Fanlight/Time Providers/Timeline Time Provider")]
-    public sealed class TimelineTimeProvider : MonoBehaviour, IShowTimeProvider
+    [Serializable]
+    public sealed class TimelineTimeProvider : IShowTimeProvider
     {
         // Fields
 
@@ -108,13 +108,5 @@ namespace PrismFanlight.Time
             && actualDelta < -_seekTolerance
             && _director.extrapolationMode == DirectorWrapMode.Loop
             && _previousSeconds >= Math.Max(0d, _director.duration - Math.Max(_seekTolerance, 0.1d));
-
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            _seekTolerance = Math.Max(1e-9d, _seekTolerance);
-        }
-#endif
     }
 }

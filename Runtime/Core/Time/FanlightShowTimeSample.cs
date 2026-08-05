@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace PrismFanlight.Core
+﻿namespace PrismFanlight.Core
 {
     internal readonly struct FanlightShowTimeSample
     {
@@ -46,8 +44,7 @@ namespace PrismFanlight.Core
             && IsFinite(Rate)
             && ((Status == FanlightClockStatus.Ready && Rate != 0d)
                 || (Status == FanlightClockStatus.Holding && Rate == 0d))
-            && MusicalPosition.IsComplete
-            && Math.Abs(Seconds - MusicalPosition.Seconds) <= 1e-9;
+            && MusicalPosition.IsComplete;
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     }

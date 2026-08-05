@@ -45,15 +45,15 @@ namespace PrismFanlight.Rendering
             GripLocalBounds = gripLocalBounds;
         }
 
-        internal static FanlightPenlightRuntimeAppearance Create(FanlightPenlightAppearanceProfile profile)
+        internal static FanlightPenlightRuntimeAppearance Create(FanlightPenlightAsset asset)
         {
-            if (profile == null || !profile.TryValidate(out _)) return null;
+            if (asset == null || !asset.TryValidate(out _)) return null;
 
-            var variants = new FanlightPenlightVariant[profile.VariantCount];
+            var variants = new FanlightPenlightVariant[asset.VariantCount];
 
             for (var i = 0; i < variants.Length; i++)
             {
-                variants[i] = profile.GetVariant(i);
+                variants[i] = asset.GetVariant(i);
             }
 
             Array.Sort(variants, (left, right) => left.StableVariantId.CompareTo(right.StableVariantId));
@@ -85,8 +85,8 @@ namespace PrismFanlight.Rendering
             }
 
             return new FanlightPenlightRuntimeAppearance(
-                profile.AssignmentSeed,
-                profile.GetRuntimeContentHash(),
+                asset.AssignmentSeed,
+                asset.GetRuntimeContentHash(),
                 meshes,
                 ids,
                 pivots,

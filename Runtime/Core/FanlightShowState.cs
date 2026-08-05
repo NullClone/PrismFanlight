@@ -18,7 +18,9 @@ namespace PrismFanlight.Core
 
         internal FanlightDirectionState Direction { get; }
 
-        internal FanlightPaletteState Palette { get; }
+        internal FanlightColorState Color { get; }
+
+        internal FanlightIntensityState Intensity { get; }
 
         internal FanlightVisibilityState Visibility { get; }
 
@@ -35,7 +37,8 @@ namespace PrismFanlight.Core
             FanlightRestState rest,
             FanlightAudienceBodyState audienceBody,
             FanlightDirectionState direction,
-            FanlightPaletteState palette,
+            FanlightColorState color,
+            FanlightIntensityState intensity,
             FanlightVisibilityState visibility,
             uint globalSeed)
         {
@@ -46,7 +49,8 @@ namespace PrismFanlight.Core
             Rest = rest;
             AudienceBody = audienceBody;
             Direction = direction;
-            Palette = palette;
+            Color = color;
+            Intensity = intensity;
             Visibility = visibility;
             GlobalSeed = globalSeed;
         }

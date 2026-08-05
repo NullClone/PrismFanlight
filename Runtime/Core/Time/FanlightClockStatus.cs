@@ -1,6 +1,6 @@
 ﻿namespace PrismFanlight.Core
 {
-    internal enum FanlightClockStatus
+    public enum FanlightClockStatus
     {
         Ready = 0,
         Holding = 1,

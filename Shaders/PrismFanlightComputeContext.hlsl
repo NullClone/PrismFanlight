@@ -12,7 +12,6 @@ RWStructuredBuffer<uint> _PenlightVisibleIndices;
 StructuredBuffer<uint> _PenlightVariantAssignments;
 StructuredBuffer<uint> _PenlightVariantOffsets;
 RWStructuredBuffer<uint> _AudienceVisibleIndices;
-RWStructuredBuffer<uint> _AudienceSlots;
 RWStructuredBuffer<FanlightIndirectDrawIndexedArgs> _PenlightArgs;
 RWStructuredBuffer<float4x4> _FanlightMatrices;
 RWStructuredBuffer<FanlightAudiencePart> _AudienceParts;
@@ -27,6 +26,7 @@ float4 _FanlightTempo;
 float4 _FrustumPlanes[6];
 float _CullingScale;
 int _EnableCulling;
+int _EnableAudience;
 int _EnableAudienceLod;
 float4 _AudienceLod;
 float4 _LodCameraPos;
@@ -44,6 +44,7 @@ float4 _SwingTargetPos;
 float4x4 _WorldToLocal;
 float4 _MotionVariation;
 float4 _MotionNoise;
+int _MotionNoiseOctaves;
 float4 _MotionHuman;
 float4 _MotionRest;
 float4 _MotionRestTiming;
@@ -62,7 +63,7 @@ float PrismPenlightGripPivotY(uint seatIndex)
 }
 float4 _AudienceShape;
 float4 _AudienceArm;
-float4 _AudienceUpperBody;
+float _AudienceWorldScale;
 float4 _AudienceMotionBody;
 
 uint PrismSeatIndex(FanlightSeatData seat)

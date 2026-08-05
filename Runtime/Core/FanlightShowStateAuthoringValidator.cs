@@ -32,6 +32,8 @@ namespace PrismFanlight.Core
                     value.MotionAsset,
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
+                    value.BlockDelayXBeats,
+                    value.BlockDelayYBeats,
                     value.MotionAmount,
                     value.HeightBias,
                     value.SideScale,
@@ -50,19 +52,14 @@ namespace PrismFanlight.Core
             try
             {
                 return new FanlightVariationState(
-                    value.SeatPosition,
-                    value.BodyHeight,
-                    value.ArmLength,
-                    value.Angle,
-                    value.DirectionSpread,
+                    value.StandingPositionSpread,
+                    value.HeightVariation,
+                    value.ArmExtensionVariation,
+                    value.PenlightDirectionSpread,
                     value.ReactionDelaySeconds,
-                    value.BeatJitter,
-                    value.BlockDelayXBeats,
-                    value.BlockDelayYBeats,
+                    value.BeatJitterBeats,
                     value.EnergyResponse,
-                    value.Speed,
-                    value.BeatReactionDelaySeconds,
-                    value.HandZone);
+                    value.HandPositionSpread);
             }
             catch (ArgumentException)
             {
@@ -76,9 +73,10 @@ namespace PrismFanlight.Core
             {
                 return new FanlightNoiseState(
                     value.PhaseAmount,
-                    value.PhaseSpeed,
-                    value.AxisAmount,
-                    value.AxisSpeed,
+                    value.PhaseRate,
+                    value.PositionAmount,
+                    value.DirectionAmount,
+                    value.SpatialRate,
                     value.Octaves,
                     value.Persistence);
             }
@@ -114,19 +112,14 @@ namespace PrismFanlight.Core
             {
                 return new FanlightAudienceBodyState(
                     value.Height,
-                    value.HeightVariation,
                     value.Width,
                     value.HeadSize,
                     value.ShoulderHeightRatio,
                     value.ShoulderSideOffset,
                     value.ArmWidth,
                     value.ArmLengthLimit,
-                    value.UpperBodyLeanMaximumRadians,
-                    value.UpperBodyLean,
                     value.Bounce,
-                    value.Sway,
-                    value.MotionSpeed,
-                    value.LeanMotion);
+                    value.Sway);
             }
             catch (ArgumentException)
             {
@@ -143,26 +136,6 @@ namespace PrismFanlight.Core
             catch (ArgumentException)
             {
                 return FanlightShowStateDefaults.Direction();
-            }
-        }
-
-        internal static FanlightPaletteState Validate(FanlightPaletteState value)
-        {
-            try
-            {
-                return new FanlightPaletteState(
-                    value.Slot1,
-                    value.Slot2,
-                    value.Slot3,
-                    value.Slot4,
-                    value.Slot5,
-                    value.Slot6,
-                    value.GlobalIntensity,
-                    value.RandomIntensity);
-            }
-            catch (ArgumentException)
-            {
-                return FanlightShowStateDefaults.Palette();
             }
         }
     }

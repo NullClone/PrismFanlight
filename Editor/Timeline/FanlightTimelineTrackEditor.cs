@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
 using UnityEngine;
-using UnityEngine.Playables;
 using UnityEngine.Timeline;
 using Object = UnityEngine.Object;
 
@@ -13,8 +13,6 @@ namespace PrismFanlight.Editor
     [CustomTimelineEditor(typeof(FanlightTimelineTrackAsset))]
     internal sealed class FanlightTimelineTrackEditor : TrackEditor
     {
-        // Methods
-
         public override TrackDrawOptions GetTrackOptions(TrackAsset track, Object binding)
         {
             var options = base.GetTrackOptions(track, binding);
@@ -35,9 +33,17 @@ namespace PrismFanlight.Editor
             {
                 errors.Add("Track binding has the wrong type. Bind this track to a PrismFanlight component.");
             }
-            else if (HasMultipleDirectorBindings(target))
+
+            if (target != null)
             {
-                errors.Add($"Multiple active PlayableDirectors bind PrismFanlight '{target.name}'. Disable or rebind all but one director.");
+                CollectColorBlockErrors(fanlightTrack, target.LayoutAsset, errors);
+                CollectTempoRequirementErrors(fanlightTrack, target, errors);
+
+                FanlightControlBindingValidator.CollectErrors(
+                    fanlightTrack.timelineAsset,
+                    TimelineEditor.inspectedDirector,
+                    target,
+                    errors);
             }
 
             options.errorText = AppendErrors(options.errorText, errors);
@@ -54,6 +60,19 @@ namespace PrismFanlight.Editor
             {
                 var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
                 return $"This clip does not match {track.GetType().Name}. Replace it with {expectedName}.";
+            }
+
+            try
+            {
+                _ = ((FanlightTimelineClipAsset)clip.asset).Value;
+            }
+            catch (ArgumentException exception)
+            {
+                return exception.Message;
+            }
+            catch (InvalidOperationException exception)
+            {
+                return exception.Message;
             }
 
             var clips = GetClips(track);
@@ -87,17 +106,35 @@ namespace PrismFanlight.Editor
 
             var expectedClipType = GetExpectedClipType(track);
             var clips = GetClips(track);
+            var clipValuesValid = true;
 
             for (var i = 0; i < clips.Count; i++)
             {
                 var clip = clips[i];
 
-                if (clip.asset != null && expectedClipType != null && expectedClipType.IsInstanceOfType(clip.asset)) continue;
+                if (clip.asset == null || expectedClipType == null || !expectedClipType.IsInstanceOfType(clip.asset))
+                {
+                    var actualName = clip.asset == null ? "missing asset" : clip.asset.GetType().Name;
+                    var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
+                    errors.Add($"Clip '{clip.displayName}' uses {actualName}. Replace it with {expectedName}.");
+                    clipValuesValid = false;
+                    continue;
+                }
 
-                var actualName = clip.asset == null ? "missing asset" : clip.asset.GetType().Name;
-                var expectedName = expectedClipType == null ? "the track's typed clip" : expectedClipType.Name;
-                errors.Add($"Clip '{clip.displayName}' uses {actualName}. Replace it with {expectedName}.");
-                break;
+                try
+                {
+                    _ = ((FanlightTimelineClipAsset)clip.asset).Value;
+                }
+                catch (ArgumentException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    clipValuesValid = false;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    clipValuesValid = false;
+                }
             }
 
             if (TryFindTripleOverlap(clips, out var overlapStart))
@@ -105,10 +142,149 @@ namespace PrismFanlight.Editor
                 errors.Add($"Three or more clips overlap at {overlapStart:0.###} seconds, including extrapolation. Move or trim clips so at most two are active.");
             }
 
-            if (TryFindDiscreteConflict(track, clips, null, out var conflictStart, out var fieldName))
+            if (clipValuesValid
+                && TryFindDiscreteConflict(track, clips, null, out var conflictStart, out var fieldName))
             {
                 errors.Add($"Clips starting at {conflictStart:0.###} seconds assign different {fieldName} values. Change one value or one start time.");
             }
+
+            if (track.timelineAsset != null)
+            {
+                if (track is FanlightMotionTrack && CountTracks<FanlightMotionTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Motion Track.");
+                }
+
+                if (track is FanlightColorTrack && CountTracks<FanlightColorTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Color Track.");
+                }
+
+                if (track is FanlightIntensityTrack && CountTracks<FanlightIntensityTrack>(track.timelineAsset) > 1)
+                {
+                    errors.Add("A Timeline Asset can contain only one Prism Fanlight Intensity Track.");
+                }
+            }
+        }
+
+        private static int CountTracks<T>(TimelineAsset timelineAsset) where T : TrackAsset
+        {
+            var count = 0;
+            foreach (var outputTrack in timelineAsset.GetOutputTracks())
+            {
+                if (outputTrack is T) count++;
+            }
+
+            return count;
+        }
+
+        private static void CollectColorBlockErrors(FanlightTimelineTrackAsset track, FanlightLayoutAsset layout, List<string> errors)
+        {
+            if (track is not FanlightColorTrack) return;
+
+            foreach (var clip in track.GetClips())
+            {
+                if (clip.asset is not FanlightColorClip colorClip) continue;
+
+                FanlightColorState color;
+
+                try
+                {
+                    color = colorClip.Value.Color;
+                }
+                catch (ArgumentException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
+
+                for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+                {
+                    if (color.GetSourceWeight(sourceIndex) <= 0f) continue;
+                    var source = color.GetSource(sourceIndex);
+                    if (source.Mode != FanlightColorMode.BlockPalette) continue;
+
+                    if (layout == null || !layout.IsInitialized)
+                    {
+                        errors.Add($"Clip '{clip.displayName}' uses Block Palette but the binding has no initialized Layout.");
+                        continue;
+                    }
+
+                    if (!IsCompleteBlockPalette(source, layout))
+                    {
+                        errors.Add($"Clip '{clip.displayName}' must map every active Layout Block exactly once by Stable Block ID.");
+                    }
+                }
+            }
+        }
+
+        private static void CollectTempoRequirementErrors(
+            FanlightTimelineTrackAsset track,
+            PrismFanlight target,
+            List<string> errors)
+        {
+            if (track.timelineAsset == null || CountTracks<FanlightTempoTrack>(track.timelineAsset) > 0) return;
+
+            if (track is FanlightMotionTrack)
+            {
+                errors.Add("A song Timeline containing a Motion Track requires one Fanlight Tempo Track.");
+                return;
+            }
+
+            if (track is not FanlightIntensityTrack) return;
+
+            if (target.BaseState.Intensity.HasDynamicMask())
+            {
+                errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                return;
+            }
+
+            foreach (var clip in track.GetClips())
+            {
+                if (clip.asset is not FanlightIntensityClip intensityClip) continue;
+
+                try
+                {
+                    if (intensityClip.Value.Intensity.HasDynamicMask())
+                    {
+                        errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                        return;
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
+                catch (InvalidOperationException)
+                {
+                    continue;
+                }
+            }
+        }
+
+        private static bool IsCompleteBlockPalette(FanlightColorSource source, FanlightLayoutAsset layout)
+        {
+            if (source.BlockPaletteEntryCount != layout.TotalBlockCount) return false;
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+
+            for (var entryIndex = 0; entryIndex < source.BlockPaletteEntryCount; entryIndex++)
+            {
+                var entry = source.GetBlockPaletteEntry(entryIndex);
+                if (!ids.Add(entry.StableBlockId)) return false;
+            }
+
+            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            {
+                if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
+            }
+
+            return true;
         }
 
         private static List<TimelineClip> GetClips(FanlightTimelineTrackAsset track)
@@ -203,35 +379,11 @@ namespace PrismFanlight.Editor
         {
             fieldName = string.Empty;
 
-            if (kind == FanlightTimelinePatchKind.Noise
-                && (fieldMask.Noise & FanlightNoiseFields.Octaves) != 0
-                && left.Noise.Octaves != right.Noise.Octaves)
-            {
-                fieldName = "Octaves";
-                return true;
-            }
-
             if (kind == FanlightTimelinePatchKind.Direction
                 && (fieldMask.Direction & FanlightDirectionFields.Mode) != 0
                 && left.Direction.Mode != right.Direction.Mode)
             {
                 fieldName = "Mode";
-                return true;
-            }
-
-            if (kind == FanlightTimelinePatchKind.Visibility
-                && (fieldMask.Visibility & FanlightVisibilityFields.PenlightsEnabled) != 0
-                && left.Visibility.PenlightsEnabled != right.Visibility.PenlightsEnabled)
-            {
-                fieldName = "Penlights Enabled";
-                return true;
-            }
-
-            if (kind == FanlightTimelinePatchKind.Visibility
-                && (fieldMask.Visibility & FanlightVisibilityFields.AudienceBodiesEnabled) != 0
-                && left.Visibility.AudienceBodiesEnabled != right.Visibility.AudienceBodiesEnabled)
-            {
-                fieldName = "Audience Bodies Enabled";
                 return true;
             }
 
@@ -242,44 +394,6 @@ namespace PrismFanlight.Editor
         {
             if (binding is PrismFanlight target) return target;
             return binding is GameObject gameObject ? gameObject.GetComponent<PrismFanlight>() : null;
-        }
-
-        private static bool HasMultipleDirectorBindings(PrismFanlight target)
-        {
-            var bindingCount = 0;
-            var directors = Resources.FindObjectsOfTypeAll<PlayableDirector>();
-
-            for (var i = 0; i < directors.Length; i++)
-            {
-                var director = directors[i];
-
-                if (director == null
-                    || !director.enabled
-                    || !director.gameObject.activeInHierarchy
-                    || !director.gameObject.scene.IsValid()
-                    || director.playableAsset is not TimelineAsset timelineAsset)
-                {
-                    continue;
-                }
-
-                var bindsTarget = false;
-
-                foreach (var outputTrack in timelineAsset.GetOutputTracks())
-                {
-                    if (outputTrack is not FanlightTimelineTrackAsset) continue;
-                    if (ResolveBinding(director.GetGenericBinding(outputTrack)) != target) continue;
-
-                    bindsTarget = true;
-                    break;
-                }
-
-                if (!bindsTarget) continue;
-
-                bindingCount++;
-                if (bindingCount > 1) return true;
-            }
-
-            return false;
         }
 
         private static string AppendErrors(string current, List<string> errors)

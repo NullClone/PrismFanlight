@@ -4,6 +4,8 @@ namespace PrismFanlight.Timeline
 {
     internal readonly struct FanlightTimelineClipValue
     {
+        // Properties
+
         internal FanlightIntentState Intent { get; }
 
         internal FanlightMotionState Motion { get; }
@@ -18,10 +20,12 @@ namespace PrismFanlight.Timeline
 
         internal FanlightDirectionState Direction { get; }
 
-        internal FanlightPaletteState Palette { get; }
+        internal FanlightColorState Color { get; }
 
-        internal FanlightVisibilityState Visibility { get; }
+        internal FanlightIntensityState Intensity { get; }
 
+
+        // Methods
 
         private FanlightTimelineClipValue(
             FanlightIntentState intent,
@@ -31,8 +35,8 @@ namespace PrismFanlight.Timeline
             FanlightRestState rest,
             FanlightAudienceBodyState audienceBody,
             FanlightDirectionState direction,
-            FanlightPaletteState palette,
-            FanlightVisibilityState visibility)
+            FanlightColorState color,
+            FanlightIntensityState intensity)
         {
             Intent = intent;
             Motion = motion;
@@ -41,8 +45,8 @@ namespace PrismFanlight.Timeline
             Rest = rest;
             AudienceBody = audienceBody;
             Direction = direction;
-            Palette = palette;
-            Visibility = visibility;
+            Color = color;
+            Intensity = intensity;
         }
 
         internal static FanlightTimelineClipValue From(FanlightIntentState value) =>
@@ -66,10 +70,10 @@ namespace PrismFanlight.Timeline
         internal static FanlightTimelineClipValue From(FanlightDirectionState value) =>
             new(default, default, default, default, default, default, value, default, default);
 
-        internal static FanlightTimelineClipValue From(FanlightPaletteState value) =>
+        internal static FanlightTimelineClipValue From(FanlightColorState value) =>
             new(default, default, default, default, default, default, default, value, default);
 
-        internal static FanlightTimelineClipValue From(FanlightVisibilityState value) =>
+        internal static FanlightTimelineClipValue From(FanlightIntensityState value) =>
             new(default, default, default, default, default, default, default, default, value);
     }
 }

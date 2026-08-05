@@ -30,10 +30,10 @@ namespace PrismFanlight.Core
         private FanlightDirectionPatch _direction;
 
         [SerializeField]
-        private FanlightPalettePatch _palette;
+        private FanlightColorPatch _color;
 
         [SerializeField]
-        private FanlightVisibilityPatch _visibility;
+        private FanlightIntensityPatch _intensity;
 
 
         // Properties
@@ -52,9 +52,9 @@ namespace PrismFanlight.Core
 
         internal FanlightDirectionPatch Direction => _direction;
 
-        internal FanlightPalettePatch Palette => _palette;
+        internal FanlightColorPatch Color => _color;
 
-        internal FanlightVisibilityPatch Visibility => _visibility;
+        internal FanlightIntensityPatch Intensity => _intensity;
 
 
         // Methods
@@ -67,8 +67,8 @@ namespace PrismFanlight.Core
             FanlightRestPatch rest,
             FanlightAudienceBodyPatch audienceBody,
             FanlightDirectionPatch direction,
-            FanlightPalettePatch palette,
-            FanlightVisibilityPatch visibility)
+            FanlightColorPatch color,
+            FanlightIntensityPatch intensity)
         {
             _intent = intent;
             _motion = motion;
@@ -77,8 +77,8 @@ namespace PrismFanlight.Core
             _rest = rest;
             _audienceBody = audienceBody;
             _direction = direction;
-            _palette = palette;
-            _visibility = visibility;
+            _color = color;
+            _intensity = intensity;
         }
     }
 }

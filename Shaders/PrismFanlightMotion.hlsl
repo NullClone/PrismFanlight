@@ -74,20 +74,23 @@ float PrismComputeMotionScale(FanlightSeatData seat)
 
 float3 PrismComputeHandNoise(FanlightSeatData seat, PrismAudienceBasis basis, float motionActivity)
 {
-    int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
-    float noisePersistence = max(0.001, _MotionNoise.w);
+    if (_MotionNoise.x <= 0.000001 || motionActivity <= 0.000001)
+    {
+        return 0.0;
+    }
+
+    int noiseOctaves = clamp(_MotionNoiseOctaves, 1, 4);
+    float noisePersistence = saturate(_MotionNoise.w);
     float noiseSide = FbmNoise21(
-        float2(PrismRandom(seat, 21u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y),
+        float2(PrismRandom(seat, 21u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.z),
         noiseOctaves,
         noisePersistence);
     float noiseUp = FbmNoise21(
-        float2(PrismRandom(seat, 22u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 317.5),
+        float2(PrismRandom(seat, 22u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.z + 317.5),
         noiseOctaves,
         noisePersistence);
     return (basis.sideLocal * noiseSide + basis.upLocal * noiseUp)
         * _MotionNoise.x
-        * _MotionCycle.w
-        * 0.05
         * motionActivity;
 }
 
@@ -113,14 +116,16 @@ float3 PrismDirectionFromAudience(
     return SafeNormalize(direction, worldSpace ? basis.upWorld : basis.upLocal);
 }
 
-float3 PrismDirectionFromAngles(PrismAudienceBasis basis, float elevation, float side, bool worldSpace)
+float3 PrismApplyDirectionSpread(FanlightSeatData seat, float3 direction)
 {
-    float cosElevation = cos(elevation);
-    float3 audienceDirection = float3(
-        sin(side) * cosElevation,
-        sin(elevation),
-        cos(side) * cosElevation);
-    return PrismDirectionFromAudience(basis, audienceDirection, worldSpace);
+    float maximumAngle = saturate(_MotionVariation.z) * _MotionCycle.w * PRISM_FANLIGHT_PI * 0.25;
+    float cosine = lerp(1.0, cos(maximumAngle), PrismRandom(seat, 17u));
+    float sine = sqrt(max(0.0, 1.0 - cosine * cosine));
+    float azimuth = PrismRandom(seat, 18u) * 2.0 * PRISM_FANLIGHT_PI;
+    float3 tangent = SafePerp(direction);
+    float3 bitangent = SafeNormalize(cross(direction, tangent), SafePerp(direction));
+    float3 radial = tangent * cos(azimuth) + bitangent * sin(azimuth);
+    return SafeNormalize(direction * cosine + radial * sine, direction);
 }
 
 float3 PrismComputePenlightDirection(
@@ -129,29 +134,32 @@ float3 PrismComputePenlightDirection(
     FanlightMotionSample wristSample,
     float motionActivity)
 {
-    float variation = _MotionCycle.w;
-    float elevationVariation = (PrismRandom(seat, 17u) * 2.0 - 1.0) * _MotionVariation.w * variation * 0.25;
-    float sideVariation = (PrismRandom(seat, 18u) * 2.0 - 1.0) * _SwingAxis.w * variation * PRISM_FANLIGHT_PI * 0.25;
     float3 motionAudienceDirection = SafeNormalize(
         wristSample.penlightDirectionBodyLean.xyz,
         _MotionReferencePenlight.xyz);
-    float elevation = asin(clamp(motionAudienceDirection.y, -1.0, 1.0)) + elevationVariation;
-    float side = atan2(motionAudienceDirection.x, motionAudienceDirection.z) + sideVariation;
-    float3 motionDirection = PrismDirectionFromAngles(basis, elevation, side, true);
+    motionAudienceDirection = PrismApplyDirectionSpread(seat, motionAudienceDirection);
+    float3 motionDirection = PrismDirectionFromAudience(basis, motionAudienceDirection, true);
     float3 referenceDirection = PrismDirectionFromAudience(basis, _MotionReferencePenlight.xyz, true);
     float3 direction = PrismInterpolateDirection(referenceDirection, motionDirection, motionActivity);
     float3 fallback = direction;
+
+    if (_MotionNoise.y <= 0.000001 || motionActivity <= 0.000001)
+    {
+        return direction;
+    }
+
     float3 tangent = basis.sideWorld - direction * dot(basis.sideWorld, direction);
     tangent = SafeNormalize(tangent, SafePerp(direction));
 
-    int noiseOctaves = clamp((int)round(_MotionNoise.z), 1, 4);
-    float noisePersistence = max(0.001, _MotionNoise.w);
+    int noiseOctaves = clamp(_MotionNoiseOctaves, 1, 4);
+    float noisePersistence = saturate(_MotionNoise.w);
     float directionNoise = FbmNoise21(
-        float2(PrismRandom(seat, 19u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.y + 631.0),
+        float2(PrismRandom(seat, 19u) * 2000.0 - 1000.0, _FanlightTime * _MotionNoise.z + 631.0),
         noiseOctaves,
         noisePersistence);
+    float noiseAngle = directionNoise * _MotionNoise.y * motionActivity;
     return SafeNormalize(
-        direction + tangent * directionNoise * _MotionNoise.x * variation * motionActivity * 0.1,
+        direction * cos(noiseAngle) + tangent * sin(noiseAngle),
         fallback);
 }
 
@@ -181,7 +189,7 @@ PrismArm PrismComputeArm(
 {
     float extensionVariation = max(
         0.0,
-        1.0 + (PrismRandom(seat, 24u) * 2.0 - 1.0) * _MotionVariation.z * _MotionCycle.w);
+        1.0 + (PrismRandom(seat, 24u) * 2.0 - 1.0) * _MotionVariation.y * _MotionCycle.w);
     float motionExtension = saturate(armSample.armDirectionExtension.w * extensionVariation);
     float armExtension = lerp(_MotionReferenceArm.w, motionExtension, motionActivity);
     float armLength = _AudienceArm.w * saturate(armExtension);

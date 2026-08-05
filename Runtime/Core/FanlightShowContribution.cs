@@ -6,6 +6,8 @@ namespace PrismFanlight.Core
     {
         // Properties
 
+        internal FanlightSequenceContext SequenceContext { get; }
+
         internal int TrackPriority { get; }
 
         internal int TrackOrder { get; }
@@ -22,6 +24,7 @@ namespace PrismFanlight.Core
         // Methods
 
         internal FanlightShowContribution(
+            FanlightSequenceContext sequenceContext,
             int trackPriority,
             int trackOrder,
             double startSeconds,
@@ -29,6 +32,11 @@ namespace PrismFanlight.Core
             float weight,
             FanlightShowPatch patch)
         {
+            if (sequenceContext == null || sequenceContext.IsReleased)
+            {
+                throw new ArgumentException("An active Sequence Context is required.", nameof(sequenceContext));
+            }
+
             FanlightStateValidation.RequireFinite(startSeconds, nameof(startSeconds));
 
             if (double.IsNaN(endSeconds) || double.IsNegativeInfinity(endSeconds) || endSeconds <= startSeconds)
@@ -41,6 +49,7 @@ namespace PrismFanlight.Core
                 throw new ArgumentOutOfRangeException(nameof(weight));
             }
 
+            SequenceContext = sequenceContext;
             TrackPriority = trackPriority;
             TrackOrder = trackOrder;
             StartSeconds = startSeconds;

@@ -5,7 +5,8 @@
         "PrismFanlight.Runtime",
         "Unity.Mathematics",
         "Unity.Timeline",
-        "Unity.Timeline.Editor"
+        "Unity.Timeline.Editor",
+        "Unity.RenderPipelines.Core.Editor"
     ],
     "includePlatforms": [
         "Editor"

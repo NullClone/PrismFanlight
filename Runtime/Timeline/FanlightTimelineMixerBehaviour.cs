@@ -2,6 +2,7 @@ using System;
 using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Timeline;
 
 namespace PrismFanlight.Timeline
 {
@@ -14,11 +15,16 @@ namespace PrismFanlight.Timeline
         private FanlightTimelineFieldMask _fieldMask;
         private int _trackPriority;
         private int _trackOrder;
+        private PlayableDirector _director;
+        private TrackAsset _track;
+        private bool _contextAcquired;
         private double[] _clipStartSeconds = Array.Empty<double>();
         private FanlightTimelineClipSample[] _samples = Array.Empty<FanlightTimelineClipSample>();
 
 
         // Methods
+
+        public override void OnGraphStart(Playable playable) => AcquireContext(playable);
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
@@ -26,15 +32,72 @@ namespace PrismFanlight.Timeline
 
             if (_lastTarget != target)
             {
-                if (_lastTarget != null)
-                {
-                    _lastTarget.ClearScheduledContribution(this);
-                }
-
-                _lastTarget = target;
+                ChangeTarget(target);
             }
 
             if (target == null) return;
+
+            target.MarkScheduledTimelineEvaluation();
+
+            try
+            {
+                EvaluateTimelineFrame(playable, target);
+            }
+            catch (ArgumentException exception)
+            {
+                FailTimelineEvaluation(target, exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                FailTimelineEvaluation(target, exception.Message);
+            }
+        }
+
+        public override void OnPlayableDestroy(Playable playable)
+        {
+            if (_lastTarget == null)
+            {
+                ReleaseContext();
+                return;
+            }
+
+            if (IsCurrentBinding())
+            {
+                _lastTarget.ScheduleTimelineRelease(this, ReleaseContext);
+            }
+            else
+            {
+                _lastTarget.CancelTimelineRelease(this);
+                _lastTarget.ClearScheduledContribution(this);
+                _lastTarget.ClearHeldTimelineState();
+                ReleaseContext();
+            }
+
+            _lastTarget = null;
+        }
+
+        internal void Configure(
+            FanlightTimelinePatchKind patchKind,
+            FanlightTimelineFieldMask fieldMask,
+            int trackPriority,
+            int trackOrder,
+            double[] clipStartSeconds,
+            PlayableDirector director,
+            TrackAsset track)
+        {
+            _patchKind = patchKind;
+            _fieldMask = fieldMask;
+            _trackPriority = trackPriority;
+            _trackOrder = trackOrder;
+            _clipStartSeconds = clipStartSeconds ?? Array.Empty<double>();
+            _director = director;
+            _track = track;
+        }
+
+        private void EvaluateTimelineFrame(Playable playable, PrismFanlight target)
+        {
+            target.CancelTimelineRelease(this);
+            AcquireContext(playable);
 
             if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask))
             {
@@ -46,8 +109,8 @@ namespace PrismFanlight.Timeline
 
             if (_clipStartSeconds.Length != inputCount)
             {
-                target.ClearScheduledContribution(this);
-                throw new InvalidOperationException("Timeline clip start metadata does not match the playable inputs.");
+                FailTimelineEvaluation(target, "Timeline clip start metadata does not match the playable inputs.");
+                return;
             }
 
             EnsureSampleCapacity(2);
@@ -65,12 +128,18 @@ namespace PrismFanlight.Timeline
 
                     if (sampleCount == 2)
                     {
-                        target.ClearScheduledContribution(this);
-                        throw new InvalidOperationException("A Prism Fanlight Timeline track cannot evaluate more than two clips at once.");
+                        FailTimelineEvaluation(target, "A Prism Fanlight Timeline track cannot evaluate more than two clips at once.");
+                        return;
                     }
 
                     var input = (ScriptPlayable<FanlightTimelinePlayableBehaviour>)playable.GetInput(i);
                     var behaviour = input.GetBehaviour();
+
+                    if (!string.IsNullOrEmpty(behaviour.Fault))
+                    {
+                        FailTimelineEvaluation(target, behaviour.Fault);
+                        return;
+                    }
 
                     _samples[sampleCount++] = new FanlightTimelineClipSample(
                         _clipStartSeconds[i],
@@ -104,6 +173,7 @@ namespace PrismFanlight.Timeline
                 target.SetScheduledContribution(
                     this,
                     new FanlightShowContribution(
+                        FanlightSequenceContextRegistry.GetContext(_director),
                         _trackPriority,
                         _trackOrder,
                         double.MinValue,
@@ -117,20 +187,10 @@ namespace PrismFanlight.Timeline
             }
         }
 
-        public override void OnPlayableDestroy(Playable playable) => ClearContribution();
-
-        internal void Configure(
-            FanlightTimelinePatchKind patchKind,
-            FanlightTimelineFieldMask fieldMask,
-            int trackPriority,
-            int trackOrder,
-            double[] clipStartSeconds)
+        private void FailTimelineEvaluation(PrismFanlight target, string fault)
         {
-            _patchKind = patchKind;
-            _fieldMask = fieldMask;
-            _trackPriority = trackPriority;
-            _trackOrder = trackOrder;
-            _clipStartSeconds = clipStartSeconds ?? Array.Empty<double>();
+            target.ClearScheduledContribution(this);
+            target.ReportTimelineFault(fault);
         }
 
         private void EnsureSampleCapacity(int capacity)
@@ -144,14 +204,42 @@ namespace PrismFanlight.Timeline
             if (count > 0) Array.Clear(_samples, 0, count);
         }
 
-        private void ClearContribution()
+        private void ChangeTarget(PrismFanlight target)
         {
             if (_lastTarget != null)
             {
+                _lastTarget.CancelTimelineRelease(this);
                 _lastTarget.ClearScheduledContribution(this);
+                _lastTarget.ClearHeldTimelineState();
             }
 
-            _lastTarget = null;
+            ReleaseContext();
+            _lastTarget = target;
+        }
+
+        private void AcquireContext(Playable playable)
+        {
+            if (_contextAcquired) return;
+
+            FanlightSequenceContextRegistry.Acquire(_director, playable.GetGraph());
+            _contextAcquired = true;
+        }
+
+        private void ReleaseContext()
+        {
+            if (!_contextAcquired) return;
+
+            FanlightSequenceContextRegistry.Release(_director);
+            _contextAcquired = false;
+        }
+
+        private bool IsCurrentBinding()
+        {
+            if (_director == null || _track == null || _lastTarget == null) return false;
+
+            var binding = _director.GetGenericBinding(_track);
+            if (binding == _lastTarget) return true;
+            return binding is GameObject gameObject && gameObject.GetComponent<PrismFanlight>() == _lastTarget;
         }
     }
 }
