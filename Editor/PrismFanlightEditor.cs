@@ -126,8 +126,6 @@ namespace PrismFanlight.Editor
             var mode = _direction.FindPropertyRelative("_mode");
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
             {
-                const bool cross = false;
-
                 var pos = _instance.transform.position;
                 var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_worldYawDegrees").floatValue, 0);
                 var size = new Vector3(0.75f, 0.75f, 1f);
@@ -146,17 +144,14 @@ namespace PrismFanlight.Editor
                     new(0.0f, 0.0f, 1.0f),
                 };
 
-                var addAngle = cross ? 90.0f : 180.0f;
-                var loop = cross ? 4 : 2;
-
-                for (int j = 0; j < loop; j++)
+                for (int j = 0; j < 2; j++)
                 {
                     for (int i = 0; i < points.Length - 1; i++)
                     {
                         Handles.DrawLine(points[i], points[i + 1]);
                     }
 
-                    rotation *= Quaternion.AngleAxis(addAngle, Vector3.forward);
+                    rotation *= Quaternion.AngleAxis(180f, Vector3.forward);
 
                     Handles.matrix = Matrix4x4.TRS(pos, rotation, size);
                 }
@@ -165,10 +160,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private bool HasFrameBounds()
-        {
-            return _hasSelectedLayout;
-        }
+        private bool HasFrameBounds() => _hasSelectedLayout;
 
         private Bounds OnGetFrameBounds()
         {

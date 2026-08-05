@@ -33,6 +33,8 @@ namespace PrismFanlight.Rendering
         private bool _hasMaskBeat;
         private bool _hasVisibilityContext;
         private bool _lastCullingEnabled;
+        private bool _lastVisibilityAudienceEnabled;
+        private bool _lastAnimationAudienceEnabled;
         private uint _globalSeed;
         private double _lastMaskBeat;
         private Camera _lastCullingCamera;
@@ -266,13 +268,20 @@ namespace PrismFanlight.Rendering
                 _animationInitialized = false;
             }
 
-            var refreshAllAnimation = !_animationInitialized || frame.LocalToWorld != _lastAnimationLocalToWorld;
+            var audienceEnabled = sample.State.Visibility.AudienceBodiesEnabled && _buffers.HasAudience;
+            var refreshAllAnimation = !_animationInitialized
+                                      || frame.LocalToWorld != _lastAnimationLocalToWorld
+                                      || audienceEnabled != _lastAnimationAudienceEnabled;
             var visibilityContextChanged = !_hasVisibilityContext
                                            || HasVisibilityContextChanged(cullingCamera, cullingEnabled);
             var visibilityTransformChanged = cullingEnabled
                                              && (!_hasVisibilityContext
                                                  || frame.LocalToWorld != _lastVisibilityLocalToWorld);
-            var visibilityUpdated = visibilityContextChanged || visibilityTransformChanged;
+            var visibilityAudienceChanged = !_hasVisibilityContext
+                                            || audienceEnabled != _lastVisibilityAudienceEnabled;
+            var visibilityUpdated = visibilityContextChanged
+                                    || visibilityTransformChanged
+                                    || visibilityAudienceChanged;
 
             if (visibilityUpdated)
             {
@@ -282,8 +291,10 @@ namespace PrismFanlight.Rendering
                     _buffers,
                     context,
                     cullingCamera,
-                    cullingEnabled);
+                    cullingEnabled,
+                    audienceEnabled);
                 _lastCullingEnabled = cullingEnabled;
+                _lastVisibilityAudienceEnabled = audienceEnabled;
                 _lastCullingCamera = cullingCamera;
                 _lastCullingViewMatrix = cullingEnabled ? cullingCamera.worldToCameraMatrix : default;
                 _lastCullingProjectionMatrix = cullingEnabled ? cullingCamera.projectionMatrix : default;
@@ -297,8 +308,9 @@ namespace PrismFanlight.Rendering
                     refreshAllAnimation))
             {
                 _buffers.UpdateMotionData(sample.State.Motion);
-                _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context);
+                _dispatcher.DispatchAnimation(_computeShader, _kernels, _buffers, context, audienceEnabled);
                 _animationInitialized = true;
+                _lastAnimationAudienceEnabled = audienceEnabled;
                 _lastAnimationLocalToWorld = frame.LocalToWorld;
             }
 
@@ -312,7 +324,7 @@ namespace PrismFanlight.Rendering
                 DrawPenlights(layer, renderingLayerMask, worldBounds);
             }
 
-            if (sample.State.Visibility.AudienceBodiesEnabled && _audienceMaterial != null)
+            if (audienceEnabled)
             {
                 var audienceBounds = worldBounds;
                 audienceBounds.Expand(2f);
@@ -477,6 +489,8 @@ namespace PrismFanlight.Rendering
             _hasMaskBeat = false;
             _hasVisibilityContext = false;
             _lastCullingEnabled = false;
+            _lastVisibilityAudienceEnabled = false;
+            _lastAnimationAudienceEnabled = false;
             _globalSeed = 0u;
             _lastMaskBeat = 0d;
             _lastCullingCamera = null;

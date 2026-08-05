@@ -12,7 +12,6 @@ namespace PrismFanlight.Rendering
         internal static readonly int PenlightVariantAssignments = Shader.PropertyToID("_PenlightVariantAssignments");
         internal static readonly int PenlightVariantOffsets = Shader.PropertyToID("_PenlightVariantOffsets");
         internal static readonly int AudienceVisibleIndices = Shader.PropertyToID("_AudienceVisibleIndices");
-        internal static readonly int AudienceSlots = Shader.PropertyToID("_AudienceSlots");
         internal static readonly int PenlightArgs = Shader.PropertyToID("_PenlightArgs");
         internal static readonly int Matrices = Shader.PropertyToID("_FanlightMatrices");
         internal static readonly int StableAssignments = Shader.PropertyToID("_FanlightStableAssignments");
@@ -36,6 +35,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int FrustumPlanes = Shader.PropertyToID("_FrustumPlanes");
         internal static readonly int CullingScale = Shader.PropertyToID("_CullingScale");
         internal static readonly int EnableCulling = Shader.PropertyToID("_EnableCulling");
+        internal static readonly int EnableAudience = Shader.PropertyToID("_EnableAudience");
         internal static readonly int EnableAudienceLod = Shader.PropertyToID("_EnableAudienceLod");
         internal static readonly int AudienceLod = Shader.PropertyToID("_AudienceLod");
         internal static readonly int LodCameraPos = Shader.PropertyToID("_LodCameraPos");

@@ -32,9 +32,10 @@ namespace PrismFanlight.Rendering
             FanlightGpuBuffers buffers,
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
-            bool cullingEnabled)
+            bool cullingEnabled,
+            bool audienceEnabled)
         {
-            SetVisibilityParams(shader, context, cullingCamera, cullingEnabled, buffers);
+            SetVisibilityParams(shader, context, cullingCamera, cullingEnabled, audienceEnabled, buffers);
 
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.AudienceArgs, buffers.AudienceArgsBuffer);
@@ -50,7 +51,6 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightVariantOffsets, buffers.PenlightVariantOffsetBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.AudienceVisibleIndices, buffers.AudienceVisibleIndexBuffer);
-            shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.AudienceSlots, buffers.AudienceSlotBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
             shader.SetBuffer(kernels.BuildVisibleInstances, FanlightShaderIds.AudienceArgs, buffers.AudienceArgsBuffer);
             shader.Dispatch(kernels.BuildVisibleInstances, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
@@ -60,7 +60,8 @@ namespace PrismFanlight.Rendering
             ComputeShader shader,
             FanlightGpuKernels kernels,
             FanlightGpuBuffers buffers,
-            in FanlightGpuDispatchContext context)
+            in FanlightGpuDispatchContext context,
+            bool audienceEnabled)
         {
             SetAnimationParams(shader, context, buffers);
             SetAudienceParams(shader, context);
@@ -68,7 +69,8 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.MotionReferenceArm, buffers.MotionReferenceArm);
             shader.SetVector(FanlightShaderIds.MotionReferencePenlight, buffers.MotionReferencePenlight);
 
-            var kernel = buffers.HasAudience
+            var generateAudience = audienceEnabled && buffers.HasAudience;
+            var kernel = generateAudience
                 ? kernels.GenerateAllFrameData
                 : kernels.GenerateAllAnimation;
 
@@ -78,7 +80,7 @@ namespace PrismFanlight.Rendering
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Matrices, buffers.MatrixBuffer);
 
-            if (buffers.HasAudience)
+            if (generateAudience)
             {
                 shader.SetBuffer(kernel, FanlightShaderIds.AudienceParts, buffers.AudiencePartBuffer);
             }
@@ -348,6 +350,7 @@ namespace PrismFanlight.Rendering
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceEnabled,
             FanlightGpuBuffers buffers)
         {
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
@@ -356,6 +359,7 @@ namespace PrismFanlight.Rendering
             shader.SetMatrix(FanlightShaderIds.LocalToWorld, context.Frame.LocalToWorld);
             shader.SetFloat(FanlightShaderIds.CullingScale, FanlightGeometryBuilder.GetMaxScale(context.Frame.LocalToWorld));
             shader.SetInt(FanlightShaderIds.EnableCulling, cullingEnabled ? 1 : 0);
+            shader.SetInt(FanlightShaderIds.EnableAudience, audienceEnabled ? 1 : 0);
             shader.SetInt(FanlightShaderIds.EnableAudienceLod, 0);
             shader.SetVector(FanlightShaderIds.AudienceLod, Vector4.zero);
             var cameraPosition = cullingEnabled ? cullingCamera.transform.position : Vector3.zero;

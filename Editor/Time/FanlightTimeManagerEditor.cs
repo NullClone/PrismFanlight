@@ -36,25 +36,9 @@ namespace PrismFanlight.Editor
 
         public override void OnInspectorGUI()
         {
+            base.OnInspectorGUI();
+
             if (_instance == null) return;
-
-            serializedObject.Update();
-
-            EditorGUILayout.PropertyField(_negativeTimePolicy, new GUIContent("Negative Time"));
-            EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(_provider);
-            if (_provider.managedReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("Time Provider is required. A missing Provider is not replaced automatically.", MessageType.Error);
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(_defaultBpm, new GUIContent("BPM"));
-            EditorGUILayout.PropertyField(_defaultBeatsPerBar, new GUIContent("Beats Per Bar"));
-            EditorGUILayout.PropertyField(_defaultBeatUnit, new GUIContent("Beat Unit"));
-            EditorGUILayout.PropertyField(_defaultMusicalOriginSeconds, new GUIContent("Musical Origin Seconds"));
-
-            serializedObject.ApplyModifiedProperties();
 
             if (Application.isPlaying)
             {

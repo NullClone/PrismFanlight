@@ -16,6 +16,10 @@ namespace PrismFanlight.Rendering
         private readonly FanlightMotionSample[] _motionSourceSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount * 3];
         private readonly FanlightMotionAsset[] _motionAssets = new FanlightMotionAsset[3];
         private readonly int[] _motionRevisions = new int[3];
+        private readonly bool[] _runtimeBlockPaletteUploaded = new bool[3];
+        private uint[] _runtimeBlockPaletteSlots = Array.Empty<uint>();
+        private uint[] _runtimeBlockPaletteCandidate = Array.Empty<uint>();
+        private bool[] _runtimeBlockPaletteAssigned = Array.Empty<bool>();
         private FanlightMotionSample _motionReferencePose;
         private Vector3 _motionWeights;
         private bool _hasMotionData;
@@ -36,8 +40,6 @@ namespace PrismFanlight.Rendering
         internal ComputeBuffer PenlightVariantOffsetBuffer { get; private set; }
 
         internal ComputeBuffer AudienceVisibleIndexBuffer { get; private set; }
-
-        internal ComputeBuffer AudienceSlotBuffer { get; private set; }
 
         internal ComputeBuffer MatrixBuffer { get; private set; }
 
@@ -94,6 +96,10 @@ namespace PrismFanlight.Rendering
             PenlightVariantCount = appearance.VariantCount;
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
             PenlightVariantGripPivotYs = BuildGripPivotVector(appearance.GripPivotYs);
+            _runtimeBlockPaletteSlots = new uint[BlockCount * 3];
+            _runtimeBlockPaletteCandidate = new uint[BlockCount];
+            _runtimeBlockPaletteAssigned = new bool[BlockCount];
+            Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
 
             var assignments = BuildVariantAssignments(layout, appearance, out var counts);
             PenlightVariantOffsets = BuildVariantOffsets(counts);
@@ -105,7 +111,6 @@ namespace PrismFanlight.Rendering
             PenlightVariantAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             PenlightVariantOffsetBuffer = new ComputeBuffer(PenlightVariantCount, sizeof(uint), ComputeBufferType.Structured);
             AudienceVisibleIndexBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
-            AudienceSlotBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             MatrixBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 16, ComputeBufferType.Structured);
             StableAssignmentBuffer = new ComputeBuffer(SeatCount, sizeof(uint), ComputeBufferType.Structured);
             ResolvedChromaBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
@@ -146,6 +151,7 @@ namespace PrismFanlight.Rendering
             SeatBuffer.SetData(layout.Seats);
             BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
+            Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
         }
 
         internal void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
@@ -205,16 +211,14 @@ namespace PrismFanlight.Rendering
                 throw new InvalidOperationException("Runtime Block Palette Buffer is not available.");
             }
 
-            var slots = new uint[BlockCount * 3];
-            var assigned = new bool[BlockCount];
-
             for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
             {
                 if (color.GetSourceWeight(sourceIndex) <= 0f) continue;
                 var source = color.GetSource(sourceIndex);
                 if (source.Mode != FanlightColorMode.BlockPalette) continue;
 
-                Array.Clear(assigned, 0, assigned.Length);
+                Array.Clear(_runtimeBlockPaletteCandidate, 0, _runtimeBlockPaletteCandidate.Length);
+                Array.Clear(_runtimeBlockPaletteAssigned, 0, _runtimeBlockPaletteAssigned.Length);
                 for (var entryIndex = 0; entryIndex < source.BlockPaletteEntryCount; entryIndex++)
                 {
                     var entry = source.GetBlockPaletteEntry(entryIndex);
@@ -224,25 +228,46 @@ namespace PrismFanlight.Rendering
                         throw new InvalidOperationException("Block Palette contains an unknown Stable Block ID.");
                     }
 
-                    if (assigned[blockIndex])
+                    if (_runtimeBlockPaletteAssigned[blockIndex])
                     {
                         throw new InvalidOperationException("Block Palette contains a duplicate Stable Block ID.");
                     }
 
-                    assigned[blockIndex] = true;
-                    slots[sourceIndex * BlockCount + blockIndex] = (uint)entry.PaletteSlot;
+                    _runtimeBlockPaletteAssigned[blockIndex] = true;
+                    _runtimeBlockPaletteCandidate[blockIndex] = (uint)entry.PaletteSlot;
                 }
 
-                for (var blockIndex = 0; blockIndex < assigned.Length; blockIndex++)
+                var laneStart = sourceIndex * BlockCount;
+                var changed = !_runtimeBlockPaletteUploaded[sourceIndex];
+
+                for (var blockIndex = 0; blockIndex < _runtimeBlockPaletteAssigned.Length; blockIndex++)
                 {
-                    if (!assigned[blockIndex])
+                    if (!_runtimeBlockPaletteAssigned[blockIndex])
                     {
                         throw new InvalidOperationException("Block Palette must specify every Block in the active Layout.");
                     }
-                }
-            }
 
-            RuntimeBlockPaletteBuffer.SetData(slots);
+                    if (_runtimeBlockPaletteSlots[laneStart + blockIndex] != _runtimeBlockPaletteCandidate[blockIndex])
+                    {
+                        changed = true;
+                    }
+                }
+
+                if (!changed) continue;
+
+                Array.Copy(
+                    _runtimeBlockPaletteCandidate,
+                    0,
+                    _runtimeBlockPaletteSlots,
+                    laneStart,
+                    BlockCount);
+                RuntimeBlockPaletteBuffer.SetData(
+                    _runtimeBlockPaletteSlots,
+                    laneStart,
+                    laneStart,
+                    BlockCount);
+                _runtimeBlockPaletteUploaded[sourceIndex] = true;
+            }
         }
 
         internal bool HasMotionAssetChanges(FanlightMotionState motion)
@@ -585,7 +610,6 @@ namespace PrismFanlight.Rendering
             PenlightVariantAssignmentBuffer?.Release();
             PenlightVariantOffsetBuffer?.Release();
             AudienceVisibleIndexBuffer?.Release();
-            AudienceSlotBuffer?.Release();
             MatrixBuffer?.Release();
             StableAssignmentBuffer?.Release();
             ResolvedChromaBuffer?.Release();
@@ -604,7 +628,6 @@ namespace PrismFanlight.Rendering
             PenlightVariantAssignmentBuffer = null;
             PenlightVariantOffsetBuffer = null;
             AudienceVisibleIndexBuffer = null;
-            AudienceSlotBuffer = null;
             MatrixBuffer = null;
             StableAssignmentBuffer = null;
             ResolvedChromaBuffer = null;
@@ -621,6 +644,10 @@ namespace PrismFanlight.Rendering
             PenlightVariantCount = 0;
             PenlightVariantOffsets = Array.Empty<uint>();
             PenlightVariantGripPivotYs = default;
+            _runtimeBlockPaletteSlots = Array.Empty<uint>();
+            _runtimeBlockPaletteCandidate = Array.Empty<uint>();
+            _runtimeBlockPaletteAssigned = Array.Empty<bool>();
+            Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
             Array.Clear(_motionSamples, 0, _motionSamples.Length);
             Array.Clear(_motionSourceSamples, 0, _motionSourceSamples.Length);
             Array.Clear(_motionAssets, 0, _motionAssets.Length);

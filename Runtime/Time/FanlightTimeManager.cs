@@ -11,12 +11,13 @@ namespace PrismFanlight.Time
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, Label("Negative Time")]
         private ShowNegativeTimePolicy _negativeTimePolicy = ShowNegativeTimePolicy.ClampToZero;
 
         [SerializeReference]
         private IShowTimeProvider _provider = new UnityTimeProvider();
 
+        [Space]
         [SerializeField, Min(1e-6f)]
         private double _defaultBpm = 120d;
 

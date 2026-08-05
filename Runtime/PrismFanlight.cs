@@ -96,7 +96,6 @@ namespace PrismFanlight
         private FanlightTimeManager _tempoScopeManager;
         private int _tempoScopeRevision = int.MinValue;
         private FanlightShowTimeFault _timeFault;
-        private string _sequenceFault = string.Empty;
         private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _heldTimelineSample;
@@ -127,7 +126,7 @@ namespace PrismFanlight
 
         internal FanlightShowTimeFault TimeFault => _timeFault;
 
-        internal string SequenceFault => _sequenceFault;
+        internal string SequenceFault { get; private set; } = string.Empty;
 
         internal FanlightShowState BaseState => new(
             _intent,
@@ -164,23 +163,14 @@ namespace PrismFanlight
 
         private void LateUpdate()
         {
-            if (!enabled || !SystemInfo.supportsComputeShaders)
+            if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null || _evaluationId == long.MaxValue)
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
                 ReleaseScheduledTimelineResources();
                 ClearHeldTimelineState();
                 Dispose();
-                return;
-            }
 
-            if (_timeManager == null || _evaluationId == long.MaxValue)
-            {
-                ClearScheduledTempoCandidates();
-                ClearScheduledContributions();
-                ReleaseScheduledTimelineResources();
-                ClearHeldTimelineState();
-                Dispose();
                 return;
             }
 
@@ -205,6 +195,7 @@ namespace PrismFanlight
             }
 
             EnsureTempoScopeResolver();
+
             var timelineEvaluated = ConsumeTimelineEvaluationFlag();
             var tempoCandidateCount = SnapshotAndClearTempoCandidates();
 
@@ -214,13 +205,11 @@ namespace PrismFanlight
                 return;
             }
 
-            if (!timelineEvaluated
-                && clock.Status == FanlightClockStatus.Holding
-                && _hasHeldTimelineState)
+            if (!timelineEvaluated && clock.Status == FanlightClockStatus.Holding && _hasHeldTimelineState)
             {
                 ClearScheduledContributions();
                 _timeFault = FanlightShowTimeFault.None;
-                _sequenceFault = string.Empty;
+                SequenceFault = string.Empty;
                 RenderFrame(_heldTimelineSample);
                 ReleaseScheduledTimelineResources();
                 return;
@@ -255,7 +244,7 @@ namespace PrismFanlight
             try
             {
                 sample = _showEvaluator.Evaluate(request);
-                _sequenceFault = string.Empty;
+                SequenceFault = string.Empty;
             }
             catch (InvalidOperationException exception)
             {
@@ -279,6 +268,7 @@ namespace PrismFanlight
             }
 
             _timeFault = FanlightShowTimeFault.None;
+
             RenderFrame(sample);
             ReleaseScheduledTimelineResources();
         }
@@ -621,9 +611,8 @@ namespace PrismFanlight
 
         private void StopForSequenceFault(string fault)
         {
-            _sequenceFault = string.IsNullOrEmpty(fault)
-                ? "Timeline evaluation contains an invalid value."
-                : fault;
+            SequenceFault = string.IsNullOrEmpty(fault) ? "Timeline evaluation contains an invalid value." : fault;
+
             ClearScheduledTempoCandidates();
             ClearScheduledContributions();
             ReleaseScheduledTimelineResources();

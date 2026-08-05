@@ -108,12 +108,16 @@ void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupInd
         visible = _BlockVisibility[blockIndex] != 0;
         variantIndex = min(_PenlightVariantAssignments[id], (uint)max(0, _PenlightVariantCount - 1));
 
-        if (visible)
+        if (visible && _EnableAudience != 0)
         {
-            float3 seatWorldPos = mul(_LocalToWorld, float4(seat.localPositionSeed.xyz, 1.0)).xyz;
-            float visibleDistance = max(0.0, _AudienceLod.x);
-            float3 toCamera = seatWorldPos - _LodCameraPos.xyz;
-            audienceVisible = _EnableAudienceLod == 0 || dot(toCamera, toCamera) <= visibleDistance * visibleDistance;
+            audienceVisible = true;
+            if (_EnableAudienceLod != 0)
+            {
+                float3 seatWorldPos = mul(_LocalToWorld, float4(seat.localPositionSeed.xyz, 1.0)).xyz;
+                float visibleDistance = max(0.0, _AudienceLod.x);
+                float3 toCamera = seatWorldPos - _LodCameraPos.xyz;
+                audienceVisible = dot(toCamera, toCamera) <= visibleDistance * visibleDistance;
+            }
         }
     }
 
@@ -136,8 +140,15 @@ void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupInd
     }
     if (groupIndex == 0)
     {
-        InterlockedAdd(_AudienceArgs[0].instanceCount, _GroupAudienceVisibleCount * 3u, _GroupAudienceBaseOffset);
-        _GroupAudienceBaseOffset /= 3u;
+        if (_EnableAudience != 0)
+        {
+            InterlockedAdd(_AudienceArgs[0].instanceCount, _GroupAudienceVisibleCount * 3u, _GroupAudienceBaseOffset);
+            _GroupAudienceBaseOffset /= 3u;
+        }
+        else
+        {
+            _GroupAudienceBaseOffset = 0u;
+        }
     }
     GroupMemoryBarrierWithGroupSync();
 
@@ -147,12 +158,7 @@ void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupInd
     if (audienceVisible)
     {
         uint audienceSlot = _GroupAudienceBaseOffset + localAudienceSlot;
-        _AudienceSlots[id] = audienceSlot;
         _AudienceVisibleIndices[audienceSlot] = id;
-    }
-    else if (id < (uint)_InstanceCount)
-    {
-        _AudienceSlots[id] = 0xFFFFFFFFu;
     }
 }
 
