@@ -1,10 +1,12 @@
+﻿using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
 namespace PrismFanlight.Editor
 {
-    [CustomEditor(typeof(FanlightNoiseClip))]
-    internal sealed class FanlightNoiseClipEditor : UnityEditor.Editor
+    [CustomEditor(typeof(FanlightDirectionClip))]
+    [CanEditMultipleObjects]
+    internal sealed class FanlightDirectionClipInspector : UnityEditor.Editor
     {
         // Fields
 
@@ -20,11 +22,23 @@ namespace PrismFanlight.Editor
 
         public override void OnInspectorGUI()
         {
+            FanlightPresetEditor.Draw(targets);
+
             serializedObject.Update();
 
-            DrawChild("_phaseAmount");
-            DrawChild("_positionAmount");
-            DrawChild("_directionAmount");
+            var mode = _value.FindPropertyRelative("_mode");
+
+            EditorGUILayout.PropertyField(mode);
+
+            if (!mode.hasMultipleDifferentValues)
+            {
+                if (mode.enumValueIndex == (int)FanlightDirectionMode.Target)
+                {
+                    DrawChild("_aimStrength");
+                }
+
+                DrawChild("_worldYawDegrees");
+            }
 
             serializedObject.ApplyModifiedProperties();
         }

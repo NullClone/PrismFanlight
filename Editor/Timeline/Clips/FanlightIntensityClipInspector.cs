@@ -4,7 +4,8 @@ using UnityEditor;
 namespace PrismFanlight.Editor
 {
     [CustomEditor(typeof(FanlightIntensityClip))]
-    internal sealed class FanlightIntensityClipEditor : UnityEditor.Editor
+    [CanEditMultipleObjects]
+    internal sealed class FanlightIntensityClipInspector : UnityEditor.Editor
     {
         // Fields
 
@@ -20,6 +21,8 @@ namespace PrismFanlight.Editor
 
         public override void OnInspectorGUI()
         {
+            FanlightPresetEditor.Draw(targets);
+
             serializedObject.Update();
 
             FanlightColorIntensityEditorUtility.DrawIntensityState(_value);
