@@ -485,16 +485,19 @@ namespace PrismFanlight
             if (!_renderer.IsReady) return;
 
             _renderFrameId = _renderFrameId == long.MaxValue ? 1L : _renderFrameId + 1L;
+
             var frame = new FanlightFrameContext(
                 _renderFrameId,
                 transform.localToWorldMatrix,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero);
 
+            var enableCulling = Application.isPlaying && _enableCulling && _cullingCamera != null;
+
             _renderer.Render(
                 sample,
                 frame,
                 _cullingCamera,
-                _enableCulling && _cullingCamera != null,
+                enableCulling,
                 gameObject.layer,
                 _renderingLayerMask,
                 AnimationUpdate);
