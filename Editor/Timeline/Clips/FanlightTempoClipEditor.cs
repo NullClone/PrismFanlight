@@ -15,9 +15,8 @@ namespace PrismFanlight.Editor
 
         private const double TickTolerance = 1e-6d;
         private const int MaximumVisibleTickCount = 512;
-
-        private static readonly Color BeatTickColor = new(0.18f, 0.82f, 1.0f, 0.54f);
-        private static readonly Color BarTickColor = new(1.0f, 0.86f, 0.28f, 0.72f);
+        private const float MinBeatSpacingPixels = 12f;
+        private const float MinBarSpacingPixels = 16f;
 
 
         // Methods
@@ -78,37 +77,46 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawTicks(
-            ClipBackgroundRegion region,
-            double rangeStart,
-            double rangeEnd,
-            in FanlightTempoSection section)
+        private static void DrawTicks(ClipBackgroundRegion region, double rangeStart, double rangeEnd, in FanlightTempoSection section)
         {
+            var rangeDuration = rangeEnd - rangeStart;
+            if (rangeDuration <= TickTolerance || region.position.width <= 0f) return;
+
+            var pixelsPerSecond = region.position.width / rangeDuration;
+
+            var secondsPerBeat = 60d / section.Bpm;
+            var pixelsPerBeat = (float)(secondsPerBeat * pixelsPerSecond);
+            var pixelsPerBar = pixelsPerBeat * section.BeatsPerBar;
+
+            if (pixelsPerBar < MinBarSpacingPixels) return;
+
+            var showBeats = pixelsPerBeat >= MinBeatSpacingPixels;
+
+            var beatsPerBar = (double)section.BeatsPerBar;
             var startBeat = EvaluateBeat(rangeStart, section);
             var endBeat = EvaluateBeat(rangeEnd, section);
-            var firstTick = Math.Ceiling(startBeat - TickTolerance);
-            var lastTick = Math.Ceiling(endBeat - TickTolerance) - 1d;
 
-            if (!IsFinite(firstTick) || !IsFinite(lastTick) || lastTick < firstTick) return;
+            double firstTick;
+            double lastTick;
+            double tickStep;
 
-            var tickStep = 1d;
-            var tickCount = lastTick - firstTick + 1d;
-
-            if (tickCount > MaximumVisibleTickCount)
+            if (showBeats)
             {
-                firstTick = Math.Ceiling(startBeat / section.BeatsPerBar - TickTolerance) * section.BeatsPerBar;
-                lastTick = (Math.Ceiling(endBeat / section.BeatsPerBar - TickTolerance) - 1d) * section.BeatsPerBar;
-                tickStep = section.BeatsPerBar;
-                tickCount = (lastTick - firstTick) / tickStep + 1d;
+                tickStep = 1d;
+                firstTick = Math.Ceiling(startBeat - TickTolerance);
+                lastTick = Math.Ceiling(endBeat - TickTolerance) - 1d;
+            }
+            else
+            {
+                tickStep = beatsPerBar;
+                firstTick = Math.Ceiling(startBeat / beatsPerBar - TickTolerance) * beatsPerBar;
+                lastTick = (Math.Ceiling(endBeat / beatsPerBar - TickTolerance) - 1d) * beatsPerBar;
             }
 
             if (!IsFinite(firstTick) || !IsFinite(lastTick) || lastTick < firstTick) return;
 
-            if (tickCount > MaximumVisibleTickCount)
-            {
-                var barStride = Math.Ceiling(tickCount / MaximumVisibleTickCount);
-                tickStep *= barStride;
-            }
+            var tickCount = (lastTick - firstTick) / tickStep + 1d;
+            if (tickCount > MaximumVisibleTickCount) return;
 
             for (var tick = firstTick; tick <= lastTick;)
             {
@@ -116,29 +124,25 @@ namespace PrismFanlight.Editor
 
                 if (tickSeconds >= rangeStart - TickTolerance && tickSeconds < rangeEnd - TickTolerance)
                 {
-                    var normalizedTime = (float)((tickSeconds - rangeStart) / (rangeEnd - rangeStart));
+                    var normalizedTime = (float)((tickSeconds - rangeStart) / rangeDuration);
                     var x = region.position.xMin + region.position.width * Mathf.Clamp01(normalizedTime);
                     var isBar = IsBarTick(tick, section.BeatsPerBar);
-                    var width = isBar ? 2f : 1f;
-                    var color = isBar ? BarTickColor : BeatTickColor;
-                    var height = isBar ? region.position.height * 0.7f : region.position.height * 0.5f;
+
+                    var width = isBar ? 1.5f : 1f;
+                    var color = isBar ? new Color(0.9f, 0.9f, 0.9f, 0.7f) : new Color(0.9f, 0.9f, 0.9f, 0.6f);
+                    var height = isBar ? region.position.height * 0.5f : region.position.height * 0.3f;
 
                     EditorGUI.DrawRect(new Rect(x, region.position.yMin, width, height), color);
                 }
 
                 var nextTick = tick + tickStep;
-
                 if (nextTick <= tick) break;
 
                 tick = nextTick;
             }
         }
 
-        private static bool TryGetVisibleSequenceRange(
-            TimelineClip clip,
-            ClipBackgroundRegion region,
-            out double start,
-            out double end)
+        private static bool TryGetVisibleSequenceRange(TimelineClip clip, ClipBackgroundRegion region, out double start, out double end)
         {
             var timeScale = clip.timeScale;
 
@@ -151,13 +155,11 @@ namespace PrismFanlight.Editor
 
             start = clip.start + (region.startTime - clip.clipIn) / timeScale;
             end = clip.start + (region.endTime - clip.clipIn) / timeScale;
+
             return IsFinite(start) && IsFinite(end) && end > start;
         }
 
-        private static bool TryGetSection(
-            FanlightTempoRuntimeDefinition definition,
-            double seconds,
-            out FanlightTempoSection section)
+        private static bool TryGetSection(FanlightTempoRuntimeDefinition definition, double seconds, out FanlightTempoSection section)
         {
             section = default;
 
@@ -185,8 +187,8 @@ namespace PrismFanlight.Editor
         private static bool IsBarTick(double beat, int beatsPerBar)
         {
             var remainder = beat % beatsPerBar;
-            return Math.Abs(remainder) <= TickTolerance
-                   || Math.Abs(Math.Abs(remainder) - beatsPerBar) <= TickTolerance;
+
+            return Math.Abs(remainder) <= TickTolerance || Math.Abs(Math.Abs(remainder) - beatsPerBar) <= TickTolerance;
         }
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
