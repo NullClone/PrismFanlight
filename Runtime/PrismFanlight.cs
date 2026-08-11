@@ -10,12 +10,12 @@ namespace PrismFanlight
 {
     [ExecuteAlways]
     [HelpURL(HelpUrl)]
-    [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
+    [AddComponentMenu("Rendering/Prism Fanlight")]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
 
-        public const string HelpUrl = ""; //https://github.com/NullClone/PrismFanlight
+        public const string HelpUrl = "https://github.com/NullClone/PrismFanlight";
 
 
         [SerializeField]
