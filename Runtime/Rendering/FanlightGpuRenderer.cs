@@ -33,11 +33,14 @@ namespace PrismFanlight.Rendering
         private bool _hasMaskBeat;
         private bool _hasVisibilityContext;
         private bool _lastCullingEnabled;
+        private bool _lastAudienceLodEnabled;
         private bool _lastVisibilityAudienceEnabled;
         private bool _lastAnimationAudienceEnabled;
         private uint _globalSeed;
         private double _lastMaskBeat;
+        private float _lastAudienceLodDistance;
         private Camera _lastCullingCamera;
+        private Vector3 _lastLodCameraPosition;
         private Matrix4x4 _lastCullingViewMatrix;
         private Matrix4x4 _lastCullingProjectionMatrix;
         private Matrix4x4 _lastAnimationLocalToWorld;
@@ -186,6 +189,8 @@ namespace PrismFanlight.Rendering
             in FanlightFrameContext frame,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance,
             int layer,
             uint renderingLayerMask,
             in FanlightGpuUpdateTiming animationTiming)
@@ -269,12 +274,17 @@ namespace PrismFanlight.Rendering
             }
 
             var audienceEnabled = sample.State.Visibility.AudienceBodiesEnabled && _buffers.HasAudience;
+            var effectiveAudienceLodEnabled = audienceEnabled && audienceLodEnabled;
             var refreshAllAnimation = !_animationInitialized
                                       || frame.LocalToWorld != _lastAnimationLocalToWorld
                                       || audienceEnabled != _lastAnimationAudienceEnabled;
             var visibilityContextChanged = !_hasVisibilityContext
-                                           || HasVisibilityContextChanged(cullingCamera, cullingEnabled);
-            var visibilityTransformChanged = cullingEnabled
+                                           || HasVisibilityContextChanged(
+                                               cullingCamera,
+                                               cullingEnabled,
+                                               effectiveAudienceLodEnabled,
+                                               audienceLodDistance);
+            var visibilityTransformChanged = (cullingEnabled || effectiveAudienceLodEnabled)
                                              && (!_hasVisibilityContext
                                                  || frame.LocalToWorld != _lastVisibilityLocalToWorld);
             var visibilityAudienceChanged = !_hasVisibilityContext
@@ -292,10 +302,17 @@ namespace PrismFanlight.Rendering
                     context,
                     cullingCamera,
                     cullingEnabled,
+                    effectiveAudienceLodEnabled,
+                    audienceLodDistance,
                     audienceEnabled);
                 _lastCullingEnabled = cullingEnabled;
+                _lastAudienceLodEnabled = effectiveAudienceLodEnabled;
+                _lastAudienceLodDistance = audienceLodDistance;
                 _lastVisibilityAudienceEnabled = audienceEnabled;
                 _lastCullingCamera = cullingCamera;
+                _lastLodCameraPosition = effectiveAudienceLodEnabled
+                    ? cullingCamera.transform.position
+                    : default;
                 _lastCullingViewMatrix = cullingEnabled ? cullingCamera.worldToCameraMatrix : default;
                 _lastCullingProjectionMatrix = cullingEnabled ? cullingCamera.projectionMatrix : default;
                 _lastVisibilityLocalToWorld = frame.LocalToWorld;
@@ -385,13 +402,21 @@ namespace PrismFanlight.Rendering
             }
         }
 
-        private bool HasVisibilityContextChanged(Camera cullingCamera, bool cullingEnabled)
+        private bool HasVisibilityContextChanged(
+            Camera cullingCamera,
+            bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance)
         {
             if (cullingEnabled != _lastCullingEnabled) return true;
+            if (audienceLodEnabled != _lastAudienceLodEnabled) return true;
+            if (audienceLodEnabled && audienceLodDistance != _lastAudienceLodDistance) return true;
+            if (!cullingEnabled && !audienceLodEnabled) return false;
+            if (cullingCamera != _lastCullingCamera) return true;
+            if (audienceLodEnabled && cullingCamera.transform.position != _lastLodCameraPosition) return true;
             if (!cullingEnabled) return false;
 
-            return cullingCamera != _lastCullingCamera
-                   || cullingCamera.worldToCameraMatrix != _lastCullingViewMatrix
+            return cullingCamera.worldToCameraMatrix != _lastCullingViewMatrix
                    || cullingCamera.projectionMatrix != _lastCullingProjectionMatrix;
         }
 
@@ -489,11 +514,14 @@ namespace PrismFanlight.Rendering
             _hasMaskBeat = false;
             _hasVisibilityContext = false;
             _lastCullingEnabled = false;
+            _lastAudienceLodEnabled = false;
             _lastVisibilityAudienceEnabled = false;
             _lastAnimationAudienceEnabled = false;
             _globalSeed = 0u;
             _lastMaskBeat = 0d;
+            _lastAudienceLodDistance = 0f;
             _lastCullingCamera = null;
+            _lastLodCameraPosition = Vector3.zero;
             _lastCullingViewMatrix = Matrix4x4.identity;
             _lastCullingProjectionMatrix = Matrix4x4.identity;
             _lastAnimationLocalToWorld = Matrix4x4.identity;

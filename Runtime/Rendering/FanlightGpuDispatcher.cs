@@ -33,9 +33,19 @@ namespace PrismFanlight.Rendering
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance,
             bool audienceEnabled)
         {
-            SetVisibilityParams(shader, context, cullingCamera, cullingEnabled, audienceEnabled, buffers);
+            SetVisibilityParams(
+                shader,
+                context,
+                cullingCamera,
+                cullingEnabled,
+                audienceLodEnabled,
+                audienceLodDistance,
+                audienceEnabled,
+                buffers);
 
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.AudienceArgs, buffers.AudienceArgsBuffer);
@@ -350,6 +360,8 @@ namespace PrismFanlight.Rendering
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance,
             bool audienceEnabled,
             FanlightGpuBuffers buffers)
         {
@@ -360,9 +372,11 @@ namespace PrismFanlight.Rendering
             shader.SetFloat(FanlightShaderIds.CullingScale, FanlightGeometryBuilder.GetMaxScale(context.Frame.LocalToWorld));
             shader.SetInt(FanlightShaderIds.EnableCulling, cullingEnabled ? 1 : 0);
             shader.SetInt(FanlightShaderIds.EnableAudience, audienceEnabled ? 1 : 0);
-            shader.SetInt(FanlightShaderIds.EnableAudienceLod, 0);
-            shader.SetVector(FanlightShaderIds.AudienceLod, Vector4.zero);
-            var cameraPosition = cullingEnabled ? cullingCamera.transform.position : Vector3.zero;
+            shader.SetInt(FanlightShaderIds.EnableAudienceLod, audienceLodEnabled ? 1 : 0);
+            shader.SetVector(FanlightShaderIds.AudienceLod, new Vector4(audienceLodDistance, 0f, 0f, 0f));
+            var cameraPosition = cullingEnabled || audienceLodEnabled
+                ? cullingCamera.transform.position
+                : Vector3.zero;
             shader.SetVector(FanlightShaderIds.LodCameraPos, new Vector4(cameraPosition.x, cameraPosition.y, cameraPosition.z, 1f));
 
             if (!cullingEnabled) return;

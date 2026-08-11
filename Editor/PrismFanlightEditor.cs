@@ -24,6 +24,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _renderingLayerMask;
         private SerializedProperty _enableCulling;
         private SerializedProperty _cullingCamera;
+        private SerializedProperty _enableAudienceLod;
+        private SerializedProperty _audienceLodDistance;
         private SerializedProperty _updateMode;
         private SerializedProperty _layoutAsset;
         private SerializedProperty _swingTarget;
@@ -77,6 +79,8 @@ namespace PrismFanlight.Editor
             _renderingLayerMask = serializedObject.FindProperty(nameof(_renderingLayerMask));
             _enableCulling = serializedObject.FindProperty(nameof(_enableCulling));
             _cullingCamera = serializedObject.FindProperty(nameof(_cullingCamera));
+            _enableAudienceLod = serializedObject.FindProperty(nameof(_enableAudienceLod));
+            _audienceLodDistance = serializedObject.FindProperty(nameof(_audienceLodDistance));
             _updateMode = serializedObject.FindProperty(nameof(_updateMode));
             _layoutAsset = serializedObject.FindProperty(nameof(_layoutAsset));
             _swingTarget = serializedObject.FindProperty(nameof(_swingTarget));
@@ -223,18 +227,24 @@ namespace PrismFanlight.Editor
                 }
 
                 EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+
+                if (_cullingCamera.objectReferenceValue != null)
+                {
+                    EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
+                    EditorGUILayout.PropertyField(_enableAudienceLod, new GUIContent("Enable Distance LOD"));
+
+                    if (_enableAudienceLod.boolValue)
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            EditorGUILayout.PropertyField(_audienceLodDistance, new GUIContent("Distance"));
+                        }
+                    }
+                }
 
                 DrawChild(_visibility, "_penlightsEnabled");
                 DrawChild(_visibility, "_audienceBodiesEnabled");
-
-                EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
-                if (_enableCulling.boolValue)
-                {
-                    using (new EditorGUI.IndentLevelScope())
-                    {
-                        EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
-                    }
-                }
 
                 EditorGUI.BeginChangeCheck();
                 _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);

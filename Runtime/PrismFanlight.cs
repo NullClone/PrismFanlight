@@ -37,6 +37,13 @@ namespace PrismFanlight
         private Camera _cullingCamera;
 
         [SerializeField]
+        private bool _enableAudienceLod;
+
+        [SerializeField]
+        [Min(0.01f)]
+        private float _audienceLodDistance = 100f;
+
+        [SerializeField]
         private FanlightGpuUpdateTiming _updateMode = FanlightGpuUpdateTiming.FixedRate(60f);
 
         [SerializeField]
@@ -491,13 +498,18 @@ namespace PrismFanlight
                 transform.localToWorldMatrix,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero);
 
-            var enableCulling = Application.isPlaying && _enableCulling && _cullingCamera != null;
+            var hasCullingCamera = _cullingCamera != null;
+            var enableCulling = Application.isPlaying && _enableCulling && hasCullingCamera;
+            var enableAudienceLod = Application.isPlaying && _enableAudienceLod && hasCullingCamera;
+            var audienceLodDistance = Mathf.Max(0.01f, _audienceLodDistance);
 
             _renderer.Render(
                 sample,
                 frame,
                 _cullingCamera,
                 enableCulling,
+                enableAudienceLod,
+                audienceLodDistance,
                 gameObject.layer,
                 _renderingLayerMask,
                 AnimationUpdate);
