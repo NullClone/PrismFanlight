@@ -41,8 +41,8 @@ namespace PrismFanlight.Editor
         private SerializedProperty _globalSeed;
 
         private UnityEditor.Editor _layoutEditor;
-        private UnityEditor.Editor _materialEditor;
-        private UnityEditor.Editor _audienceMaterialEditor;
+        // private UnityEditor.Editor _materialEditor;
+        // private UnityEditor.Editor _audienceMaterialEditor;
 
         private bool _enableGizmos = true;
         private bool _hasSelectedLayout;
@@ -102,17 +102,17 @@ namespace PrismFanlight.Editor
                 _layoutEditor = null;
             }
 
-            if (_audienceMaterialEditor != null)
-            {
-                DestroyImmediate(_audienceMaterialEditor);
-                _audienceMaterialEditor = null;
-            }
-
-            if (_materialEditor != null)
-            {
-                DestroyImmediate(_materialEditor);
-                _materialEditor = null;
-            }
+            // if (_audienceMaterialEditor != null)
+            // {
+            //     DestroyImmediate(_audienceMaterialEditor);
+            //     _audienceMaterialEditor = null;
+            // }
+            //
+            // if (_materialEditor != null)
+            // {
+            //     DestroyImmediate(_materialEditor);
+            //     _materialEditor = null;
+            // }
         }
 
         private void OnSceneGUI()
@@ -515,10 +515,9 @@ namespace PrismFanlight.Editor
 
             #endregion
 
-            EditorGUILayout.Space();
-
-            DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
-            DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
+            // EditorGUILayout.Space();
+            // DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
+            // DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -545,7 +544,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawMaterialEditor(SerializedProperty property, string materialName, ref UnityEditor.Editor materialEditor)
+        /*private static void DrawMaterialEditor(SerializedProperty property, string materialName, ref UnityEditor.Editor materialEditor)
         {
             if (property.hasMultipleDifferentValues)
             {
@@ -579,7 +578,7 @@ namespace PrismFanlight.Editor
 
             editor.DrawHeader();
             editor.OnInspectorGUI();
-        }
+        }*/
 
         private static void DrawUpdateTiming(SerializedProperty timing, string label)
         {
