@@ -217,9 +217,9 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
                 EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
 
-                if (_material.objectReferenceValue == null || _audienceMaterial.objectReferenceValue == null)
+                if (_material.objectReferenceValue == null)
                 {
-                    EditorGUILayout.HelpBox("Penlight Material and Audience Material are required.", MessageType.Error);
+                    EditorGUILayout.HelpBox("Penlight Material is required.", MessageType.Error);
                 }
 
                 EditorGUILayout.Space();
