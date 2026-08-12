@@ -125,6 +125,8 @@ namespace PrismFanlight
 
         internal FanlightLayoutAsset LayoutAsset => _layoutAsset;
 
+        internal FanlightTimeManager TimeManager => _timeManager;
+
         private FanlightGpuUpdateTiming AnimationUpdate => _updateMode.Validated();
 
         internal bool IsReady => _renderer is { IsReady: true };

@@ -14,35 +14,14 @@ namespace PrismFanlight.Timeline
 
         // Methods
 
-        internal static bool TryBuild(
-            double defaultBpm,
+        internal static bool TryBuildSource(
             int beatsPerBar,
             int beatUnit,
             double musicalOriginSeconds,
             IEnumerable<TimelineClip> sourceClips,
-            out FanlightTempoRuntimeDefinition definition,
+            out FanlightTempoSource source,
             out string error)
         {
-            definition = null;
-
-            if (!IsFinite(defaultBpm) || defaultBpm <= 0d)
-            {
-                error = "Tempo Track Default BPM must be a finite value greater than zero.";
-                return false;
-            }
-
-            if (beatsPerBar < 1 || !IsValidBeatUnit(beatUnit))
-            {
-                error = "Tempo Track time signature is invalid.";
-                return false;
-            }
-
-            if (!IsFinite(musicalOriginSeconds))
-            {
-                error = "Tempo Track Musical Origin Seconds must be finite.";
-                return false;
-            }
-
             var clips = new List<TimelineClip>();
 
             if (sourceClips != null)
@@ -55,42 +34,117 @@ namespace PrismFanlight.Timeline
 
             clips.Sort(CompareClips);
 
+            if (clips.Count == 0)
+            {
+                source = new FanlightTempoSource(
+                    Array.Empty<double>(),
+                    Array.Empty<double>(),
+                    Array.Empty<double>(),
+                    beatsPerBar,
+                    beatUnit,
+                    musicalOriginSeconds);
+                error = string.Empty;
+                return true;
+            }
+
+            if (beatsPerBar < 1 || !IsValidBeatUnit(beatUnit))
+            {
+                source = null;
+                error = "Tempo Track time signature is invalid.";
+                return false;
+            }
+
+            if (!IsFinite(musicalOriginSeconds))
+            {
+                source = null;
+                error = "Tempo Track Musical Origin Seconds must be finite.";
+                return false;
+            }
+
+            var starts = new double[clips.Count];
+            var ends = new double[clips.Count];
+            var bpms = new double[clips.Count];
+
             for (var i = 0; i < clips.Count; i++)
             {
                 var clip = clips[i];
 
                 if (clip.asset is not FanlightTempoClip tempoClip)
                 {
+                    source = null;
                     error = "Tempo Track contains an unsupported Clip type.";
                     return false;
                 }
 
-                if (!tempoClip.TryValidate(out error)) return false;
+                if (!tempoClip.TryValidate(out error))
+                {
+                    source = null;
+                    return false;
+                }
 
                 if (!IsFinite(clip.start) || clip.start < 0d || !IsFinite(clip.duration) || clip.duration <= 0d)
                 {
+                    source = null;
                     error = "Tempo Section Clip time and duration must be finite, with a positive duration.";
                     return false;
                 }
 
                 if (i > 0 && clip.start < clips[i - 1].end - BoundaryTolerance)
                 {
+                    source = null;
                     error = $"Tempo Section Clips overlap at {clip.start:0.###} seconds.";
                     return false;
                 }
+
+                starts[i] = clip.start;
+                ends[i] = clip.end;
+                bpms[i] = tempoClip.Bpm;
             }
 
+            source = new FanlightTempoSource(
+                starts,
+                ends,
+                bpms,
+                beatsPerBar,
+                beatUnit,
+                musicalOriginSeconds);
+            error = string.Empty;
+            return true;
+        }
+
+        internal static bool TryBuildDefinition(
+            FanlightTempoSource source,
+            double fallbackBpm,
+            out FanlightTempoRuntimeDefinition definition,
+            out string error)
+        {
+            definition = null;
+
+            if (source == null || !source.HasClips)
+            {
+                error = "Tempo Runtime Definition requires at least one explicit Tempo Clip.";
+                return false;
+            }
+
+            if (!IsFinite(fallbackBpm) || fallbackBpm <= 0d)
+            {
+                error = "Fanlight Time Manager Default BPM must be a finite value greater than zero.";
+                return false;
+            }
+
+            var clipStarts = source.Starts.Span;
+            var clipEnds = source.Ends.Span;
+            var clipBpms = source.Bpms.Span;
             var starts = new List<double>();
             var ends = new List<double>();
             var bpms = new List<double>();
             var cursor = 0d;
 
-            for (var i = 0; i < clips.Count; i++)
+            for (var i = 0; i < clipStarts.Length; i++)
             {
-                var clip = clips[i];
-                var start = clip.start <= cursor + BoundaryTolerance ? cursor : clip.start;
+                var start = clipStarts[i] <= cursor + BoundaryTolerance ? cursor : clipStarts[i];
 
-                if (clip.end <= start)
+                if (clipEnds[i] <= start)
                 {
                     error = "Tempo Section Clip becomes empty after Timeline boundary normalization.";
                     return false;
@@ -98,14 +152,14 @@ namespace PrismFanlight.Timeline
 
                 if (start > cursor)
                 {
-                    AddSection(cursor, start, defaultBpm, starts, ends, bpms);
+                    AddSection(cursor, start, fallbackBpm, starts, ends, bpms);
                 }
 
-                AddSection(start, clip.end, ((FanlightTempoClip)clip.asset).Bpm, starts, ends, bpms);
-                cursor = clip.end;
+                AddSection(start, clipEnds[i], clipBpms[i], starts, ends, bpms);
+                cursor = clipEnds[i];
             }
 
-            AddSection(cursor, double.PositiveInfinity, defaultBpm, starts, ends, bpms);
+            AddSection(cursor, double.PositiveInfinity, fallbackBpm, starts, ends, bpms);
 
             var rawBeats = new double[starts.Count];
 
@@ -115,14 +169,19 @@ namespace PrismFanlight.Timeline
                               + (starts[i] - starts[i - 1]) * bpms[i - 1] / 60d;
             }
 
-            var originBeat = EvaluateRawBeat(musicalOriginSeconds, starts, bpms, rawBeats, defaultBpm);
+            var originBeat = EvaluateRawBeat(
+                source.MusicalOriginSeconds,
+                starts,
+                bpms,
+                rawBeats,
+                fallbackBpm);
             var sections = new FanlightTempoSection[starts.Count];
 
             for (var i = 0; i < starts.Count; i++)
             {
                 var startBeat = rawBeats[i] - originBeat;
-                var startBeatInBar = PositiveModulo(startBeat, beatsPerBar);
-                var startBar = (long)Math.Floor(startBeat / beatsPerBar) + 1L;
+                var startBeatInBar = PositiveModulo(startBeat, source.BeatsPerBar);
+                var startBar = (long)Math.Floor(startBeat / source.BeatsPerBar) + 1L;
                 sections[i] = new FanlightTempoSection(
                     starts[i],
                     ends[i],
@@ -130,8 +189,8 @@ namespace PrismFanlight.Timeline
                     startBar,
                     startBeatInBar,
                     bpms[i],
-                    beatsPerBar,
-                    beatUnit);
+                    source.BeatsPerBar,
+                    source.BeatUnit);
             }
 
             definition = new FanlightTempoRuntimeDefinition(sections);
@@ -157,9 +216,9 @@ namespace PrismFanlight.Timeline
             List<double> starts,
             List<double> bpms,
             double[] rawBeats,
-            double defaultBpm)
+            double fallbackBpm)
         {
-            if (seconds < 0d) return seconds * defaultBpm / 60d;
+            if (seconds < 0d) return seconds * fallbackBpm / 60d;
 
             var index = FindSection(seconds, starts);
             return rawBeats[index] + (seconds - starts[index]) * bpms[index] / 60d;

@@ -15,9 +15,6 @@ namespace PrismFanlight.Timeline
         // Fields
 
         [SerializeField]
-        private double _defaultBpm = 120d;
-
-        [SerializeField]
         private int _beatsPerBar = 4;
 
         [SerializeField]
@@ -29,14 +26,11 @@ namespace PrismFanlight.Timeline
 
         // Properties
 
-        internal double DefaultBpm => _defaultBpm;
-
         internal int BeatsPerBar => _beatsPerBar;
 
         internal int BeatUnit => (int)_beatUnit;
 
         internal double MusicalOriginSeconds => _musicalOriginSeconds;
-
 
         // Methods
 
@@ -44,7 +38,7 @@ namespace PrismFanlight.Timeline
 
         public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
         {
-            if (!TryBuildRuntimeDefinition(out var definition, out var error))
+            if (!TryBuildTempoSource(out var source, out var error))
             {
                 throw new InvalidOperationException(error);
             }
@@ -57,12 +51,12 @@ namespace PrismFanlight.Timeline
                 throw new InvalidOperationException("Tempo Track requires a PlayableDirector graph resolver.");
             }
 
-            mixer.GetBehaviour().Configure(definition, director, this);
+            mixer.GetBehaviour().Configure(source, director, this);
             return mixer;
         }
 
 
-        internal bool TryBuildRuntimeDefinition(out FanlightTempoRuntimeDefinition definition, out string error)
+        internal bool TryBuildTempoSource(out FanlightTempoSource source, out string error)
         {
             if (timelineAsset != null)
             {
@@ -75,18 +69,49 @@ namespace PrismFanlight.Timeline
 
                 if (tempoTrackCount > 1)
                 {
-                    definition = null;
+                    source = null;
                     error = "A Timeline Asset can contain only one Fanlight Tempo Track.";
                     return false;
                 }
             }
 
-            return FanlightTempoDefinitionBuilder.TryBuild(
-                DefaultBpm,
+            return FanlightTempoDefinitionBuilder.TryBuildSource(
                 BeatsPerBar,
                 BeatUnit,
                 MusicalOriginSeconds,
                 GetClips(),
+                out source,
+                out error);
+        }
+
+        internal bool TryBuildRuntimeDefinition(
+            FanlightTimeManager timeManager,
+            out FanlightTempoRuntimeDefinition definition,
+            out string error)
+        {
+            if (!TryBuildTempoSource(out var source, out error))
+            {
+                definition = null;
+                return false;
+            }
+
+            if (!source.HasClips)
+            {
+                definition = null;
+                error = string.Empty;
+                return true;
+            }
+
+            if (timeManager == null)
+            {
+                definition = null;
+                error = "Tempo Track requires a bound PrismFanlight with a Fanlight Time Manager.";
+                return false;
+            }
+
+            return FanlightTempoDefinitionBuilder.TryBuildDefinition(
+                source,
+                timeManager.DefaultBpm,
                 out definition,
                 out error);
         }

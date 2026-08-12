@@ -55,7 +55,15 @@ namespace PrismFanlight.Editor
             if (clip.asset is not FanlightTempoClip) return;
             if (clip.GetParentTrack() is not FanlightTempoTrack tempoTrack) return;
 
-            if (!tempoTrack.TryBuildRuntimeDefinition(out var definition, out _)) return;
+            var director = TimelineEditor.inspectedDirector;
+            if (director == null) return;
+
+            var binding = director.GetGenericBinding(tempoTrack);
+            var target = binding as PrismFanlight;
+            if (target == null && binding is GameObject gameObject) target = gameObject.GetComponent<PrismFanlight>();
+            if (target == null || target.TimeManager == null) return;
+
+            if (!tempoTrack.TryBuildRuntimeDefinition(target.TimeManager, out var definition, out _)) return;
 
             if (!TryGetVisibleSequenceRange(clip, region, out var visibleStart, out var visibleEnd)) return;
             if (!TryGetSection(definition, clip.start, out var section)) return;
