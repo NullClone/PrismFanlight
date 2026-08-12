@@ -131,7 +131,7 @@ namespace PrismFanlight.Core
         {
             try
             {
-                return new FanlightDirectionState(value.Mode, value.WorldYawDegrees, value.AimStrength);
+                return new FanlightDirectionState(value.Mode, value.Direction);
             }
             catch (ArgumentException)
             {

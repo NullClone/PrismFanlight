@@ -32,12 +32,10 @@ namespace PrismFanlight.Editor
 
             if (!mode.hasMultipleDifferentValues)
             {
-                if (mode.enumValueIndex == (int)FanlightDirectionMode.Target)
+                if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
                 {
-                    DrawChild("_aimStrength");
+                    DrawChild("_direction");
                 }
-
-                DrawChild("_worldYawDegrees");
             }
 
             serializedObject.ApplyModifiedProperties();

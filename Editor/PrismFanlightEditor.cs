@@ -132,7 +132,7 @@ namespace PrismFanlight.Editor
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
             {
                 var pos = _instance.transform.position;
-                var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_worldYawDegrees").floatValue, 0);
+                var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_direction").floatValue, 0);
                 var size = new Vector3(0.75f, 0.75f, 1f);
 
                 // Draw Direction Gizmo
@@ -458,21 +458,20 @@ namespace PrismFanlight.Editor
 
             _directionSection.DrawSection(() =>
             {
-                EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
-                EditorGUILayout.Space();
-
                 var mode = _direction.FindPropertyRelative("_mode");
 
                 EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
 
                 if (!mode.hasMultipleDifferentValues)
                 {
-                    if (mode.enumValueIndex == (int)FanlightDirectionMode.Target)
+                    if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
                     {
-                        DrawChild(_direction, "_aimStrength");
+                        DrawChild(_direction, "_direction");
                     }
-
-                    DrawChild(_direction, "_worldYawDegrees");
+                    else
+                    {
+                        EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
+                    }
                 }
             }, _instance);
 

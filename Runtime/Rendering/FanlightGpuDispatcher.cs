@@ -228,12 +228,6 @@ namespace PrismFanlight.Rendering
             shader.Dispatch(kernels.ResolveSeatMask, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }
 
-        private static Vector3 ComputeWorldDirection(FanlightDirectionState direction)
-        {
-            var yaw = direction.WorldYawDegrees * Mathf.Deg2Rad;
-            return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
-        }
-
         private static Color ToLinearChroma(Color value)
         {
             var linear = QualitySettings.activeColorSpace == ColorSpace.Gamma ? value.linear : value;
@@ -305,7 +299,9 @@ namespace PrismFanlight.Rendering
             shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.SeatPitch.x, layout.SeatPitch.y, 0f, 0f));
             shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.BlockCount2D.x, layout.BlockCount2D.y, 0f, 0f));
 
-            var worldDirection = ComputeWorldDirection(direction);
+            var yaw = direction.Direction * Mathf.Deg2Rad;
+            var worldDirection = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
+
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(intent.Reach, asynchrony, noise.PhaseAmount * realism, noise.PhaseRate));
             shader.SetVector(FanlightShaderIds.MotionCycle, new Vector4(
                 motion.BeatsPerCycle,
@@ -318,9 +314,9 @@ namespace PrismFanlight.Rendering
                 motion.SideScale,
                 motion.ForwardScale));
             shader.SetInt(FanlightShaderIds.SwingMode, (int)direction.Mode);
-            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, 0f));
+            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector3(worldDirection.x, worldDirection.y, worldDirection.z));
             var target = context.Frame.SwingTargetWorldPosition;
-            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(target.x, target.y, target.z, direction.AimStrength));
+            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector3(target.x, target.y, target.z));
             shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(
                 variation.StandingPositionSpread * realism,
                 variation.ArmExtensionVariation * realism,

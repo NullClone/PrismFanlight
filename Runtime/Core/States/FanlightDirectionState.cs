@@ -11,25 +11,20 @@ namespace PrismFanlight.Core
         [SerializeField]
         private FanlightDirectionMode _mode;
 
-        [SerializeField, Label("Direction (Fallback)")]
-        private float _worldYawDegrees;
-
-        [SerializeField, Label("Strength"), Range(0f, 1f)]
-        private float _aimStrength;
+        [SerializeField]
+        private float _direction;
 
 
         // Properties
 
         internal FanlightDirectionMode Mode => _mode;
 
-        internal float WorldYawDegrees => _worldYawDegrees;
-
-        internal float AimStrength => _aimStrength;
+        internal float Direction => _direction;
 
 
         // Methods
 
-        internal FanlightDirectionState(FanlightDirectionMode mode, float worldYawDegrees, float aimStrength)
+        internal FanlightDirectionState(FanlightDirectionMode mode, float direction)
         {
             if (mode is not FanlightDirectionMode.WorldDirection and not FanlightDirectionMode.Target)
             {
@@ -37,8 +32,7 @@ namespace PrismFanlight.Core
             }
 
             _mode = mode;
-            _worldYawDegrees = FanlightStateValidation.NormalizeDegrees(worldYawDegrees, nameof(worldYawDegrees));
-            _aimStrength = FanlightStateValidation.RequireRange(aimStrength, 0f, 1f, nameof(aimStrength));
+            _direction = FanlightStateValidation.NormalizeDegrees(direction, nameof(direction));
         }
     }
 }

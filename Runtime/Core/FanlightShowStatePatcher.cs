@@ -190,8 +190,7 @@ namespace PrismFanlight.Core
             var value = patch.Value;
             return new FanlightDirectionState(
                 Has(patch.Fields, FanlightDirectionFields.Mode) && weight >= 0.5f ? value.Mode : current.Mode,
-                Has(patch.Fields, FanlightDirectionFields.WorldYawDegrees) ? Mathf.LerpAngle(current.WorldYawDegrees, value.WorldYawDegrees, weight) : current.WorldYawDegrees,
-                Has(patch.Fields, FanlightDirectionFields.AimStrength) ? Lerp(current.AimStrength, value.AimStrength, weight) : current.AimStrength);
+                Has(patch.Fields, FanlightDirectionFields.Direction) ? Mathf.LerpAngle(current.Direction, value.Direction, weight) : current.Direction);
         }
 
         internal static FanlightColorState Apply(FanlightColorState current, FanlightColorPatch patch, float weight)

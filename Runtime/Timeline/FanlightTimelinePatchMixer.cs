@@ -423,16 +423,14 @@ namespace PrismFanlight.Timeline
             ValidateMask((int)fields, (int)FanlightDirectionFields.All);
 
             var mode = new FanlightDiscreteValue<FanlightDirectionMode>();
-            var worldYawDegrees = new FanlightWeightedAngle();
-            var aimStrength = new FanlightWeightedFloat();
+            var direction = new FanlightWeightedAngle();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Direction;
                 if (Has(fields, FanlightDirectionFields.Mode)) mode.Consider(sourceValue.Mode, sample.Weight, sample.StartSeconds);
-                if (Has(fields, FanlightDirectionFields.WorldYawDegrees)) worldYawDegrees.AddDegrees(sourceValue.WorldYawDegrees, sample.Weight);
-                if (Has(fields, FanlightDirectionFields.AimStrength)) aimStrength.Add(sourceValue.AimStrength, sample.Weight);
+                if (Has(fields, FanlightDirectionFields.Direction)) direction.AddDegrees(sourceValue.Direction, sample.Weight);
             }
 
             if (fields == FanlightDirectionFields.None)
@@ -444,8 +442,7 @@ namespace PrismFanlight.Timeline
             var fallback = FanlightTimelineDefaults.DirectionState();
             var value = new FanlightDirectionState(
                 mode.Value(fallback.Mode),
-                worldYawDegrees.ValueDegrees(fallback.WorldYawDegrees),
-                aimStrength.Value(fallback.AimStrength)
+                direction.ValueDegrees(fallback.Direction)
             );
 
             patch = new FanlightShowPatch(

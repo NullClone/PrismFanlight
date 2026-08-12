@@ -11,19 +11,22 @@ float3 PrismWorldVectorToLocal(float3 vectorWS)
 
 float3 PrismComputeWorldDirection(FanlightSeatData seat)
 {
-    float3 worldDirection = SafeNormalize(_SwingAxis.xyz, float3(0.0, 0.0, 1.0));
-    float aimStrength = saturate(_SwingTargetPos.w);
-
-    if (_SwingMode == 1 && aimStrength > 0.001)
+    if (_SwingMode == 0)
     {
+        // World Direction
+        
+        return SafeNormalize(_SwingAxis.xyz, float3(0.0, 0.0, 1.0));
+    }
+    else
+    {
+        // Target Direction
+    
         float3 seatWorldPos = mul(_LocalToWorld, float4(seat.localPositionSeed.xyz, 1.0)).xyz;
         float3 targetDirection = _SwingTargetPos.xyz - seatWorldPos;
         targetDirection.y = 0.0;
-        targetDirection = SafeNormalize(targetDirection, worldDirection);
-        worldDirection = SafeNormalize(lerp(worldDirection, targetDirection, aimStrength), worldDirection);
+        
+        return SafeNormalize(targetDirection, float3(0.0, 0.0, 1.0));
     }
-
-    return worldDirection;
 }
 
 PrismAudienceBasis PrismComputeAudienceBasis(FanlightSeatData seat)

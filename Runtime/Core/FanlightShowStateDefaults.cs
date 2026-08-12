@@ -55,10 +55,7 @@ namespace PrismFanlight.Core
             0f,
             0f);
 
-        internal static FanlightDirectionState Direction() => new(
-            FanlightDirectionMode.WorldDirection,
-            0f,
-            0f);
+        internal static FanlightDirectionState Direction() => new(FanlightDirectionMode.WorldDirection, 0f);
 
         internal static FanlightColorState Color() => new(
             new FanlightColorSource(
