@@ -126,7 +126,7 @@ namespace PrismFanlight.Editor
                     DrawChroma(source.FindPropertyRelative("_colorA"), "Color A");
                     DrawChroma(source.FindPropertyRelative("_colorB"), "Color B");
                     EditorGUILayout.PropertyField(source.FindPropertyRelative("_origin"), new GUIContent("Origin"));
-                    DrawDirection(source.FindPropertyRelative("_direction"));
+                    DrawLocalYaw(source.FindPropertyRelative("_localYawDegrees"));
                     EditorGUILayout.PropertyField(source.FindPropertyRelative("_width"), new GUIContent("Width"));
                     EditorGUILayout.PropertyField(source.FindPropertyRelative("_offset"), new GUIContent("Offset"));
                     break;
@@ -262,7 +262,7 @@ namespace PrismFanlight.Editor
                 case FanlightIntensityMaskMode.TravelingWave:
                     DrawEnvelope(mask);
                     EditorGUILayout.PropertyField(mask.FindPropertyRelative("_origin"), new GUIContent("Origin"));
-                    DrawDirection(mask.FindPropertyRelative("_direction"));
+                    DrawLocalYaw(mask.FindPropertyRelative("_localYawDegrees"));
                     EditorGUILayout.PropertyField(mask.FindPropertyRelative("_wavelength"), new GUIContent("Wavelength"));
                     break;
             }
@@ -318,18 +318,17 @@ namespace PrismFanlight.Editor
             if (mode != FanlightColorMode.LinearGradient) return;
 
             var origin = source.FindPropertyRelative("_origin").vector2Value;
-            var direction = source.FindPropertyRelative("_direction").vector2Value;
+            var localYawDegrees = source.FindPropertyRelative("_localYawDegrees").floatValue;
             var width = source.FindPropertyRelative("_width").floatValue;
             var offset = source.FindPropertyRelative("_offset").floatValue;
             if (!IsFinite(origin)
-                || !IsFinite(direction)
-                || direction.sqrMagnitude <= 0.000001f
+                || !float.IsFinite(localYawDegrees)
                 || !float.IsFinite(width)
                 || width <= 0f
                 || !float.IsFinite(offset))
             {
                 EditorGUILayout.HelpBox(
-                    "Linear Gradient requires finite Origin and Offset, a non-zero Direction, and Width greater than 0.",
+                    "Linear Gradient requires finite Origin, Local Yaw Degrees, and Offset, and Width greater than 0.",
                     MessageType.Error);
             }
         }
@@ -366,11 +365,10 @@ namespace PrismFanlight.Editor
             if (mode == FanlightIntensityMaskMode.TravelingWave)
             {
                 var origin = mask.FindPropertyRelative("_origin").vector2Value;
-                var direction = mask.FindPropertyRelative("_direction").vector2Value;
+                var localYawDegrees = mask.FindPropertyRelative("_localYawDegrees").floatValue;
                 var wavelength = mask.FindPropertyRelative("_wavelength").floatValue;
                 invalid |= !IsFinite(origin)
-                           || !IsFinite(direction)
-                           || direction.sqrMagnitude <= 0.000001f
+                           || !float.IsFinite(localYawDegrees)
                            || !float.IsFinite(wavelength)
                            || wavelength <= 0f;
             }
@@ -383,24 +381,23 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawDirection(SerializedProperty property)
-        {
-            EditorGUI.BeginChangeCheck();
-            var direction = EditorGUILayout.Vector2Field("Direction", property.vector2Value);
-            if (!EditorGUI.EndChangeCheck()) return;
-
-            if (IsFinite(direction) && direction.sqrMagnitude > 0.000001f)
-            {
-                var scale = Mathf.Max(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
-                direction = (direction / scale).normalized;
-            }
-
-            property.vector2Value = direction;
-        }
-
         private static bool IsFinite(Vector2 value)
         {
             return float.IsFinite(value.x) && float.IsFinite(value.y);
+        }
+
+        private static void DrawLocalYaw(SerializedProperty property)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(property, new GUIContent("Local Yaw Degrees"));
+            var changed = EditorGUI.EndChangeCheck();
+            if (!float.IsFinite(property.floatValue)
+                || (!changed && property.hasMultipleDifferentValues))
+            {
+                return;
+            }
+
+            property.floatValue = Mathf.Repeat(property.floatValue, 360f);
         }
 
         private static bool IsRatio(float value)

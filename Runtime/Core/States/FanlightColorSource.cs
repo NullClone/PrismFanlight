@@ -40,7 +40,7 @@ namespace PrismFanlight.Core
         private Vector2 _origin;
 
         [SerializeField]
-        private Vector2 _direction;
+        private float _localYawDegrees;
 
         [SerializeField]
         private float _width;
@@ -74,7 +74,7 @@ namespace PrismFanlight.Core
 
         internal Vector2 Origin => _origin;
 
-        internal Vector2 Direction => _direction;
+        internal float LocalYawDegrees => _localYawDegrees;
 
         internal float Width => _width;
 
@@ -96,7 +96,7 @@ namespace PrismFanlight.Core
             Color colorA,
             Color colorB,
             Vector2 origin,
-            Vector2 direction,
+            float localYawDegrees,
             float width,
             float offset,
             FanlightBlockPaletteEntry[] blockPaletteEntries)
@@ -111,7 +111,7 @@ namespace PrismFanlight.Core
             _colorA = colorA;
             _colorB = colorB;
             _origin = origin;
-            _direction = direction;
+            _localYawDegrees = localYawDegrees;
             _width = width;
             _offset = offset;
             _blockPaletteEntries = blockPaletteEntries == null
@@ -147,7 +147,7 @@ namespace PrismFanlight.Core
                 _colorA,
                 _colorB,
                 _origin,
-                _direction,
+                _localYawDegrees,
                 _width,
                 _offset,
                 _blockPaletteEntries);
@@ -165,7 +165,7 @@ namespace PrismFanlight.Core
                     return _colorA.Equals(other._colorA)
                            && _colorB.Equals(other._colorB)
                            && _origin.Equals(other._origin)
-                           && _direction.Equals(other._direction)
+                           && _localYawDegrees.Equals(other._localYawDegrees)
                            && _width.Equals(other._width)
                            && _offset.Equals(other._offset);
                 case FanlightColorMode.BlockPalette:
@@ -192,7 +192,9 @@ namespace PrismFanlight.Core
                     ValidateChroma(_colorA, nameof(_colorA));
                     ValidateChroma(_colorB, nameof(_colorB));
                     _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
-                    _direction = FanlightStateValidation.RequireDirection(_direction, nameof(_direction));
+                    _localYawDegrees = FanlightStateValidation.NormalizeDegrees(
+                        _localYawDegrees,
+                        nameof(_localYawDegrees));
                     _width = FanlightStateValidation.RequireMinimumExclusive(_width, 0f, nameof(_width));
                     _offset = FanlightStateValidation.RequireFinite(_offset, nameof(_offset));
                     break;

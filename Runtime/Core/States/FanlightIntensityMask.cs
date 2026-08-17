@@ -33,7 +33,7 @@ namespace PrismFanlight.Core
         private Vector2 _origin;
 
         [SerializeField]
-        private Vector2 _direction;
+        private float _localYawDegrees;
 
         [SerializeField]
         private float _wavelength;
@@ -57,7 +57,7 @@ namespace PrismFanlight.Core
 
         internal Vector2 Origin => _origin;
 
-        internal Vector2 Direction => _direction;
+        internal float LocalYawDegrees => _localYawDegrees;
 
         internal float Wavelength => _wavelength;
 
@@ -73,7 +73,7 @@ namespace PrismFanlight.Core
             float holdRatio,
             float releaseRatio,
             Vector2 origin,
-            Vector2 direction,
+            float localYawDegrees,
             float wavelength)
         {
             _mode = mode;
@@ -84,7 +84,7 @@ namespace PrismFanlight.Core
             _holdRatio = holdRatio;
             _releaseRatio = releaseRatio;
             _origin = origin;
-            _direction = direction;
+            _localYawDegrees = localYawDegrees;
             _wavelength = wavelength;
             ValidateAndNormalize();
         }
@@ -106,7 +106,7 @@ namespace PrismFanlight.Core
                 FanlightIntensityMaskMode.Pulse => EnvelopeEquals(other),
                 FanlightIntensityMaskMode.TravelingWave => EnvelopeEquals(other)
                                                            && _origin.Equals(other._origin)
-                                                           && _direction.Equals(other._direction)
+                                                           && _localYawDegrees.Equals(other._localYawDegrees)
                                                            && _wavelength.Equals(other._wavelength),
                 _ => false
             };
@@ -124,7 +124,9 @@ namespace PrismFanlight.Core
                 case FanlightIntensityMaskMode.TravelingWave:
                     ValidateEnvelope();
                     _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
-                    _direction = FanlightStateValidation.RequireDirection(_direction, nameof(_direction));
+                    _localYawDegrees = FanlightStateValidation.NormalizeDegrees(
+                        _localYawDegrees,
+                        nameof(_localYawDegrees));
                     _wavelength = FanlightStateValidation.RequireMinimumExclusive(
                         _wavelength,
                         0f,

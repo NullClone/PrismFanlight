@@ -69,7 +69,7 @@ namespace PrismFanlight.Core
                 UnityEngine.Color.white,
                 UnityEngine.Color.white,
                 Vector2.zero,
-                Vector2.right,
+                90f,
                 1f,
                 0f,
                 Array.Empty<FanlightBlockPaletteEntry>()));
@@ -86,7 +86,7 @@ namespace PrismFanlight.Core
                 0f,
                 1f,
                 Vector2.zero,
-                Vector2.right,
+                90f,
                 1f));
 
         internal static FanlightVisibilityState Visibility() => new(true, true);

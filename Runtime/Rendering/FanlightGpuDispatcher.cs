@@ -136,8 +136,8 @@ namespace PrismFanlight.Rendering
                     _colorSourceGeometry[sourceIndex] = new Vector4(
                         source.Origin.x,
                         source.Origin.y,
-                        source.Direction.x,
-                        source.Direction.y);
+                        0f,
+                        0f);
                     _colorSourceParameters[sourceIndex] = new Vector4(source.Width, source.Offset, 0f, 0f);
 
                     continue;
@@ -159,6 +159,9 @@ namespace PrismFanlight.Rendering
             shader.SetVectorArray(FanlightShaderIds.ColorSourcePalette, _colorSourcePalette);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceA, _colorSourceA);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceB, _colorSourceB);
+            shader.SetVector(
+                FanlightShaderIds.ColorResolvedDirection,
+                ToLocalDirection(color.ResolvedLocalYawDegrees));
             shader.SetVectorArray(FanlightShaderIds.ColorSourceGeometry, _colorSourceGeometry);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceParameters, _colorSourceParameters);
             shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.Seats, buffers.SeatBuffer);
@@ -212,8 +215,8 @@ namespace PrismFanlight.Rendering
                     _maskSourceGeometry[sourceIndex] = new Vector4(
                         mask.Origin.x,
                         mask.Origin.y,
-                        mask.Direction.x,
-                        mask.Direction.y);
+                        0f,
+                        0f);
                 }
             }
 
@@ -222,6 +225,9 @@ namespace PrismFanlight.Rendering
             shader.SetVectorArray(FanlightShaderIds.MaskSourceModes, _maskSourceModes);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceTiming, _maskSourceTiming);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceEnvelope, _maskSourceEnvelope);
+            shader.SetVector(
+                FanlightShaderIds.MaskResolvedDirection,
+                ToLocalDirection(intensity.ResolvedLocalYawDegrees));
             shader.SetVectorArray(FanlightShaderIds.MaskSourceGeometry, _maskSourceGeometry);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Seats, buffers.SeatBuffer);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.ResolvedMask, buffers.ResolvedMaskBuffer);
@@ -233,6 +239,12 @@ namespace PrismFanlight.Rendering
             var linear = QualitySettings.activeColorSpace == ColorSpace.Gamma ? value.linear : value;
             linear.a = 1f;
             return linear;
+        }
+
+        private static Vector4 ToLocalDirection(float localYawDegrees)
+        {
+            var radians = localYawDegrees * Mathf.Deg2Rad;
+            return new Vector4(Mathf.Sin(radians), Mathf.Cos(radians), 0f, 0f);
         }
 
         private static void SetAudienceParams(ComputeShader shader, in FanlightGpuDispatchContext context)

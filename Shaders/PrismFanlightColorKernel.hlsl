@@ -10,12 +10,14 @@ float4 _ColorSourceModes[3];
 float4 _ColorSourcePalette[18];
 float4 _ColorSourceA[3];
 float4 _ColorSourceB[3];
+float4 _ColorResolvedDirection;
 float4 _ColorSourceGeometry[3];
 float4 _ColorSourceParameters[3];
 float _MaskCompletedBeat;
 float4 _MaskSourceModes[3];
 float4 _MaskSourceTiming[3];
 float4 _MaskSourceEnvelope[3];
+float4 _MaskResolvedDirection;
 float4 _MaskSourceGeometry[3];
 
 float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatData seat)
@@ -30,10 +32,9 @@ float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatDa
     if (mode == 1u)
     {
         float2 origin = _ColorSourceGeometry[sourceIndex].xy;
-        float2 direction = _ColorSourceGeometry[sourceIndex].zw;
         float width = max(_ColorSourceParameters[sourceIndex].x, 0.000001);
         float offset = _ColorSourceParameters[sourceIndex].y;
-        float coordinate = dot(seat.localPositionSeed.xz - origin, direction) / width + 0.5 + offset;
+        float coordinate = dot(seat.localPositionSeed.xz - origin, _ColorResolvedDirection.xy) / width + 0.5 + offset;
         return lerp(_ColorSourceA[sourceIndex].rgb, _ColorSourceB[sourceIndex].rgb, saturate(coordinate));
     }
 
@@ -89,9 +90,8 @@ float PrismEvaluateMaskSource(uint sourceIndex, FanlightSeatData seat)
     if (mode == 2u)
     {
         float2 origin = _MaskSourceGeometry[sourceIndex].xy;
-        float2 direction = _MaskSourceGeometry[sourceIndex].zw;
         float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
-        float spatialPhase = dot(seat.localPositionSeed.xz - origin, direction) / wavelength;
+        float spatialPhase = dot(seat.localPositionSeed.xz - origin, _MaskResolvedDirection.xy) / wavelength;
         phase -= spatialPhase;
     }
 

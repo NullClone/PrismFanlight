@@ -25,6 +25,8 @@ namespace PrismFanlight.Core
 
         internal FanlightColorSource Source => _source;
 
+        internal float ResolvedLocalYawDegrees => ResolveLocalYawDegrees();
+
 
         // Methods
 
@@ -105,6 +107,29 @@ namespace PrismFanlight.Core
             var total = weights.x + weights.y + weights.z;
             if (total <= 0.000001f) return new Vector3(1f, 0f, 0f);
             return weights / total;
+        }
+
+        private float ResolveLocalYawDegrees()
+        {
+            var resolvedYaw = 0f;
+            var accumulatedWeight = 0d;
+
+            for (var i = 0; i < 3; i++)
+            {
+                var source = GetSource(i);
+                var weight = GetSourceWeight(i);
+                if (weight <= 0f || source.Mode != FanlightColorMode.LinearGradient) continue;
+
+                resolvedYaw = accumulatedWeight <= 0d
+                    ? source.LocalYawDegrees
+                    : FanlightStateValidation.LerpShortestDegrees(
+                        resolvedYaw,
+                        source.LocalYawDegrees,
+                        (float)(weight / (accumulatedWeight + weight)));
+                accumulatedWeight += weight;
+            }
+
+            return resolvedYaw;
         }
     }
 }

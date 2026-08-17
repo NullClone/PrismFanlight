@@ -71,12 +71,14 @@ namespace PrismFanlight.Rendering
         internal static readonly int ColorSourcePalette = Shader.PropertyToID("_ColorSourcePalette");
         internal static readonly int ColorSourceA = Shader.PropertyToID("_ColorSourceA");
         internal static readonly int ColorSourceB = Shader.PropertyToID("_ColorSourceB");
+        internal static readonly int ColorResolvedDirection = Shader.PropertyToID("_ColorResolvedDirection");
         internal static readonly int ColorSourceGeometry = Shader.PropertyToID("_ColorSourceGeometry");
         internal static readonly int ColorSourceParameters = Shader.PropertyToID("_ColorSourceParameters");
         internal static readonly int MaskCompletedBeat = Shader.PropertyToID("_MaskCompletedBeat");
         internal static readonly int MaskSourceModes = Shader.PropertyToID("_MaskSourceModes");
         internal static readonly int MaskSourceTiming = Shader.PropertyToID("_MaskSourceTiming");
         internal static readonly int MaskSourceEnvelope = Shader.PropertyToID("_MaskSourceEnvelope");
+        internal static readonly int MaskResolvedDirection = Shader.PropertyToID("_MaskResolvedDirection");
         internal static readonly int MaskSourceGeometry = Shader.PropertyToID("_MaskSourceGeometry");
     }
 }

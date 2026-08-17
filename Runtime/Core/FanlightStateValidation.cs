@@ -111,6 +111,16 @@ namespace PrismFanlight.Core
             return value < 0f ? value + 360f : value;
         }
 
+        internal static float LerpShortestDegrees(float current, float incoming, float weight)
+        {
+            current = NormalizeDegrees(current, nameof(current));
+            incoming = NormalizeDegrees(incoming, nameof(incoming));
+            weight = RequireRange(weight, 0f, 1f, nameof(weight));
+
+            var delta = Mathf.Repeat(incoming - current + 180f, 360f) - 180f;
+            return Mathf.Repeat(current + delta * weight, 360f);
+        }
+
         internal static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 
         internal static bool IsFinite(Vector3 value) => IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
