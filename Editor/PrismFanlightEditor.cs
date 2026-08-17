@@ -5,6 +5,7 @@ using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEditor.Rendering;
+using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -528,7 +529,10 @@ namespace PrismFanlight.Editor
             // DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
             // DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
 
-            serializedObject.ApplyModifiedProperties();
+            if (serializedObject.ApplyModifiedProperties())
+            {
+                RefreshTimelinePreview();
+            }
         }
 
         private static void DrawRenderingLayerMask(SerializedProperty property)
@@ -606,6 +610,32 @@ namespace PrismFanlight.Editor
         private static void DrawChild(SerializedProperty parent, string propertyName)
         {
             EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
+        }
+
+
+        private void RefreshTimelinePreview()
+        {
+            if (Application.isPlaying || !AnimationMode.InAnimationMode()) return;
+
+            var timeline = TimelineEditor.inspectedAsset;
+            var director = TimelineEditor.inspectedDirector;
+
+            if (timeline == null || director == null || !director.playableGraph.IsValid()) return;
+
+            foreach (var track in timeline.GetOutputTracks())
+            {
+                if (track is not FanlightTimelineTrackAsset && track is not FanlightTempoTrack) continue;
+
+                var binding = director.GetGenericBinding(track);
+
+                for (var i = 0; i < targets.Length; i++)
+                {
+                    if (binding != targets[i]) continue;
+
+                    TimelineEditor.Refresh(RefreshReason.SceneNeedsUpdate);
+                    return;
+                }
+            }
         }
 
 

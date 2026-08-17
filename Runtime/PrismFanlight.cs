@@ -319,7 +319,6 @@ namespace PrismFanlight
             _tempoScopeResolver = null;
             _tempoScopeManager = null;
             _tempoScopeRevision = int.MinValue;
-            ClearHeldTimelineState();
         }
 
         internal void SetScheduledTempoCandidate(object sourceToken, in FanlightTempoCandidate candidate)

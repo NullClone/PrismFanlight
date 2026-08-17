@@ -2,7 +2,6 @@
 #define PRISM_FANLIGHT_MOTION_INCLUDED
 
 #include "PrismFanlightComputeContext.hlsl"
-
 #include "PrismFanlightPose.hlsl"
 
 #define PRISM_FANLIGHT_MOTION_SAMPLE_COUNT 64u
