@@ -71,7 +71,7 @@ namespace PrismFanlight.Editor
                 || layout == null
                 || !layout.IsInitialized
                 || blockIndex < 0
-                || blockIndex >= layout.TotalBlockCount)
+                || blockIndex >= layout.BlockCount)
             {
                 return;
             }
@@ -166,7 +166,7 @@ namespace PrismFanlight.Editor
             if (entries == null
                 || layout == null
                 || !layout.IsInitialized
-                || entries.arraySize != layout.TotalBlockCount)
+                || entries.arraySize != layout.BlockCount)
             {
                 return false;
             }
@@ -180,7 +180,7 @@ namespace PrismFanlight.Editor
                 if (string.IsNullOrEmpty(id) || slot < 0 || slot > 5 || !ids.Add(id)) return false;
             }
 
-            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            for (var blockIndex = 0; blockIndex < layout.BlockCount; blockIndex++)
             {
                 if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
             }
@@ -203,9 +203,9 @@ namespace PrismFanlight.Editor
                 }
             }
 
-            entries.arraySize = layout.TotalBlockCount;
+            entries.arraySize = layout.BlockCount;
 
-            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            for (var blockIndex = 0; blockIndex < layout.BlockCount; blockIndex++)
             {
                 var blockId = layout.GetBlock(blockIndex).BlockId;
                 var entry = entries.GetArrayElementAtIndex(blockIndex);
@@ -450,7 +450,7 @@ namespace PrismFanlight.Editor
                 return;
             }
 
-            if (entries.arraySize != layout.TotalBlockCount)
+            if (entries.arraySize != layout.BlockCount)
             {
                 EditorGUILayout.HelpBox(
                     "Block Palette must map every active Layout Block exactly once.",
@@ -458,7 +458,7 @@ namespace PrismFanlight.Editor
                 return;
             }
 
-            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            for (var blockIndex = 0; blockIndex < layout.BlockCount; blockIndex++)
             {
                 if (!ids.Contains(layout.GetBlock(blockIndex).BlockId))
                 {

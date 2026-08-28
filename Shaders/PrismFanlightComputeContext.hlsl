@@ -31,8 +31,7 @@ int _EnableAudienceLod;
 float4 _AudienceLod;
 float4 _LodCameraPos;
 
-float4 _SeatPitch;
-float4 _BlockCount;
+float4 _ReferenceSeatSpacing;
 float4 _MotionTiming;
 float4 _MotionCycle;
 float4 _MotionParameters;

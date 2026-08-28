@@ -269,7 +269,7 @@ namespace PrismFanlight.Editor
 
         private static bool IsCompleteBlockPalette(FanlightColorSource source, FanlightLayoutAsset layout)
         {
-            if (source.BlockPaletteEntryCount != layout.TotalBlockCount) return false;
+            if (source.BlockPaletteEntryCount != layout.BlockCount) return false;
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
 
@@ -279,7 +279,7 @@ namespace PrismFanlight.Editor
                 if (!ids.Add(entry.StableBlockId)) return false;
             }
 
-            for (var blockIndex = 0; blockIndex < layout.TotalBlockCount; blockIndex++)
+            for (var blockIndex = 0; blockIndex < layout.BlockCount; blockIndex++)
             {
                 if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
             }

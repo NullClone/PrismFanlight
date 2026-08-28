@@ -1,11 +1,17 @@
 using PrismFanlight.Authoring;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
     internal sealed class FanlightCompiledLayout
     {
+        // Fields
+
+        private const int ArcLengthSubdivisions = 64;
+        private readonly ulong[] _geometryHashes;
+        private readonly float[] _arcLengths = new float[ArcLengthSubdivisions + 1];
+
+
         // Properties
 
         internal FanlightLayoutAsset Source { get; }
@@ -25,11 +31,19 @@ namespace PrismFanlight.Editor
         {
             Source = source;
             Seats = new FanlightBakedSeatRecord[source.TotalSeatCount];
-            Blocks = new FanlightBakedBlockRecord[source.TotalBlockCount];
+            Blocks = new FanlightBakedBlockRecord[source.BlockCount];
+            _geometryHashes = new ulong[source.BlockCount];
 
-            for (var i = 0; i < Blocks.Length; i++)
+            CompileAll();
+        }
+
+        internal void CompileAll()
+        {
+            var start = 0;
+            for (var blockIndex = 0; blockIndex < Blocks.Length; blockIndex++)
             {
-                CompileBlock(i);
+                CompileBlock(blockIndex, start);
+                start += Blocks[blockIndex].contiguousSeatCount;
             }
 
             RecalculateSummary();
@@ -41,98 +55,145 @@ namespace PrismFanlight.Editor
             ContentHash = contentHash == 0UL ? 1UL : contentHash;
         }
 
-        internal void CompileBlock(int blockIndex)
+
+        private void CompileBlock(int blockIndex, int start)
         {
-            var block = Source.GetBlockCoordinates(blockIndex);
-            var start = blockIndex * Source.BlockSeatCount;
+            var block = Source.GetBlock(blockIndex);
+            var placement = block.Placement;
+            var rotation = placement.Rotation;
+            var seatWrite = start;
             var hash = FanlightStableHash.Begin();
+            var hasBounds = false;
+            var bounds = default(Bounds);
 
-            for (var y = 0; y < Source.SeatPerBlock.y; y++)
+            for (var rowIndex = 0; rowIndex < block.RowCount; rowIndex++)
             {
-                for (var x = 0; x < Source.SeatPerBlock.x; x++)
-                {
-                    var localSeat = math.int2(x, y);
-                    var plane = Source.GetPositionOnPlane(block, localSeat);
-                    var local = Source.TransformBlockPoint(blockIndex, new Vector3(plane.x, 0f, plane.y));
-                    var seatIndex = start + y * Source.SeatPerBlock.x + x;
-                    var stableSeatId = Source.GetStableSeatId(seatIndex);
+                var row = block.GetRow(rowIndex);
 
-                    Seats[seatIndex] = new FanlightBakedSeatRecord
+                BuildArcLengthTable(row);
+
+                for (var seatIndex = 0; seatIndex < row.SeatCount; seatIndex++)
+                {
+                    var normalizedLength = row.SeatCount == 1 ? 0.5f : (float)seatIndex / (row.SeatCount - 1);
+                    var t = FindCurveParameter(normalizedLength);
+                    var blockLocal = EvaluateQuadratic(row, t);
+                    var local = placement.position + rotation * blockLocal;
+                    var stableSeatId = row.GetStableSeatId(seatIndex);
+
+                    Seats[seatWrite] = new FanlightBakedSeatRecord
                     {
                         stableSeatId = stableSeatId,
                         localPosition = local,
-                        planePosition = new Vector2(plane.x, plane.y),
-                        blockCoordinates = new Vector2(block.x, block.y),
-                        blockIndex = blockIndex,
-                        placementFlags = 1u
+                        blockIndex = blockIndex
                     };
+
+                    if (!hasBounds)
+                    {
+                        bounds = new Bounds(local, Vector3.zero);
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(local);
+                    }
 
                     hash = FanlightStableHash.Add(hash, stableSeatId);
                     hash = FanlightStableHash.Add(hash, local);
+                    seatWrite++;
                 }
             }
 
-            var bounds = BuildBlockBounds(Source, blockIndex);
+            bounds.Expand(new Vector3(0.02f, 8f, 0.02f));
+            hash = FanlightStableHash.Add(hash, block.BlockId);
             hash = FanlightStableHash.Add(hash, bounds.center);
             hash = FanlightStableHash.Add(hash, bounds.size);
+
+            _geometryHashes[blockIndex] = FanlightStableHash.Finish(hash);
             Blocks[blockIndex] = new FanlightBakedBlockRecord
             {
-                blockId = Source.GetBlock(blockIndex).BlockId,
+                blockId = block.BlockId,
                 localBounds = bounds,
                 contiguousSeatStart = start,
-                contiguousSeatCount = Source.BlockSeatCount,
-                contentHash = FanlightStableHash.Finish(hash)
+                contiguousSeatCount = seatWrite - start,
+                contentHash = _geometryHashes[blockIndex],
+                effectCoordinate = Vector2.one * 0.5f
             };
         }
 
-        internal void RecalculateSummary()
+        private void RecalculateSummary()
         {
-            var hasBounds = false;
-            var bounds = default(Bounds);
-            var hashTree = new FanlightHashTree(Blocks.Length);
+            var bounds = Blocks[0].localBounds;
+            for (var i = 1; i < Blocks.Length; i++)
+            {
+                bounds.Encapsulate(Blocks[i].localBounds.min);
+                bounds.Encapsulate(Blocks[i].localBounds.max);
+            }
+
+            var size = bounds.size;
+            var hash = FanlightStableHash.Begin();
+            hash = FanlightStableHash.Add(hash, Source.LayoutId.Value);
+            hash = FanlightStableHash.Add(hash, new Vector3(
+                Source.ReferenceSeatSpacing.x,
+                0f,
+                Source.ReferenceSeatSpacing.y));
 
             for (var i = 0; i < Blocks.Length; i++)
             {
                 var block = Blocks[i];
-                hashTree.Update(i, block.contentHash);
-                if (!hasBounds)
-                {
-                    bounds = block.localBounds;
-                    hasBounds = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(block.localBounds.min);
-                    bounds.Encapsulate(block.localBounds.max);
-                }
+                var center = block.localBounds.center;
+                block.effectCoordinate = new Vector2(
+                    size.x > 0.000001f ? Mathf.Clamp01((center.x - bounds.min.x) / size.x) : 0.5f,
+                    size.z > 0.000001f ? Mathf.Clamp01((center.z - bounds.min.z) / size.z) : 0.5f);
+
+                var blockHash = FanlightStableHash.Begin();
+                blockHash = FanlightStableHash.Add(blockHash, _geometryHashes[i]);
+                blockHash = FanlightStableHash.Add(blockHash, new Vector3(block.effectCoordinate.x, 0f, block.effectCoordinate.y));
+                block.contentHash = FanlightStableHash.Finish(blockHash);
+                Blocks[i] = block;
+                hash = FanlightStableHash.Add(hash, block.contentHash);
             }
 
-            var hash = FanlightStableHash.Begin();
-            hash = FanlightStableHash.Add(hash, Source.LayoutId.Value);
-            hash = FanlightStableHash.Add(hash, hashTree.Root);
-            LocalBounds = hasBounds ? bounds : new Bounds(Vector3.zero, Vector3.one);
+            LocalBounds = bounds;
             ContentHash = FanlightStableHash.Finish(hash);
         }
 
-        private static Bounds BuildBlockBounds(FanlightLayoutAsset layout, int blockIndex)
+        private void BuildArcLengthTable(FanlightLayoutRow row)
         {
-            var block = layout.GetBlockCoordinates(blockIndex);
+            _arcLengths[0] = 0f;
+            var previous = row.LeftPoint;
 
-            var min2 = layout.GetPositionOnPlane(block, math.int2(0, 0)) - layout.SeatPitch * 0.5f;
-            var max2 = layout.GetPositionOnPlane(block, layout.SeatPerBlock - math.int2(1, 1)) + layout.SeatPitch * 0.5f;
+            for (var i = 1; i <= ArcLengthSubdivisions; i++)
+            {
+                var point = EvaluateQuadratic(row, (float)i / ArcLengthSubdivisions);
+                _arcLengths[i] = _arcLengths[i - 1] + Vector3.Distance(previous, point);
+                previous = point;
+            }
+        }
 
-            var min = new Vector3(min2.x, -4f, min2.y);
-            var max = new Vector3(max2.x, 4f, max2.y);
+        private float FindCurveParameter(float normalizedLength)
+        {
+            var totalLength = _arcLengths[ArcLengthSubdivisions];
+            if (totalLength <= 0.000001f) return normalizedLength;
 
-            var bounds = new Bounds(layout.TransformBlockPoint(blockIndex, min), Vector3.zero);
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(max.x, min.y, min.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(min.x, max.y, min.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(max.x, max.y, min.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(min.x, min.y, max.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(max.x, min.y, max.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, new Vector3(min.x, max.y, max.z)));
-            bounds.Encapsulate(layout.TransformBlockPoint(blockIndex, max));
-            return bounds;
+            var target = totalLength * Mathf.Clamp01(normalizedLength);
+            for (var i = 1; i <= ArcLengthSubdivisions; i++)
+            {
+                if (_arcLengths[i] < target) continue;
+
+                var segmentLength = _arcLengths[i] - _arcLengths[i - 1];
+                var segmentT = segmentLength > 0.000001f ? (target - _arcLengths[i - 1]) / segmentLength : 0f;
+                return (i - 1 + segmentT) / ArcLengthSubdivisions;
+            }
+
+            return 1f;
+        }
+
+        private static Vector3 EvaluateQuadratic(FanlightLayoutRow row, float t)
+        {
+            var inverse = 1f - t;
+            return inverse * inverse * row.LeftPoint
+                   + 2f * inverse * t * row.ControlPoint
+                   + t * t * row.RightPoint;
         }
     }
 }

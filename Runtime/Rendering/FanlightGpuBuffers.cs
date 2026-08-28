@@ -178,7 +178,12 @@ namespace PrismFanlight.Rendering
 
         private static FanlightBlockData ToBlockData(FanlightBakedBlockData block, float boundsPadding)
         {
-            return new FanlightBlockData(block.localCenter, block.radius + boundsPadding, block.startIndex, block.count);
+            return new FanlightBlockData(
+                block.localCenter,
+                block.radius + boundsPadding,
+                block.startIndex,
+                block.count,
+                block.effectCoordinate);
         }
 
         private static Bounds ExpandBounds(Bounds bounds, float boundsPadding)

@@ -40,8 +40,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int AudienceLod = Shader.PropertyToID("_AudienceLod");
         internal static readonly int LodCameraPos = Shader.PropertyToID("_LodCameraPos");
 
-        internal static readonly int SeatPitch = Shader.PropertyToID("_SeatPitch");
-        internal static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
+        internal static readonly int ReferenceSeatSpacing = Shader.PropertyToID("_ReferenceSeatSpacing");
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
         internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
         internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");

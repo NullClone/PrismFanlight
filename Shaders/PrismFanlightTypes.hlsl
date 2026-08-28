@@ -4,16 +4,18 @@
 struct FanlightSeatData
 {
     float4 localPositionSeed;
-    float4 planePositionBlock;
     int blockIndex;
-    uint placementFlags;
-    float2 padding;
+    uint padding0;
+    uint padding1;
+    uint padding2;
 };
 
 struct FanlightBlockData
 {
     float4 localCenterRadius;
-    float4 indexRange;
+    float2 effectCoordinate;
+    int startIndex;
+    int count;
 };
 
 struct FanlightAudiencePart

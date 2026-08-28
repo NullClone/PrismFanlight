@@ -341,9 +341,17 @@ namespace PrismFanlight.Editor
 
                     using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
                     {
-                        if (GUILayout.Button("New", GUILayout.Width(60)))
+                        if (GUILayout.Button("New", GUILayout.Width(45)))
                         {
                             CreateLayoutAsset();
+                        }
+
+                        using (new EditorGUI.DisabledScope(_layoutAsset.objectReferenceValue == null))
+                        {
+                            if (GUILayout.Button("Open", GUILayout.Width(50)))
+                            {
+                                FanlightLayoutEditorWindow.Open(_instance);
+                            }
                         }
                     }
                 }
@@ -384,7 +392,7 @@ namespace PrismFanlight.Editor
                     if (!layout.IsInitialized)
                     {
                         _instance.SetEditorLayoutBlocked(false);
-                        EditorGUILayout.HelpBox("The Layout Asset is not initialized. Select it to configure the topology and bake it.", MessageType.Error);
+                        EditorGUILayout.HelpBox("The Layout Asset is not initialized. Open the Layout Editor and create a Quick Grid.", MessageType.Error);
                         return;
                     }
 
@@ -725,8 +733,8 @@ namespace PrismFanlight.Editor
                     EditorUtility.SetDirty(_instance);
                 }
 
-                Selection.activeObject = newLayoutAsset;
                 FanlightLayoutIdRegistry.Invalidate();
+                FanlightLayoutEditorWindow.Open(_instance);
             }
         }
     }

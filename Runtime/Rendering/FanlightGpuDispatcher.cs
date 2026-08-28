@@ -85,6 +85,7 @@ namespace PrismFanlight.Rendering
                 : kernels.GenerateAllAnimation;
 
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.Blocks, buffers.BlockBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Randoms, buffers.RandomBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.MotionSamples, buffers.MotionSampleBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
@@ -150,11 +151,6 @@ namespace PrismFanlight.Rendering
             }
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(
-                context.Layout.BlockCount2D.x,
-                context.Layout.BlockCount2D.y,
-                0f,
-                0f));
             shader.SetVectorArray(FanlightShaderIds.ColorSourceModes, _colorSourceModes);
             shader.SetVectorArray(FanlightShaderIds.ColorSourcePalette, _colorSourcePalette);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceA, _colorSourceA);
@@ -308,8 +304,9 @@ namespace PrismFanlight.Rendering
                 musical.BeatsPerBar,
                 0f));
 
-            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.SeatPitch.x, layout.SeatPitch.y, 0f, 0f));
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.BlockCount2D.x, layout.BlockCount2D.y, 0f, 0f));
+            shader.SetVector(
+                FanlightShaderIds.ReferenceSeatSpacing,
+                new Vector4(layout.ReferenceSeatSpacing.x, layout.ReferenceSeatSpacing.y, 0f, 0f));
 
             var yaw = direction.Direction * Mathf.Deg2Rad;
             var worldDirection = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using UnityEditor;
@@ -11,34 +10,42 @@ namespace PrismFanlight.Editor
         // Fields
 
         private const float BlockPlanePickDistance = 4.99f;
+        private const int MaximumSeatDots = 512;
 
         internal static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
         internal static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
-        private static readonly Dictionary<string, string> SelectedBlockIds = new(StringComparer.Ordinal);
-
         private readonly List<int> _visibleBlocks = new();
+        private readonly List<int> _selectedBlocks = new();
         private readonly Plane[] _planes = new Plane[6];
 
 
         // Methods
 
         internal static int GetSelectedBlockIndex(FanlightLayoutAsset layout)
+            => FanlightLayoutSelection.GetActiveIndex(layout);
+
+        internal static void GetSelectedBlockIndices(FanlightLayoutAsset layout, List<int> results)
         {
-            if (layout == null || !SelectedBlockIds.TryGetValue(layout.LayoutId.Value, out var blockId)) return -1;
+            FanlightLayoutSelection.GetIndices(layout, results);
+        }
 
-            for (var i = 0; i < layout.TotalBlockCount; i++)
-            {
-                if (string.Equals(layout.GetBlock(i).BlockId, blockId, StringComparison.Ordinal)) return i;
-            }
+        internal static int GetSelectedRowIndex(FanlightLayoutAsset layout)
+            => FanlightLayoutSelection.GetSelectedRowIndex(layout);
 
-            return -1;
+        internal static void SetSelectedRowIndex(FanlightLayoutAsset layout, int rowIndex)
+        {
+            FanlightLayoutSelection.SetSelectedRowIndex(layout, rowIndex);
+        }
+
+        internal static void SelectOnly(FanlightLayoutAsset layout, int blockIndex)
+        {
+            FanlightLayoutSelection.SetOnly(layout, blockIndex);
         }
 
         internal bool Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
-
-            if (layout == null || !layout.IsInitialized) return fanlight;
+            if (layout == null || !layout.IsInitialized) return false;
 
             if (FanlightLayoutIdRegistry.IsDuplicate(layout))
             {
@@ -47,37 +54,17 @@ namespace PrismFanlight.Editor
             }
 
             fanlight.SetEditorLayoutBlocked(false);
-
             var session = FanlightLayoutEditSession.Get(layout);
-
             if (session == null) return false;
 
             if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
             {
                 fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
-
                 EditorApplication.QueuePlayerLoopUpdate();
             }
 
-            var sceneView = SceneView.currentDrawingSceneView;
-            var camera = sceneView != null ? sceneView.camera : null;
-            if (camera != null)
-            {
-                GeometryUtility.CalculateFrustumPlanes(camera, _planes);
-
-                session.QueryVisible(_planes, fanlight.transform.localToWorldMatrix, _visibleBlocks);
-            }
-            else
-            {
-                _visibleBlocks.Clear();
-
-                for (var i = 0; i < layout.TotalBlockCount; i++)
-                {
-                    _visibleBlocks.Add(i);
-                }
-            }
-
-            var selected = GetSelectedBlockIndex(layout);
+            CollectVisibleBlocks(fanlight, layout, session);
+            GetSelectedBlockIndices(layout, _selectedBlocks);
             var transform = fanlight.transform;
 
             foreach (var blockIndex in _visibleBlocks)
@@ -87,42 +74,86 @@ namespace PrismFanlight.Editor
                 var p1 = transform.TransformPoint(corners[1]);
                 var p2 = transform.TransformPoint(corners[2]);
                 var p3 = transform.TransformPoint(corners[3]);
-                var isSelected = blockIndex == selected;
+                var isSelected = _selectedBlocks.Contains(blockIndex);
                 var controlId = GUIUtility.GetControlID(FocusType.Passive);
 
                 if (!Application.isPlaying && DoBlockButton(controlId, p0, p1, p2, p3, isSelected))
                 {
-                    SelectedBlockIds[layout.LayoutId.Value] = layout.GetBlock(blockIndex).BlockId;
-
-                    selected = blockIndex;
-                    isSelected = true;
-
-                    SceneView.RepaintAll();
+                    FanlightLayoutSelection.Toggle(layout, blockIndex, EditorGUI.actionKey);
+                    GetSelectedBlockIndices(layout, _selectedBlocks);
+                    isSelected = _selectedBlocks.Contains(blockIndex);
                 }
 
                 Handles.color = isSelected ? SelectedColor : BlockColor;
                 Handles.DrawAAPolyLine(isSelected ? 4f : 2f, p0, p1, p2, p3, p0);
             }
 
-            if (selected >= 0)
+            var activeBlock = GetSelectedBlockIndex(layout);
+            if (activeBlock < 0) return false;
+
+            DrawSelectedSeatDots(transform, session, activeBlock);
+            return true;
+        }
+
+        internal static bool TryGetToolContext(
+            PrismFanlight fanlight,
+            List<int> selectedBlocks,
+            out FanlightLayoutAsset layout,
+            out FanlightLayoutEditSession session,
+            out int activeBlockIndex)
+        {
+            layout = fanlight != null ? fanlight.LayoutAsset : null;
+            session = null;
+            activeBlockIndex = -1;
+            selectedBlocks.Clear();
+            if (Application.isPlaying
+                || layout == null
+                || !layout.IsInitialized
+                || FanlightLayoutIdRegistry.IsDuplicate(layout))
             {
-                DrawSelectedSeatDots(transform, session, selected);
-                DrawTransformHandle(fanlight, layout, session, selected);
-                return true;
+                return false;
             }
 
-            return false;
+            session = FanlightLayoutEditSession.Get(layout);
+            if (session == null) return false;
+
+            FanlightLayoutSelection.GetIndices(layout, selectedBlocks);
+            activeBlockIndex = FanlightLayoutSelection.GetActiveIndex(layout);
+            return selectedBlocks.Count > 0 && activeBlockIndex >= 0;
         }
 
         internal void ResetSelected(FanlightLayoutAsset layout)
         {
-            var index = GetSelectedBlockIndex(layout);
+            if (layout == null) return;
 
-            if (index < 0) return;
+            GetSelectedBlockIndices(layout, _selectedBlocks);
+            if (_selectedBlocks.Count == 0) return;
 
-            FanlightLayoutEditSession.Get(layout)?.SetBlockPlacement(index, FanlightBlockPlacement.Identity, "Reset Fanlight Block Placement");
+            var placements = new FanlightBlockPlacement[_selectedBlocks.Count];
+            for (var i = 0; i < placements.Length; i++) placements[i] = FanlightBlockPlacement.Identity;
+            FanlightLayoutEditSession.Get(layout)?.SetBlockPlacements(
+                _selectedBlocks,
+                placements,
+                "Reset Fanlight Block Placement");
         }
 
+        private void CollectVisibleBlocks(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session)
+        {
+            var sceneView = SceneView.currentDrawingSceneView;
+            var camera = sceneView != null ? sceneView.camera : null;
+            if (camera != null)
+            {
+                GeometryUtility.CalculateFrustumPlanes(camera, _planes);
+                session.QueryVisible(_planes, fanlight.transform.localToWorldMatrix, _visibleBlocks);
+                return;
+            }
+
+            _visibleBlocks.Clear();
+            for (var i = 0; i < layout.BlockCount; i++) _visibleBlocks.Add(i);
+        }
 
         private static bool DoBlockButton(int controlId, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, bool isSelected)
         {
@@ -138,11 +169,7 @@ namespace PrismFanlight.Editor
 
                     break;
                 case EventType.MouseMove:
-                    if (HandleUtility.nearestControl == controlId)
-                    {
-                        HandleUtility.Repaint();
-                    }
-
+                    if (HandleUtility.nearestControl == controlId) HandleUtility.Repaint();
                     break;
                 case EventType.MouseDown:
                     if (HandleUtility.nearestControl == controlId && current.button == 0 && !current.alt)
@@ -162,10 +189,7 @@ namespace PrismFanlight.Editor
 
                     break;
                 case EventType.Repaint:
-                    if (HandleUtility.nearestControl == controlId
-                        && GUI.enabled
-                        && GUIUtility.hotControl == 0
-                        && !current.alt)
+                    if (HandleUtility.nearestControl == controlId && GUI.enabled && GUIUtility.hotControl == 0 && !current.alt)
                     {
                         var previousColor = Handles.color;
                         var highlight = isSelected ? SelectedColor : BlockColor;
@@ -183,14 +207,12 @@ namespace PrismFanlight.Editor
 
         private static float DistanceToBlock(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
         {
-            var point = Event.current.mousePosition;
-            var ray = HandleUtility.GUIPointToWorldRay(point);
+            var ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
             var plane = new Plane(p0, p1, p2);
 
             if (plane.Raycast(ray, out var distance) && distance >= 0f)
             {
                 var hit = ray.GetPoint(distance);
-
                 if (IsPointInTriangle(hit, p0, p1, p2) || IsPointInTriangle(hit, p0, p2, p3))
                 {
                     return BlockPlanePickDistance;
@@ -220,46 +242,232 @@ namespace PrismFanlight.Editor
             return u >= 0f && v >= 0f && u + v <= 1f;
         }
 
-        private static void DrawTransformHandle(
+        internal static void DrawTransformHandle(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            IReadOnlyList<int> selectedBlocks,
+            int activeBlockIndex)
+        {
+            if (Application.isPlaying || selectedBlocks.Count == 0) return;
+
+            var localCenter = Vector3.zero;
+            for (var i = 0; i < selectedBlocks.Count; i++)
+            {
+                localCenter += layout.GetBlock(selectedBlocks[i]).Placement.position;
+            }
+
+            localCenter /= selectedBlocks.Count;
+            var activePlacement = layout.GetBlock(activeBlockIndex).Placement;
+            var worldCenter = fanlight.transform.TransformPoint(localCenter);
+            var worldRotation = fanlight.transform.rotation * activePlacement.Rotation;
+            var handleRotation = Tools.pivotRotation == PivotRotation.Local ? worldRotation : Quaternion.identity;
+
+            EditorGUI.BeginChangeCheck();
+            var nextCenterWorld = Handles.PositionHandle(worldCenter, handleRotation);
+            var nextRotationWorld = Handles.RotationHandle(worldRotation, nextCenterWorld);
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            var nextCenter = fanlight.transform.InverseTransformPoint(nextCenterWorld);
+            var nextActiveRotation = Quaternion.Inverse(fanlight.transform.rotation) * nextRotationWorld;
+            var rotationDelta = nextActiveRotation * Quaternion.Inverse(activePlacement.Rotation);
+            var placements = new FanlightBlockPlacement[selectedBlocks.Count];
+
+            for (var i = 0; i < selectedBlocks.Count; i++)
+            {
+                var placement = layout.GetBlock(selectedBlocks[i]).Placement;
+                placements[i] = new FanlightBlockPlacement
+                {
+                    position = nextCenter + rotationDelta * (placement.position - localCenter),
+                    eulerRotation = (rotationDelta * placement.Rotation).eulerAngles
+                };
+            }
+
+            session.SetBlockPlacements(selectedBlocks, placements, "Edit Fanlight Block Placement");
+        }
+
+        internal static void DrawRowsAndHandles(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
             FanlightLayoutEditSession session,
             int blockIndex)
         {
-            if (Application.isPlaying) return;
+            var block = layout.GetBlock(blockIndex);
+            var placement = block.Placement;
+            var localToWorld = fanlight.transform.localToWorldMatrix
+                               * Matrix4x4.TRS(placement.position, placement.Rotation, Vector3.one);
+            var rowIndex = GetSelectedRowIndex(layout);
 
-            var block = layout.GetBlockCoordinates(blockIndex);
-            var placement = layout.GetBlock(blockIndex).Placement;
-            var baseCenter = layout.GetBlockBaseCenterLocal(block);
-            var worldCenter = fanlight.transform.TransformPoint(baseCenter + placement.position);
-            var worldRotation = fanlight.transform.rotation * placement.Rotation;
-            var handleRotation = Tools.pivotRotation == PivotRotation.Local ? worldRotation : Quaternion.identity;
+            for (var i = 0; i < block.RowCount; i++)
+            {
+                var row = block.GetRow(i);
+                var points = new Vector3[17];
+                for (var segment = 0; segment < points.Length; segment++)
+                {
+                    var t = (float)segment / (points.Length - 1);
+                    var inverse = 1f - t;
+                    var point = inverse * inverse * row.LeftPoint
+                                + 2f * inverse * t * row.ControlPoint
+                                + t * t * row.RightPoint;
+                    points[segment] = localToWorld.MultiplyPoint3x4(point);
+                }
 
+                Handles.color = i == rowIndex ? SelectedColor : BlockColor;
+                Handles.DrawAAPolyLine(i == rowIndex ? 3f : 1f, points);
+            }
+
+            DrawCageHandles(fanlight, layout, session, blockIndex, localToWorld);
+            DrawRowHandles(fanlight, layout, session, blockIndex, rowIndex, localToWorld);
+        }
+
+        internal static void DrawHeightHandles(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            IReadOnlyList<int> selectedBlocks,
+            int activeBlockIndex)
+        {
+            if (Application.isPlaying || selectedBlocks.Count == 0) return;
+
+            var transform = fanlight.transform;
+            var localCenter = Vector3.zero;
+            for (var i = 0; i < selectedBlocks.Count; i++)
+            {
+                localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
+            }
+
+            localCenter /= selectedBlocks.Count;
+            var worldCenter = transform.TransformPoint(localCenter);
+            var worldUp = transform.TransformDirection(Vector3.up).normalized;
+            var liftSize = HandleUtility.GetHandleSize(worldCenter) * 0.8f;
+            Handles.color = SelectedColor;
             EditorGUI.BeginChangeCheck();
+            var nextWorldCenter = Handles.Slider(
+                worldCenter,
+                worldUp,
+                liftSize,
+                Handles.ArrowHandleCap,
+                EditorSnapSettings.move.y);
+            if (EditorGUI.EndChangeCheck())
+            {
+                var nextLocalCenter = transform.InverseTransformPoint(nextWorldCenter);
+                var deltaY = nextLocalCenter.y - localCenter.y;
+                FanlightLayoutHeightUtility.Lift(layout, session, selectedBlocks, deltaY);
+            }
 
-            var nextCenter = Handles.PositionHandle(worldCenter, handleRotation);
-            var nextRotation = Handles.RotationHandle(worldRotation, nextCenter);
-
+            var activeBlock = layout.GetBlock(activeBlockIndex);
+            var backRow = activeBlock.GetRow(activeBlock.RowCount - 1);
+            var backCenter = (backRow.LeftPoint + backRow.ControlPoint + backRow.RightPoint) / 3f;
+            var backLayoutPoint = activeBlock.Placement.position + activeBlock.Placement.Rotation * backCenter;
+            var backWorldPoint = transform.TransformPoint(backLayoutPoint);
+            var riseSize = HandleUtility.GetHandleSize(backWorldPoint) * 0.65f;
+            Handles.color = new Color(1f, 0.45f, 0.18f, 1f);
+            EditorGUI.BeginChangeCheck();
+            var nextBackWorldPoint = Handles.Slider(
+                backWorldPoint,
+                worldUp,
+                riseSize,
+                Handles.ArrowHandleCap,
+                EditorSnapSettings.move.y);
             if (!EditorGUI.EndChangeCheck()) return;
 
-            var next = new FanlightBlockPlacement
-            {
-                position = fanlight.transform.InverseTransformPoint(nextCenter) - baseCenter,
-                eulerRotation = (Quaternion.Inverse(fanlight.transform.rotation) * nextRotation).eulerAngles
-            };
+            var nextBackLayoutPoint = transform.InverseTransformPoint(nextBackWorldPoint);
+            var riseDelta = nextBackLayoutPoint.y - backLayoutPoint.y;
+            FanlightLayoutHeightUtility.AddRise(layout, session, selectedBlocks, riseDelta);
+        }
 
-            session.SetBlockPlacement(blockIndex, next, "Edit Fanlight Block Placement");
+        private static void DrawCageHandles(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            int blockIndex,
+            Matrix4x4 blockLocalToWorld)
+        {
+            var block = layout.GetBlock(blockIndex);
+            if (block.RowCount < 2) return;
+
+            var first = block.GetRow(0);
+            var last = block.GetRow(block.RowCount - 1);
+            var localCage = new[] { first.LeftPoint, first.RightPoint, last.RightPoint, last.LeftPoint };
+            var worldCage = new Vector3[4];
+            var changed = false;
+
+            Handles.color = SelectedColor;
+            for (var i = 0; i < worldCage.Length; i++)
+            {
+                var world = blockLocalToWorld.MultiplyPoint3x4(localCage[i]);
+                var size = HandleUtility.GetHandleSize(world) * 0.06f;
+                EditorGUI.BeginChangeCheck();
+                worldCage[i] = Handles.FreeMoveHandle(world, size, Vector3.zero, Handles.RectangleHandleCap);
+                changed |= EditorGUI.EndChangeCheck();
+            }
+
+            if (!changed) return;
+
+            var worldToBlock = blockLocalToWorld.inverse;
+            for (var i = 0; i < localCage.Length; i++) localCage[i] = worldToBlock.MultiplyPoint3x4(worldCage[i]);
+
+            var rows = block.CopyRows();
+            for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+            {
+                var source = rows[rowIndex];
+                var t = (float)rowIndex / (rows.Length - 1);
+                var left = Vector3.Lerp(localCage[0], localCage[3], t);
+                var right = Vector3.Lerp(localCage[1], localCage[2], t);
+                var oldMidpoint = (source.LeftPoint + source.RightPoint) * 0.5f;
+                var newMidpoint = (left + right) * 0.5f;
+                rows[rowIndex] = new FanlightLayoutRow(
+                    left,
+                    source.ControlPoint + newMidpoint - oldMidpoint,
+                    right,
+                    source.CopyStableSeatIds());
+            }
+
+            session.SetBlockRows(blockIndex, rows, "Edit Fanlight Block Cage");
+        }
+
+        private static void DrawRowHandles(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            int blockIndex,
+            int rowIndex,
+            Matrix4x4 blockLocalToWorld)
+        {
+            if (rowIndex < 0) return;
+
+            var row = layout.GetBlock(blockIndex).GetRow(rowIndex);
+            var rotation = fanlight.transform.rotation * layout.GetBlock(blockIndex).Placement.Rotation;
+            var leftWorld = blockLocalToWorld.MultiplyPoint3x4(row.LeftPoint);
+            var controlWorld = blockLocalToWorld.MultiplyPoint3x4(row.ControlPoint);
+            var rightWorld = blockLocalToWorld.MultiplyPoint3x4(row.RightPoint);
+
+            EditorGUI.BeginChangeCheck();
+            leftWorld = Handles.PositionHandle(leftWorld, rotation);
+            controlWorld = Handles.PositionHandle(controlWorld, rotation);
+            rightWorld = Handles.PositionHandle(rightWorld, rotation);
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            var worldToBlock = blockLocalToWorld.inverse;
+            session.SetRowGeometry(
+                blockIndex,
+                rowIndex,
+                worldToBlock.MultiplyPoint3x4(leftWorld),
+                worldToBlock.MultiplyPoint3x4(controlWorld),
+                worldToBlock.MultiplyPoint3x4(rightWorld),
+                "Edit Fanlight Row Geometry");
         }
 
         private static void DrawSelectedSeatDots(Transform transform, FanlightLayoutEditSession session, int blockIndex)
         {
             var block = session.RuntimeLayout.Blocks[blockIndex];
             var end = block.startIndex + block.count;
+            var step = Mathf.Max(1, Mathf.CeilToInt((float)block.count / MaximumSeatDots));
             var color = SelectedColor;
             color.a = 0.7f;
             Handles.color = color;
 
-            for (var i = block.startIndex; i < end; i++)
+            for (var i = block.startIndex; i < end; i += step)
             {
                 var packed = session.RuntimeLayout.Seats[i].localPositionSeed;
                 var world = transform.TransformPoint(new Vector3(packed.x, packed.y, packed.z));

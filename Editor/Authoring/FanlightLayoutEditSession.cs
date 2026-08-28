@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using PrismFanlight.Rendering;
-using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -23,9 +21,7 @@ namespace PrismFanlight.Editor
         private readonly ulong[] _stableSeatIds;
         private readonly FanlightBakedBlockData[] _gpuBlocks;
         private readonly FanlightBoundsTree _boundsTree;
-        private readonly FanlightHashTree _hashTree;
         private readonly Vector3[][] _corners;
-        private readonly BitArray _dirtyBlocks;
         private int _dirtyBlockCount;
         private FanlightRuntimeLayout _runtimeLayout;
 
@@ -60,25 +56,10 @@ namespace PrismFanlight.Editor
             _compiled = new FanlightCompiledLayout(source);
             _gpuSeats = new FanlightSeatData[source.TotalSeatCount];
             _stableSeatIds = new ulong[source.TotalSeatCount];
-            _gpuBlocks = new FanlightBakedBlockData[source.TotalBlockCount];
-            _boundsTree = new FanlightBoundsTree(source.TotalBlockCount);
-            _hashTree = new FanlightHashTree(source.TotalBlockCount);
-            _corners = new Vector3[source.TotalBlockCount][];
-            _dirtyBlocks = new BitArray(source.TotalBlockCount);
-
-            for (var i = 0; i < source.TotalBlockCount; i++)
-            {
-                ConvertBlock(i);
-
-                _boundsTree.Update(i, _compiled.Blocks[i].localBounds);
-                _hashTree.Update(i, _compiled.Blocks[i].contentHash);
-                _corners[i] = BuildCorners(i);
-                _dirtyBlocks[i] = !IsBlockCurrent(i);
-
-                if (_dirtyBlocks[i]) _dirtyBlockCount++;
-            }
-
-            RefreshRuntimeLayout();
+            _gpuBlocks = new FanlightBakedBlockData[source.BlockCount];
+            _boundsTree = new FanlightBoundsTree(source.BlockCount);
+            _corners = new Vector3[source.BlockCount][];
+            RefreshCompiledData();
         }
 
         internal static FanlightLayoutEditSession Get(FanlightLayoutAsset source)
@@ -86,7 +67,6 @@ namespace PrismFanlight.Editor
             if (source == null || !source.IsInitialized) return null;
 
             var key = source.GetInstanceID();
-
             if (!Sessions.TryGetValue(key, out var session) || session.Source != source)
             {
                 session = new FanlightLayoutEditSession(source);
@@ -118,6 +98,25 @@ namespace PrismFanlight.Editor
             QueuePreviewRefresh();
         }
 
+        internal static bool ApplyTopologyChange(
+            FanlightLayoutAsset source,
+            string undoName,
+            Func<bool> mutation)
+        {
+            if (Application.isPlaying || source == null || mutation == null) return false;
+
+            Undo.RecordObject(source, undoName);
+            if (!mutation()) return false;
+
+            EditorUtility.SetDirty(source);
+            Reset(source);
+            FanlightLayoutIdRegistry.Invalidate();
+
+            var session = Get(source);
+            session?.ApplyPreviewToAllInstances(-1);
+            return session != null;
+        }
+
         internal Vector3[] GetCorners(int blockIndex) => _corners[blockIndex];
 
         internal Bounds GetBlockBounds(int blockIndex) => _compiled.Blocks[blockIndex].localBounds;
@@ -129,30 +128,94 @@ namespace PrismFanlight.Editor
 
         internal bool SetBlockPlacement(int blockIndex, FanlightBlockPlacement placement, string undoName)
         {
-            Undo.RecordObject(Source, undoName);
+            return SetBlockPlacements(
+                new[] { blockIndex },
+                new[] { placement },
+                undoName);
+        }
 
-            if (!Source.SetBlockPlacement(blockIndex, placement)) return false;
-
-            EditorUtility.SetDirty(Source);
-
-            _compiled.CompileBlock(blockIndex);
-
-            ConvertBlock(blockIndex);
-
-            _boundsTree.Update(blockIndex, _compiled.Blocks[blockIndex].localBounds);
-            _hashTree.Update(blockIndex, _compiled.Blocks[blockIndex].contentHash);
-
-            WriteCorners(blockIndex, _corners[blockIndex]);
-
-            if (!_dirtyBlocks[blockIndex])
+        internal bool SetBlockPlacements(
+            IReadOnlyList<int> blockIndices,
+            IReadOnlyList<FanlightBlockPlacement> placements,
+            string undoName)
+        {
+            if (Application.isPlaying
+                || blockIndices == null
+                || placements == null
+                || blockIndices.Count == 0
+                || blockIndices.Count != placements.Count)
             {
-                _dirtyBlocks[blockIndex] = true;
-                _dirtyBlockCount++;
+                return false;
             }
 
-            RefreshRuntimeLayout();
-            ApplyPreviewToAllInstances(blockIndex);
+            Undo.RecordObject(Source, undoName);
+            var changed = false;
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                changed |= Source.SetBlockPlacement(blockIndices[i], placements[i]);
+            }
 
+            if (!changed) return false;
+
+            CommitGeometryChange();
+            return true;
+        }
+
+        internal bool SetRowGeometry(
+            int blockIndex,
+            int rowIndex,
+            Vector3 leftPoint,
+            Vector3 controlPoint,
+            Vector3 rightPoint,
+            string undoName)
+        {
+            if (Application.isPlaying) return false;
+
+            Undo.RecordObject(Source, undoName);
+            if (!Source.SetRowGeometry(blockIndex, rowIndex, leftPoint, controlPoint, rightPoint)) return false;
+
+            CommitGeometryChange();
+            return true;
+        }
+
+        internal bool SetBlockRows(
+            int blockIndex,
+            FanlightLayoutRow[] rows,
+            string undoName)
+        {
+            if (Application.isPlaying) return false;
+
+            Undo.RecordObject(Source, undoName);
+            if (!Source.SetBlockRows(blockIndex, rows)) return false;
+
+            CommitGeometryChange();
+            return true;
+        }
+
+        internal bool SetBlockRows(
+            IReadOnlyList<int> blockIndices,
+            IReadOnlyList<FanlightLayoutRow[]> rowSets,
+            string undoName)
+        {
+            if (Application.isPlaying
+                || blockIndices == null
+                || rowSets == null
+                || blockIndices.Count == 0
+                || blockIndices.Count != rowSets.Count)
+            {
+                return false;
+            }
+
+            Undo.RecordObject(Source, undoName);
+            var changed = false;
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                changed |= Source.SetBlockRows(blockIndices[i], rowSets[i]);
+            }
+
+            if (!changed) return false;
+
+            CommitGeometryChange();
             return true;
         }
 
@@ -164,12 +227,11 @@ namespace PrismFanlight.Editor
                 return false;
             }
 
-            _compiled.SetSummary(_boundsTree.Root, ComputeLayoutHash());
+            _compiled.SetSummary(_runtimeLayout.LocalBounds, _runtimeLayout.ContentHash);
 
             try
             {
                 var path = AssetDatabase.GetAssetPath(Source);
-
                 if (string.IsNullOrEmpty(path) || AssetDatabase.LoadMainAssetAtPath(path) != Source)
                 {
                     throw new InvalidOperationException("The Layout Asset must be saved as the main object of an .asset file before baking.");
@@ -177,7 +239,6 @@ namespace PrismFanlight.Editor
 
                 var artifact = FindEmbeddedBake(path);
                 if (artifact == null)
-
                 {
                     artifact = ScriptableObject.CreateInstance<FanlightLayoutBakeArtifact>();
                     artifact.name = $"{Source.name} Bake Artifact";
@@ -190,6 +251,7 @@ namespace PrismFanlight.Editor
                 artifact.Initialize(
                     Source.LayoutId.Value,
                     _compiled.ContentHash,
+                    new Vector2(Source.ReferenceSeatSpacing.x, Source.ReferenceSeatSpacing.y),
                     _compiled.LocalBounds,
                     _compiled.Seats,
                     _compiled.Blocks);
@@ -200,12 +262,9 @@ namespace PrismFanlight.Editor
                 AssetDatabase.SaveAssets();
                 EditorApplication.RepaintProjectWindow();
 
-                for (var i = 0; i < _dirtyBlocks.Length; i++) _dirtyBlocks[i] = false;
-
                 _dirtyBlockCount = 0;
                 EditorApplication.QueuePlayerLoopUpdate();
                 SceneView.RepaintAll();
-
                 return true;
             }
             catch (Exception exception)
@@ -225,6 +284,16 @@ namespace PrismFanlight.Editor
 
             EditorApplication.QueuePlayerLoopUpdate();
             SceneView.RepaintAll();
+        }
+
+        internal static bool IsEmbeddedBake(FanlightLayoutAsset layout, FanlightLayoutBakeArtifact artifact)
+        {
+            if (layout == null || artifact == null || !AssetDatabase.IsSubAsset(artifact)) return false;
+
+            return string.Equals(
+                AssetDatabase.GetAssetPath(layout),
+                AssetDatabase.GetAssetPath(artifact),
+                StringComparison.Ordinal);
         }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -262,7 +331,6 @@ namespace PrismFanlight.Editor
             foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
             {
                 var layout = fanlight.LayoutAsset;
-
                 if (layout == null || !layout.IsInitialized)
                 {
                     fanlight.ClearEditorLayoutPreview();
@@ -276,11 +344,9 @@ namespace PrismFanlight.Editor
                 }
 
                 var session = Get(layout);
-
                 if (session == null) continue;
 
                 fanlight.SetEditorLayoutBlocked(false);
-
                 if (fanlight.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
                 {
                     fanlight.SetEditorLayoutPreview(session.RuntimeLayout, -1);
@@ -291,14 +357,39 @@ namespace PrismFanlight.Editor
             SceneView.RepaintAll();
         }
 
+        private void CommitGeometryChange()
+        {
+            EditorUtility.SetDirty(Source);
+            RefreshCompiledData();
+            ApplyPreviewToAllInstances(-1);
+        }
+
+        private void RefreshCompiledData()
+        {
+            _compiled.CompileAll();
+
+            for (var blockIndex = 0; blockIndex < Source.BlockCount; blockIndex++)
+            {
+                ConvertBlock(blockIndex);
+                _boundsTree.Update(blockIndex, _compiled.Blocks[blockIndex].localBounds);
+                _corners[blockIndex] = BuildCorners(blockIndex);
+            }
+
+            _dirtyBlockCount = 0;
+            for (var blockIndex = 0; blockIndex < Source.BlockCount; blockIndex++)
+            {
+                if (!IsBlockCurrent(blockIndex)) _dirtyBlockCount++;
+            }
+
+            RefreshRuntimeLayout();
+        }
+
         private bool IsBlockCurrent(int blockIndex)
         {
             var artifact = Source.ActiveBake;
-
-            if (!IsEmbeddedBake(Source, artifact) || artifact.BlockCount != Source.TotalBlockCount) return false;
+            if (!IsEmbeddedBake(Source, artifact) || artifact.BlockCount != Source.BlockCount) return false;
 
             var baked = artifact.GetBlock(blockIndex);
-
             return baked.contentHash == _compiled.Blocks[blockIndex].contentHash
                    && string.Equals(baked.blockId, Source.GetBlock(blockIndex).BlockId, StringComparison.Ordinal);
         }
@@ -306,7 +397,6 @@ namespace PrismFanlight.Editor
         private FanlightLayoutBakeArtifact FindEmbeddedBake(string path)
         {
             FanlightLayoutBakeArtifact found = null;
-
             var assets = AssetDatabase.LoadAllAssetsAtPath(path);
 
             for (var i = 0; i < assets.Length; i++)
@@ -324,16 +414,6 @@ namespace PrismFanlight.Editor
             return found;
         }
 
-        internal static bool IsEmbeddedBake(FanlightLayoutAsset layout, FanlightLayoutBakeArtifact artifact)
-        {
-            if (layout == null || artifact == null || !AssetDatabase.IsSubAsset(artifact)) return false;
-
-            return string.Equals(
-                AssetDatabase.GetAssetPath(layout),
-                AssetDatabase.GetAssetPath(artifact),
-                StringComparison.Ordinal);
-        }
-
         private void ConvertBlock(int blockIndex)
         {
             var block = _compiled.Blocks[blockIndex];
@@ -342,13 +422,7 @@ namespace PrismFanlight.Editor
             for (var i = block.contiguousSeatStart; i < end; i++)
             {
                 var seat = _compiled.Seats[i];
-                _gpuSeats[i] = new FanlightSeatData(
-                    seat.localPosition,
-                    seat.planePosition,
-                    seat.blockCoordinates,
-                    seat.blockIndex,
-                    seat.placementFlags,
-                    (uint)i);
+                _gpuSeats[i] = new FanlightSeatData(seat.localPosition, seat.blockIndex, (uint)i);
                 _stableSeatIds[i] = seat.stableSeatId;
             }
 
@@ -356,65 +430,59 @@ namespace PrismFanlight.Editor
                 block.localBounds.center,
                 block.localBounds.extents.magnitude,
                 block.contiguousSeatStart,
-                block.contiguousSeatCount);
+                block.contiguousSeatCount,
+                block.effectCoordinate);
         }
 
         private void RefreshRuntimeLayout()
         {
-            var contentHash = ComputeLayoutHash();
-
-            _compiled.SetSummary(_boundsTree.Root, contentHash);
             _runtimeLayout = new FanlightRuntimeLayout(
                 Source.LayoutId.Value,
-                contentHash,
-                Source.SeatPerBlock,
-                Source.SeatPitch,
-                Source.BlockCount,
-                _boundsTree.Root,
+                _compiled.ContentHash,
+                Source.ReferenceSeatSpacing,
+                _compiled.LocalBounds,
                 _gpuSeats,
                 _stableSeatIds,
                 BuildStableBlockIds(),
                 _gpuBlocks);
-            if (Source.SetContentHash(contentHash)) EditorUtility.SetDirty(Source);
+
+            if (Source.SetContentHash(_compiled.ContentHash)) EditorUtility.SetDirty(Source);
         }
 
         private string[] BuildStableBlockIds()
         {
-            var blockIds = new string[Source.TotalBlockCount];
-            for (var i = 0; i < blockIds.Length; i++)
-            {
-                blockIds[i] = Source.GetBlock(i).BlockId;
-            }
-
+            var blockIds = new string[Source.BlockCount];
+            for (var i = 0; i < blockIds.Length; i++) blockIds[i] = Source.GetBlock(i).BlockId;
             return blockIds;
-        }
-
-        private ulong ComputeLayoutHash()
-        {
-            var hash = FanlightStableHash.Begin();
-            hash = FanlightStableHash.Add(hash, Source.LayoutId.Value);
-            hash = FanlightStableHash.Add(hash, _hashTree.Root);
-            return FanlightStableHash.Finish(hash);
         }
 
         private Vector3[] BuildCorners(int blockIndex)
         {
-            var corners = new Vector3[4];
+            var block = Source.GetBlock(blockIndex);
+            var first = block.GetRow(0);
+            var last = block.GetRow(block.RowCount - 1);
+            var placement = block.Placement;
+            var rotation = placement.Rotation;
 
-            WriteCorners(blockIndex, corners);
+            if (block.RowCount == 1)
+            {
+                var halfDepth = Mathf.Max(0.1f, Vector3.Distance(first.LeftPoint, first.RightPoint) * 0.05f);
+                return new[]
+                {
+                    placement.position + rotation * (first.LeftPoint - Vector3.forward * halfDepth),
+                    placement.position + rotation * (first.RightPoint - Vector3.forward * halfDepth),
+                    placement.position + rotation * (first.RightPoint + Vector3.forward * halfDepth),
+                    placement.position + rotation * (first.LeftPoint + Vector3.forward * halfDepth)
+                };
+            }
 
-            return corners;
-        }
-
-        private void WriteCorners(int blockIndex, Vector3[] corners)
-        {
-            var block = Source.GetBlockCoordinates(blockIndex);
-            var min = Source.GetPositionOnPlane(block, new int2(0, 0)) - Source.SeatPitch * 0.5f;
-            var max = Source.GetPositionOnPlane(block, Source.SeatPerBlock - new int2(1, 1)) + Source.SeatPitch * 0.5f;
-            corners[0] = Source.TransformBlockPoint(blockIndex, new Vector3(min.x, 0f, min.y));
-            corners[1] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, min.y));
-            corners[2] = Source.TransformBlockPoint(blockIndex, new Vector3(max.x, 0f, max.y));
-            corners[3] = Source.TransformBlockPoint(blockIndex, new Vector3(min.x, 0f, max.y));
+            return new[]
+            {
+                placement.position + rotation * first.LeftPoint,
+                placement.position + rotation * first.RightPoint,
+                placement.position + rotation * last.RightPoint,
+                placement.position + rotation * last.LeftPoint
+            };
         }
     }
 }
