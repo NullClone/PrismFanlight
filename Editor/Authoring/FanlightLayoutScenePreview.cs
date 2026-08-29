@@ -32,16 +32,6 @@ namespace PrismFanlight.Editor
         internal static int GetSelectedRowIndex(FanlightLayoutAsset layout)
             => FanlightLayoutSelection.GetSelectedRowIndex(layout);
 
-        internal static void SetSelectedRowIndex(FanlightLayoutAsset layout, int rowIndex)
-        {
-            FanlightLayoutSelection.SetSelectedRowIndex(layout, rowIndex);
-        }
-
-        internal static void SelectOnly(FanlightLayoutAsset layout, int blockIndex)
-        {
-            FanlightLayoutSelection.SetOnly(layout, blockIndex);
-        }
-
         internal bool Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
@@ -65,6 +55,7 @@ namespace PrismFanlight.Editor
 
             CollectVisibleBlocks(fanlight, layout, session);
             GetSelectedBlockIndices(layout, _selectedBlocks);
+
             var transform = fanlight.transform;
 
             foreach (var blockIndex in _visibleBlocks)
@@ -92,6 +83,7 @@ namespace PrismFanlight.Editor
             if (activeBlock < 0) return false;
 
             DrawSelectedSeatDots(transform, session, activeBlock);
+
             return true;
         }
 
@@ -106,6 +98,7 @@ namespace PrismFanlight.Editor
             session = null;
             activeBlockIndex = -1;
             selectedBlocks.Clear();
+
             if (Application.isPlaying
                 || layout == null
                 || !layout.IsInitialized
@@ -115,26 +108,14 @@ namespace PrismFanlight.Editor
             }
 
             session = FanlightLayoutEditSession.Get(layout);
+
             if (session == null) return false;
 
             FanlightLayoutSelection.GetIndices(layout, selectedBlocks);
+
             activeBlockIndex = FanlightLayoutSelection.GetActiveIndex(layout);
+
             return selectedBlocks.Count > 0 && activeBlockIndex >= 0;
-        }
-
-        internal void ResetSelected(FanlightLayoutAsset layout)
-        {
-            if (layout == null) return;
-
-            GetSelectedBlockIndices(layout, _selectedBlocks);
-            if (_selectedBlocks.Count == 0) return;
-
-            var placements = new FanlightBlockPlacement[_selectedBlocks.Count];
-            for (var i = 0; i < placements.Length; i++) placements[i] = FanlightBlockPlacement.Identity;
-            FanlightLayoutEditSession.Get(layout)?.SetBlockPlacements(
-                _selectedBlocks,
-                placements,
-                "Reset Fanlight Block Placement");
         }
 
         private void CollectVisibleBlocks(
@@ -152,6 +133,7 @@ namespace PrismFanlight.Editor
             }
 
             _visibleBlocks.Clear();
+
             for (var i = 0; i < layout.BlockCount; i++) _visibleBlocks.Add(i);
         }
 
@@ -213,6 +195,7 @@ namespace PrismFanlight.Editor
             if (plane.Raycast(ray, out var distance) && distance >= 0f)
             {
                 var hit = ray.GetPoint(distance);
+
                 if (IsPointInTriangle(hit, p0, p1, p2) || IsPointInTriangle(hit, p0, p2, p3))
                 {
                     return BlockPlanePickDistance;
@@ -320,7 +303,7 @@ namespace PrismFanlight.Editor
             DrawRowHandles(fanlight, layout, session, blockIndex, rowIndex, localToWorld);
         }
 
-        internal static void DrawHeightHandles(
+        internal static void DrawRiseHandle(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
             FanlightLayoutEditSession session,
@@ -330,31 +313,7 @@ namespace PrismFanlight.Editor
             if (Application.isPlaying || selectedBlocks.Count == 0) return;
 
             var transform = fanlight.transform;
-            var localCenter = Vector3.zero;
-            for (var i = 0; i < selectedBlocks.Count; i++)
-            {
-                localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
-            }
-
-            localCenter /= selectedBlocks.Count;
-            var worldCenter = transform.TransformPoint(localCenter);
             var worldUp = transform.TransformDirection(Vector3.up).normalized;
-            var liftSize = HandleUtility.GetHandleSize(worldCenter) * 0.8f;
-            Handles.color = SelectedColor;
-            EditorGUI.BeginChangeCheck();
-            var nextWorldCenter = Handles.Slider(
-                worldCenter,
-                worldUp,
-                liftSize,
-                Handles.ArrowHandleCap,
-                EditorSnapSettings.move.y);
-            if (EditorGUI.EndChangeCheck())
-            {
-                var nextLocalCenter = transform.InverseTransformPoint(nextWorldCenter);
-                var deltaY = nextLocalCenter.y - localCenter.y;
-                FanlightLayoutHeightUtility.Lift(layout, session, selectedBlocks, deltaY);
-            }
-
             var activeBlock = layout.GetBlock(activeBlockIndex);
             var backRow = activeBlock.GetRow(activeBlock.RowCount - 1);
             var backCenter = (backRow.LeftPoint + backRow.ControlPoint + backRow.RightPoint) / 3f;

@@ -188,7 +188,7 @@ namespace PrismFanlight.Editor
             return true;
         }
 
-        private static void SynchronizeBlockPaletteEntries(SerializedProperty entries, FanlightLayoutAsset layout)
+        internal static void SynchronizeBlockPaletteEntries(SerializedProperty entries, FanlightLayoutAsset layout)
         {
             var slotsByBlockId = new Dictionary<string, int>(StringComparer.Ordinal);
 

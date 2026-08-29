@@ -126,14 +126,6 @@ namespace PrismFanlight.Editor
             _boundsTree.Query(planes, localToWorld, results);
         }
 
-        internal bool SetBlockPlacement(int blockIndex, FanlightBlockPlacement placement, string undoName)
-        {
-            return SetBlockPlacements(
-                new[] { blockIndex },
-                new[] { placement },
-                undoName);
-        }
-
         internal bool SetBlockPlacements(
             IReadOnlyList<int> blockIndices,
             IReadOnlyList<FanlightBlockPlacement> placements,
@@ -243,6 +235,7 @@ namespace PrismFanlight.Editor
                     artifact = ScriptableObject.CreateInstance<FanlightLayoutBakeArtifact>();
                     artifact.name = $"{Source.name} Bake Artifact";
                     artifact.hideFlags = HideFlags.NotEditable;
+                    Undo.RegisterCreatedObjectUndo(artifact, "Create Fanlight Layout Bake");
                     AssetDatabase.AddObjectToAsset(artifact, Source);
                 }
 

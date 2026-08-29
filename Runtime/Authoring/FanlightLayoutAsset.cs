@@ -66,27 +66,37 @@ namespace PrismFanlight.Authoring
 
         internal FanlightLayoutBlock GetBlock(int blockIndex) => _blocks[blockIndex];
 
-        internal void Initialize(float2 referenceSeatSpacing, FanlightLayoutBlock[] initialBlocks)
+        internal void ReplaceAuthoringContents(float2 referenceSeatSpacing, FanlightLayoutBlock[] blocks)
         {
-            if (initialBlocks == null || initialBlocks.Length == 0)
+            if (blocks == null || blocks.Length == 0)
             {
-                throw new ArgumentException("At least one initial block is required.", nameof(initialBlocks));
+                throw new ArgumentException("At least one block is required.", nameof(blocks));
             }
 
             ValidateReferenceSeatSpacing(referenceSeatSpacing);
 
-            _layoutId = Guid.NewGuid().ToString("N");
+            var previousLayoutId = _layoutId;
+            var previousContentHash = _contentHash;
+            var previousReferenceSeatSpacing = _referenceSeatSpacing;
+            var previousBlocks = _blocks;
+            var previousActiveBake = _activeBake;
+
+            if (!LayoutId.IsValid) _layoutId = Guid.NewGuid().ToString("N");
             _contentHash = 0UL;
             _referenceSeatSpacing = referenceSeatSpacing;
-            _blocks = (FanlightLayoutBlock[])initialBlocks.Clone();
+            _blocks = (FanlightLayoutBlock[])blocks.Clone();
             _activeBake = null;
 
-            if (!TryValidateAuthoring())
-            {
-                throw new ArgumentException(
-                    "The initial blocks must contain valid rows and unique stable IDs.",
-                    nameof(initialBlocks));
-            }
+            if (TryValidateAuthoring()) return;
+
+            _layoutId = previousLayoutId;
+            _contentHash = previousContentHash;
+            _referenceSeatSpacing = previousReferenceSeatSpacing;
+            _blocks = previousBlocks;
+            _activeBake = previousActiveBake;
+            throw new ArgumentException(
+                "The replacement blocks must contain valid rows and unique stable IDs.",
+                nameof(blocks));
         }
 
         internal FanlightLayoutBlock CreateBlock(

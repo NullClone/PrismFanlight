@@ -14,8 +14,7 @@ namespace PrismFanlight.Editor
         {
             Move,
             Rotate,
-            Shape,
-            Bend
+            Shape
         }
 
         private enum CanvasUpDirection
@@ -27,13 +26,131 @@ namespace PrismFanlight.Editor
         }
 
 
+        private sealed class BendPopupContent : PopupWindowContent
+        {
+            // Fields
+
+            private readonly Action<float> _apply;
+            private float _bendDegrees;
+
+
+            // Methods
+
+            internal BendPopupContent(float bendDegrees, Action<float> apply)
+            {
+                _bendDegrees = bendDegrees;
+                _apply = apply;
+            }
+
+            public override Vector2 GetWindowSize() => new(230f, 86f);
+
+            public override void OnGUI(Rect rect)
+            {
+                EditorGUILayout.LabelField("Bend Selected Blocks", EditorStyles.boldLabel);
+                _bendDegrees = EditorGUILayout.FloatField("Angle", _bendDegrees);
+                using (new EditorGUI.DisabledScope(!float.IsFinite(_bendDegrees)))
+                {
+                    if (!GUILayout.Button("Apply")) return;
+
+                    _apply?.Invoke(_bendDegrees);
+                    editorWindow.Close();
+                }
+            }
+        }
+
+        private sealed class QuickGridPopupContent : PopupWindowContent
+        {
+            // Fields
+
+            private readonly FanlightLayoutEditorWindow _owner;
+            private readonly FanlightLayoutAsset _layout;
+            private Vector2Int _blockCount;
+            private Vector2Int _seatsPerBlock;
+            private Vector2 _seatSpacing;
+            private Vector2 _aisleWidth;
+
+
+            // Methods
+
+            internal QuickGridPopupContent(FanlightLayoutEditorWindow owner)
+            {
+                _owner = owner;
+                _layout = owner._layout;
+                _blockCount = owner._quickBlockCount;
+                _seatsPerBlock = owner._quickSeatsPerBlock;
+                _seatSpacing = owner._quickSeatSpacing;
+                _aisleWidth = owner._quickAisleWidth;
+            }
+
+            public override Vector2 GetWindowSize() => new(430f, 310f);
+
+            public override void OnGUI(Rect rect)
+            {
+                _blockCount = Vector2Int.Max(
+                    EditorGUILayout.Vector2IntField("Block Count", _blockCount),
+                    Vector2Int.one);
+                _seatsPerBlock = Vector2Int.Max(
+                    EditorGUILayout.Vector2IntField("Seats Per Block", _seatsPerBlock),
+                    Vector2Int.one);
+                _seatSpacing = Vector2.Max(
+                    EditorGUILayout.Vector2Field("Seat Spacing", _seatSpacing),
+                    Vector2.one * 0.001f);
+                _aisleWidth = Vector2.Max(
+                    EditorGUILayout.Vector2Field("Aisle Width", _aisleWidth),
+                    Vector2.zero);
+
+                var valid = TryGetQuickGridCounts(
+                    _blockCount,
+                    _seatsPerBlock,
+                    out var totalBlocks,
+                    out var totalSeats);
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Total Blocks", valid ? totalBlocks.ToString("N0") : "Unsupported");
+                EditorGUILayout.LabelField("Total Seats", valid ? totalSeats.ToString("N0") : "Unsupported");
+
+                GUILayout.FlexibleSpace();
+                using (new EditorGUI.DisabledScope(!valid))
+                {
+                    if (!GUILayout.Button("Replace Layout & Bake", GUILayout.Height(30f))) return;
+                }
+
+                if (_owner == null || _layout == null || _owner._layout != _layout)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Quick Grid Target Changed",
+                        "The Layout Editor target changed. Open the generator again for the current Layout.",
+                        "OK");
+                    editorWindow.Close();
+                    return;
+                }
+
+                var confirmed = EditorUtility.DisplayDialog(
+                    "Replace Fanlight Layout?",
+                    $"Current: {_layout.BlockCount:N0} Blocks / {_layout.TotalSeatCount:N0} Seats\n"
+                    + $"New: {totalBlocks:N0} Blocks / {totalSeats:N0} Seats\n\n"
+                    + "All current Blocks, Rows, Stable IDs, and the Bake will be replaced. Loaded Baseline Block Palette mappings reset to Slot 0; other saved mappings must be recreated. This can be undone once with Undo.",
+                    "Replace Layout & Bake",
+                    "Cancel");
+                if (!confirmed) return;
+
+                _owner.SetQuickGridSettings(_blockCount, _seatsPerBlock, _seatSpacing, _aisleWidth);
+
+                if (_owner.CreateQuickGrid("Regenerate Fanlight Quick Grid"))
+                {
+                    editorWindow.Close();
+                }
+            }
+        }
+
+
         // Fields
 
         private const float MinimumZoom = 8f;
         private const float MaximumZoom = 240f;
         private const float ShapeHandleRadius = 8f;
+        private const string WindowTitle = "Fanlight Layout";
 
-        private readonly List<int> _selectedBlocks = new();
 
         [SerializeField]
         private PrismFanlight _target;
@@ -44,13 +161,13 @@ namespace PrismFanlight.Editor
         [SerializeField]
         private CanvasUpDirection _canvasUpDirection;
 
+
         private FanlightLayoutAsset _layout;
         private LayoutTool _tool = LayoutTool.Move;
         private Vector2 _pan;
         private float _zoom = 42f;
         private float _positionSnap = 0.1f;
         private float _angleSnap = 5f;
-        private float _bendDegrees = 20f;
         private bool _snapPosition = true;
         private bool _snapAngle = true;
         private bool _panning;
@@ -74,6 +191,18 @@ namespace PrismFanlight.Editor
         private Vector2 _quickAisleWidth = new(0.7f, 1.2f);
         private FanlightLayoutGenerator.SeatAnchor _seatAnchor = FanlightLayoutGenerator.SeatAnchor.Center;
 
+        private static FanlightLayoutEditorWindow _activeWindow;
+        private static GUIContent _saveIcon;
+
+        private readonly List<int> _selectedBlocks = new();
+
+
+        // Properties
+
+        internal static PrismFanlight ActiveTarget => _activeWindow != null ? _activeWindow._target : null;
+
+        private static GUIContent SaveIcon => _saveIcon ??= new GUIContent(EditorGUIUtility.IconContent("SaveActive").image, "Bake");
+
 
         // Methods
 
@@ -84,6 +213,7 @@ namespace PrismFanlight.Editor
             window.titleContent = new GUIContent("Fanlight Layout");
             window.UseCurrentSelection();
             window.Show();
+            window.ActivateLayoutTool();
         }
 
         internal static void Open(PrismFanlight target)
@@ -93,21 +223,47 @@ namespace PrismFanlight.Editor
             window.SetTarget(target);
             window.Show();
             window.Focus();
+            window.ActivateLayoutTool();
         }
 
         private void OnEnable()
         {
+            _activeWindow = this;
             minSize = new Vector2(640f, 420f);
-            FanlightLayoutSelection.Changed += Repaint;
-            Undo.undoRedoPerformed += Repaint;
-            if (!_locked || _target == null) UseCurrentSelection();
-            else SetTarget(_target);
+
+            FanlightLayoutSelection.Changed += OnLayoutSelectionChanged;
+            Undo.undoRedoPerformed += OnUndoRedo;
+
+            if (_target == null)
+            {
+                UseCurrentSelection();
+            }
+            else
+            {
+                SetTarget(_target);
+            }
         }
 
         private void OnDisable()
         {
-            FanlightLayoutSelection.Changed -= Repaint;
-            Undo.undoRedoPerformed -= Repaint;
+            if (_activeWindow == this) _activeWindow = null;
+            FanlightLayoutSelection.Changed -= OnLayoutSelectionChanged;
+            Undo.undoRedoPerformed -= OnUndoRedo;
+            ToolManager.RefreshAvailableTools();
+            SceneView.RepaintAll();
+        }
+
+        private void OnFocus()
+        {
+            _activeWindow = this;
+            UpdateTitle();
+            ToolManager.RefreshAvailableTools();
+            SceneView.RepaintAll();
+        }
+
+        private void OnInspectorUpdate()
+        {
+            UpdateTitle();
         }
 
         private void OnSelectionChange()
@@ -116,9 +272,33 @@ namespace PrismFanlight.Editor
             Repaint();
         }
 
+        private void OnLayoutSelectionChanged()
+        {
+            Repaint();
+            ActivateLayoutTool();
+        }
+
+        private void OnUndoRedo()
+        {
+            if (_layout != null)
+            {
+                FanlightLayoutEditSession.Reset(_layout);
+                FanlightLayoutIdRegistry.Invalidate();
+                if (_layout.IsInitialized)
+                {
+                    FanlightLayoutEditSession.Get(_layout)?.ApplyPreviewToAllInstances(-1);
+                }
+            }
+
+            UpdateTitle();
+            Repaint();
+        }
+
         private void OnGUI()
         {
             RefreshTargetLayout();
+            UpdateTitle();
+
             if (_target == null)
             {
                 EditorGUILayout.HelpBox("Select a GameObject with a Prism Fanlight component.", MessageType.Info);
@@ -152,6 +332,7 @@ namespace PrismFanlight.Editor
 
                 DrawToolbar();
                 DrawCanvas();
+
                 if (FanlightLayoutSelection.IsAdvancedRowEditing(_layout)) DrawAdvancedRows();
             }
         }
@@ -160,9 +341,6 @@ namespace PrismFanlight.Editor
         {
             menu.AddItem(new GUIContent("Lock"), _locked, ToggleLock);
             menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Advanced Row Editing"),
-                _layout != null && FanlightLayoutSelection.IsAdvancedRowEditing(_layout),
-                ToggleAdvancedRows);
         }
 
         private void DrawQuickGrid()
@@ -194,7 +372,10 @@ namespace PrismFanlight.Editor
                 GUILayout.Space(8f);
                 using (new EditorGUI.DisabledScope(!valid))
                 {
-                    if (GUILayout.Button("Create & Bake", GUILayout.Height(30f))) CreateQuickGrid();
+                    if (GUILayout.Button("Create & Bake", GUILayout.Height(30f)))
+                    {
+                        CreateQuickGrid("Create Fanlight Quick Grid");
+                    }
                 }
             }
         }
@@ -204,12 +385,11 @@ namespace PrismFanlight.Editor
             FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                DrawToolToggle(LayoutTool.Move, "Move");
-                DrawToolToggle(LayoutTool.Rotate, "Rotate");
-                DrawToolToggle(LayoutTool.Shape, "Shape");
-                DrawToolToggle(LayoutTool.Bend, "Bend");
+                DrawToolToggle(LayoutTool.Move, EditorGUIUtility.TrIconContent("MoveTool", "Move Tool"));
+                DrawToolToggle(LayoutTool.Rotate, EditorGUIUtility.TrIconContent("RotateTool", "Rotate Tool"));
+                DrawToolToggle(LayoutTool.Shape, EditorGUIUtility.TrIconContent("RectTool", "Shape Tool"));
 
-                GUILayout.Space(8f);
+                GUILayout.Space(16f);
 
                 if (_tool == LayoutTool.Move)
                 {
@@ -221,16 +401,9 @@ namespace PrismFanlight.Editor
                     _snapAngle = GUILayout.Toggle(_snapAngle, "Snap", EditorStyles.toolbarButton, GUILayout.Width(46f));
                     _angleSnap = Mathf.Max(0.1f, EditorGUILayout.FloatField(_angleSnap, GUILayout.Width(52f)));
                 }
-                else if (_tool == LayoutTool.Bend)
-                {
-                    _bendDegrees = EditorGUILayout.FloatField(_bendDegrees, GUILayout.Width(52f));
-                    using (new EditorGUI.DisabledScope(_selectedBlocks.Count < 2))
-                    {
-                        if (GUILayout.Button("Apply", EditorStyles.toolbarButton, GUILayout.Width(46f))) BendSelected();
-                    }
-                }
 
                 GUILayout.FlexibleSpace();
+
                 if (GUILayout.Button(
                         new GUIContent($"Up {GetCanvasUpLabel()}", "Rotate the canvas up direction by 90 degrees."),
                         EditorStyles.toolbarButton,
@@ -239,16 +412,17 @@ namespace PrismFanlight.Editor
                     RotateCanvasUp();
                 }
 
-                if (GUILayout.Button("Fit", EditorStyles.toolbarButton, GUILayout.Width(34f))) FitView();
-                var session = FanlightLayoutEditSession.Get(_layout);
-                var bakeLabel = session != null && session.HasCurrentBake ? "Baked" : "Bake";
-                if (GUILayout.Button(bakeLabel, EditorStyles.toolbarButton, GUILayout.Width(48f))) session?.Bake();
+                if (GUILayout.Button(SaveIcon, EditorStyles.toolbarButton))
+                {
+                    FanlightLayoutEditSession.Get(_layout)?.Bake();
+                }
             }
         }
 
-        private void DrawToolToggle(LayoutTool tool, string label)
+        private void DrawToolToggle(LayoutTool tool, GUIContent label)
         {
             var selected = _tool == tool;
+
             if (GUILayout.Toggle(selected, label, EditorStyles.toolbarButton) && !selected)
             {
                 _tool = tool;
@@ -290,11 +464,6 @@ namespace PrismFanlight.Editor
                 HandleCanvasNavigation(canvas);
                 DrawGrid(canvas, _layout.ReferenceSeatSpacing.x, _layout.ReferenceSeatSpacing.y);
                 DrawBlocks(canvas, session);
-                DrawTopRows(canvas);
-                GUI.Label(
-                    new Rect(8f, 6f, 320f, 18f),
-                    $"{_target.name} / Layout XZ / Up {GetCanvasUpLabel()}",
-                    EditorStyles.miniLabel);
                 if (_tool == LayoutTool.Shape && _selectedBlocks.Count == 1) DrawShapeHandles(canvas, session);
                 if (_marquee) DrawMarquee();
                 HandleCanvasInput(canvas, session);
@@ -344,32 +513,6 @@ namespace PrismFanlight.Editor
             Handles.color = new Color(1f, 1f, 1f, 0.28f);
             Handles.DrawLine(new Vector3(canvas.xMin, origin.y), new Vector3(canvas.xMax, origin.y));
             Handles.DrawLine(new Vector3(origin.x, canvas.yMin), new Vector3(origin.x, canvas.yMax));
-            Handles.EndGUI();
-        }
-
-        private void DrawTopRows(Rect canvas)
-        {
-            var active = FanlightLayoutSelection.GetActiveIndex(_layout);
-            if (active < 0 || !_selectedBlocks.Contains(active)) return;
-
-            var block = _layout.GetBlock(active);
-            var placement = block.Placement;
-            Handles.BeginGUI();
-            Handles.color = new Color(1f, 0.9f, 0.35f, 0.65f);
-            for (var rowIndex = 0; rowIndex < block.RowCount; rowIndex++)
-            {
-                var row = block.GetRow(rowIndex);
-                var points = new Vector3[17];
-                for (var sampleIndex = 0; sampleIndex < points.Length; sampleIndex++)
-                {
-                    var t = (float)sampleIndex / (points.Length - 1);
-                    var blockPoint = EvaluateQuadratic(row.LeftPoint, row.ControlPoint, row.RightPoint, t);
-                    points[sampleIndex] = LocalToCanvas(placement.position + placement.Rotation * blockPoint, canvas);
-                }
-
-                Handles.DrawAAPolyLine(1.5f, points);
-            }
-
             Handles.EndGUI();
         }
 
@@ -707,7 +850,7 @@ namespace PrismFanlight.Editor
             var inverseRotation = Quaternion.Inverse(placement.Rotation);
             var blockPoint = inverseRotation * (layoutPoint - placement.position);
             var first = _shapeRows[0];
-            var last = _shapeRows[_shapeRows.Length - 1];
+            var last = _shapeRows[^1];
             var cage = new[] { first.LeftPoint, first.RightPoint, last.RightPoint, last.LeftPoint };
             var frontControl = first.ControlPoint;
             var backControl = last.ControlPoint;
@@ -840,36 +983,142 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private void CreateQuickGrid()
+        private bool CreateQuickGrid(string undoName)
         {
-            if (!TryGetQuickGridCounts(out _, out _)) return;
+            if (!TryGetQuickGridCounts(out _, out _)) return false;
+
+            FanlightLayoutBlock[] blocks;
+            var seatSpacing = new float2(_quickSeatSpacing.x, _quickSeatSpacing.y);
 
             try
             {
-                Undo.RecordObject(_layout, "Create Fanlight Quick Grid");
-                var seatSpacing = new float2(_quickSeatSpacing.x, _quickSeatSpacing.y);
-                var blocks = FanlightLayoutGenerator.GenerateQuickGrid(
+                blocks = FanlightLayoutGenerator.GenerateQuickGrid(
                     new int2(_quickBlockCount.x, _quickBlockCount.y),
                     new int2(_quickSeatsPerBlock.x, _quickSeatsPerBlock.y),
                     seatSpacing,
                     new float2(_quickAisleWidth.x, _quickAisleWidth.y));
-                _layout.Initialize(seatSpacing, blocks);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                EditorUtility.DisplayDialog("Quick Grid Failed", exception.Message, "OK");
+                return false;
+            }
+
+            Undo.IncrementCurrentGroup();
+            var undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(undoName);
+            var paletteTargets = CollectLayoutInstances(_layout);
+            Undo.RecordObject(_layout, undoName);
+            if (_layout.ActiveBake != null) Undo.RecordObject(_layout.ActiveBake, undoName);
+            for (var i = 0; i < paletteTargets.Count; i++) Undo.RecordObject(paletteTargets[i], undoName);
+
+            try
+            {
+                _layout.ReplaceAuthoringContents(seatSpacing, blocks);
+                SynchronizeBaselineBlockPalettes(paletteTargets);
                 EditorUtility.SetDirty(_layout);
                 FanlightLayoutEditSession.Reset(_layout);
                 FanlightLayoutIdRegistry.Invalidate();
                 var session = FanlightLayoutEditSession.Get(_layout);
                 if (session == null) throw new InvalidOperationException("The generated Layout is invalid.");
 
-                session.Bake();
+                if (!session.Bake())
+                {
+                    Undo.RevertAllDownToGroup(undoGroup);
+                    RefreshAfterQuickGridRollback();
+                    return false;
+                }
+
                 session.ApplyPreviewToAllInstances(-1);
                 FanlightLayoutSelection.SetOnly(_layout, 0);
                 FitView();
+                Undo.CollapseUndoOperations(undoGroup);
+                return true;
             }
             catch (Exception exception)
             {
+                Undo.RevertAllDownToGroup(undoGroup);
+                RefreshAfterQuickGridRollback();
                 Debug.LogException(exception);
                 EditorUtility.DisplayDialog("Quick Grid Failed", exception.Message, "OK");
+                return false;
             }
+        }
+
+        private void SetQuickGridSettings(
+            Vector2Int blockCount,
+            Vector2Int seatsPerBlock,
+            Vector2 seatSpacing,
+            Vector2 aisleWidth)
+        {
+            _quickBlockCount = blockCount;
+            _quickSeatsPerBlock = seatsPerBlock;
+            _quickSeatSpacing = seatSpacing;
+            _quickAisleWidth = aisleWidth;
+        }
+
+        private void OpenQuickGridGenerator(Rect activatorRect)
+        {
+            if (_layout == null
+                || !_layout.IsInitialized
+                || Application.isPlaying
+                || FanlightLayoutIdRegistry.IsDuplicate(_layout))
+            {
+                return;
+            }
+
+            PopupWindow.Show(activatorRect, new QuickGridPopupContent(this));
+        }
+
+        private void OpenBendPopup(Rect activatorRect)
+        {
+            FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
+            if (_selectedBlocks.Count < 2) return;
+
+            PopupWindow.Show(activatorRect, new BendPopupContent(20f, BendSelected));
+        }
+
+        private void SynchronizeBaselineBlockPalettes(IReadOnlyList<PrismFanlight> fanlights)
+        {
+            for (var i = 0; i < fanlights.Count; i++)
+            {
+                var fanlight = fanlights[i];
+                if (fanlight == null || fanlight.LayoutAsset != _layout) continue;
+
+                var serializedFanlight = new SerializedObject(fanlight);
+                serializedFanlight.Update();
+                var color = serializedFanlight.FindProperty("_color");
+                var source = color?.FindPropertyRelative("_source");
+                var entries = source?.FindPropertyRelative("_blockPaletteEntries");
+                if (entries == null) continue;
+
+                FanlightColorIntensityEditorUtility.SynchronizeBlockPaletteEntries(entries, _layout);
+                serializedFanlight.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(fanlight);
+            }
+        }
+
+        private void RefreshAfterQuickGridRollback()
+        {
+            FanlightLayoutEditSession.Reset(_layout);
+            FanlightLayoutIdRegistry.Invalidate();
+            FanlightLayoutEditSession.Get(_layout)?.ApplyPreviewToAllInstances(-1);
+
+            Repaint();
+        }
+
+        private static List<PrismFanlight> CollectLayoutInstances(FanlightLayoutAsset layout)
+        {
+            var results = new List<PrismFanlight>();
+            var fanlights = FindObjectsByType<PrismFanlight>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            for (var i = 0; i < fanlights.Length; i++)
+            {
+                if (fanlights[i].LayoutAsset == layout) results.Add(fanlights[i]);
+            }
+
+            return results;
         }
 
         private void DuplicateSelected()
@@ -884,8 +1133,8 @@ namespace PrismFanlight.Editor
         private void MirrorSelected()
             => FanlightLayoutCommands.Mirror(_layout);
 
-        private void BendSelected()
-            => FanlightLayoutCommands.Bend(_layout, _bendDegrees);
+        private void BendSelected(float bendDegrees)
+            => FanlightLayoutCommands.Bend(_layout, bendDegrees);
 
         private void SnapActiveEdge()
             => FanlightLayoutCommands.SnapActiveEdge(_layout);
@@ -901,25 +1150,23 @@ namespace PrismFanlight.Editor
 
         private void ShowCanvasMenu(Vector3 layoutPosition)
         {
+            var popupRect = new Rect(GUIUtility.GUIToScreenPoint(Event.current.mousePosition), Vector2.zero);
             var menu = new GenericMenu();
+
             AddCreateItems(menu, "Create/", layoutPosition);
+
+            menu.AddItem(new GUIContent("Layout/Regenerate"), false, () => OpenQuickGridGenerator(popupRect));
             menu.AddSeparator(string.Empty);
+
             FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
+
             if (_selectedBlocks.Count > 0)
             {
-                var copiedIndices = _selectedBlocks.ToArray();
-                menu.AddItem(new GUIContent("Copy"), false, () => FanlightLayoutClipboard.Copy(_layout, copiedIndices));
-                menu.AddItem(new GUIContent("Duplicate"), false, DuplicateSelected);
-                menu.AddItem(new GUIContent("Delete"), false, DeleteSelected);
-                menu.AddSeparator(string.Empty);
-                menu.AddItem(new GUIContent("Mirror X"), false, MirrorSelected);
-                menu.AddItem(new GUIContent("Edge Snap"), false, SnapActiveEdge);
+                menu.AddItem(new GUIContent("Copy"), false, () => FanlightLayoutClipboard.Copy(_layout, _selectedBlocks.ToArray()));
             }
             else
             {
                 menu.AddDisabledItem(new GUIContent("Copy"));
-                menu.AddDisabledItem(new GUIContent("Duplicate"));
-                menu.AddDisabledItem(new GUIContent("Delete"));
             }
 
             if (FanlightLayoutClipboard.CanPaste)
@@ -931,13 +1178,39 @@ namespace PrismFanlight.Editor
                 menu.AddDisabledItem(new GUIContent("Paste"));
             }
 
+            if (_selectedBlocks.Count > 0)
+            {
+                menu.AddItem(new GUIContent("Duplicate"), false, DuplicateSelected);
+                menu.AddItem(new GUIContent("Delete"), false, DeleteSelected);
+                menu.AddItem(new GUIContent("Reset"), false, ResetSelected);
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(new GUIContent("Mirror X"), false, MirrorSelected);
+                menu.AddItem(new GUIContent("Edge Snap"), false, SnapActiveEdge);
+
+                if (_selectedBlocks.Count >= 2)
+                {
+                    menu.AddItem(new GUIContent("Bend"), false, () => OpenBendPopup(popupRect));
+                }
+                else
+                {
+                    menu.AddDisabledItem(new GUIContent("Bend"));
+                }
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Duplicate"));
+                menu.AddDisabledItem(new GUIContent("Delete"));
+                menu.AddDisabledItem(new GUIContent("Reset"));
+                menu.AddDisabledItem(new GUIContent("Bend"));
+            }
+
             menu.AddSeparator(string.Empty);
             menu.AddItem(new GUIContent("Align/X"), false, () => AlignSelected(true));
             menu.AddItem(new GUIContent("Align/Z"), false, () => AlignSelected(false));
             menu.AddItem(new GUIContent("Distribute/X"), false, () => DistributeSelected(true));
             menu.AddItem(new GUIContent("Distribute/Z"), false, () => DistributeSelected(false));
             menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Reset Placement"), false, ResetSelected);
+
             menu.AddItem(
                 new GUIContent("Advanced Row Editing"),
                 FanlightLayoutSelection.IsAdvancedRowEditing(_layout),
@@ -1022,6 +1295,7 @@ namespace PrismFanlight.Editor
             var layoutChanged = _layout != layout;
             _target = target;
             _layout = layout;
+            ToolManager.RefreshAvailableTools();
             if (!layoutChanged)
             {
                 Repaint();
@@ -1047,7 +1321,7 @@ namespace PrismFanlight.Editor
                 return;
             }
 
-            SetTarget(null);
+            if (_target == null) SetTarget(null);
         }
 
         private void RefreshTargetLayout()
@@ -1079,10 +1353,27 @@ namespace PrismFanlight.Editor
             FanlightLayoutSelection.SetAdvancedRowEditing(
                 _layout,
                 enabled);
-            if (enabled && _target != null && Selection.activeGameObject == _target.gameObject)
+            if (enabled) ActivateLayoutTool();
+        }
+
+        private void ActivateLayoutTool()
+        {
+            if (Application.isPlaying
+                || _target == null
+                || _layout == null
+                || !_layout.IsInitialized
+                || FanlightLayoutSelection.GetActiveIndex(_layout) < 0)
+            {
+                return;
+            }
+
+            _activeWindow = this;
+            if (ToolManager.activeToolType != typeof(FanlightLayoutTool))
             {
                 ToolManager.SetActiveTool<FanlightLayoutTool>();
             }
+
+            SceneView.RepaintAll();
         }
 
         private void ShowButton(Rect rect)
@@ -1115,6 +1406,19 @@ namespace PrismFanlight.Editor
                 available.y / Mathf.Max(1f, viewSize.y)) * 0.82f, MinimumZoom, MaximumZoom);
             _pan = new Vector2(-viewCenter.x * _zoom, viewCenter.y * _zoom);
             Repaint();
+        }
+
+        private void UpdateTitle()
+        {
+            var session = _layout != null && _layout.IsInitialized
+                ? FanlightLayoutEditSession.Get(_layout)
+                : null;
+            var bakeRequired = session != null && !session.HasCurrentBake;
+            var text = bakeRequired ? $"{WindowTitle}*" : WindowTitle;
+            var tooltip = bakeRequired ? $"{WindowTitle} - Bake required" : WindowTitle;
+            if (titleContent.text == text && titleContent.tooltip == tooltip) return;
+
+            titleContent = new GUIContent(text, titleContent.image, tooltip);
         }
 
         private int FindBlock(Vector2 mouse, Rect canvas, FanlightLayoutEditSession session)
@@ -1221,11 +1525,18 @@ namespace PrismFanlight.Editor
         }
 
         private bool TryGetQuickGridCounts(out long totalBlocks, out long totalSeats)
+            => TryGetQuickGridCounts(_quickBlockCount, _quickSeatsPerBlock, out totalBlocks, out totalSeats);
+
+        private static bool TryGetQuickGridCounts(
+            Vector2Int blockCount,
+            Vector2Int seatsPerBlock,
+            out long totalBlocks,
+            out long totalSeats)
         {
             try
             {
-                totalBlocks = checked((long)_quickBlockCount.x * _quickBlockCount.y);
-                totalSeats = checked(totalBlocks * _quickSeatsPerBlock.x * _quickSeatsPerBlock.y);
+                totalBlocks = checked((long)blockCount.x * blockCount.y);
+                totalSeats = checked(totalBlocks * seatsPerBlock.x * seatsPerBlock.y);
                 return totalBlocks is > 0 and <= int.MaxValue && totalSeats is > 0 and <= int.MaxValue;
             }
             catch (OverflowException)
@@ -1254,12 +1565,6 @@ namespace PrismFanlight.Editor
 
         private static float Snap(float value, float step)
             => Mathf.Round(value / Mathf.Max(0.0001f, step)) * step;
-
-        private static Vector3 EvaluateQuadratic(Vector3 left, Vector3 control, Vector3 right, float t)
-        {
-            var inverse = 1f - t;
-            return inverse * inverse * left + 2f * inverse * t * control + t * t * right;
-        }
 
         private static bool PointInTriangle(Vector2 point, Vector2 a, Vector2 b, Vector2 c)
         {

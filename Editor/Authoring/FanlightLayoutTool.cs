@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
-    [EditorTool("Prism Fanlight Layout", typeof(PrismFanlight))]
+    [EditorTool("Prism Fanlight Layout")]
     internal sealed class FanlightLayoutTool : EditorTool
     {
         // Fields
@@ -15,8 +15,10 @@ namespace PrismFanlight.Editor
 
         // Properties
 
+        internal static bool IsActive => ToolManager.activeToolType == typeof(FanlightLayoutTool);
+
         public override GUIContent toolbarIcon
-            => EditorGUIUtility.TrIconContent("MoveTool", "Edit Prism Fanlight block placement and advanced rows.");
+            => EditorGUIUtility.TrIconContent("MoveTool", "Edit Prism Fanlight block placement, height, and advanced rows.");
 
 
         // Methods
@@ -31,9 +33,12 @@ namespace PrismFanlight.Editor
             SceneView.RepaintAll();
         }
 
+        public override bool IsAvailable()
+            => CanEdit(ResolveTarget());
+
         public override void OnToolGUI(EditorWindow window)
         {
-            var fanlight = target as PrismFanlight;
+            var fanlight = ResolveTarget();
             if (window is not SceneView
                 || !FanlightLayoutScenePreview.TryGetToolContext(
                     fanlight,
@@ -45,6 +50,19 @@ namespace PrismFanlight.Editor
                 return;
             }
 
+            FanlightLayoutScenePreview.DrawTransformHandle(
+                fanlight,
+                layout,
+                session,
+                _selectedBlocks,
+                activeBlockIndex);
+            FanlightLayoutScenePreview.DrawRiseHandle(
+                fanlight,
+                layout,
+                session,
+                _selectedBlocks,
+                activeBlockIndex);
+
             if (FanlightLayoutSelection.IsAdvancedRowEditing(layout) && _selectedBlocks.Count == 1)
             {
                 FanlightLayoutScenePreview.DrawRowsAndHandles(
@@ -52,15 +70,28 @@ namespace PrismFanlight.Editor
                     layout,
                     session,
                     activeBlockIndex);
-                return;
             }
+        }
 
-            FanlightLayoutScenePreview.DrawTransformHandle(
-                fanlight,
-                layout,
-                session,
-                _selectedBlocks,
-                activeBlockIndex);
+        private static PrismFanlight ResolveTarget()
+        {
+            var windowTarget = FanlightLayoutEditorWindow.ActiveTarget;
+            if (windowTarget != null) return windowTarget;
+
+            var gameObject = Selection.activeGameObject;
+            return gameObject != null && gameObject.TryGetComponent<PrismFanlight>(out var fanlight)
+                ? fanlight
+                : null;
+        }
+
+        private static bool CanEdit(PrismFanlight fanlight)
+        {
+            var layout = fanlight != null ? fanlight.LayoutAsset : null;
+            return !Application.isPlaying
+                   && layout != null
+                   && layout.IsInitialized
+                   && !FanlightLayoutIdRegistry.IsDuplicate(layout)
+                   && FanlightLayoutSelection.GetActiveIndex(layout) >= 0;
         }
     }
 }

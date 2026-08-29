@@ -83,16 +83,23 @@ namespace PrismFanlight.Editor
             DrawCopyableField("Position", hasMultiple ? null : Format(block.Placement.position));
             DrawCopyableField("Rotation", hasMultiple ? null : Format(block.Placement.eulerRotation));
 
-            EditorGUILayout.LabelField("Bake", session.HasCurrentBake ? "Current" : "Required");
-
-            using (new EditorGUI.DisabledScope(Application.isPlaying))
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Open Layout Editor")) FanlightLayoutEditorWindow.Open(fanlight);
-                if (GUILayout.Button("Bake Layout")) session.Bake();
+                using (new EditorGUI.DisabledScope(Application.isPlaying))
+                {
+                    if (GUILayout.Button("Open Layout Editor"))
+                    {
+                        FanlightLayoutEditorWindow.Open(fanlight);
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(Application.isPlaying || session.HasCurrentBake))
+                {
+                    if (GUILayout.Button("Bake Layout")) session.Bake();
+                }
             }
 
-            if (FanlightLayoutHeightTool.IsActive)
+            if (FanlightLayoutTool.IsActive)
             {
                 FanlightLayoutHeightUtility.GetHeights(layoutAsset, blockIndex, out var frontHeight, out var backHeight);
                 var placementY = block.Placement.position.y;
@@ -130,7 +137,10 @@ namespace PrismFanlight.Editor
                 }
             }
 
+            EditorGUILayout.Space();
+
             var colorState = _serializedFanlight.FindProperty("_color");
+
             if (FanlightColorIntensityEditorUtility.IsBlockPalette(colorState))
             {
                 EditorGUILayout.Space();
