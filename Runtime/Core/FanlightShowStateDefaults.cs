@@ -59,7 +59,7 @@ namespace PrismFanlight.Core
 
         internal static FanlightColorState Color() => new(
             new FanlightColorSource(
-                FanlightColorMode.StablePalette,
+                FanlightColorMode.LinearGradient,
                 UnityEngine.Color.red,
                 UnityEngine.Color.yellow,
                 UnityEngine.Color.green,
@@ -70,7 +70,7 @@ namespace PrismFanlight.Core
                 UnityEngine.Color.white,
                 Vector2.zero,
                 90f,
-                1f,
+                10f,
                 0f,
                 Array.Empty<FanlightBlockPaletteEntry>()));
 
@@ -87,7 +87,7 @@ namespace PrismFanlight.Core
                 1f,
                 Vector2.zero,
                 90f,
-                1f));
+                10f));
 
         internal static FanlightVisibilityState Visibility() => new(true, true);
     }
