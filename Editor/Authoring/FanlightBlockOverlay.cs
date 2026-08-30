@@ -99,46 +99,6 @@ namespace PrismFanlight.Editor
                 }
             }
 
-            /*
-            if (Tools.current is Tool.Move or Tool.Rotate or Tool.Rect)
-            {
-                FanlightLayoutHeightUtility.GetHeights(layoutAsset, blockIndex, out var frontHeight, out var backHeight);
-                var placementY = block.Placement.position.y;
-                var rise = backHeight - frontHeight;
-                using (new EditorGUI.DisabledScope(Application.isPlaying))
-                {
-                    EditorGUI.BeginChangeCheck();
-                    var nextPlacementY = EditorGUILayout.FloatField("Placement Y", placementY);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        FanlightLayoutHeightUtility.Lift(
-                            layoutAsset,
-                            session,
-                            _selectedBlocks,
-                            nextPlacementY - placementY);
-                    }
-
-                    EditorGUILayout.LabelField("Front Y", frontHeight.ToString("0.###"));
-                    EditorGUILayout.LabelField("Back Y", backHeight.ToString("0.###"));
-                    EditorGUI.BeginChangeCheck();
-                    var nextRise = EditorGUILayout.FloatField("Rise", rise);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        FanlightLayoutHeightUtility.AddRise(
-                            layoutAsset,
-                            session,
-                            _selectedBlocks,
-                            nextRise - rise);
-                    }
-
-                    if (GUILayout.Button("Flatten"))
-                    {
-                        FanlightLayoutHeightUtility.Flatten(layoutAsset, session, _selectedBlocks);
-                    }
-                }
-            }
-            */
-
             EditorGUILayout.Space();
 
             var colorState = _serializedFanlight.FindProperty("_color");

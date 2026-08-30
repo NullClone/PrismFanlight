@@ -118,7 +118,9 @@ namespace PrismFanlight.Editor
                             var left = ReflectLayoutX(placement.position + placement.Rotation * row.RightPoint);
                             var control = ReflectLayoutX(placement.position + placement.Rotation * row.ControlPoint);
                             var right = ReflectLayoutX(placement.position + placement.Rotation * row.LeftPoint);
-                            rows[rowIndex] = new FanlightLayoutRow(left, control, right, row.CopyStableSeatIds());
+                            var stableSeatIds = row.CopyStableSeatIds();
+                            Array.Reverse(stableSeatIds);
+                            rows[rowIndex] = new FanlightLayoutRow(left, control, right, stableSeatIds);
                         }
 
                         if (!layout.SetBlockRows(index, rows)) return false;

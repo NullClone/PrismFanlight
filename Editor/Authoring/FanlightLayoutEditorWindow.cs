@@ -512,7 +512,7 @@ namespace PrismFanlight.Editor
 
         private void DrawToolbar()
         {
-            FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
+            // FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
 
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
@@ -527,6 +527,8 @@ namespace PrismFanlight.Editor
                 }
 
                 GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Fit", EditorStyles.toolbarButton, GUILayout.Width(36f))) FitView();
 
                 if (GUILayout.Button(GetCanvasUpLabel(), EditorStyles.toolbarButton, GUILayout.Width(48f)))
                 {
