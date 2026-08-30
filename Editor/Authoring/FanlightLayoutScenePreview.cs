@@ -222,7 +222,7 @@ namespace PrismFanlight.Editor
             return u >= 0f && v >= 0f && u + v <= 1f;
         }
 
-        internal static void DrawTransformHandle(
+        internal static void DrawMoveHandle(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
             FanlightLayoutEditSession session,
@@ -245,10 +245,46 @@ namespace PrismFanlight.Editor
 
             EditorGUI.BeginChangeCheck();
             var nextCenterWorld = Handles.PositionHandle(worldCenter, handleRotation);
-            var nextRotationWorld = Handles.RotationHandle(worldRotation, nextCenterWorld);
             if (!EditorGUI.EndChangeCheck()) return;
 
             var nextCenter = fanlight.transform.InverseTransformPoint(nextCenterWorld);
+            var delta = nextCenter - localCenter;
+            var placements = new FanlightBlockPlacement[selectedBlocks.Count];
+
+            for (var i = 0; i < selectedBlocks.Count; i++)
+            {
+                var placement = layout.GetBlock(selectedBlocks[i]).Placement;
+                placement.position += delta;
+                placements[i] = placement;
+            }
+
+            session.SetBlockPlacements(selectedBlocks, placements, "Move Fanlight Blocks");
+        }
+
+        internal static void DrawRotateHandle(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            IReadOnlyList<int> selectedBlocks,
+            int activeBlockIndex)
+        {
+            if (Application.isPlaying || selectedBlocks.Count == 0) return;
+
+            var localCenter = Vector3.zero;
+            for (var i = 0; i < selectedBlocks.Count; i++)
+            {
+                localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
+            }
+
+            localCenter /= selectedBlocks.Count;
+            var activePlacement = layout.GetBlock(activeBlockIndex).Placement;
+            var worldCenter = fanlight.transform.TransformPoint(localCenter);
+            var worldRotation = fanlight.transform.rotation * activePlacement.Rotation;
+
+            EditorGUI.BeginChangeCheck();
+            var nextRotationWorld = Handles.RotationHandle(worldRotation, worldCenter);
+            if (!EditorGUI.EndChangeCheck()) return;
+
             var nextActiveRotation = Quaternion.Inverse(fanlight.transform.rotation) * nextRotationWorld;
             var rotationDelta = nextActiveRotation * Quaternion.Inverse(activePlacement.Rotation);
             var placements = new FanlightBlockPlacement[selectedBlocks.Count];
@@ -258,12 +294,12 @@ namespace PrismFanlight.Editor
                 var placement = layout.GetBlock(selectedBlocks[i]).Placement;
                 placements[i] = new FanlightBlockPlacement
                 {
-                    position = nextCenter + rotationDelta * (placement.position - localCenter),
+                    position = localCenter + rotationDelta * (placement.position - localCenter),
                     eulerRotation = (rotationDelta * placement.Rotation).eulerAngles
                 };
             }
 
-            session.SetBlockPlacements(selectedBlocks, placements, "Edit Fanlight Block Placement");
+            session.SetBlockPlacements(selectedBlocks, placements, "Rotate Fanlight Blocks");
         }
 
         internal static void DrawRiseHandle(

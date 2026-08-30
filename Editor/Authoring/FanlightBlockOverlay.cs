@@ -100,7 +100,7 @@ namespace PrismFanlight.Editor
             }
 
             /*
-            if (FanlightLayoutTool.IsActive)
+            if (Tools.current is Tool.Move or Tool.Rotate or Tool.Rect)
             {
                 FanlightLayoutHeightUtility.GetHeights(layoutAsset, blockIndex, out var frontHeight, out var backHeight);
                 var placementY = block.Placement.position.y;
