@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using UnityEditor;
@@ -17,6 +18,14 @@ namespace PrismFanlight.Editor
         private readonly List<int> _visibleBlocks = new();
         private readonly List<int> _selectedBlocks = new();
         private readonly Plane[] _planes = new Plane[6];
+        private bool _rotationDragging;
+        private PrismFanlight _rotationFanlight;
+        private FanlightLayoutAsset _rotationLayout;
+        private int[] _rotationBlockIndices = Array.Empty<int>();
+        private FanlightBlockPlacement[] _rotationPlacements = Array.Empty<FanlightBlockPlacement>();
+        private Vector3 _rotationLocalCenter;
+        private Quaternion _rotationBaseHandleRotation = Quaternion.identity;
+        private Quaternion _rotationHandleRotation = Quaternion.identity;
 
 
         // Methods
@@ -261,45 +270,132 @@ namespace PrismFanlight.Editor
             session.SetBlockPlacements(selectedBlocks, placements, "Move Fanlight Blocks");
         }
 
-        internal static void DrawRotateHandle(
+        internal void DrawRotateHandle(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
             FanlightLayoutEditSession session,
-            IReadOnlyList<int> selectedBlocks,
-            int activeBlockIndex)
+            IReadOnlyList<int> selectedBlocks)
         {
-            if (Application.isPlaying || selectedBlocks.Count == 0) return;
-
-            var localCenter = Vector3.zero;
-            for (var i = 0; i < selectedBlocks.Count; i++)
+            if (Application.isPlaying || selectedBlocks.Count == 0)
             {
-                localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
+                ResetRotateHandle();
+                return;
             }
 
-            localCenter /= selectedBlocks.Count;
-            var activePlacement = layout.GetBlock(activeBlockIndex).Placement;
-            var worldCenter = fanlight.transform.TransformPoint(localCenter);
-            var worldRotation = fanlight.transform.rotation * activePlacement.Rotation;
-
-            EditorGUI.BeginChangeCheck();
-            var nextRotationWorld = Handles.RotationHandle(worldRotation, worldCenter);
-            if (!EditorGUI.EndChangeCheck()) return;
-
-            var nextActiveRotation = Quaternion.Inverse(fanlight.transform.rotation) * nextRotationWorld;
-            var rotationDelta = nextActiveRotation * Quaternion.Inverse(activePlacement.Rotation);
-            var placements = new FanlightBlockPlacement[selectedBlocks.Count];
-
-            for (var i = 0; i < selectedBlocks.Count; i++)
+            if (_rotationDragging && !IsRotationDragValid(fanlight, layout, selectedBlocks))
             {
-                var placement = layout.GetBlock(selectedBlocks[i]).Placement;
-                placements[i] = new FanlightBlockPlacement
+                ResetRotateHandle();
+            }
+
+            var localCenter = _rotationDragging ? _rotationLocalCenter : Vector3.zero;
+            if (!_rotationDragging)
+            {
+                for (var i = 0; i < selectedBlocks.Count; i++)
                 {
-                    position = localCenter + rotationDelta * (placement.position - localCenter),
-                    eulerRotation = (rotationDelta * placement.Rotation).eulerAngles
-                };
+                    localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
+                }
+
+                localCenter /= selectedBlocks.Count;
             }
 
-            session.SetBlockPlacements(selectedBlocks, placements, "Rotate Fanlight Blocks");
+            var worldCenter = fanlight.transform.TransformPoint(localCenter);
+            var handleRotation = _rotationDragging
+                ? _rotationHandleRotation
+                : fanlight.transform.rotation;
+
+            var hotControlBefore = GUIUtility.hotControl;
+            EditorGUI.BeginChangeCheck();
+            var nextHandleRotation = Handles.RotationHandle(handleRotation, worldCenter);
+            var changed = EditorGUI.EndChangeCheck();
+            var hotControlAfter = GUIUtility.hotControl;
+
+            if (!_rotationDragging && hotControlBefore == 0 && hotControlAfter != 0)
+            {
+                BeginRotationDrag(fanlight, layout, selectedBlocks, localCenter);
+            }
+
+            if (!_rotationDragging) return;
+
+            _rotationHandleRotation = nextHandleRotation;
+            if (changed)
+            {
+                var worldRotationDelta = _rotationHandleRotation
+                                         * Quaternion.Inverse(_rotationBaseHandleRotation);
+                var rotationDelta = Quaternion.Inverse(_rotationBaseHandleRotation)
+                                    * worldRotationDelta
+                                    * _rotationBaseHandleRotation;
+                var placements = new FanlightBlockPlacement[_rotationPlacements.Length];
+
+                for (var i = 0; i < placements.Length; i++)
+                {
+                    var placement = _rotationPlacements[i];
+                    placements[i] = new FanlightBlockPlacement
+                    {
+                        position = _rotationLocalCenter
+                                   + rotationDelta * (placement.position - _rotationLocalCenter),
+                        eulerRotation = (rotationDelta * placement.Rotation).eulerAngles
+                    };
+                }
+
+                session.SetBlockPlacements(_rotationBlockIndices, placements, "Rotate Fanlight Blocks");
+            }
+
+            if (hotControlAfter == 0) ResetRotateHandle();
+        }
+
+        internal void ResetRotateHandle()
+        {
+            _rotationDragging = false;
+            _rotationFanlight = null;
+            _rotationLayout = null;
+            _rotationBlockIndices = Array.Empty<int>();
+            _rotationPlacements = Array.Empty<FanlightBlockPlacement>();
+            _rotationLocalCenter = Vector3.zero;
+            _rotationBaseHandleRotation = Quaternion.identity;
+            _rotationHandleRotation = Quaternion.identity;
+        }
+
+        private void BeginRotationDrag(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> selectedBlocks,
+            Vector3 localCenter)
+        {
+            _rotationDragging = true;
+            _rotationFanlight = fanlight;
+            _rotationLayout = layout;
+            _rotationBlockIndices = new int[selectedBlocks.Count];
+            _rotationPlacements = new FanlightBlockPlacement[selectedBlocks.Count];
+            _rotationLocalCenter = localCenter;
+            _rotationBaseHandleRotation = fanlight.transform.rotation;
+            _rotationHandleRotation = _rotationBaseHandleRotation;
+
+            for (var i = 0; i < _rotationBlockIndices.Length; i++)
+            {
+                var blockIndex = selectedBlocks[i];
+                _rotationBlockIndices[i] = blockIndex;
+                _rotationPlacements[i] = layout.GetBlock(blockIndex).Placement;
+            }
+        }
+
+        private bool IsRotationDragValid(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> selectedBlocks)
+        {
+            if (_rotationFanlight != fanlight
+                || _rotationLayout != layout
+                || _rotationBlockIndices.Length != selectedBlocks.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < _rotationBlockIndices.Length; i++)
+            {
+                if (_rotationBlockIndices[i] != selectedBlocks[i]) return false;
+            }
+
+            return true;
         }
 
         internal static void DrawRiseHandle(

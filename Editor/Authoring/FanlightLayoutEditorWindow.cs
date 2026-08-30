@@ -355,6 +355,7 @@ namespace PrismFanlight.Editor
 
         private void OnDisable()
         {
+            _scenePreview.ResetRotateHandle();
             SetBuiltInToolsHidden(false);
             if (_activeWindow == this) _activeWindow = null;
             FanlightLayoutSelection.Changed -= OnLayoutSelectionChanged;
@@ -386,6 +387,7 @@ namespace PrismFanlight.Editor
 
         private void OnSelectionChange()
         {
+            _scenePreview.ResetRotateHandle();
             if (!_locked) UseCurrentSelection(true);
             UpdateBuiltInToolsVisibility();
             Repaint();
@@ -393,6 +395,7 @@ namespace PrismFanlight.Editor
 
         private void OnLayoutSelectionChanged()
         {
+            _scenePreview.ResetRotateHandle();
             Repaint();
             UpdateBuiltInToolsVisibility();
         }
@@ -407,6 +410,7 @@ namespace PrismFanlight.Editor
 
         private void OnUndoRedo()
         {
+            _scenePreview.ResetRotateHandle();
             if (_layout != null)
             {
                 FanlightLayoutEditSession.Reset(_layout);
@@ -719,20 +723,20 @@ namespace PrismFanlight.Editor
             Handles.color = FanlightLayoutScenePreview.SelectedColor;
             Handles.DrawAAPolyLine(2f, points);
 
-            var active = FanlightLayoutSelection.GetActiveIndex(_layout);
-            if (active >= 0)
+            var direction = Quaternion.Euler(
+                                0f,
+                                _transforming ? _transformCurrentAngle : 0f,
+                                0f)
+                            * Vector3.back;
+            var directionCanvas = LocalToCanvas(pivot + direction, canvas) - center;
+            if (directionCanvas.sqrMagnitude > 0.0001f)
             {
-                var direction = GetBlockFrontDirection(active, session);
-                var directionCanvas = LocalToCanvas(pivot + direction, canvas) - center;
-                if (directionCanvas.sqrMagnitude > 0.0001f)
-                {
-                    directionCanvas.Normalize();
-                    var tip = center + directionCanvas * radius;
-                    Handles.DrawAAPolyLine(2f, center, tip);
-                    EditorGUI.DrawRect(
-                        new Rect(tip.x - 4f, tip.y - 4f, 8f, 8f),
-                        FanlightLayoutScenePreview.SelectedColor);
-                }
+                directionCanvas.Normalize();
+                var tip = center + directionCanvas * radius;
+                Handles.DrawAAPolyLine(2f, center, tip);
+                EditorGUI.DrawRect(
+                    new Rect(tip.x - 4f, tip.y - 4f, 8f, 8f),
+                    FanlightLayoutScenePreview.SelectedColor);
             }
 
             Handles.EndGUI();
@@ -1477,6 +1481,7 @@ namespace PrismFanlight.Editor
             var layoutChanged = _layout != layout;
             if (layoutChanged && confirmBake && !ConfirmTargetChange()) return;
 
+            _scenePreview.ResetRotateHandle();
             _target = target;
             _layout = layout;
             UpdateUnsavedState();
@@ -1552,6 +1557,7 @@ namespace PrismFanlight.Editor
         {
             if (_activeWindow != this || !CanDrawScenePreview())
             {
+                _scenePreview.ResetRotateHandle();
                 UpdateBuiltInToolsVisibility();
                 return;
             }
@@ -1564,6 +1570,7 @@ namespace PrismFanlight.Editor
                     out var session,
                     out var activeBlockIndex))
             {
+                _scenePreview.ResetRotateHandle();
                 UpdateBuiltInToolsVisibility();
                 return;
             }
@@ -1572,6 +1579,7 @@ namespace PrismFanlight.Editor
             switch (_tool)
             {
                 case LayoutTool.Move:
+                    _scenePreview.ResetRotateHandle();
                     FanlightLayoutScenePreview.DrawMoveHandle(
                         _target,
                         layout,
@@ -1580,20 +1588,23 @@ namespace PrismFanlight.Editor
                         activeBlockIndex);
                     break;
                 case LayoutTool.Rotate:
-                    FanlightLayoutScenePreview.DrawRotateHandle(
+                    _scenePreview.DrawRotateHandle(
                         _target,
                         layout,
                         session,
-                        _sceneSelectedBlocks,
-                        activeBlockIndex);
+                        _sceneSelectedBlocks);
                     break;
                 case LayoutTool.Shape:
+                    _scenePreview.ResetRotateHandle();
                     FanlightLayoutScenePreview.DrawRiseHandle(
                         _target,
                         layout,
                         session,
                         _sceneSelectedBlocks,
                         activeBlockIndex);
+                    break;
+                default:
+                    _scenePreview.ResetRotateHandle();
                     break;
             }
         }
@@ -1603,6 +1614,7 @@ namespace PrismFanlight.Editor
             var next = GetLayoutTool(Tools.current);
             if (_tool == next) return;
 
+            _scenePreview.ResetRotateHandle();
             _tool = next;
             UpdateBuiltInToolsVisibility();
             Repaint();
@@ -1778,24 +1790,6 @@ namespace PrismFanlight.Editor
             var center = LocalToCanvas(GetSelectionPivot(session), canvas);
             var radius = GetRotationHandleRadius(canvas, session, center);
             return Mathf.Abs(Vector2.Distance(mouse, center) - radius) <= RotationHandleHitWidth;
-        }
-
-        private Vector3 GetBlockFrontDirection(int blockIndex, FanlightLayoutEditSession session)
-        {
-            var block = _layout.GetBlock(blockIndex);
-            var placement = block.Placement;
-            var front = block.GetRow(0);
-            var frontCenter = (front.LeftPoint + front.RightPoint) * 0.5f;
-            var frontLayoutPoint = placement.position + placement.Rotation * frontCenter;
-            var direction = frontLayoutPoint - session.GetBlockBounds(blockIndex).center;
-            direction.y = 0f;
-            if (direction.sqrMagnitude <= 0.0001f)
-            {
-                direction = placement.Rotation * Vector3.back;
-                direction.y = 0f;
-            }
-
-            return direction.normalized;
         }
 
         private static Vector3 GetShapeHandleBlockPoint(int handle, FanlightLayoutRow[] rows)
