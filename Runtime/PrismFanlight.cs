@@ -161,6 +161,12 @@ namespace PrismFanlight
             {
                 _motion = FanlightShowStateDefaults.Motion(defaultMotionAsset);
             }
+
+            var defaultLayoutAsset = Resources.Load<FanlightLayoutAsset>("Default Layout Asset");
+            if (defaultLayoutAsset != null)
+            {
+                _layoutAsset = defaultLayoutAsset;
+            }
         }
 #endif
 
@@ -660,8 +666,7 @@ namespace PrismFanlight
                 return null;
             }
 
-            if (_assetRuntimeLayout == null
-                || _assetRuntimeLayout.ContentHash != _layoutAsset.ContentHash)
+            if (_assetRuntimeLayout == null || _assetRuntimeLayout.ContentHash != _layoutAsset.ContentHash)
             {
                 _assetRuntimeLayout = FanlightRuntimeLayout.FromArtifact(_layoutAsset);
             }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [CreateAssetMenu(fileName = "FanlightMotion", menuName = "Prism Fanlight/Motion Asset")]
+    [CreateAssetMenu(fileName = "New Fanlight Motion", menuName = "Prism Fanlight/Motion Asset")]
     public sealed class FanlightMotionAsset : ScriptableObject
     {
         // Fields
