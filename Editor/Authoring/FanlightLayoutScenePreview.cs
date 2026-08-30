@@ -29,9 +29,6 @@ namespace PrismFanlight.Editor
             FanlightLayoutSelection.GetIndices(layout, results);
         }
 
-        internal static int GetSelectedRowIndex(FanlightLayoutAsset layout)
-            => FanlightLayoutSelection.GetSelectedRowIndex(layout);
-
         internal bool Draw(PrismFanlight fanlight)
         {
             var layout = fanlight?.LayoutAsset;
@@ -237,7 +234,7 @@ namespace PrismFanlight.Editor
             var localCenter = Vector3.zero;
             for (var i = 0; i < selectedBlocks.Count; i++)
             {
-                localCenter += layout.GetBlock(selectedBlocks[i]).Placement.position;
+                localCenter += session.GetBlockBounds(selectedBlocks[i]).center;
             }
 
             localCenter /= selectedBlocks.Count;
@@ -269,40 +266,6 @@ namespace PrismFanlight.Editor
             session.SetBlockPlacements(selectedBlocks, placements, "Edit Fanlight Block Placement");
         }
 
-        internal static void DrawRowsAndHandles(
-            PrismFanlight fanlight,
-            FanlightLayoutAsset layout,
-            FanlightLayoutEditSession session,
-            int blockIndex)
-        {
-            var block = layout.GetBlock(blockIndex);
-            var placement = block.Placement;
-            var localToWorld = fanlight.transform.localToWorldMatrix
-                               * Matrix4x4.TRS(placement.position, placement.Rotation, Vector3.one);
-            var rowIndex = GetSelectedRowIndex(layout);
-
-            for (var i = 0; i < block.RowCount; i++)
-            {
-                var row = block.GetRow(i);
-                var points = new Vector3[17];
-                for (var segment = 0; segment < points.Length; segment++)
-                {
-                    var t = (float)segment / (points.Length - 1);
-                    var inverse = 1f - t;
-                    var point = inverse * inverse * row.LeftPoint
-                                + 2f * inverse * t * row.ControlPoint
-                                + t * t * row.RightPoint;
-                    points[segment] = localToWorld.MultiplyPoint3x4(point);
-                }
-
-                Handles.color = i == rowIndex ? SelectedColor : BlockColor;
-                Handles.DrawAAPolyLine(i == rowIndex ? 3f : 1f, points);
-            }
-
-            DrawCageHandles(fanlight, layout, session, blockIndex, localToWorld);
-            DrawRowHandles(fanlight, layout, session, blockIndex, rowIndex, localToWorld);
-        }
-
         internal static void DrawRiseHandle(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
@@ -315,6 +278,8 @@ namespace PrismFanlight.Editor
             var transform = fanlight.transform;
             var worldUp = transform.TransformDirection(Vector3.up).normalized;
             var activeBlock = layout.GetBlock(activeBlockIndex);
+            if (activeBlock.RowCount < 2) return;
+
             var backRow = activeBlock.GetRow(activeBlock.RowCount - 1);
             var backCenter = (backRow.LeftPoint + backRow.ControlPoint + backRow.RightPoint) / 3f;
             var backLayoutPoint = activeBlock.Placement.position + activeBlock.Placement.Rotation * backCenter;
@@ -333,88 +298,6 @@ namespace PrismFanlight.Editor
             var nextBackLayoutPoint = transform.InverseTransformPoint(nextBackWorldPoint);
             var riseDelta = nextBackLayoutPoint.y - backLayoutPoint.y;
             FanlightLayoutHeightUtility.AddRise(layout, session, selectedBlocks, riseDelta);
-        }
-
-        private static void DrawCageHandles(
-            PrismFanlight fanlight,
-            FanlightLayoutAsset layout,
-            FanlightLayoutEditSession session,
-            int blockIndex,
-            Matrix4x4 blockLocalToWorld)
-        {
-            var block = layout.GetBlock(blockIndex);
-            if (block.RowCount < 2) return;
-
-            var first = block.GetRow(0);
-            var last = block.GetRow(block.RowCount - 1);
-            var localCage = new[] { first.LeftPoint, first.RightPoint, last.RightPoint, last.LeftPoint };
-            var worldCage = new Vector3[4];
-            var changed = false;
-
-            Handles.color = SelectedColor;
-            for (var i = 0; i < worldCage.Length; i++)
-            {
-                var world = blockLocalToWorld.MultiplyPoint3x4(localCage[i]);
-                var size = HandleUtility.GetHandleSize(world) * 0.06f;
-                EditorGUI.BeginChangeCheck();
-                worldCage[i] = Handles.FreeMoveHandle(world, size, Vector3.zero, Handles.RectangleHandleCap);
-                changed |= EditorGUI.EndChangeCheck();
-            }
-
-            if (!changed) return;
-
-            var worldToBlock = blockLocalToWorld.inverse;
-            for (var i = 0; i < localCage.Length; i++) localCage[i] = worldToBlock.MultiplyPoint3x4(worldCage[i]);
-
-            var rows = block.CopyRows();
-            for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
-            {
-                var source = rows[rowIndex];
-                var t = (float)rowIndex / (rows.Length - 1);
-                var left = Vector3.Lerp(localCage[0], localCage[3], t);
-                var right = Vector3.Lerp(localCage[1], localCage[2], t);
-                var oldMidpoint = (source.LeftPoint + source.RightPoint) * 0.5f;
-                var newMidpoint = (left + right) * 0.5f;
-                rows[rowIndex] = new FanlightLayoutRow(
-                    left,
-                    source.ControlPoint + newMidpoint - oldMidpoint,
-                    right,
-                    source.CopyStableSeatIds());
-            }
-
-            session.SetBlockRows(blockIndex, rows, "Edit Fanlight Block Cage");
-        }
-
-        private static void DrawRowHandles(
-            PrismFanlight fanlight,
-            FanlightLayoutAsset layout,
-            FanlightLayoutEditSession session,
-            int blockIndex,
-            int rowIndex,
-            Matrix4x4 blockLocalToWorld)
-        {
-            if (rowIndex < 0) return;
-
-            var row = layout.GetBlock(blockIndex).GetRow(rowIndex);
-            var rotation = fanlight.transform.rotation * layout.GetBlock(blockIndex).Placement.Rotation;
-            var leftWorld = blockLocalToWorld.MultiplyPoint3x4(row.LeftPoint);
-            var controlWorld = blockLocalToWorld.MultiplyPoint3x4(row.ControlPoint);
-            var rightWorld = blockLocalToWorld.MultiplyPoint3x4(row.RightPoint);
-
-            EditorGUI.BeginChangeCheck();
-            leftWorld = Handles.PositionHandle(leftWorld, rotation);
-            controlWorld = Handles.PositionHandle(controlWorld, rotation);
-            rightWorld = Handles.PositionHandle(rightWorld, rotation);
-            if (!EditorGUI.EndChangeCheck()) return;
-
-            var worldToBlock = blockLocalToWorld.inverse;
-            session.SetRowGeometry(
-                blockIndex,
-                rowIndex,
-                worldToBlock.MultiplyPoint3x4(leftWorld),
-                worldToBlock.MultiplyPoint3x4(controlWorld),
-                worldToBlock.MultiplyPoint3x4(rightWorld),
-                "Edit Fanlight Row Geometry");
         }
 
         private static void DrawSelectedSeatDots(Transform transform, FanlightLayoutEditSession session, int blockIndex)

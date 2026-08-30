@@ -153,23 +153,6 @@ namespace PrismFanlight.Editor
             return true;
         }
 
-        internal bool SetRowGeometry(
-            int blockIndex,
-            int rowIndex,
-            Vector3 leftPoint,
-            Vector3 controlPoint,
-            Vector3 rightPoint,
-            string undoName)
-        {
-            if (Application.isPlaying) return false;
-
-            Undo.RecordObject(Source, undoName);
-            if (!Source.SetRowGeometry(blockIndex, rowIndex, leftPoint, controlPoint, rightPoint)) return false;
-
-            CommitGeometryChange();
-            return true;
-        }
-
         internal bool SetBlockRows(
             int blockIndex,
             FanlightLayoutRow[] rows,

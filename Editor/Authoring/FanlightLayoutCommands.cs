@@ -129,10 +129,24 @@ namespace PrismFanlight.Editor
                 });
         }
 
-        internal static void Bend(FanlightLayoutAsset layout, float bendDegrees)
+        internal static void Bend(
+            FanlightLayoutAsset layout,
+            float bendDegrees,
+            Vector3 lateralDirection,
+            Vector3 bendDirection)
         {
             var selected = GetSelected(layout);
             if (selected.Count < 2 || Mathf.Abs(bendDegrees) <= 0.0001f) return;
+
+            lateralDirection.y = 0f;
+            bendDirection.y = 0f;
+            if (lateralDirection.sqrMagnitude <= 0.0001f || bendDirection.sqrMagnitude <= 0.0001f) return;
+
+            lateralDirection.Normalize();
+            bendDirection -= lateralDirection * Vector3.Dot(bendDirection, lateralDirection);
+            if (bendDirection.sqrMagnitude <= 0.0001f) return;
+
+            bendDirection.Normalize();
 
             var session = FanlightLayoutEditSession.Get(layout);
             if (session == null) return;
@@ -147,7 +161,13 @@ namespace PrismFanlight.Editor
 
             pivot /= centers.Length;
             var halfSpan = 0f;
-            for (var i = 0; i < centers.Length; i++) halfSpan = Mathf.Max(halfSpan, Mathf.Abs(centers[i].x - pivot.x));
+            for (var i = 0; i < centers.Length; i++)
+            {
+                halfSpan = Mathf.Max(
+                    halfSpan,
+                    Mathf.Abs(Vector3.Dot(centers[i] - pivot, lateralDirection)));
+            }
+
             if (halfSpan <= 0.0001f) return;
 
             var edgeRadians = bendDegrees * Mathf.Deg2Rad;
@@ -156,15 +176,17 @@ namespace PrismFanlight.Editor
             for (var i = 0; i < placements.Length; i++)
             {
                 placements[i] = layout.GetBlock(selected[i]).Placement;
-                var normalized = Mathf.Clamp((centers[i].x - pivot.x) / halfSpan, -1f, 1f);
-                var angle = edgeRadians * normalized;
                 var originalCenter = centers[i];
-                var bentCenter = new Vector3(
-                    pivot.x + Mathf.Sin(angle) * radius,
-                    originalCenter.y,
-                    originalCenter.z + (1f - Mathf.Cos(angle)) * radius);
-                placements[i].position += bentCenter - originalCenter;
+                var blockLocalCenter = Quaternion.Inverse(placements[i].Rotation)
+                                       * (originalCenter - placements[i].position);
+                var lateral = Vector3.Dot(originalCenter - pivot, lateralDirection);
+                var normalized = Mathf.Clamp(lateral / halfSpan, -1f, 1f);
+                var angle = edgeRadians * normalized;
+                var bentCenter = originalCenter
+                                 + lateralDirection * (Mathf.Sin(angle) * radius - lateral)
+                                 + bendDirection * ((1f - Mathf.Cos(angle)) * radius);
                 placements[i].eulerRotation.y -= angle * Mathf.Rad2Deg;
+                placements[i].position = bentCenter - placements[i].Rotation * blockLocalCenter;
             }
 
             session.SetBlockPlacements(selected, placements, "Bend Fanlight Blocks");

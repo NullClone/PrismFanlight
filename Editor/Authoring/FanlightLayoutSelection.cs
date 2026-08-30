@@ -10,8 +10,6 @@ namespace PrismFanlight.Editor
         // Fields
 
         private static readonly Dictionary<string, List<string>> SelectedBlockIds = new(StringComparer.Ordinal);
-        private static readonly Dictionary<string, int> SelectedRowIndices = new(StringComparer.Ordinal);
-        private static readonly HashSet<string> AdvancedRowLayouts = new(StringComparer.Ordinal);
         internal static event Action Changed;
 
 
@@ -50,8 +48,6 @@ namespace PrismFanlight.Editor
             {
                 layout.GetBlock(blockIndex).BlockId
             };
-            SelectedRowIndices[layout.LayoutId.Value] = 0;
-
             NotifyChanged();
         }
 
@@ -70,8 +66,6 @@ namespace PrismFanlight.Editor
             }
 
             SelectedBlockIds[layout.LayoutId.Value] = selected;
-            SelectedRowIndices[layout.LayoutId.Value] = 0;
-
             NotifyChanged();
         }
 
@@ -105,8 +99,6 @@ namespace PrismFanlight.Editor
                 }
             }
 
-            SelectedRowIndices[key] = 0;
-
             NotifyChanged();
         }
 
@@ -125,47 +117,6 @@ namespace PrismFanlight.Editor
             if (layout == null) return;
 
             SelectedBlockIds.Remove(layout.LayoutId.Value);
-            SelectedRowIndices.Remove(layout.LayoutId.Value);
-
-            NotifyChanged();
-        }
-
-        internal static int GetSelectedRowIndex(FanlightLayoutAsset layout)
-        {
-            var blockIndex = GetActiveIndex(layout);
-            if (blockIndex < 0) return -1;
-
-            var block = layout.GetBlock(blockIndex);
-            SelectedRowIndices.TryGetValue(layout.LayoutId.Value, out var rowIndex);
-
-            return Math.Clamp(rowIndex, 0, block.RowCount - 1);
-        }
-
-        internal static void SetSelectedRowIndex(FanlightLayoutAsset layout, int rowIndex)
-        {
-            if (layout == null) return;
-
-            SelectedRowIndices[layout.LayoutId.Value] = Math.Max(0, rowIndex);
-
-            NotifyChanged();
-        }
-
-        internal static bool IsAdvancedRowEditing(FanlightLayoutAsset layout)
-            => layout != null && AdvancedRowLayouts.Contains(layout.LayoutId.Value);
-
-        internal static void SetAdvancedRowEditing(FanlightLayoutAsset layout, bool enabled)
-        {
-            if (layout == null) return;
-
-            if (enabled)
-            {
-                AdvancedRowLayouts.Add(layout.LayoutId.Value);
-            }
-            else
-            {
-                AdvancedRowLayouts.Remove(layout.LayoutId.Value);
-            }
-
             NotifyChanged();
         }
 

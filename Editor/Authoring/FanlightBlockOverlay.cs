@@ -99,6 +99,7 @@ namespace PrismFanlight.Editor
                 }
             }
 
+            /*
             if (FanlightLayoutTool.IsActive)
             {
                 FanlightLayoutHeightUtility.GetHeights(layoutAsset, blockIndex, out var frontHeight, out var backHeight);
@@ -136,6 +137,7 @@ namespace PrismFanlight.Editor
                     }
                 }
             }
+            */
 
             EditorGUILayout.Space();
 

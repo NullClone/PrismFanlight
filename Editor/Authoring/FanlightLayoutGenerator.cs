@@ -153,20 +153,60 @@ namespace PrismFanlight.Editor
             return rows;
         }
 
-        internal static FanlightLayoutRow CreateAdjacentRow(
+        internal static FanlightLayoutRow[] ResizeBlock(
             FanlightLayoutAsset layout,
             FanlightLayoutBlock block,
-            int rowIndex)
+            int rowCount,
+            int seatCount)
         {
-            var source = block.GetRow(Mathf.Clamp(rowIndex, 0, block.RowCount - 1));
-            var offset = Vector3.forward * layout.ReferenceSeatSpacing.y;
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            if (block == null) throw new ArgumentNullException(nameof(block));
+
+            rowCount = Mathf.Clamp(rowCount, 1, 512);
+            seatCount = Mathf.Clamp(seatCount, 1, 4096);
+            var rows = new FanlightLayoutRow[rowCount];
             var reserved = new HashSet<ulong>();
             layout.CollectStableSeatIds(reserved);
-            return new FanlightLayoutRow(
-                source.LeftPoint + offset,
-                source.ControlPoint + offset,
-                source.RightPoint + offset,
-                FanlightLayoutAsset.CreateStableSeatIds(source.SeatCount, reserved));
+            var first = block.GetRow(0);
+            var last = block.GetRow(block.RowCount - 1);
+            var generatedDepth = (rowCount - 1) * layout.ReferenceSeatSpacing.y;
+
+            for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+            {
+                var t = rows.Length == 1 ? 0.5f : (float)rowIndex / (rows.Length - 1);
+                Vector3 left;
+                Vector3 control;
+                Vector3 right;
+                if (rows.Length == block.RowCount)
+                {
+                    var source = block.GetRow(rowIndex);
+                    left = source.LeftPoint;
+                    control = source.ControlPoint;
+                    right = source.RightPoint;
+                }
+                else if (block.RowCount == 1)
+                {
+                    var offset = Vector3.forward * ((t - 0.5f) * generatedDepth);
+                    left = first.LeftPoint + offset;
+                    control = first.ControlPoint + offset;
+                    right = first.RightPoint + offset;
+                }
+                else
+                {
+                    left = Vector3.Lerp(first.LeftPoint, last.LeftPoint, t);
+                    control = Vector3.Lerp(first.ControlPoint, last.ControlPoint, t);
+                    right = Vector3.Lerp(first.RightPoint, last.RightPoint, t);
+                }
+
+                var existing = GetResizeSourceRow(block, rowIndex, rows.Length);
+                rows[rowIndex] = new FanlightLayoutRow(
+                    left,
+                    control,
+                    right,
+                    ResizeStableSeatIds(existing, seatCount, SeatAnchor.Center, reserved));
+            }
+
+            return rows;
         }
 
         internal static ulong[] ResizeStableSeatIds(
@@ -211,6 +251,35 @@ namespace PrismFanlight.Editor
                 SeatAnchor.Right => totalCount - preserveCount,
                 _ => (totalCount - preserveCount) / 2
             };
+        }
+
+        private static FanlightLayoutRow GetResizeSourceRow(
+            FanlightLayoutBlock block,
+            int destinationIndex,
+            int destinationCount)
+        {
+            if (block.RowCount == destinationCount) return block.GetRow(destinationIndex);
+            if (block.RowCount == 1)
+            {
+                return destinationIndex == (destinationCount - 1) / 2 ? block.GetRow(0) : null;
+            }
+
+            if (destinationCount == 1) return block.GetRow((block.RowCount - 1) / 2);
+            if (destinationCount < block.RowCount)
+            {
+                var sourceIndex = Mathf.RoundToInt(
+                    (float)destinationIndex * (block.RowCount - 1) / (destinationCount - 1));
+                return block.GetRow(sourceIndex);
+            }
+
+            for (var sourceIndex = 0; sourceIndex < block.RowCount; sourceIndex++)
+            {
+                var mappedDestination = Mathf.RoundToInt(
+                    (float)sourceIndex * (destinationCount - 1) / (block.RowCount - 1));
+                if (mappedDestination == destinationIndex) return block.GetRow(sourceIndex);
+            }
+
+            return null;
         }
     }
 }

@@ -50,17 +50,5 @@ namespace PrismFanlight.Authoring
 
         internal ulong[] CopyStableSeatIds()
             => _stableSeatIds == null ? Array.Empty<ulong>() : (ulong[])_stableSeatIds.Clone();
-
-        internal void SetGeometry(Vector3 leftPoint, Vector3 controlPoint, Vector3 rightPoint)
-        {
-            _leftPoint = leftPoint;
-            _controlPoint = controlPoint;
-            _rightPoint = rightPoint;
-        }
-
-        internal void SetStableSeatIds(ulong[] stableSeatIds)
-        {
-            _stableSeatIds = stableSeatIds == null ? Array.Empty<ulong>() : (ulong[])stableSeatIds.Clone();
-        }
     }
 }

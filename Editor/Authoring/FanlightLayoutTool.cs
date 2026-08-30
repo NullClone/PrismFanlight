@@ -11,6 +11,7 @@ namespace PrismFanlight.Editor
         // Fields
 
         private readonly List<int> _selectedBlocks = new();
+        private readonly FanlightLayoutScenePreview _scenePreview = new();
 
 
         // Properties
@@ -39,8 +40,17 @@ namespace PrismFanlight.Editor
         public override void OnToolGUI(EditorWindow window)
         {
             var fanlight = ResolveTarget();
-            if (window is not SceneView
-                || !FanlightLayoutScenePreview.TryGetToolContext(
+            if (window is not SceneView)
+            {
+                return;
+            }
+
+            if (fanlight != null && !Selection.Contains(fanlight.gameObject))
+            {
+                _scenePreview.Draw(fanlight);
+            }
+
+            if (!FanlightLayoutScenePreview.TryGetToolContext(
                     fanlight,
                     _selectedBlocks,
                     out var layout,
@@ -62,15 +72,6 @@ namespace PrismFanlight.Editor
                 session,
                 _selectedBlocks,
                 activeBlockIndex);
-
-            if (FanlightLayoutSelection.IsAdvancedRowEditing(layout) && _selectedBlocks.Count == 1)
-            {
-                FanlightLayoutScenePreview.DrawRowsAndHandles(
-                    fanlight,
-                    layout,
-                    session,
-                    activeBlockIndex);
-            }
         }
 
         private static PrismFanlight ResolveTarget()

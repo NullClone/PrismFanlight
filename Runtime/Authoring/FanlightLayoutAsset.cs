@@ -188,29 +188,6 @@ namespace PrismFanlight.Authoring
             return true;
         }
 
-        internal bool SetRowGeometry(
-            int blockIndex,
-            int rowIndex,
-            Vector3 leftPoint,
-            Vector3 controlPoint,
-            Vector3 rightPoint)
-        {
-            if (!IsFinite(leftPoint) || !IsFinite(controlPoint) || !IsFinite(rightPoint)) return false;
-            if (blockIndex < 0 || blockIndex >= BlockCount) return false;
-
-            var block = _blocks[blockIndex];
-            if (block == null || rowIndex < 0 || rowIndex >= block.RowCount) return false;
-
-            var row = block.GetRow(rowIndex);
-            if (row.LeftPoint == leftPoint && row.ControlPoint == controlPoint && row.RightPoint == rightPoint)
-            {
-                return false;
-            }
-
-            row.SetGeometry(leftPoint, controlPoint, rightPoint);
-            return true;
-        }
-
         internal bool SetBlockRows(int blockIndex, FanlightLayoutRow[] rows)
         {
             if (blockIndex < 0 || blockIndex >= BlockCount || rows == null || rows.Length == 0) return false;
