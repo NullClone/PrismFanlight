@@ -42,13 +42,11 @@ namespace PrismFanlight.Editor
 
         public override void OnCreated()
         {
-            Selection.selectionChanged += RepaintSceneView;
             FanlightLayoutSelection.Changed += RepaintSceneView;
         }
 
         public override void OnWillBeDestroyed()
         {
-            Selection.selectionChanged -= RepaintSceneView;
             FanlightLayoutSelection.Changed -= RepaintSceneView;
             _serializedFanlight = null;
         }
@@ -134,14 +132,7 @@ namespace PrismFanlight.Editor
             layout = null;
             blockIndex = -1;
 
-            var selectedObjects = Selection.gameObjects;
-            if (selectedObjects.Length != 1) return false;
-
-            fanlight = selectedObjects[0].GetComponent<PrismFanlight>();
-            if (fanlight == null) return false;
-
-            layout = fanlight.LayoutAsset;
-            if (layout == null || !layout.IsInitialized || FanlightLayoutIdRegistry.IsDuplicate(layout)) return false;
+            if (!FanlightLayoutEditorWindow.TryGetActiveTarget(out fanlight, out layout)) return false;
 
             blockIndex = FanlightLayoutSelection.GetActiveIndex(layout);
             return blockIndex >= 0;

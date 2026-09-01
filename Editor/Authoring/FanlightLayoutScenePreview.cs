@@ -11,10 +11,12 @@ namespace PrismFanlight.Editor
         // Fields
 
         private const float BlockPlanePickDistance = 4.99f;
+        private const float HeightHandleOffset = 0.45f;
         private const int MaximumSeatDots = 512;
 
         internal static readonly Color BlockColor = new(0.1f, 0.85f, 1.0f, 0.75f);
         internal static readonly Color SelectedColor = new(1.0f, 0.82f, 0.2f, 0.95f);
+        private static readonly Color HeightColor = new(1f, 0.45f, 0.18f, 1f);
         private readonly List<int> _visibleBlocks = new();
         private readonly List<int> _selectedBlocks = new();
         private readonly Plane[] _planes = new Plane[6];
@@ -398,38 +400,111 @@ namespace PrismFanlight.Editor
             return true;
         }
 
-        internal static void DrawRiseHandle(
+        internal static bool DrawShapeHandles(
+            PrismFanlight fanlight,
+            FanlightLayoutAsset layout,
+            FanlightLayoutEditSession session,
+            int blockIndex)
+        {
+            if (Application.isPlaying) return false;
+
+            var transform = fanlight.transform;
+            var block = layout.GetBlock(blockIndex);
+            var placement = block.Placement;
+            var worldRotation = transform.rotation * placement.Rotation;
+            var worldUp = worldRotation * Vector3.up;
+            var worldRight = worldRotation * Vector3.right;
+            var worldForward = worldRotation * Vector3.forward;
+            var snap = EditorSnapSettings.snapEnabled
+                ? new Vector2(EditorSnapSettings.move.x, EditorSnapSettings.move.z)
+                : Vector2.zero;
+            var changed = false;
+
+            for (var handle = 0; handle < FanlightLayoutShapeUtility.GetHandleCount(block.RowCount); handle++)
+            {
+                var blockPoint = FanlightLayoutShapeUtility.GetHandleBlockPoint(handle, block);
+                var layoutPoint = placement.position + placement.Rotation * blockPoint;
+                var worldPoint = transform.TransformPoint(layoutPoint);
+                var size = HandleUtility.GetHandleSize(worldPoint) * 0.08f;
+                Handles.color = handle >= 4 || block.RowCount == 1 && handle == 2
+                    ? HeightColor
+                    : SelectedColor;
+                EditorGUI.BeginChangeCheck();
+                var nextWorldPoint = Handles.Slider2D(
+                    worldPoint,
+                    worldUp,
+                    worldRight,
+                    worldForward,
+                    size,
+                    Handles.RectangleHandleCap,
+                    snap,
+                    true);
+                if (!EditorGUI.EndChangeCheck()) continue;
+
+                var nextLayoutPoint = transform.InverseTransformPoint(nextWorldPoint);
+                var nextBlockPoint = Quaternion.Inverse(placement.Rotation)
+                                     * (nextLayoutPoint - placement.position);
+                var rows = FanlightLayoutShapeUtility.CreateRows(block.CopyRows(), handle, nextBlockPoint);
+                changed |= session.SetBlockRows(blockIndex, rows, "Shape Fanlight Block");
+                block = layout.GetBlock(blockIndex);
+            }
+
+            return changed;
+        }
+
+        internal static bool DrawHeightHandles(
             PrismFanlight fanlight,
             FanlightLayoutAsset layout,
             FanlightLayoutEditSession session,
             IReadOnlyList<int> selectedBlocks,
             int activeBlockIndex)
         {
-            if (Application.isPlaying || selectedBlocks.Count == 0) return;
+            if (Application.isPlaying || selectedBlocks.Count == 0) return false;
 
             var transform = fanlight.transform;
             var worldUp = transform.TransformDirection(Vector3.up).normalized;
             var activeBlock = layout.GetBlock(activeBlockIndex);
-            if (activeBlock.RowCount < 2) return;
+            if (activeBlock.RowCount < 2) return false;
 
-            var backRow = activeBlock.GetRow(activeBlock.RowCount - 1);
-            var backCenter = (backRow.LeftPoint + backRow.ControlPoint + backRow.RightPoint) / 3f;
-            var backLayoutPoint = activeBlock.Placement.position + activeBlock.Placement.Rotation * backCenter;
-            var backWorldPoint = transform.TransformPoint(backLayoutPoint);
-            var riseSize = HandleUtility.GetHandleSize(backWorldPoint) * 0.65f;
-            Handles.color = new Color(1f, 0.45f, 0.18f, 1f);
-            EditorGUI.BeginChangeCheck();
-            var nextBackWorldPoint = Handles.Slider(
-                backWorldPoint,
-                worldUp,
-                riseSize,
-                Handles.ArrowHandleCap,
-                EditorSnapSettings.move.y);
-            if (!EditorGUI.EndChangeCheck()) return;
+            var placement = activeBlock.Placement;
+            var changed = false;
+            for (var edgeIndex = 0; edgeIndex < 4; edgeIndex++)
+            {
+                var edge = (FanlightLayoutHeightUtility.Edge)edgeIndex;
+                var edgeBlockPoint = FanlightLayoutHeightUtility.GetEdgeBlockPoint(activeBlock, edge);
+                var edgeLayoutPoint = placement.position + placement.Rotation * edgeBlockPoint;
+                var edgeWorldPoint = transform.TransformPoint(edgeLayoutPoint);
+                var outwardBlock = FanlightLayoutHeightUtility.GetEdgeOutwardBlockDirection(activeBlock, edge);
+                var outwardLayout = placement.Rotation * outwardBlock;
+                var outwardWorld = transform.TransformDirection(outwardLayout).normalized;
+                var handleOffset = HandleUtility.GetHandleSize(edgeWorldPoint) * HeightHandleOffset;
+                var handleWorldPoint = edgeWorldPoint + outwardWorld * handleOffset;
+                var handleLayoutPoint = transform.InverseTransformPoint(handleWorldPoint);
+                var size = HandleUtility.GetHandleSize(handleWorldPoint) * 0.6f;
 
-            var nextBackLayoutPoint = transform.InverseTransformPoint(nextBackWorldPoint);
-            var riseDelta = nextBackLayoutPoint.y - backLayoutPoint.y;
-            FanlightLayoutHeightUtility.AddRise(layout, session, selectedBlocks, riseDelta);
+                Handles.color = HeightColor;
+                Handles.DrawLine(edgeWorldPoint, handleWorldPoint);
+                EditorGUI.BeginChangeCheck();
+                var nextHandleWorldPoint = Handles.Slider(
+                    handleWorldPoint,
+                    worldUp,
+                    size,
+                    Handles.ArrowHandleCap,
+                    EditorSnapSettings.move.y);
+                if (!EditorGUI.EndChangeCheck()) continue;
+
+                var nextHandleLayoutPoint = transform.InverseTransformPoint(nextHandleWorldPoint);
+                var heightDelta = nextHandleLayoutPoint.y - handleLayoutPoint.y;
+                changed |= FanlightLayoutHeightUtility.AddEdgeHeight(
+                    layout,
+                    session,
+                    selectedBlocks,
+                    edge,
+                    heightDelta);
+                activeBlock = layout.GetBlock(activeBlockIndex);
+            }
+
+            return changed;
         }
 
         private static void DrawSelectedSeatDots(Transform transform, FanlightLayoutEditSession session, int blockIndex)

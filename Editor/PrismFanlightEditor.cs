@@ -4,7 +4,6 @@ using PrismFanlight.Core;
 using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 using UnityEditor;
-using UnityEditor.Rendering;
 using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -43,14 +42,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
 
-        private UnityEditor.Editor _layoutEditor;
-        // private UnityEditor.Editor _materialEditor;
-        // private UnityEditor.Editor _audienceMaterialEditor;
-
-        private bool _enableGizmos = true;
-        private bool _hasSelectedLayout;
-
-        private readonly FanlightLayoutScenePreview _layoutScenePreview = new();
+        private bool _enableDirectionGizmo = true;
 
         private static readonly PrismFanlightSection _renderingSection = new("Rendering");
         private static readonly PrismFanlightSection _layoutSection = new("Layout");
@@ -99,35 +91,9 @@ namespace PrismFanlight.Editor
             _globalSeed = serializedObject.FindProperty(nameof(_globalSeed));
         }
 
-        private void OnDisable()
-        {
-            if (_layoutEditor != null)
-            {
-                DestroyImmediate(_layoutEditor);
-                _layoutEditor = null;
-            }
-
-            // if (_audienceMaterialEditor != null)
-            // {
-            //     DestroyImmediate(_audienceMaterialEditor);
-            //     _audienceMaterialEditor = null;
-            // }
-            //
-            // if (_materialEditor != null)
-            // {
-            //     DestroyImmediate(_materialEditor);
-            //     _materialEditor = null;
-            // }
-        }
-
         private void OnSceneGUI()
         {
-            if (!_enableGizmos || _instance == null) return;
-
-            if (_instance.LayoutAsset != null)
-            {
-                _hasSelectedLayout = _layoutScenePreview.Draw(_instance);
-            }
+            if (!_enableDirectionGizmo || _instance == null) return;
 
             var mode = _direction.FindPropertyRelative("_mode");
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
@@ -165,24 +131,6 @@ namespace PrismFanlight.Editor
                 Handles.matrix = Matrix4x4.identity;
             }
         }
-
-        private bool HasFrameBounds() => _hasSelectedLayout;
-
-        private Bounds OnGetFrameBounds()
-        {
-            var layout = _instance.LayoutAsset;
-            var blockIndex = FanlightLayoutScenePreview.GetSelectedBlockIndex(layout);
-            var session = FanlightLayoutEditSession.Get(layout);
-
-            if (blockIndex < 0 || session == null)
-            {
-                return new Bounds(_instance.transform.position, Vector3.one);
-            }
-
-            var localBounds = session.GetBlockBounds(blockIndex);
-            return FanlightGeometryBuilder.TransformBounds(_instance.transform.localToWorldMatrix, localBounds);
-        }
-
 
         public override void OnInspectorGUI()
         {
@@ -248,7 +196,7 @@ namespace PrismFanlight.Editor
                 DrawChild(_visibility, "_audienceBodiesEnabled");
 
                 EditorGUI.BeginChangeCheck();
-                _enableGizmos = EditorGUILayout.Toggle("Enable Gizmos", _enableGizmos);
+                _enableDirectionGizmo = EditorGUILayout.Toggle("Enable Direction Gizmo", _enableDirectionGizmo);
                 if (EditorGUI.EndChangeCheck())
                 {
                     SceneView.RepaintAll();
@@ -365,30 +313,12 @@ namespace PrismFanlight.Editor
                 var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
                 if (layout == null)
                 {
-                    if (_layoutEditor != null)
-                    {
-                        DestroyImmediate(_layoutEditor);
-                        _layoutEditor = null;
-                    }
-
                     _instance.SetEditorLayoutBlocked(false);
 
                     EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
                 }
                 else
                 {
-                    CreateCachedEditor(layout, null, ref _layoutEditor);
-
-                    if (_layoutEditor != null)
-                    {
-                        CoreEditorUtils.DrawSplitter();
-                        EditorGUILayout.Space();
-
-                        _layoutEditor.serializedObject.Update();
-                        _layoutEditor.OnInspectorGUI();
-                        _layoutEditor.serializedObject.ApplyModifiedProperties();
-                    }
-
                     if (!layout.IsInitialized)
                     {
                         _instance.SetEditorLayoutBlocked(false);
