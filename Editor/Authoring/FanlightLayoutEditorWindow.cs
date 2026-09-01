@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
-    internal sealed class FanlightLayoutEditorWindow : EditorWindow
+    internal sealed class FanlightLayoutEditorWindow : EditorWindow, IHasCustomMenu
     {
         private enum LayoutTool
         {
@@ -239,13 +239,18 @@ namespace PrismFanlight.Editor
 
 
         [SerializeField]
-        private PrismFanlight _target;
+        private FanlightLayoutAsset _layout;
+
+        [SerializeField]
+        private PrismFanlight _previewHost;
+
+        [SerializeField]
+        private bool _locked;
 
         [SerializeField]
         private CanvasUpDirection _canvasUpDirection;
 
 
-        private FanlightLayoutAsset _layout;
         private LayoutTool _tool = LayoutTool.Move;
         private Vector2 _pan;
         private float _zoom = 42f;
@@ -299,25 +304,29 @@ namespace PrismFanlight.Editor
         {
             var window = GetWindow<FanlightLayoutEditorWindow>();
             window.titleContent = new GUIContent("Fanlight Layout");
-            window.UseCurrentSelection(true);
-            window.Show();
-        }
-
-        internal static void Open(PrismFanlight target)
-        {
-            var window = GetWindow<FanlightLayoutEditorWindow>();
-            window.titleContent = new GUIContent("Fanlight Layout");
-            window.SetTarget(target, true);
+            if (!window._locked) window.FollowCurrentSelection(true);
             window.Show();
             window.Focus();
         }
 
-        internal static bool TryGetActiveTarget(
-            out PrismFanlight target,
+        internal static void Open(PrismFanlight previewHost)
+        {
+            var window = GetWindow<FanlightLayoutEditorWindow>();
+            window.titleContent = new GUIContent("Fanlight Layout");
+            window.SetContext(
+                previewHost != null ? previewHost.LayoutAsset : null,
+                previewHost,
+                true);
+            window.Show();
+            window.Focus();
+        }
+
+        internal static bool TryGetActiveSceneContext(
+            out PrismFanlight previewHost,
             out FanlightLayoutAsset layout)
         {
             var window = _activeWindow;
-            target = window != null ? window._target : null;
+            previewHost = window != null ? window._previewHost : null;
             layout = window != null ? window._layout : null;
             return window != null && window.CanDrawScenePreview();
         }
@@ -352,13 +361,19 @@ namespace PrismFanlight.Editor
             EditorApplication.update += OnEditorUpdate;
             SynchronizeLayoutTool();
 
-            if (_target == null)
+            if (_locked && _layout != null)
             {
-                UseCurrentSelection();
+                if (_previewHost != null && _previewHost.LayoutAsset != _layout)
+                {
+                    _previewHost = null;
+                }
+
+                SetContext(_layout, _previewHost);
             }
             else
             {
-                SetTarget(_target);
+                _locked = false;
+                FollowCurrentSelection();
             }
         }
 
@@ -397,6 +412,7 @@ namespace PrismFanlight.Editor
         private void OnSelectionChange()
         {
             _scenePreview.ResetRotateHandle();
+            if (!_locked) FollowCurrentSelection(true);
             UpdateBuiltInToolsVisibility();
             Repaint();
             SceneView.RepaintAll();
@@ -436,19 +452,15 @@ namespace PrismFanlight.Editor
 
         private void OnGUI()
         {
-            RefreshTargetLayout();
+            RefreshPreviewHostLayout();
             UpdateUnsavedState();
             UpdateBuiltInToolsVisibility();
 
-            if (_target == null)
-            {
-                EditorGUILayout.HelpBox("Select a GameObject with a Prism Fanlight component.", MessageType.Info);
-                return;
-            }
-
             if (_layout == null)
             {
-                EditorGUILayout.HelpBox("The selected Prism Fanlight has no Layout Asset.", MessageType.Info);
+                EditorGUILayout.HelpBox(
+                    "Select a Fanlight Layout Asset in the Project window or a GameObject with a Prism Fanlight component.",
+                    MessageType.Info);
                 return;
             }
 
@@ -474,6 +486,20 @@ namespace PrismFanlight.Editor
                 DrawToolbar();
                 DrawCanvas();
             }
+        }
+
+        public void AddItemsToMenu(GenericMenu menu)
+        {
+            if (_layout != null)
+            {
+                menu.AddItem(new GUIContent("Lock"), _locked, ToggleLock);
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Lock"), _locked);
+            }
+
+            menu.AddSeparator(string.Empty);
         }
 
         private void DrawQuickGrid()
@@ -527,6 +553,16 @@ namespace PrismFanlight.Editor
                 if (_layout != null)
                 {
                     DrawAssetBreadcrumb(_layout);
+
+                    if (_previewHost != null)
+                    {
+                        GUILayout.Label("on", EditorStyles.miniLabel);
+                        DrawAssetBreadcrumb(_previewHost);
+                    }
+                    else
+                    {
+                        GUILayout.Label("Asset Only", EditorStyles.miniLabel);
+                    }
                 }
 
                 GUILayout.FlexibleSpace();
@@ -1425,22 +1461,26 @@ namespace PrismFanlight.Editor
                 () => AddGeneratedBlock(FanlightLayoutGenerator.Shape.Raked, layoutPosition));
         }
 
-        private void SetTarget(PrismFanlight target, bool confirmBake = false)
+        private bool SetContext(
+            FanlightLayoutAsset layout,
+            PrismFanlight previewHost,
+            bool confirmBake = false)
         {
-            var layout = target != null ? target.LayoutAsset : null;
+            if (layout == null || previewHost != null && previewHost.LayoutAsset != layout) previewHost = null;
+
             var layoutChanged = _layout != layout;
-            if (layoutChanged && confirmBake && !ConfirmTargetChange()) return;
+            if (layoutChanged && confirmBake && !ConfirmContextChange()) return false;
 
             _scenePreview.ResetRotateHandle();
-            _target = target;
             _layout = layout;
+            _previewHost = previewHost;
             UpdateUnsavedState();
             UpdateBuiltInToolsVisibility();
             if (!layoutChanged)
             {
                 Repaint();
                 SceneView.RepaintAll();
-                return;
+                return true;
             }
 
             _pan = Vector2.zero;
@@ -1453,33 +1493,70 @@ namespace PrismFanlight.Editor
             }
 
             SceneView.RepaintAll();
+            return true;
         }
 
-        private void UseCurrentSelection(bool confirmBake = false)
+        private bool FollowCurrentSelection(bool confirmBake = false)
         {
+            if (Selection.objects.Length != 1)
+            {
+                return SetContext(null, null, confirmBake);
+            }
+
+            if (Selection.activeObject is FanlightLayoutAsset selectedLayout)
+            {
+                return SetContext(selectedLayout, null, confirmBake);
+            }
+
             var gameObject = Selection.activeGameObject;
-            if (gameObject != null && gameObject.TryGetComponent<PrismFanlight>(out var fanlight))
+            if (gameObject != null
+                && !EditorUtility.IsPersistent(gameObject)
+                && gameObject.scene.IsValid()
+                && gameObject.scene.isLoaded
+                && gameObject.TryGetComponent<PrismFanlight>(out var fanlight))
             {
-                SetTarget(fanlight, confirmBake);
-                return;
+                var layout = fanlight.LayoutAsset;
+                return SetContext(layout, layout != null ? fanlight : null, confirmBake);
             }
 
-            if (_target == null) SetTarget(null, confirmBake);
+            return SetContext(null, null, confirmBake);
         }
 
-        private void RefreshTargetLayout()
+        private void RefreshPreviewHostLayout()
         {
-            if (_target == null)
+            if (_layout == null)
             {
-                _layout = null;
+                _previewHost = null;
+                if (_locked)
+                {
+                    _locked = false;
+                    FollowCurrentSelection();
+                }
+
                 return;
             }
 
-            var layout = _target.LayoutAsset;
-            if (_layout != layout) SetTarget(_target);
+            if (_previewHost == null || _previewHost.LayoutAsset == _layout) return;
+
+            var previewHost = _previewHost;
+            if (_locked)
+            {
+                _previewHost = null;
+                UpdateBuiltInToolsVisibility();
+                SceneView.RepaintAll();
+                return;
+            }
+
+            var layout = previewHost.LayoutAsset;
+            if (!SetContext(layout, layout != null ? previewHost : null, true))
+            {
+                _previewHost = null;
+                UpdateBuiltInToolsVisibility();
+                SceneView.RepaintAll();
+            }
         }
 
-        private bool ConfirmTargetChange()
+        private bool ConfirmContextChange()
         {
             UpdateUnsavedState();
             if (!hasUnsavedChanges) return true;
@@ -1497,6 +1574,23 @@ namespace PrismFanlight.Editor
             return !hasUnsavedChanges;
         }
 
+        private void ToggleLock()
+        {
+            if (_locked)
+            {
+                _locked = false;
+                if (!FollowCurrentSelection(true)) _locked = true;
+            }
+            else if (_layout != null)
+            {
+                _locked = true;
+            }
+
+            UpdateBuiltInToolsVisibility();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
         private void OnSceneViewGUI(SceneView sceneView)
         {
             if (_activeWindow != this || !CanDrawScenePreview())
@@ -1506,9 +1600,9 @@ namespace PrismFanlight.Editor
                 return;
             }
 
-            _scenePreview.Draw(_target);
+            _scenePreview.Draw(_previewHost);
             if (!FanlightLayoutScenePreview.TryGetToolContext(
-                    _target,
+                    _previewHost,
                     _sceneSelectedBlocks,
                     out var layout,
                     out var session,
@@ -1526,7 +1620,7 @@ namespace PrismFanlight.Editor
                 case LayoutTool.Move:
                     _scenePreview.ResetRotateHandle();
                     FanlightLayoutScenePreview.DrawMoveHandle(
-                        _target,
+                        _previewHost,
                         layout,
                         session,
                         _sceneSelectedBlocks,
@@ -1534,7 +1628,7 @@ namespace PrismFanlight.Editor
                     break;
                 case LayoutTool.Rotate:
                     _scenePreview.DrawRotateHandle(
-                        _target,
+                        _previewHost,
                         layout,
                         session,
                         _sceneSelectedBlocks);
@@ -1543,12 +1637,12 @@ namespace PrismFanlight.Editor
                     _scenePreview.ResetRotateHandle();
                     var shapeChanged = _sceneSelectedBlocks.Count == 1
                                        && FanlightLayoutScenePreview.DrawShapeHandles(
-                                           _target,
+                                           _previewHost,
                                            layout,
                                            session,
                                            activeBlockIndex);
                     var heightChanged = FanlightLayoutScenePreview.DrawHeightHandles(
-                        _target,
+                        _previewHost,
                         layout,
                         session,
                         _sceneSelectedBlocks,
@@ -1600,10 +1694,18 @@ namespace PrismFanlight.Editor
         private bool CanDrawScenePreview()
         {
             return !Application.isPlaying
-                   && _target != null
+                   && _previewHost != null
+                   && _previewHost.LayoutAsset == _layout
                    && _layout != null
                    && _layout.IsInitialized
-                   && !FanlightLayoutIdRegistry.IsDuplicate(_layout);
+                   && !FanlightLayoutIdRegistry.IsDuplicate(_layout)
+                   && (_locked || IsPreviewHostSelected());
+        }
+
+        private bool IsPreviewHostSelected()
+        {
+            return Selection.objects.Length == 1
+                   && Selection.activeGameObject == _previewHost.gameObject;
         }
 
         private bool HandleFrameSelected(
@@ -1625,7 +1727,7 @@ namespace PrismFanlight.Editor
 
             var localBounds = session.GetBlockBounds(activeBlockIndex);
             var worldBounds = FanlightGeometryBuilder.TransformBounds(
-                _target.transform.localToWorldMatrix,
+                _previewHost.transform.localToWorldMatrix,
                 localBounds);
             sceneView.Frame(worldBounds, false);
             current.Use();
@@ -1641,6 +1743,18 @@ namespace PrismFanlight.Editor
                 Tool.Rect => LayoutTool.Shape,
                 _ => LayoutTool.None
             };
+        }
+
+        private void ShowButton(Rect rect)
+        {
+            using (new EditorGUI.DisabledScope(_layout == null))
+            {
+                EditorGUI.BeginChangeCheck();
+                var next = GUI.Toggle(rect, _locked, GUIContent.none, "IN LockButton");
+                if (!EditorGUI.EndChangeCheck() || next == _locked) return;
+            }
+
+            ToggleLock();
         }
 
         private void FitView()

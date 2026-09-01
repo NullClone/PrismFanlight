@@ -132,7 +132,7 @@ namespace PrismFanlight.Editor
             layout = null;
             blockIndex = -1;
 
-            if (!FanlightLayoutEditorWindow.TryGetActiveTarget(out fanlight, out layout)) return false;
+            if (!FanlightLayoutEditorWindow.TryGetActiveSceneContext(out fanlight, out layout)) return false;
 
             blockIndex = FanlightLayoutSelection.GetActiveIndex(layout);
             return blockIndex >= 0;
