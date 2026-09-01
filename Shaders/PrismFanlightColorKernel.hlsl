@@ -23,25 +23,30 @@ float4 _MaskSourceGeometry[3];
 float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatData seat)
 {
     uint mode = (uint)round(_ColorSourceModes[sourceIndex].x);
+    float3 chroma = 0.0;
+
     if (mode == 0u)
     {
         uint paletteSlot = min(_FanlightStableAssignments[seatIndex] & 7u, 5u);
-        return _ColorSourcePalette[sourceIndex * 6u + paletteSlot].rgb;
+        chroma = _ColorSourcePalette[sourceIndex * 6u + paletteSlot].rgb;
     }
-
-    if (mode == 1u)
+    else if (mode == 1u)
     {
         float2 origin = _ColorSourceGeometry[sourceIndex].xy;
         float width = max(_ColorSourceParameters[sourceIndex].x, 0.000001);
         float offset = _ColorSourceParameters[sourceIndex].y;
         float coordinate = dot(seat.localPositionSeed.xz - origin, _ColorResolvedDirection.xy) / width + 0.5 + offset;
-        return lerp(_ColorSourceA[sourceIndex].rgb, _ColorSourceB[sourceIndex].rgb, saturate(coordinate));
+        chroma = lerp(_ColorSourceA[sourceIndex].rgb, _ColorSourceB[sourceIndex].rgb, saturate(coordinate));
+    }
+    else
+    {
+        uint blockIndex = (uint)max(seat.blockIndex, 0);
+        uint blockOffset = (uint)max(0.0, round(_ColorSourceModes[sourceIndex].z));
+        uint blockPaletteSlot = min(_RuntimeBlockPalettes[blockOffset + blockIndex], 5u);
+        chroma = _ColorSourcePalette[sourceIndex * 6u + blockPaletteSlot].rgb;
     }
 
-    uint blockIndex = (uint)max(seat.blockIndex, 0);
-    uint blockOffset = (uint)max(0.0, round(_ColorSourceModes[sourceIndex].z));
-    uint blockPaletteSlot = min(_RuntimeBlockPalettes[blockOffset + blockIndex], 5u);
-    return _ColorSourcePalette[sourceIndex * 6u + blockPaletteSlot].rgb;
+    return chroma;
 }
 
 float PrismSmooth01(float value)
