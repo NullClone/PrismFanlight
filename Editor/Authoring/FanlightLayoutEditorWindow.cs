@@ -859,7 +859,11 @@ namespace PrismFanlight.Editor
             var insideCanvas = canvas.Contains(current.mousePosition);
             if (current.type == EventType.KeyDown && insideCanvas && !EditorGUIUtility.editingTextField)
             {
-                if (EditorGUI.actionKey && current.keyCode == KeyCode.A)
+                if (IsFrameShortcut(current) && FrameActiveBlockInSceneView(session))
+                {
+                    current.Use();
+                }
+                else if (EditorGUI.actionKey && current.keyCode == KeyCode.A)
                 {
                     FanlightLayoutSelection.SelectAll(_layout);
                     current.Use();
@@ -1736,25 +1740,53 @@ namespace PrismFanlight.Editor
             int activeBlockIndex)
         {
             var current = Event.current;
-            if (current.type != EventType.KeyDown
-                || current.keyCode != KeyCode.F
-                || current.alt
-                || current.control
-                || current.command
-                || current.shift
-                || EditorGUIUtility.editingTextField)
+            if (!IsFrameShortcut(current)) return false;
+
+            FrameBlockInSceneView(sceneView, session, activeBlockIndex);
+            current.Use();
+            return true;
+        }
+
+        private bool FrameActiveBlockInSceneView(FanlightLayoutEditSession session)
+        {
+            if (!CanDrawScenePreview()) return false;
+
+            var activeBlockIndex = FanlightLayoutSelection.GetActiveIndex(_layout);
+            if (activeBlockIndex < 0) return false;
+
+            var sceneView = SceneView.lastActiveSceneView;
+            if (sceneView == null && SceneView.sceneViews.Count > 0)
             {
-                return false;
+                sceneView = SceneView.sceneViews[0] as SceneView;
             }
 
+            if (sceneView == null) return false;
+
+            FrameBlockInSceneView(sceneView, session, activeBlockIndex);
+            return true;
+        }
+
+        private void FrameBlockInSceneView(
+            SceneView sceneView,
+            FanlightLayoutEditSession session,
+            int activeBlockIndex)
+        {
             var localBounds = session.GetBlockBounds(activeBlockIndex);
             var worldBounds = FanlightGeometryBuilder.TransformBounds(
                 _previewHost.transform.localToWorldMatrix,
                 localBounds);
             sceneView.Frame(worldBounds, false);
-            current.Use();
-            return true;
+            sceneView.Repaint();
         }
+
+        private static bool IsFrameShortcut(Event current)
+            => current.type == EventType.KeyDown
+               && current.keyCode == KeyCode.F
+               && !current.alt
+               && !current.control
+               && !current.command
+               && !current.shift
+               && !EditorGUIUtility.editingTextField;
 
         private static LayoutTool GetLayoutTool(Tool tool)
         {
