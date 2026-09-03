@@ -79,13 +79,19 @@ namespace PrismFanlight.Editor
                    == FanlightIntensityMaskMode.BlockAlternatingPulse;
         }
 
-        internal static void DrawSelectedBlockColor(SerializedProperty state, FanlightLayoutAsset layout, int blockIndex)
+        internal static void DrawSelectedBlockColor(
+            SerializedProperty state,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            int activeBlockIndex)
         {
             if (!IsBlockPalette(state)
                 || layout == null
                 || !layout.IsInitialized
-                || blockIndex < 0
-                || blockIndex >= layout.BlockCount)
+                || blockIndices == null
+                || blockIndices.Count == 0
+                || activeBlockIndex < 0
+                || activeBlockIndex >= layout.BlockCount)
             {
                 return;
             }
@@ -107,21 +113,29 @@ namespace PrismFanlight.Editor
                 if (!HasCompleteBlockPaletteMapping(entries, layout)) return;
             }
 
-            var blockId = layout.GetBlock(blockIndex).BlockId;
-            var entryIndex = FindBlockPaletteEntry(entries, blockId);
+            var paletteSlot = FindBlockPaletteSlot(entries, layout, activeBlockIndex);
+            if (paletteSlot == null) return;
 
-            if (entryIndex < 0) return;
-
-            var entry = entries.GetArrayElementAtIndex(entryIndex);
-            var paletteSlot = entry.FindPropertyRelative("_paletteSlot");
+            EditorGUI.showMixedValue = HasMixedBlockPaletteSlot(
+                entries,
+                layout,
+                blockIndices,
+                paletteSlot.intValue);
             EditorGUI.BeginChangeCheck();
             var nextSlot = EditorGUILayout.Popup("Palette Slot", paletteSlot.intValue, PaletteSlotOptions);
-            if (EditorGUI.EndChangeCheck())
+            var slotChanged = EditorGUI.EndChangeCheck();
+            EditorGUI.showMixedValue = false;
+            if (slotChanged)
             {
-                paletteSlot.intValue = nextSlot;
+                SetBlockPaletteSlots(entries, layout, blockIndices, nextSlot);
             }
 
-            DrawChroma(source.FindPropertyRelative($"_slot{paletteSlot.intValue + 1}"), "Slot Color");
+            DrawSelectedBlockChroma(
+                source,
+                entries,
+                layout,
+                blockIndices,
+                nextSlot);
         }
 
         internal static void DrawSelectedBlockPulseGroup(
@@ -177,6 +191,7 @@ namespace PrismFanlight.Editor
                 case FanlightColorMode.LinearGradient:
                     DrawChroma(source.FindPropertyRelative("_colorA"), "Color A");
                     DrawChroma(source.FindPropertyRelative("_colorB"), "Color B");
+                    EditorGUILayout.Space();
                     EditorGUILayout.PropertyField(source.FindPropertyRelative("_origin"), new GUIContent("Origin"));
                     DrawLocalYaw(source.FindPropertyRelative("_localYawDegrees"));
                     EditorGUILayout.PropertyField(source.FindPropertyRelative("_width"), new GUIContent("Width"));
@@ -211,6 +226,99 @@ namespace PrismFanlight.Editor
             }
 
             return -1;
+        }
+
+        private static SerializedProperty FindBlockPaletteSlot(
+            SerializedProperty entries,
+            FanlightLayoutAsset layout,
+            int blockIndex)
+        {
+            if (blockIndex < 0 || blockIndex >= layout.BlockCount) return null;
+
+            var blockId = layout.GetBlock(blockIndex).BlockId;
+            var entryIndex = FindBlockPaletteEntry(entries, blockId);
+            return entryIndex < 0
+                ? null
+                : entries.GetArrayElementAtIndex(entryIndex).FindPropertyRelative("_paletteSlot");
+        }
+
+        private static bool HasMixedBlockPaletteSlot(
+            SerializedProperty entries,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            int activeSlot)
+        {
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                var paletteSlot = FindBlockPaletteSlot(entries, layout, blockIndices[i]);
+                if (paletteSlot == null || paletteSlot.intValue != activeSlot) return true;
+            }
+
+            return false;
+        }
+
+        private static void SetBlockPaletteSlots(
+            SerializedProperty entries,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            int paletteSlot)
+        {
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                var property = FindBlockPaletteSlot(entries, layout, blockIndices[i]);
+                if (property != null) property.intValue = paletteSlot;
+            }
+        }
+
+        private static void DrawSelectedBlockChroma(
+            SerializedProperty source,
+            SerializedProperty entries,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            int activeSlot)
+        {
+            var activeColor = source.FindPropertyRelative($"_slot{activeSlot + 1}").colorValue;
+            var hasMixedValue = false;
+            var hasInvalidValue = false;
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                var paletteSlot = FindBlockPaletteSlot(entries, layout, blockIndices[i]);
+                if (paletteSlot == null) continue;
+
+                var color = source.FindPropertyRelative($"_slot{paletteSlot.intValue + 1}").colorValue;
+                hasMixedValue |= !color.Equals(activeColor);
+                hasInvalidValue |= !IsValidChroma(color);
+            }
+
+            EditorGUI.showMixedValue = hasMixedValue;
+            EditorGUI.BeginChangeCheck();
+            var colorValue = EditorGUILayout.ColorField(
+                new GUIContent("Slot Color"),
+                activeColor,
+                true,
+                false,
+                false);
+            var colorChanged = EditorGUI.EndChangeCheck();
+            EditorGUI.showMixedValue = false;
+            if (colorChanged)
+            {
+                colorValue = NormalizeChroma(colorValue);
+                var changedSlots = new HashSet<int>();
+                for (var i = 0; i < blockIndices.Count; i++)
+                {
+                    var paletteSlot = FindBlockPaletteSlot(entries, layout, blockIndices[i]);
+                    if (paletteSlot == null || !changedSlots.Add(paletteSlot.intValue)) continue;
+
+                    source.FindPropertyRelative($"_slot{paletteSlot.intValue + 1}").colorValue = colorValue;
+                }
+
+                hasInvalidValue = false;
+            }
+
+            if (hasInvalidValue)
+            {
+                EditorGUILayout.HelpBox("Slot Color must use finite HSV Value 1 and Alpha 1.", MessageType.Error);
+            }
         }
 
         private static bool HasCompleteBlockPaletteMapping(SerializedProperty entries, FanlightLayoutAsset layout)
@@ -315,16 +423,21 @@ namespace PrismFanlight.Editor
                 false);
             if (EditorGUI.EndChangeCheck())
             {
-                Color.RGBToHSV(color, out var hue, out var saturation, out _);
-                color = Color.HSVToRGB(hue, saturation, 1f);
-                color.a = 1f;
-                property.colorValue = color;
+                property.colorValue = NormalizeChroma(color);
             }
 
             if (!property.hasMultipleDifferentValues && !IsValidChroma(property.colorValue))
             {
                 EditorGUILayout.HelpBox($"{label} must use finite HSV Value 1 and Alpha 1.", MessageType.Error);
             }
+        }
+
+        private static Color NormalizeChroma(Color color)
+        {
+            Color.RGBToHSV(color, out var hue, out var saturation, out _);
+            color = Color.HSVToRGB(hue, saturation, 1f);
+            color.a = 1f;
+            return color;
         }
 
         private static void DrawIntensityMask(
@@ -363,11 +476,11 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.PropertyField(mask.FindPropertyRelative("_origin"), new GUIContent("Origin"));
                     DrawLocalYaw(mask.FindPropertyRelative("_localYawDegrees"));
                     EditorGUILayout.PropertyField(
-                        mask.FindPropertyRelative("_angularWaveDirection"),
-                        new GUIContent("Rotation Direction"));
-                    EditorGUILayout.PropertyField(
                         mask.FindPropertyRelative("_angularArmCount"),
                         new GUIContent("Arm Count"));
+                    EditorGUILayout.PropertyField(
+                        mask.FindPropertyRelative("_angularWaveDirection"),
+                        new GUIContent("Rotation Direction"));
                     break;
                 case FanlightIntensityMaskMode.BlockAlternatingPulse:
                     DrawEnvelope(mask);
@@ -394,9 +507,10 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(
                 mask.FindPropertyRelative("_phaseOffsetBeats"),
                 new GUIContent("Phase Offset Beats"));
+            EditorGUILayout.Space();
             EditorGUILayout.PropertyField(
                 mask.FindPropertyRelative("_minimumIntensityRatio"),
-                new GUIContent("Minimum Intensity Ratio"));
+                new GUIContent("Minimum Ratio"));
             EditorGUILayout.PropertyField(
                 mask.FindPropertyRelative("_attackRatio"),
                 new GUIContent("Attack Ratio"));
@@ -406,6 +520,7 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(
                 mask.FindPropertyRelative("_releaseRatio"),
                 new GUIContent("Release Ratio"));
+            EditorGUILayout.Space();
         }
 
         private static bool IsValidChroma(Color color)
@@ -625,7 +740,7 @@ namespace PrismFanlight.Editor
         private static void DrawLocalYaw(SerializedProperty property)
         {
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(property, new GUIContent("Local Yaw Degrees"));
+            EditorGUILayout.PropertyField(property, new GUIContent("Angle"));
             var changed = EditorGUI.EndChangeCheck();
             if (!float.IsFinite(property.floatValue)
                 || (!changed && property.hasMultipleDifferentValues))

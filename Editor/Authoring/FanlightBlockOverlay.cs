@@ -78,15 +78,7 @@ namespace PrismFanlight.Editor
 
             DrawCopyableField("Stable Block ID", hasMultiple ? null : block.BlockId);
             DrawCopyableField("Rows", hasMultiple ? null : block.RowCount.ToString("N0"));
-            if (hasMultiple)
-            {
-                DrawCopyableField<string>("Position", null);
-                DrawCopyableField<string>("Rotation", null);
-            }
-            else
-            {
-                DrawPlacementFields(session, blockIndex, block.Placement);
-            }
+            DrawPlacementFields(session, layoutAsset, blockIndex, _selectedBlocks);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -112,7 +104,11 @@ namespace PrismFanlight.Editor
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Block Palette", EditorStyles.boldLabel);
-                FanlightColorIntensityEditorUtility.DrawSelectedBlockColor(colorState, layoutAsset, blockIndex);
+                FanlightColorIntensityEditorUtility.DrawSelectedBlockColor(
+                    colorState,
+                    layoutAsset,
+                    _selectedBlocks,
+                    blockIndex);
             }
 
             var intensityState = _serializedFanlight.FindProperty("_intensity");
@@ -142,25 +138,102 @@ namespace PrismFanlight.Editor
         {
             var rect = EditorGUILayout.GetControlRect();
             rect = EditorGUI.PrefixLabel(rect, new GUIContent(label));
-            EditorGUI.SelectableLabel(rect, value?.ToString() ?? "ー", EditorStyles.textField);
+            EditorGUI.showMixedValue = value == null;
+            EditorGUI.SelectableLabel(rect, value?.ToString(), EditorStyles.textField);
+            EditorGUI.showMixedValue = false;
         }
 
         private static void DrawPlacementFields(
             FanlightLayoutEditSession session,
-            int blockIndex,
-            FanlightBlockPlacement placement)
+            FanlightLayoutAsset layout,
+            int activeBlockIndex,
+            IReadOnlyList<int> blockIndices)
         {
-            EditorGUI.BeginChangeCheck();
-            var position = EditorGUILayout.Vector3Field("Position", placement.position);
-            var rotation = EditorGUILayout.Vector3Field("Rotation", placement.eulerRotation);
-            if (!EditorGUI.EndChangeCheck()) return;
+            var activePlacement = layout.GetBlock(activeBlockIndex).Placement;
 
-            placement.position = position;
-            placement.eulerRotation = rotation;
+            EditorGUI.showMixedValue = HasMixedPosition(layout, blockIndices, activePlacement.position);
+            EditorGUI.BeginChangeCheck();
+            var position = EditorGUILayout.Vector3Field("Position", activePlacement.position);
+            var positionChanged = EditorGUI.EndChangeCheck();
+            EditorGUI.showMixedValue = false;
+            if (positionChanged)
+            {
+                ApplyPosition(session, layout, blockIndices, position);
+            }
+
+            EditorGUI.showMixedValue = HasMixedRotation(layout, blockIndices, activePlacement.eulerRotation);
+            EditorGUI.BeginChangeCheck();
+            var rotation = EditorGUILayout.Vector3Field("Rotation", activePlacement.eulerRotation);
+            var rotationChanged = EditorGUI.EndChangeCheck();
+            EditorGUI.showMixedValue = false;
+            if (rotationChanged)
+            {
+                ApplyRotation(session, layout, blockIndices, rotation);
+            }
+        }
+
+        private static bool HasMixedPosition(
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            Vector3 activePosition)
+        {
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                if (!layout.GetBlock(blockIndices[i]).Placement.position.Equals(activePosition)) return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasMixedRotation(
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            Vector3 activeRotation)
+        {
+            for (var i = 0; i < blockIndices.Count; i++)
+            {
+                if (!layout.GetBlock(blockIndices[i]).Placement.eulerRotation.Equals(activeRotation)) return true;
+            }
+
+            return false;
+        }
+
+        private static void ApplyPosition(
+            FanlightLayoutEditSession session,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            Vector3 position)
+        {
+            var placements = new FanlightBlockPlacement[blockIndices.Count];
+            for (var i = 0; i < placements.Length; i++)
+            {
+                placements[i] = layout.GetBlock(blockIndices[i]).Placement;
+                placements[i].position = position;
+            }
+
             session.SetBlockPlacements(
-                new[] { blockIndex },
-                new[] { placement },
-                "Edit Fanlight Block Placement");
+                blockIndices,
+                placements,
+                "Edit Fanlight Block Positions");
+        }
+
+        private static void ApplyRotation(
+            FanlightLayoutEditSession session,
+            FanlightLayoutAsset layout,
+            IReadOnlyList<int> blockIndices,
+            Vector3 rotation)
+        {
+            var placements = new FanlightBlockPlacement[blockIndices.Count];
+            for (var i = 0; i < placements.Length; i++)
+            {
+                placements[i] = layout.GetBlock(blockIndices[i]).Placement;
+                placements[i].eulerRotation = rotation;
+            }
+
+            session.SetBlockPlacements(
+                blockIndices,
+                placements,
+                "Edit Fanlight Block Rotations");
         }
 
         private static bool TryGetSelection(out PrismFanlight fanlight, out FanlightLayoutAsset layout, out int blockIndex)
