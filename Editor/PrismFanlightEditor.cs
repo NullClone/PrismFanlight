@@ -332,7 +332,7 @@ namespace PrismFanlight.Editor
 
             _intensitySection.DrawSection(() =>
             {
-                FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity);
+                FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity, _instance.LayoutAsset, true);
             }, _instance);
 
             #endregion

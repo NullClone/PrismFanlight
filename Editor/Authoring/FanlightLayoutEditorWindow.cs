@@ -1210,15 +1210,15 @@ namespace PrismFanlight.Editor
             Undo.IncrementCurrentGroup();
             var undoGroup = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName(undoName);
-            var paletteTargets = CollectLayoutInstances(_layout);
+            var mappingTargets = CollectLayoutInstances(_layout);
             Undo.RecordObject(_layout, undoName);
             if (_layout.ActiveBake != null) Undo.RecordObject(_layout.ActiveBake, undoName);
-            for (var i = 0; i < paletteTargets.Count; i++) Undo.RecordObject(paletteTargets[i], undoName);
+            for (var i = 0; i < mappingTargets.Count; i++) Undo.RecordObject(mappingTargets[i], undoName);
 
             try
             {
                 _layout.ReplaceAuthoringContents(seatSpacing, blocks);
-                SynchronizeBaselineBlockPalettes(paletteTargets);
+                SynchronizeBaselineBlockMappings(mappingTargets);
                 EditorUtility.SetDirty(_layout);
                 FanlightLayoutEditSession.Reset(_layout);
                 FanlightLayoutIdRegistry.Invalidate();
@@ -1309,7 +1309,7 @@ namespace PrismFanlight.Editor
             return true;
         }
 
-        private void SynchronizeBaselineBlockPalettes(IReadOnlyList<PrismFanlight> fanlights)
+        private void SynchronizeBaselineBlockMappings(IReadOnlyList<PrismFanlight> fanlights)
         {
             for (var i = 0; i < fanlights.Count; i++)
             {
@@ -1324,6 +1324,15 @@ namespace PrismFanlight.Editor
                 if (entries == null) continue;
 
                 FanlightColorIntensityEditorUtility.SynchronizeBlockPaletteEntries(entries, _layout);
+
+                var intensity = serializedFanlight.FindProperty("_intensity");
+                if (FanlightColorIntensityEditorUtility.IsBlockAlternatingPulse(intensity))
+                {
+                    var pulseEntries = intensity.FindPropertyRelative("_mask")
+                        .FindPropertyRelative("_blockPulseEntries");
+                    FanlightColorIntensityEditorUtility.SynchronizeBlockPulseEntries(pulseEntries, _layout);
+                }
+
                 serializedFanlight.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(fanlight);
             }

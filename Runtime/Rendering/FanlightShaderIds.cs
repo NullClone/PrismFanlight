@@ -18,6 +18,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int ResolvedChroma = Shader.PropertyToID("_FanlightResolvedChroma");
         internal static readonly int ResolvedMask = Shader.PropertyToID("_FanlightResolvedMask");
         internal static readonly int RuntimeBlockPalettes = Shader.PropertyToID("_RuntimeBlockPalettes");
+        internal static readonly int RuntimeBlockPulseGroups = Shader.PropertyToID("_RuntimeBlockPulseGroups");
         internal static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
         internal static readonly int MotionSamples = Shader.PropertyToID("_MotionSamples");
         internal static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");

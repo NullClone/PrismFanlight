@@ -37,6 +37,7 @@ namespace PrismFanlight.Editor
             if (target != null)
             {
                 CollectColorBlockErrors(fanlightTrack, target.LayoutAsset, errors);
+                CollectIntensityBlockErrors(fanlightTrack, target.LayoutAsset, errors);
                 CollectTempoRequirementErrors(fanlightTrack, target, errors);
 
                 FanlightControlBindingValidator.CollectErrors(
@@ -240,7 +241,7 @@ namespace PrismFanlight.Editor
 
             if (target.BaseState.Intensity.HasDynamicMask())
             {
-                errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                errors.Add("A song Timeline using a dynamic Intensity Pattern requires one Fanlight Tempo Track.");
                 return;
             }
 
@@ -252,7 +253,7 @@ namespace PrismFanlight.Editor
                 {
                     if (intensityClip.Value.Intensity.HasDynamicMask())
                     {
-                        errors.Add("A song Timeline using Pulse or Traveling Wave requires one Fanlight Tempo Track.");
+                        errors.Add("A song Timeline using a dynamic Intensity Pattern requires one Fanlight Tempo Track.");
                         return;
                     }
                 }
@@ -267,6 +268,56 @@ namespace PrismFanlight.Editor
             }
         }
 
+        private static void CollectIntensityBlockErrors(
+            FanlightTimelineTrackAsset track,
+            FanlightLayoutAsset layout,
+            List<string> errors)
+        {
+            if (track is not FanlightIntensityTrack) return;
+
+            foreach (var clip in track.GetClips())
+            {
+                if (clip.asset is not FanlightIntensityClip intensityClip) continue;
+
+                FanlightIntensityState intensity;
+
+                try
+                {
+                    intensity = intensityClip.Value.Intensity;
+                }
+                catch (ArgumentException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    errors.Add($"Clip '{clip.displayName}': {exception.Message}");
+                    continue;
+                }
+
+                for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+                {
+                    if (intensity.GetMaskWeight(sourceIndex) <= 0f) continue;
+                    var mask = intensity.GetMask(sourceIndex);
+                    if (mask.Mode != FanlightIntensityMaskMode.BlockAlternatingPulse) continue;
+
+                    if (layout == null || !layout.IsInitialized)
+                    {
+                        errors.Add(
+                            $"Clip '{clip.displayName}' uses Block Alternating Pulse but the binding has no initialized Layout.");
+                        continue;
+                    }
+
+                    if (!IsCompleteBlockPulseMapping(mask, layout))
+                    {
+                        errors.Add(
+                            $"Clip '{clip.displayName}' must map every active Layout Block exactly once by Stable Block ID.");
+                    }
+                }
+            }
+        }
+
         private static bool IsCompleteBlockPalette(FanlightColorSource source, FanlightLayoutAsset layout)
         {
             if (source.BlockPaletteEntryCount != layout.BlockCount) return false;
@@ -276,6 +327,26 @@ namespace PrismFanlight.Editor
             for (var entryIndex = 0; entryIndex < source.BlockPaletteEntryCount; entryIndex++)
             {
                 var entry = source.GetBlockPaletteEntry(entryIndex);
+                if (!ids.Add(entry.StableBlockId)) return false;
+            }
+
+            for (var blockIndex = 0; blockIndex < layout.BlockCount; blockIndex++)
+            {
+                if (!ids.Contains(layout.GetBlock(blockIndex).BlockId)) return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsCompleteBlockPulseMapping(FanlightIntensityMask mask, FanlightLayoutAsset layout)
+        {
+            if (mask.BlockPulseEntryCount != layout.BlockCount) return false;
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+
+            for (var entryIndex = 0; entryIndex < mask.BlockPulseEntryCount; entryIndex++)
+            {
+                var entry = mask.GetBlockPulseEntry(entryIndex);
                 if (!ids.Add(entry.StableBlockId)) return false;
             }
 

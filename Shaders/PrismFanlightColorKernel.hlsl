@@ -3,6 +3,7 @@
 
 StructuredBuffer<uint> _FanlightStableAssignments;
 StructuredBuffer<uint> _RuntimeBlockPalettes;
+StructuredBuffer<uint> _RuntimeBlockPulseGroups;
 RWStructuredBuffer<float4> _FanlightResolvedChroma;
 RWStructuredBuffer<float> _FanlightResolvedMask;
 
@@ -55,6 +56,7 @@ float PrismSmooth01(float value)
     return value * value * (3.0 - 2.0 * value);
 }
 
+
 float PrismEvaluateMaskEnvelope(uint sourceIndex, float phase)
 {
     float minimum = _MaskSourceEnvelope[sourceIndex].x;
@@ -98,6 +100,34 @@ float PrismEvaluateMaskSource(uint sourceIndex, FanlightSeatData seat)
         float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
         float spatialPhase = dot(seat.localPositionSeed.xz - origin, _MaskResolvedDirection.xy) / wavelength;
         phase -= spatialPhase;
+    }
+    else if (mode == 3u)
+    {
+        float2 origin = _MaskSourceGeometry[sourceIndex].xy;
+        float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
+        float directionSign = _MaskSourceModes[sourceIndex].z;
+        float spatialPhase = length(seat.localPositionSeed.xz - origin) / wavelength;
+        phase -= directionSign * spatialPhase;
+    }
+    else if (mode == 4u)
+    {
+        phase += PrismRandom(seat, 2u);
+    }
+    else if (mode == 5u)
+    {
+        float2 origin = _MaskSourceGeometry[sourceIndex].xy;
+        float2 delta = seat.localPositionSeed.xz - origin;
+        float crossValue = _MaskResolvedDirection.y * delta.x - _MaskResolvedDirection.x * delta.y;
+        float dotValue = dot(_MaskResolvedDirection.xy, delta);
+        float angularPhase = atan2(crossValue, dotValue) / (2.0 * PRISM_FANLIGHT_PI);
+        phase -= _MaskSourceModes[sourceIndex].z * angularPhase;
+    }
+    else if (mode == 6u)
+    {
+        uint blockIndex = (uint)max(seat.blockIndex, 0);
+        uint blockOffset = (uint)max(0.0, round(_MaskSourceModes[sourceIndex].w));
+        uint group = min(_RuntimeBlockPulseGroups[blockOffset + blockIndex], 1u);
+        phase += (float)group * 0.5;
     }
 
     return saturate(PrismEvaluateMaskEnvelope(sourceIndex, frac(phase)));

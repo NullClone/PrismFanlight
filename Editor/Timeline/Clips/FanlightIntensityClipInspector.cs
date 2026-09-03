@@ -1,5 +1,8 @@
+using PrismFanlight.Authoring;
 using PrismFanlight.Timeline;
 using UnityEditor;
+using UnityEditor.Timeline;
+using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
@@ -25,9 +28,38 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            FanlightColorIntensityEditorUtility.DrawIntensityState(_value);
+            FanlightColorIntensityEditorUtility.DrawIntensityState(_value, ResolveLayout());
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private FanlightLayoutAsset ResolveLayout()
+        {
+            if (targets.Length != 1
+                || TimelineEditor.inspectedAsset == null
+                || TimelineEditor.inspectedDirector == null)
+            {
+                return null;
+            }
+
+            foreach (var track in TimelineEditor.inspectedAsset.GetOutputTracks())
+            {
+                foreach (var clip in track.GetClips())
+                {
+                    if (clip.asset != target) continue;
+
+                    var binding = TimelineEditor.inspectedDirector.GetGenericBinding(track);
+                    var fanlight = binding as PrismFanlight;
+                    if (fanlight == null && binding is GameObject gameObject)
+                    {
+                        fanlight = gameObject.GetComponent<PrismFanlight>();
+                    }
+
+                    return fanlight != null ? fanlight.LayoutAsset : null;
+                }
+            }
+
+            return null;
         }
     }
 }

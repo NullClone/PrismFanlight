@@ -20,6 +20,10 @@ namespace PrismFanlight.Rendering
         private uint[] _runtimeBlockPaletteSlots = Array.Empty<uint>();
         private uint[] _runtimeBlockPaletteCandidate = Array.Empty<uint>();
         private bool[] _runtimeBlockPaletteAssigned = Array.Empty<bool>();
+        private readonly bool[] _runtimeBlockPulseGroupsUploaded = new bool[3];
+        private uint[] _runtimeBlockPulseGroups = Array.Empty<uint>();
+        private uint[] _runtimeBlockPulseGroupCandidate = Array.Empty<uint>();
+        private bool[] _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
         private FanlightMotionSample _motionReferencePose;
         private Vector3 _motionWeights;
         private bool _hasMotionData;
@@ -50,6 +54,8 @@ namespace PrismFanlight.Rendering
         internal ComputeBuffer ResolvedMaskBuffer { get; private set; }
 
         internal ComputeBuffer RuntimeBlockPaletteBuffer { get; private set; }
+
+        internal ComputeBuffer RuntimeBlockPulseGroupBuffer { get; private set; }
 
         internal ComputeBuffer RandomBuffer { get; private set; }
 
@@ -100,6 +106,10 @@ namespace PrismFanlight.Rendering
             _runtimeBlockPaletteCandidate = new uint[BlockCount];
             _runtimeBlockPaletteAssigned = new bool[BlockCount];
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            _runtimeBlockPulseGroups = new uint[BlockCount * 3];
+            _runtimeBlockPulseGroupCandidate = new uint[BlockCount];
+            _runtimeBlockPulseGroupAssigned = new bool[BlockCount];
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
 
             var assignments = BuildVariantAssignments(layout, appearance, out var counts);
             PenlightVariantOffsets = BuildVariantOffsets(counts);
@@ -116,6 +126,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
             ResolvedMaskBuffer = new ComputeBuffer(SeatCount, sizeof(float), ComputeBufferType.Structured);
             RuntimeBlockPaletteBuffer = new ComputeBuffer(BlockCount * 3, sizeof(uint), ComputeBufferType.Structured);
+            RuntimeBlockPulseGroupBuffer = new ComputeBuffer(BlockCount * 3, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
             MotionSampleBuffer = new ComputeBuffer(_motionSamples.Length, FanlightMotionSample.Stride, ComputeBufferType.Structured);
             PenlightArgsBuffer = new GraphicsBuffer(
@@ -152,6 +163,7 @@ namespace PrismFanlight.Rendering
             BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
         }
 
         internal void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
@@ -272,6 +284,78 @@ namespace PrismFanlight.Rendering
                     laneStart,
                     BlockCount);
                 _runtimeBlockPaletteUploaded[sourceIndex] = true;
+            }
+        }
+
+        internal void UpdateRuntimeBlockPulseGroupData(FanlightIntensityState intensity, FanlightRuntimeLayout layout)
+        {
+            if (RuntimeBlockPulseGroupBuffer == null
+                || layout == null
+                || layout.BlockCount != BlockCount)
+            {
+                throw new InvalidOperationException("Runtime Block Pulse Group Buffer is not available.");
+            }
+
+            for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+            {
+                if (intensity.GetMaskWeight(sourceIndex) <= 0f) continue;
+                var mask = intensity.GetMask(sourceIndex);
+                if (mask.Mode != FanlightIntensityMaskMode.BlockAlternatingPulse) continue;
+
+                Array.Clear(_runtimeBlockPulseGroupCandidate, 0, _runtimeBlockPulseGroupCandidate.Length);
+                Array.Clear(_runtimeBlockPulseGroupAssigned, 0, _runtimeBlockPulseGroupAssigned.Length);
+                for (var entryIndex = 0; entryIndex < mask.BlockPulseEntryCount; entryIndex++)
+                {
+                    var entry = mask.GetBlockPulseEntry(entryIndex);
+                    var blockIndex = layout.GetBlockIndex(entry.StableBlockId);
+                    if (blockIndex < 0)
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse contains an unknown Stable Block ID.");
+                    }
+
+                    if (_runtimeBlockPulseGroupAssigned[blockIndex])
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse contains a duplicate Stable Block ID.");
+                    }
+
+                    _runtimeBlockPulseGroupAssigned[blockIndex] = true;
+                    _runtimeBlockPulseGroupCandidate[blockIndex] = (uint)entry.Group;
+                }
+
+                var laneStart = sourceIndex * BlockCount;
+                var changed = !_runtimeBlockPulseGroupsUploaded[sourceIndex];
+
+                for (var blockIndex = 0; blockIndex < _runtimeBlockPulseGroupAssigned.Length; blockIndex++)
+                {
+                    if (!_runtimeBlockPulseGroupAssigned[blockIndex])
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse must specify every Block in the active Layout.");
+                    }
+
+                    if (_runtimeBlockPulseGroups[laneStart + blockIndex]
+                        != _runtimeBlockPulseGroupCandidate[blockIndex])
+                    {
+                        changed = true;
+                    }
+                }
+
+                if (!changed) continue;
+
+                Array.Copy(
+                    _runtimeBlockPulseGroupCandidate,
+                    0,
+                    _runtimeBlockPulseGroups,
+                    laneStart,
+                    BlockCount);
+                RuntimeBlockPulseGroupBuffer.SetData(
+                    _runtimeBlockPulseGroups,
+                    laneStart,
+                    laneStart,
+                    BlockCount);
+                _runtimeBlockPulseGroupsUploaded[sourceIndex] = true;
             }
         }
 
@@ -620,6 +704,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer?.Release();
             ResolvedMaskBuffer?.Release();
             RuntimeBlockPaletteBuffer?.Release();
+            RuntimeBlockPulseGroupBuffer?.Release();
             RandomBuffer?.Release();
             MotionSampleBuffer?.Release();
             PenlightArgsBuffer?.Release();
@@ -638,6 +723,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer = null;
             ResolvedMaskBuffer = null;
             RuntimeBlockPaletteBuffer = null;
+            RuntimeBlockPulseGroupBuffer = null;
             RandomBuffer = null;
             MotionSampleBuffer = null;
             PenlightArgsBuffer = null;
@@ -653,6 +739,10 @@ namespace PrismFanlight.Rendering
             _runtimeBlockPaletteCandidate = Array.Empty<uint>();
             _runtimeBlockPaletteAssigned = Array.Empty<bool>();
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            _runtimeBlockPulseGroups = Array.Empty<uint>();
+            _runtimeBlockPulseGroupCandidate = Array.Empty<uint>();
+            _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
             Array.Clear(_motionSamples, 0, _motionSamples.Length);
             Array.Clear(_motionSourceSamples, 0, _motionSourceSamples.Length);
             Array.Clear(_motionAssets, 0, _motionAssets.Length);

@@ -115,6 +115,18 @@ namespace PrismFanlight.Editor
                 FanlightColorIntensityEditorUtility.DrawSelectedBlockColor(colorState, layoutAsset, blockIndex);
             }
 
+            var intensityState = _serializedFanlight.FindProperty("_intensity");
+
+            if (FanlightColorIntensityEditorUtility.IsBlockAlternatingPulse(intensityState))
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Block Alternating Pulse", EditorStyles.boldLabel);
+                FanlightColorIntensityEditorUtility.DrawSelectedBlockPulseGroup(
+                    intensityState,
+                    layoutAsset,
+                    blockIndex);
+            }
+
             if (_serializedFanlight.ApplyModifiedProperties()) SceneView.RepaintAll();
         }
 

@@ -175,19 +175,34 @@ namespace PrismFanlight.Rendering
             ComputeShader shader,
             FanlightGpuKernels kernels,
             FanlightGpuBuffers buffers,
-            in FanlightGpuDispatchContext context)
+            in FanlightGpuDispatchContext context,
+            bool updateBlockPulseGroups)
         {
             var intensity = context.Sample.State.Intensity.Validated();
+            if (updateBlockPulseGroups)
+            {
+                buffers.UpdateRuntimeBlockPulseGroupData(intensity, context.Layout);
+            }
 
             for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
             {
                 var mask = intensity.GetMask(sourceIndex);
                 var weight = intensity.GetMaskWeight(sourceIndex);
+                var directionSign = mask.Mode switch
+                {
+                    FanlightIntensityMaskMode.RadialWave => mask.RadialWaveDirection == FanlightRadialWaveDirection.Outward
+                        ? 1f
+                        : -1f,
+                    FanlightIntensityMaskMode.AngularWave => mask.AngularWaveDirection == FanlightAngularWaveDirection.Clockwise
+                        ? 1f
+                        : -1f,
+                    _ => 0f
+                };
                 _maskSourceModes[sourceIndex] = new Vector4(
                     (int)mask.Mode,
                     weight,
-                    0f,
-                    0f);
+                    directionSign,
+                    sourceIndex * buffers.BlockCount);
                 _maskSourceTiming[sourceIndex] = Vector4.zero;
                 _maskSourceEnvelope[sourceIndex] = Vector4.zero;
                 _maskSourceGeometry[sourceIndex] = Vector4.zero;
@@ -205,9 +220,16 @@ namespace PrismFanlight.Rendering
                     mask.HoldRatio,
                     mask.ReleaseRatio);
 
-                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave)
+                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave
+                    || mask.Mode == FanlightIntensityMaskMode.RadialWave)
                 {
                     _maskSourceTiming[sourceIndex].z = mask.Wavelength;
+                }
+
+                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave
+                    || mask.Mode == FanlightIntensityMaskMode.RadialWave
+                    || mask.Mode == FanlightIntensityMaskMode.AngularWave)
+                {
                     _maskSourceGeometry[sourceIndex] = new Vector4(
                         mask.Origin.x,
                         mask.Origin.y,
@@ -226,6 +248,11 @@ namespace PrismFanlight.Rendering
                 ToLocalDirection(intensity.ResolvedLocalYawDegrees));
             shader.SetVectorArray(FanlightShaderIds.MaskSourceGeometry, _maskSourceGeometry);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Randoms, buffers.RandomBuffer);
+            shader.SetBuffer(
+                kernels.ResolveSeatMask,
+                FanlightShaderIds.RuntimeBlockPulseGroups,
+                buffers.RuntimeBlockPulseGroupBuffer);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.ResolvedMask, buffers.ResolvedMaskBuffer);
             shader.Dispatch(kernels.ResolveSeatMask, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
         }

@@ -221,6 +221,7 @@ namespace PrismFanlight.Rendering
                 _hasGlobalSeed = true;
                 _animationInitialized = false;
                 _colorInitialized = false;
+                if (sample.State.Intensity.HasRandomSparkleMask()) _maskInitialized = false;
             }
 
             if (_buffers.HasMotionAssetChanges(sample.State.Motion))
@@ -249,7 +250,12 @@ namespace PrismFanlight.Rendering
 
                 if (maskInputsChanged || maskBeatChanged)
                 {
-                    _dispatcher.DispatchMask(_computeShader, _kernels, _buffers, context);
+                    _dispatcher.DispatchMask(
+                        _computeShader,
+                        _kernels,
+                        _buffers,
+                        context,
+                        maskInputsChanged);
                     _lastIntensityState = intensity;
                     _lastMaskBeat = completedBeat;
                     _hasMaskBeat = true;
