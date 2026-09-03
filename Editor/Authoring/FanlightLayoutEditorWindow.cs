@@ -4,6 +4,7 @@ using PrismFanlight.Authoring;
 using PrismFanlight.Rendering;
 using Unity.Mathematics;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -317,14 +318,28 @@ namespace PrismFanlight.Editor
             if (window.FollowCurrentSelection(true)) window.QueueSelectionFollow();
         }
 
-        internal static void Open(PrismFanlight previewHost)
+        [OnOpenAsset]
+        private static bool OnOpenAsset(int instanceId, int line)
+        {
+            if (EditorUtility.EntityIdToObject(instanceId) is not FanlightLayoutAsset layout)
+            {
+                return false;
+            }
+
+            Open(layout);
+
+            return true;
+        }
+
+        internal static void Open(FanlightLayoutAsset layout) => Open(null, layout);
+
+        internal static void Open(PrismFanlight previewHost) => Open(previewHost, previewHost.LayoutAsset);
+
+        internal static void Open(PrismFanlight fanlight, FanlightLayoutAsset layout)
         {
             var window = GetWindow<FanlightLayoutEditorWindow>();
             window.titleContent = new GUIContent("Fanlight Layout");
-            window.SetContext(
-                previewHost != null ? previewHost.LayoutAsset : null,
-                previewHost,
-                true);
+            window.SetContext(layout, fanlight, true);
             window.Show();
             window.Focus();
         }
