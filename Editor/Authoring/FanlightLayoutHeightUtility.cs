@@ -145,6 +145,5 @@ namespace PrismFanlight.Editor
                    + 2f * inverse * t * row.ControlPoint
                    + t * t * row.RightPoint;
         }
-
     }
 }

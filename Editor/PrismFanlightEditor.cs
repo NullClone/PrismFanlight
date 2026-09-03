@@ -1,7 +1,6 @@
 using System.IO;
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
-using PrismFanlight.Rendering;
 using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEditor.Timeline;
@@ -44,15 +43,14 @@ namespace PrismFanlight.Editor
 
         private bool _enableDirectionGizmo = true;
 
-        private static readonly PrismFanlightSection _renderingSection = new("Rendering");
-        private static readonly PrismFanlightSection _layoutSection = new("Layout");
+        private static readonly PrismFanlightSection _generalSection = new("General");
         private static readonly PrismFanlightSection<FanlightIntentTrack> _intentSection = new("Intent");
         private static readonly PrismFanlightSection<FanlightMotionTrack> _motionSection = new("Motion");
         private static readonly PrismFanlightSection<FanlightColorTrack> _colorSection = new("Color");
         private static readonly PrismFanlightSection<FanlightIntensityTrack> _intensitySection = new("Intensity");
-        private static readonly PrismFanlightSection<FanlightTempoTrack> _tempoSection = new("Tempo");
         private static readonly PrismFanlightSection<FanlightAudienceBodyTrack> _audienceSection = new("Audience");
         private static readonly PrismFanlightSection<FanlightDirectionTrack> _directionSection = new("Direction");
+        private static readonly PrismFanlightSection<FanlightTempoTrack> _timeSection = new("Time");
         private static readonly PrismFanlightSection<FanlightVariationTrack> _variationSection = new("Variation");
         private static readonly PrismFanlightSection<FanlightNoiseTrack> _noiseSection = new("Noise");
         private static readonly PrismFanlightSection<FanlightRestTrack> _restSection = new("Rest");
@@ -144,9 +142,9 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
             }
 
-            #region Rendering Section
+            #region General Section
 
-            _renderingSection.DrawSection(() =>
+            _generalSection.DrawSection(() =>
             {
                 DrawRenderingLayerMask(_renderingLayerMask);
 
@@ -167,6 +165,66 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.HelpBox(error, MessageType.Error);
                 }
 
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+
+                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                    {
+                        if (GUILayout.Button("New", GUILayout.Width(45)))
+                        {
+                            CreateLayoutAsset();
+                        }
+
+                        using (new EditorGUI.DisabledScope(_layoutAsset.objectReferenceValue == null))
+                        {
+                            if (GUILayout.Button("Open", GUILayout.Width(50)))
+                            {
+                                FanlightLayoutEditorWindow.Open(_instance);
+                            }
+                        }
+                    }
+                }
+
+                if (!_layoutAsset.hasMultipleDifferentValues)
+                {
+                    var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
+                    if (layout == null)
+                    {
+                        _instance.SetEditorLayoutBlocked(false);
+
+                        EditorGUILayout.HelpBox("Layout Asset is required.", MessageType.Error);
+                    }
+                    else
+                    {
+                        if (!layout.IsInitialized)
+                        {
+                            _instance.SetEditorLayoutBlocked(false);
+                            EditorGUILayout.HelpBox("The Layout Asset is not initialized. Open the Layout Editor and create a Quick Grid.", MessageType.Error);
+                            return;
+                        }
+
+                        if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+                        {
+                            _instance.SetEditorLayoutBlocked(true);
+                            EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
+                            return;
+                        }
+
+                        _instance.SetEditorLayoutBlocked(false);
+
+                        var session = FanlightLayoutEditSession.Get(layout);
+
+                        if (session == null) return;
+
+                        if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+                        {
+                            _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space();
                 EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
                 EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
 
@@ -279,103 +337,6 @@ namespace PrismFanlight.Editor
 
             #endregion
 
-            #region Layout Section
-
-            _layoutSection.DrawSection(() =>
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
-
-                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-                    {
-                        if (GUILayout.Button("New", GUILayout.Width(45)))
-                        {
-                            CreateLayoutAsset();
-                        }
-
-                        using (new EditorGUI.DisabledScope(_layoutAsset.objectReferenceValue == null))
-                        {
-                            if (GUILayout.Button("Open", GUILayout.Width(50)))
-                            {
-                                FanlightLayoutEditorWindow.Open(_instance);
-                            }
-                        }
-                    }
-                }
-
-                if (_layoutAsset.hasMultipleDifferentValues)
-                {
-                    EditorGUILayout.HelpBox("Layout editing is unavailable while selected objects use different layouts.", MessageType.Info);
-                    return;
-                }
-
-                var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
-                if (layout == null)
-                {
-                    _instance.SetEditorLayoutBlocked(false);
-
-                    EditorGUILayout.HelpBox("A baked Layout Asset is required.", MessageType.Error);
-                }
-                else
-                {
-                    if (!layout.IsInitialized)
-                    {
-                        _instance.SetEditorLayoutBlocked(false);
-                        EditorGUILayout.HelpBox("The Layout Asset is not initialized. Open the Layout Editor and create a Quick Grid.", MessageType.Error);
-                        return;
-                    }
-
-                    if (FanlightLayoutIdRegistry.IsDuplicate(layout))
-                    {
-                        _instance.SetEditorLayoutBlocked(true);
-                        EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
-                        return;
-                    }
-
-                    _instance.SetEditorLayoutBlocked(false);
-
-                    var session = FanlightLayoutEditSession.Get(layout);
-
-                    if (session == null) return;
-
-                    if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
-                    {
-                        _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
-                    }
-                }
-            });
-
-            #endregion
-
-            #region Tempo Section
-
-            _tempoSection.DrawSection(() =>
-            {
-                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
-
-                if (_timeManager.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
-                }
-
-                if (_instance.TimeFault == FanlightShowTimeFault.TempoConflict)
-                {
-                    EditorGUILayout.HelpBox("Tempo Conflict: two or more Tempo Tracks are active for this Prism Fanlight.", MessageType.Error);
-                }
-                else if (_instance.TimeFault != FanlightShowTimeFault.None)
-                {
-                    EditorGUILayout.HelpBox($"Time Fault: {_instance.TimeFault}", MessageType.Error);
-                }
-
-                if (!string.IsNullOrEmpty(_instance.SequenceFault))
-                {
-                    EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
-                }
-            }, _instance);
-
-            #endregion
-
             #region Audience Section
 
             _audienceSection.DrawSection(() =>
@@ -411,6 +372,34 @@ namespace PrismFanlight.Editor
                     {
                         EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
                     }
+                }
+            }, _instance);
+
+            #endregion
+
+            #region Tempo Section
+
+            _timeSection.DrawSection(() =>
+            {
+                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
+
+                if (_timeManager.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
+                }
+
+                if (_instance.TimeFault == FanlightShowTimeFault.TempoConflict)
+                {
+                    EditorGUILayout.HelpBox("Tempo Conflict: two or more Tempo Tracks are active for this Prism Fanlight.", MessageType.Error);
+                }
+                else if (_instance.TimeFault != FanlightShowTimeFault.None)
+                {
+                    EditorGUILayout.HelpBox($"Time Fault: {_instance.TimeFault}", MessageType.Error);
+                }
+
+                if (!string.IsNullOrEmpty(_instance.SequenceFault))
+                {
+                    EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
                 }
             }, _instance);
 
@@ -463,10 +452,6 @@ namespace PrismFanlight.Editor
 
             #endregion
 
-            // EditorGUILayout.Space();
-            // DrawMaterialEditor(_material, "Penlight", ref _materialEditor);
-            // DrawMaterialEditor(_audienceMaterial, "Audience", ref _audienceMaterialEditor);
-
             if (serializedObject.ApplyModifiedProperties())
             {
                 RefreshTimelinePreview();
@@ -494,42 +479,6 @@ namespace PrismFanlight.Editor
                 property.longValue = mask;
             }
         }
-
-        /*private static void DrawMaterialEditor(SerializedProperty property, string materialName, ref UnityEditor.Editor materialEditor)
-        {
-            if (property.hasMultipleDifferentValues)
-            {
-                if (materialEditor != null)
-                {
-                    DestroyImmediate(materialEditor);
-                    materialEditor = null;
-                }
-
-                EditorGUILayout.HelpBox($"Material Inspector is unavailable while selected objects use different {materialName} Materials.", MessageType.Info);
-                return;
-            }
-
-            var material = property.objectReferenceValue as Material;
-            if (material == null)
-            {
-                if (materialEditor != null)
-                {
-                    DestroyImmediate(materialEditor);
-                    materialEditor = null;
-                }
-
-                return;
-            }
-
-            CreateCachedEditor(material, typeof(MaterialEditor), ref materialEditor);
-
-            if (materialEditor is not MaterialEditor editor) return;
-
-            EditorGUILayout.Space();
-
-            editor.DrawHeader();
-            editor.OnInspectorGUI();
-        }*/
 
         private static void DrawUpdateTiming(SerializedProperty timing, string label)
         {

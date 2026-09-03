@@ -5,6 +5,7 @@ using PrismFanlight.Rendering;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -295,7 +296,11 @@ namespace PrismFanlight.Editor
 
         private static GUIStyle BreadcrumbLeft => "GUIEditor.BreadcrumbLeft";
 
+        private static GUIStyle BreadcrumbMid => "GUIEditor.BreadcrumbMid";
+
         private static GUIStyle BreadcrumbLeftBackground => "GUIEditor.BreadcrumbLeftBackground";
+
+        private static GUIStyle BreadcrumbMidBackground => "GUIEditor.BreadcrumbMidBackground";
 
 
         // Methods
@@ -546,8 +551,6 @@ namespace PrismFanlight.Editor
 
         private void DrawToolbar()
         {
-            // FanlightLayoutSelection.GetIndices(_layout, _selectedBlocks);
-
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
                 if (GUILayout.Button(SaveIcon, EditorStyles.toolbarButton))
@@ -557,16 +560,11 @@ namespace PrismFanlight.Editor
 
                 if (_layout != null)
                 {
-                    DrawAssetBreadcrumb(_layout);
+                    DrawAssetBreadcrumb(_layout, 0);
 
                     if (_previewHost != null)
                     {
-                        GUILayout.Label("on", EditorStyles.miniLabel);
-                        DrawAssetBreadcrumb(_previewHost);
-                    }
-                    else
-                    {
-                        GUILayout.Label("Asset Only", EditorStyles.miniLabel);
+                        DrawAssetBreadcrumb(_previewHost, 1);
                     }
                 }
 
@@ -616,7 +614,7 @@ namespace PrismFanlight.Editor
                 DrawGrid(canvas, _layout.ReferenceSeatSpacing.x, _layout.ReferenceSeatSpacing.y);
                 DrawBlocks(canvas, session);
                 if (_tool == LayoutTool.Rotate && _selectedBlocks.Count > 0) DrawRotationHandle(canvas, session);
-                if (_tool == LayoutTool.Shape && _selectedBlocks.Count == 1) DrawShapeHandles(canvas, session);
+                if (_tool == LayoutTool.Shape && _selectedBlocks.Count == 1) DrawShapeHandles(canvas);
                 if (_marquee) DrawMarquee();
                 HandleCanvasInput(canvas, session);
             }
@@ -732,7 +730,7 @@ namespace PrismFanlight.Editor
             Handles.DrawAAPolyLine(active ? 1.5f : 1f, points);
         }
 
-        private void DrawShapeHandles(Rect canvas, FanlightLayoutEditSession session)
+        private void DrawShapeHandles(Rect canvas)
         {
             var active = _selectedBlocks[0];
             var curveHandleStart = _layout.GetBlock(active).RowCount == 1 ? 2 : 4;
@@ -1974,13 +1972,13 @@ namespace PrismFanlight.Editor
             => TryGetQuickGridCounts(_quickBlockCount, _quickSeatsPerBlock, out totalBlocks, out totalSeats);
 
 
-        private static void DrawAssetBreadcrumb(UnityEngine.Object target)
+        private static void DrawAssetBreadcrumb(Object target, int index)
         {
             var icon = EditorGUIUtility.ObjectContent(target, target.GetType()).image;
             var content = new GUIContent(target.name, icon, target.name);
 
-            var style = BreadcrumbLeft;
-            var bgStyle = BreadcrumbLeftBackground;
+            var style = index == 0 ? BreadcrumbLeft : BreadcrumbMid;
+            var backgroundStyle = index == 0 ? BreadcrumbLeftBackground : BreadcrumbMidBackground;
 
             content.image = null;
             var size = style.CalcSize(content);
@@ -1994,7 +1992,7 @@ namespace PrismFanlight.Editor
 
             if (Event.current.type == EventType.Repaint)
             {
-                bgStyle.Draw(rect, GUIContent.none, 0);
+                backgroundStyle.Draw(rect, GUIContent.none, 0);
             }
 
             if (GUI.Button(rect, content, style))
