@@ -119,7 +119,8 @@ float PrismEvaluateMaskSource(uint sourceIndex, FanlightSeatData seat)
         float2 delta = seat.localPositionSeed.xz - origin;
         float crossValue = _MaskResolvedDirection.y * delta.x - _MaskResolvedDirection.x * delta.y;
         float dotValue = dot(_MaskResolvedDirection.xy, delta);
-        float angularPhase = atan2(crossValue, dotValue) / (2.0 * PRISM_FANLIGHT_PI);
+        float armCount = max(1.0, round(_MaskSourceTiming[sourceIndex].z));
+        float angularPhase = atan2(crossValue, dotValue) / (2.0 * PRISM_FANLIGHT_PI) * armCount;
         phase -= _MaskSourceModes[sourceIndex].z * angularPhase;
     }
     else if (mode == 6u)

@@ -365,6 +365,9 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.PropertyField(
                         mask.FindPropertyRelative("_angularWaveDirection"),
                         new GUIContent("Rotation Direction"));
+                    EditorGUILayout.PropertyField(
+                        mask.FindPropertyRelative("_angularArmCount"),
+                        new GUIContent("Arm Count"));
                     break;
                 case FanlightIntensityMaskMode.BlockAlternatingPulse:
                     DrawEnvelope(mask);
@@ -509,7 +512,8 @@ namespace PrismFanlight.Editor
             if (mode == FanlightIntensityMaskMode.AngularWave)
             {
                 var direction = mask.FindPropertyRelative("_angularWaveDirection").enumValueIndex;
-                invalid |= direction < 0 || direction > 1;
+                var armCount = mask.FindPropertyRelative("_angularArmCount").intValue;
+                invalid |= direction < 0 || direction > 1 || armCount < 1;
             }
 
             if (invalid)

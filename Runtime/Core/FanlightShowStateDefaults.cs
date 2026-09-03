@@ -90,6 +90,7 @@ namespace PrismFanlight.Core
                 10f,
                 FanlightRadialWaveDirection.Outward,
                 FanlightAngularWaveDirection.Clockwise,
+                1,
                 Array.Empty<FanlightBlockPulseEntry>()));
 
         internal static FanlightVisibilityState Visibility() => new(true, true);

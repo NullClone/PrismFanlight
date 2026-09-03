@@ -45,6 +45,9 @@ namespace PrismFanlight.Core
         [SerializeField]
         private FanlightAngularWaveDirection _angularWaveDirection;
 
+        [SerializeField, Min(1)]
+        private int _angularArmCount;
+
         [SerializeField]
         private FanlightBlockPulseEntry[] _blockPulseEntries;
 
@@ -75,6 +78,8 @@ namespace PrismFanlight.Core
 
         internal FanlightAngularWaveDirection AngularWaveDirection => _angularWaveDirection;
 
+        internal int AngularArmCount => _angularArmCount;
+
         internal int BlockPulseEntryCount => _blockPulseEntries?.Length ?? 0;
 
         internal bool UsesLocalYaw => _mode == FanlightIntensityMaskMode.TravelingWave
@@ -96,6 +101,7 @@ namespace PrismFanlight.Core
             float wavelength,
             FanlightRadialWaveDirection radialWaveDirection,
             FanlightAngularWaveDirection angularWaveDirection,
+            int angularArmCount,
             FanlightBlockPulseEntry[] blockPulseEntries)
         {
             _mode = mode;
@@ -110,6 +116,7 @@ namespace PrismFanlight.Core
             _wavelength = wavelength;
             _radialWaveDirection = radialWaveDirection;
             _angularWaveDirection = angularWaveDirection;
+            _angularArmCount = angularArmCount;
             _blockPulseEntries = blockPulseEntries == null
                 ? Array.Empty<FanlightBlockPulseEntry>()
                 : (FanlightBlockPulseEntry[])blockPulseEntries.Clone();
@@ -133,6 +140,7 @@ namespace PrismFanlight.Core
                 _wavelength,
                 _radialWaveDirection,
                 _angularWaveDirection,
+                _angularArmCount,
                 _blockPulseEntries);
         }
 
@@ -156,7 +164,8 @@ namespace PrismFanlight.Core
                 FanlightIntensityMaskMode.AngularWave => EnvelopeEquals(other)
                                                          && _origin.Equals(other._origin)
                                                          && _localYawDegrees.Equals(other._localYawDegrees)
-                                                         && _angularWaveDirection == other._angularWaveDirection,
+                                                         && _angularWaveDirection == other._angularWaveDirection
+                                                         && _angularArmCount == other._angularArmCount,
                 FanlightIntensityMaskMode.BlockAlternatingPulse => EnvelopeEquals(other)
                                                                   && BlockPulseEntriesEqual(other),
                 _ => false
@@ -202,6 +211,7 @@ namespace PrismFanlight.Core
                         _localYawDegrees,
                         nameof(_localYawDegrees));
                     ValidateAngularWaveDirection();
+                    ValidateAngularArmCount();
                     break;
                 case FanlightIntensityMaskMode.BlockAlternatingPulse:
                     ValidateEnvelope();
@@ -290,6 +300,14 @@ namespace PrismFanlight.Core
                 && _angularWaveDirection != FanlightAngularWaveDirection.Counterclockwise)
             {
                 throw new ArgumentOutOfRangeException(nameof(_angularWaveDirection));
+            }
+        }
+
+        private void ValidateAngularArmCount()
+        {
+            if (_angularArmCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(_angularArmCount));
             }
         }
 

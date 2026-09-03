@@ -225,6 +225,10 @@ namespace PrismFanlight.Rendering
                 {
                     _maskSourceTiming[sourceIndex].z = mask.Wavelength;
                 }
+                else if (mask.Mode == FanlightIntensityMaskMode.AngularWave)
+                {
+                    _maskSourceTiming[sourceIndex].z = mask.AngularArmCount;
+                }
 
                 if (mask.Mode == FanlightIntensityMaskMode.TravelingWave
                     || mask.Mode == FanlightIntensityMaskMode.RadialWave
