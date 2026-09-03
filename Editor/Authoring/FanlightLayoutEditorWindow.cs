@@ -260,6 +260,7 @@ namespace PrismFanlight.Editor
         private bool _transforming;
         private bool _controlsToolsHidden;
         private bool _toolsHiddenBeforeLayout;
+        private bool _selectionFollowQueued;
         private int _shapeHandle = -1;
         private int _undoGroup = -1;
         private int _pressedBlock = -1;
@@ -304,9 +305,11 @@ namespace PrismFanlight.Editor
         {
             var window = GetWindow<FanlightLayoutEditorWindow>();
             window.titleContent = new GUIContent("Fanlight Layout");
-            if (!window._locked) window.FollowCurrentSelection(true);
             window.Show();
             window.Focus();
+            if (window._locked) return;
+
+            if (window.FollowCurrentSelection(true)) window.QueueSelectionFollow();
         }
 
         internal static void Open(PrismFanlight previewHost)
@@ -386,6 +389,8 @@ namespace PrismFanlight.Editor
             Undo.undoRedoPerformed -= OnUndoRedo;
             SceneView.duringSceneGui -= OnSceneViewGUI;
             EditorApplication.update -= OnEditorUpdate;
+            EditorApplication.delayCall -= FollowQueuedSelection;
+            _selectionFollowQueued = false;
             SceneView.RepaintAll();
         }
 
@@ -1353,8 +1358,8 @@ namespace PrismFanlight.Editor
         private void DeleteSelected()
             => FanlightLayoutCommands.Delete(_layout);
 
-        private void MirrorSelected()
-            => FanlightLayoutCommands.Mirror(_layout);
+        private void MirrorSelected(bool xAxis)
+            => FanlightLayoutCommands.Mirror(_layout, xAxis);
 
         private void BendSelected(float bendDegrees)
             => FanlightLayoutCommands.Bend(
@@ -1421,7 +1426,8 @@ namespace PrismFanlight.Editor
                 menu.AddItem(new GUIContent("Delete"), false, DeleteSelected);
                 menu.AddItem(new GUIContent("Reset"), false, ResetSelected);
                 menu.AddSeparator(string.Empty);
-                menu.AddItem(new GUIContent("Mirror X"), false, MirrorSelected);
+                menu.AddItem(new GUIContent("Mirror/X"), false, () => MirrorSelected(true));
+                menu.AddItem(new GUIContent("Mirror/Z"), false, () => MirrorSelected(false));
                 menu.AddItem(new GUIContent("Edge Snap"), false, SnapActiveEdge);
 
                 if (_selectedBlocks.Count >= 2)
@@ -1438,6 +1444,8 @@ namespace PrismFanlight.Editor
                 menu.AddDisabledItem(new GUIContent("Duplicate"));
                 menu.AddDisabledItem(new GUIContent("Delete"));
                 menu.AddDisabledItem(new GUIContent("Reset"));
+                menu.AddDisabledItem(new GUIContent("Mirror/X"));
+                menu.AddDisabledItem(new GUIContent("Mirror/Z"));
                 menu.AddDisabledItem(new GUIContent("Bend"));
             }
 
@@ -1520,6 +1528,22 @@ namespace PrismFanlight.Editor
             }
 
             return SetContext(null, null, confirmBake);
+        }
+
+        private void QueueSelectionFollow()
+        {
+            if (_selectionFollowQueued) return;
+
+            _selectionFollowQueued = true;
+            EditorApplication.delayCall += FollowQueuedSelection;
+        }
+
+        private void FollowQueuedSelection()
+        {
+            _selectionFollowQueued = false;
+            if (_locked) return;
+
+            FollowCurrentSelection(true);
         }
 
         private void RefreshPreviewHostLayout()

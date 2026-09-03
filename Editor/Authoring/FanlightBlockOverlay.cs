@@ -78,8 +78,15 @@ namespace PrismFanlight.Editor
 
             DrawCopyableField("Stable Block ID", hasMultiple ? null : block.BlockId);
             DrawCopyableField("Rows", hasMultiple ? null : block.RowCount.ToString("N0"));
-            DrawCopyableField("Position", hasMultiple ? null : Format(block.Placement.position));
-            DrawCopyableField("Rotation", hasMultiple ? null : Format(block.Placement.eulerRotation));
+            if (hasMultiple)
+            {
+                DrawCopyableField<string>("Position", null);
+                DrawCopyableField<string>("Rotation", null);
+            }
+            else
+            {
+                DrawPlacementFields(session, blockIndex, block.Placement);
+            }
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -126,6 +133,24 @@ namespace PrismFanlight.Editor
             EditorGUI.SelectableLabel(rect, value?.ToString() ?? "ー", EditorStyles.textField);
         }
 
+        private static void DrawPlacementFields(
+            FanlightLayoutEditSession session,
+            int blockIndex,
+            FanlightBlockPlacement placement)
+        {
+            EditorGUI.BeginChangeCheck();
+            var position = EditorGUILayout.Vector3Field("Position", placement.position);
+            var rotation = EditorGUILayout.Vector3Field("Rotation", placement.eulerRotation);
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            placement.position = position;
+            placement.eulerRotation = rotation;
+            session.SetBlockPlacements(
+                new[] { blockIndex },
+                new[] { placement },
+                "Edit Fanlight Block Placement");
+        }
+
         private static bool TryGetSelection(out PrismFanlight fanlight, out FanlightLayoutAsset layout, out int blockIndex)
         {
             fanlight = null;
@@ -137,7 +162,5 @@ namespace PrismFanlight.Editor
             blockIndex = FanlightLayoutSelection.GetActiveIndex(layout);
             return blockIndex >= 0;
         }
-
-        private static string Format(Vector3 value) => $"{value.x:0.###}, {value.y:0.###}, {value.z:0.###}";
     }
 }

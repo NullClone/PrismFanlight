@@ -96,14 +96,14 @@ namespace PrismFanlight.Editor
             }
         }
 
-        internal static void Mirror(FanlightLayoutAsset layout)
+        internal static void Mirror(FanlightLayoutAsset layout, bool xAxis)
         {
             var selected = GetSelected(layout);
             if (selected.Count == 0) return;
 
             FanlightLayoutEditSession.ApplyTopologyChange(
                 layout,
-                "Mirror Fanlight Blocks",
+                xAxis ? "Mirror Fanlight Blocks X" : "Mirror Fanlight Blocks Z",
                 () =>
                 {
                     for (var i = 0; i < selected.Count; i++)
@@ -111,16 +111,30 @@ namespace PrismFanlight.Editor
                         var index = selected[i];
                         var block = layout.GetBlock(index);
                         var placement = block.Placement;
-                        var rows = block.CopyRows();
+                        var sourceRows = block.CopyRows();
+                        var rows = new FanlightLayoutRow[sourceRows.Length];
                         for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
                         {
-                            var row = rows[rowIndex];
-                            var left = ReflectLayoutX(placement.position + placement.Rotation * row.RightPoint);
-                            var control = ReflectLayoutX(placement.position + placement.Rotation * row.ControlPoint);
-                            var right = ReflectLayoutX(placement.position + placement.Rotation * row.LeftPoint);
+                            var sourceIndex = xAxis ? rowIndex : rows.Length - 1 - rowIndex;
+                            var row = sourceRows[sourceIndex];
                             var stableSeatIds = row.CopyStableSeatIds();
-                            Array.Reverse(stableSeatIds);
-                            rows[rowIndex] = new FanlightLayoutRow(left, control, right, stableSeatIds);
+                            if (xAxis)
+                            {
+                                Array.Reverse(stableSeatIds);
+                                rows[rowIndex] = new FanlightLayoutRow(
+                                    ReflectLayoutX(placement.position + placement.Rotation * row.RightPoint),
+                                    ReflectLayoutX(placement.position + placement.Rotation * row.ControlPoint),
+                                    ReflectLayoutX(placement.position + placement.Rotation * row.LeftPoint),
+                                    stableSeatIds);
+                            }
+                            else
+                            {
+                                rows[rowIndex] = new FanlightLayoutRow(
+                                    ReflectLayoutZ(placement.position + placement.Rotation * row.LeftPoint),
+                                    ReflectLayoutZ(placement.position + placement.Rotation * row.ControlPoint),
+                                    ReflectLayoutZ(placement.position + placement.Rotation * row.RightPoint),
+                                    stableSeatIds);
+                            }
                         }
 
                         if (!layout.SetBlockRows(index, rows)) return false;
@@ -306,6 +320,9 @@ namespace PrismFanlight.Editor
 
         private static Vector3 ReflectLayoutX(Vector3 point)
             => new(-point.x, point.y, point.z);
+
+        private static Vector3 ReflectLayoutZ(Vector3 point)
+            => new(point.x, point.y, -point.z);
 
         private static float GetAxis(Vector3 value, bool xAxis)
             => xAxis ? value.x : value.z;
