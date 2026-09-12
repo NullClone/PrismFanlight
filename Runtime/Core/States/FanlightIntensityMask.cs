@@ -167,7 +167,7 @@ namespace PrismFanlight.Core
                                                          && _angularWaveDirection == other._angularWaveDirection
                                                          && _angularArmCount == other._angularArmCount,
                 FanlightIntensityMaskMode.BlockAlternatingPulse => EnvelopeEquals(other)
-                                                                  && BlockPulseEntriesEqual(other),
+                                                                   && BlockPulseEntriesEqual(other),
                 _ => false
             };
         }

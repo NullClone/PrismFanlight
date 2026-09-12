@@ -41,8 +41,6 @@ namespace PrismFanlight.Editor
         private SerializedProperty _visibility;
         private SerializedProperty _globalSeed;
 
-        private bool _enableDirectionGizmo = true;
-
         private static readonly PrismFanlightSection _generalSection = new("General");
         private static readonly PrismFanlightSection<FanlightIntentTrack> _intentSection = new("Intent");
         private static readonly PrismFanlightSection<FanlightMotionTrack> _motionSection = new("Motion");
@@ -91,7 +89,7 @@ namespace PrismFanlight.Editor
 
         private void OnSceneGUI()
         {
-            if (!_enableDirectionGizmo || _instance == null) return;
+            if (_instance == null) return;
 
             var mode = _direction.FindPropertyRelative("_mode");
             if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
@@ -99,8 +97,6 @@ namespace PrismFanlight.Editor
                 var pos = _instance.transform.position;
                 var rotation = Quaternion.Euler(0, _direction.FindPropertyRelative("_direction").floatValue, 0);
                 var size = new Vector3(0.75f, 0.75f, 1f);
-
-                // Draw Direction Gizmo
 
                 Handles.color = FanlightLayoutScenePreview.SelectedColor;
                 Handles.matrix = Matrix4x4.TRS(pos, rotation, size);
@@ -142,315 +138,23 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
             }
 
-            #region General Section
-
-            _generalSection.DrawSection(() =>
-            {
-                DrawRenderingLayerMask(_renderingLayerMask);
-
-                EditorGUILayout.Space();
-
-                DrawUpdateTiming(_updateMode, "Update Mode");
-
-                EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
-
-                var penlightAsset = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAsset;
-                if (penlightAsset == null)
-                {
-                    EditorGUILayout.HelpBox("Penlight Asset is required.", MessageType.Error);
-                }
-                else if (!penlightAsset.TryValidate(out var error))
-                {
-                    EditorGUILayout.HelpBox(error, MessageType.Error);
-                }
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
-
-                    using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
-                    {
-                        if (GUILayout.Button("New", GUILayout.Width(45)))
-                        {
-                            CreateLayoutAsset();
-                        }
-
-                        using (new EditorGUI.DisabledScope(_layoutAsset.objectReferenceValue == null))
-                        {
-                            if (GUILayout.Button("Open", GUILayout.Width(50)))
-                            {
-                                FanlightLayoutEditorWindow.Open(_instance);
-                            }
-                        }
-                    }
-                }
-
-                if (!_layoutAsset.hasMultipleDifferentValues)
-                {
-                    var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
-                    if (layout == null)
-                    {
-                        _instance.SetEditorLayoutBlocked(false);
-
-                        EditorGUILayout.HelpBox("Layout Asset is required.", MessageType.Error);
-                    }
-                    else
-                    {
-                        if (!layout.IsInitialized)
-                        {
-                            _instance.SetEditorLayoutBlocked(false);
-                            EditorGUILayout.HelpBox("The Layout Asset is not initialized. Open the Layout Editor and create a Quick Grid.", MessageType.Error);
-                            return;
-                        }
-
-                        if (FanlightLayoutIdRegistry.IsDuplicate(layout))
-                        {
-                            _instance.SetEditorLayoutBlocked(true);
-                            EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
-                            return;
-                        }
-
-                        _instance.SetEditorLayoutBlocked(false);
-
-                        var session = FanlightLayoutEditSession.Get(layout);
-
-                        if (session == null) return;
-
-                        if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
-                        {
-                            _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
-                        }
-                    }
-                }
-
-                EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
-                EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
-
-                if (_material.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Penlight Material is required.", MessageType.Error);
-                }
-
-                EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
-
-                if (_cullingCamera.objectReferenceValue != null)
-                {
-                    EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
-                    EditorGUILayout.PropertyField(_enableAudienceLod, new GUIContent("Enable Distance LOD"));
-
-                    if (_enableAudienceLod.boolValue)
-                    {
-                        using (new EditorGUI.IndentLevelScope())
-                        {
-                            EditorGUILayout.PropertyField(_audienceLodDistance, new GUIContent("Distance"));
-                        }
-                    }
-                }
-
-                DrawChild(_visibility, "_penlightsEnabled");
-                DrawChild(_visibility, "_audienceBodiesEnabled");
-
-                EditorGUI.BeginChangeCheck();
-                _enableDirectionGizmo = EditorGUILayout.Toggle("Enable Direction Gizmo", _enableDirectionGizmo);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SceneView.RepaintAll();
-                }
-            });
-
-            #endregion
-
-            #region Intent Section
-
-            _intentSection.DrawSection(() =>
-            {
-                DrawChild(_intent, "_energy");
-                DrawChild(_intent, "_participation");
-                DrawChild(_intent, "_synchronization");
-                DrawChild(_intent, "_realism");
-                DrawChild(_intent, "_reach");
-            }, _instance);
-
-            #endregion
-
-            #region Motion Section
-
-            _motionSection.DrawSection(() =>
-            {
-                var motionAsset = _motion.FindPropertyRelative("_motionAsset");
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.PropertyField(motionAsset);
-
-                    if (GUILayout.Button("New", GUILayout.Width(45)))
-                    {
-                        CreateMotionAsset(motionAsset);
-                    }
-
-                    using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
-                    {
-                        if (GUILayout.Button("Clone", GUILayout.Width(50)))
-                        {
-                            CloneMotionAsset(motionAsset);
-                        }
-                    }
-                }
-
-                if (motionAsset.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
-                }
-
-                DrawChild(_motion, "_motionAmount");
-                DrawChild(_motion, "_heightBias");
-                DrawChild(_motion, "_sideScale");
-                DrawChild(_motion, "_forwardScale");
-                DrawChild(_motion, "_wristDelayRatio");
-                DrawChild(_motion, "_variation");
-                DrawChild(_motion, "_beatsPerCycle");
-                DrawChild(_motion, "_phaseOffsetBeats");
-                DrawChild(_motion, "_blockDelayXBeats");
-                DrawChild(_motion, "_blockDelayYBeats");
-            }, _instance);
-
-            #endregion
-
-            #region Color Section
-
+            _generalSection.DrawSection(DrawGeneralSection);
+            _motionSection.DrawSection(DrawMotionSection, _instance);
+            _intentSection.DrawSection(DrawIntentSection, _instance);
             _colorSection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawColorState(_color, _instance.LayoutAsset, true);
             }, _instance);
-
-            #endregion
-
-            #region Intensity Section
-
             _intensitySection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity, _instance.LayoutAsset, true);
             }, _instance);
-
-            #endregion
-
-            #region Audience Section
-
-            _audienceSection.DrawSection(() =>
-            {
-                DrawChild(_audienceBody, "_height");
-                DrawChild(_audienceBody, "_width");
-                DrawChild(_audienceBody, "_headSize");
-                DrawChild(_audienceBody, "_armWidth");
-                DrawChild(_audienceBody, "_armLengthLimit");
-                DrawChild(_audienceBody, "_shoulderHeightRatio");
-                DrawChild(_audienceBody, "_shoulderSideOffset");
-                DrawChild(_audienceBody, "_bounce");
-                DrawChild(_audienceBody, "_sway");
-            }, _instance);
-
-            #endregion
-
-            #region Direction Section
-
-            _directionSection.DrawSection(() =>
-            {
-                var mode = _direction.FindPropertyRelative("_mode");
-
-                EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
-
-                if (!mode.hasMultipleDifferentValues)
-                {
-                    if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
-                    {
-                        DrawChild(_direction, "_direction");
-                    }
-                    else
-                    {
-                        EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
-                    }
-                }
-            }, _instance);
-
-            #endregion
-
-            #region Tempo Section
-
-            _timeSection.DrawSection(() =>
-            {
-                EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
-
-                if (_timeManager.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
-                }
-
-                if (_instance.TimeFault == FanlightShowTimeFault.TempoConflict)
-                {
-                    EditorGUILayout.HelpBox("Tempo Conflict: two or more Tempo Tracks are active for this Prism Fanlight.", MessageType.Error);
-                }
-                else if (_instance.TimeFault != FanlightShowTimeFault.None)
-                {
-                    EditorGUILayout.HelpBox($"Time Fault: {_instance.TimeFault}", MessageType.Error);
-                }
-
-                if (!string.IsNullOrEmpty(_instance.SequenceFault))
-                {
-                    EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
-                }
-            }, _instance);
-
-            #endregion
-
-            #region Variation Section
-
-            _variationSection.DrawSection(() =>
-            {
-                DrawChild(_variation, "_standingPositionSpread");
-                DrawChild(_variation, "_heightVariation");
-                DrawChild(_variation, "_armExtensionVariation");
-                DrawChild(_variation, "_penlightDirectionSpread");
-                DrawChild(_variation, "_reactionDelaySeconds");
-                DrawChild(_variation, "_beatJitterBeats");
-                DrawChild(_variation, "_energyResponse");
-                DrawChild(_variation, "_handPositionSpread");
-            }, _instance);
-
-            #endregion
-
-            #region Noise Section
-
-            _noiseSection.DrawSection(() =>
-            {
-                EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Seed"));
-
-                DrawChild(_noise, "_phaseAmount");
-                DrawChild(_noise, "_phaseRate");
-                DrawChild(_noise, "_positionAmount");
-                DrawChild(_noise, "_directionAmount");
-                DrawChild(_noise, "_spatialRate");
-                DrawChild(_noise, "_octaves");
-                DrawChild(_noise, "_persistence");
-            }, _instance);
-
-            #endregion
-
-            #region Rest Section
-
-            _restSection.DrawSection(() =>
-            {
-                DrawChild(_rest, "_probability");
-                DrawChild(_rest, "_motionLevel");
-                DrawChild(_rest, "_cycleSeconds");
-                DrawChild(_rest, "_durationSeconds");
-                DrawChild(_rest, "_fadeSeconds");
-                DrawChild(_rest, "_phaseRandomness");
-            }, _instance);
-
-            #endregion
+            _audienceSection.DrawSection(DrawAudienceSection, _instance);
+            _directionSection.DrawSection(DrawDirectionSection, _instance);
+            _timeSection.DrawSection(DrawTimeSection, _instance);
+            _variationSection.DrawSection(DrawVariationSection, _instance);
+            _noiseSection.DrawSection(DrawNoiseSection, _instance);
+            _restSection.DrawSection(DrawRestSection, _instance);
 
             if (serializedObject.ApplyModifiedProperties())
             {
@@ -458,47 +162,252 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private static void DrawRenderingLayerMask(SerializedProperty property)
+        private void DrawGeneralSection()
         {
-            if (GraphicsSettings.currentRenderPipeline == null) return;
+            /*EditorGUILayout.PropertyField(_penlightAppearanceProfile, new GUIContent("Penlight Asset"));
 
-            EditorGUI.BeginChangeCheck();
-
-#if UNITY_6000_0_OR_NEWER
-            var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)property.longValue);
-#else
-            var renderingLayerMaskNames = GraphicsSettings.currentRenderPipeline.renderingLayerMaskNames;
-
-            if (renderingLayerMaskNames == null || renderingLayerMaskNames.Length == 0) return;
-
-            var mask = (uint)EditorGUILayout.MaskField(new GUIContent("Rendering Layer"), (int)property.longValue, renderingLayerMaskNames);
-#endif
-
-            if (EditorGUI.EndChangeCheck())
+            var penlightAsset = _penlightAppearanceProfile.objectReferenceValue as FanlightPenlightAsset;
+            if (penlightAsset == null)
             {
-                property.longValue = mask;
+                EditorGUILayout.HelpBox("Penlight Asset is required.", MessageType.Error);
+            }
+            else if (!penlightAsset.TryValidate(out var error))
+            {
+                EditorGUILayout.HelpBox(error, MessageType.Error);
+            }*/
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(_layoutAsset, new GUIContent("Layout Asset"));
+
+                using (new EditorGUI.DisabledScope(Application.isPlaying || serializedObject.isEditingMultipleObjects))
+                {
+                    if (GUILayout.Button("New", GUILayout.Width(45)))
+                    {
+                        CreateLayoutAsset();
+                    }
+
+                    using (new EditorGUI.DisabledScope(_layoutAsset.objectReferenceValue == null))
+                    {
+                        if (GUILayout.Button("Open", GUILayout.Width(50)))
+                        {
+                            FanlightLayoutEditorWindow.Open(_instance);
+                        }
+                    }
+                }
+            }
+
+            if (!_layoutAsset.hasMultipleDifferentValues)
+            {
+                var layout = _layoutAsset.objectReferenceValue as FanlightLayoutAsset;
+                if (layout == null)
+                {
+                    _instance.SetEditorLayoutBlocked(false);
+
+                    EditorGUILayout.HelpBox("Layout Asset is required.", MessageType.Error);
+                }
+                else
+                {
+                    if (!layout.IsInitialized)
+                    {
+                        _instance.SetEditorLayoutBlocked(false);
+                        EditorGUILayout.HelpBox("The Layout Asset is not initialized. Open the Layout Editor and create a Quick Grid.", MessageType.Error);
+                        return;
+                    }
+
+                    if (FanlightLayoutIdRegistry.IsDuplicate(layout))
+                    {
+                        _instance.SetEditorLayoutBlocked(true);
+                        EditorGUILayout.HelpBox("Duplicate Layout ID detected. Rendering and baking are disabled.", MessageType.Error);
+                        return;
+                    }
+
+                    _instance.SetEditorLayoutBlocked(false);
+
+                    var session = FanlightLayoutEditSession.Get(layout);
+
+                    if (session == null) return;
+
+                    if (_instance.EditorPreviewContentHash != session.RuntimeLayout.ContentHash)
+                    {
+                        _instance.SetEditorLayoutPreview(session.RuntimeLayout, -1);
+                    }
+                }
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.PropertyField(_material, new GUIContent("Penlight Material"));
+            EditorGUILayout.PropertyField(_audienceMaterial, new GUIContent("Audience Material"));
+
+            if (_material.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Penlight Material is required.", MessageType.Error);
+            }
+
+            EditorGUILayout.Space();
+
+            DrawRenderingLayerMask(_renderingLayerMask);
+            DrawUpdateTiming(_updateMode, "Update Mode");
+
+            EditorGUILayout.Space();
+            EditorGUILayout.PropertyField(_cullingCamera, new GUIContent("Culling Camera"));
+
+            if (_cullingCamera.objectReferenceValue != null)
+            {
+                EditorGUILayout.PropertyField(_enableCulling, new GUIContent("Enable Culling"));
+                EditorGUILayout.PropertyField(_enableAudienceLod, new GUIContent("Enable Distance LOD"));
+
+                if (_enableAudienceLod.boolValue)
+                {
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.PropertyField(_audienceLodDistance, new GUIContent("Distance"));
+                    }
+                }
+            }
+
+            DrawChild(_visibility, "_penlightsEnabled");
+            DrawChild(_visibility, "_audienceBodiesEnabled");
+        }
+
+        private void DrawMotionSection()
+        {
+            var motionAsset = _motion.FindPropertyRelative("_motionAsset");
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(motionAsset);
+
+                if (GUILayout.Button("New", GUILayout.Width(45)))
+                {
+                    CreateMotionAsset(motionAsset);
+                }
+
+                using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
+                {
+                    if (GUILayout.Button("Clone", GUILayout.Width(50)))
+                    {
+                        CloneMotionAsset(motionAsset);
+                    }
+                }
+            }
+
+            if (motionAsset.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
+            }
+
+            DrawChild(_motion, "_motionAmount");
+            DrawChild(_motion, "_heightBias");
+            DrawChild(_motion, "_sideScale");
+            DrawChild(_motion, "_forwardScale");
+            DrawChild(_motion, "_wristDelayRatio");
+            DrawChild(_motion, "_variation");
+            DrawChild(_motion, "_beatsPerCycle");
+            DrawChild(_motion, "_phaseOffsetBeats");
+            DrawChild(_motion, "_blockDelayXBeats");
+            DrawChild(_motion, "_blockDelayYBeats");
+        }
+
+        private void DrawIntentSection()
+        {
+            DrawChild(_intent, "_energy");
+            DrawChild(_intent, "_participation");
+            DrawChild(_intent, "_synchronization");
+            DrawChild(_intent, "_realism");
+            DrawChild(_intent, "_reach");
+        }
+
+        private void DrawAudienceSection()
+        {
+            DrawChild(_audienceBody, "_height");
+            DrawChild(_audienceBody, "_width");
+            DrawChild(_audienceBody, "_headSize");
+            DrawChild(_audienceBody, "_armWidth");
+            DrawChild(_audienceBody, "_armLengthLimit");
+            DrawChild(_audienceBody, "_shoulderHeightRatio");
+            DrawChild(_audienceBody, "_shoulderSideOffset");
+            DrawChild(_audienceBody, "_bounce");
+            DrawChild(_audienceBody, "_sway");
+        }
+
+        private void DrawDirectionSection()
+        {
+            var mode = _direction.FindPropertyRelative("_mode");
+
+            EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
+
+            if (!mode.hasMultipleDifferentValues)
+            {
+                if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
+                {
+                    DrawChild(_direction, "_direction");
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
+                }
             }
         }
 
-        private static void DrawUpdateTiming(SerializedProperty timing, string label)
+        private void DrawTimeSection()
         {
-            var mode = timing.FindPropertyRelative("_mode");
+            EditorGUILayout.PropertyField(_timeManager, new GUIContent("Time Manager"));
 
-            EditorGUILayout.PropertyField(mode, new GUIContent(label));
-
-            if (mode.enumValueIndex != (int)FanlightGpuUpdateMode.FixedRate) return;
-
-            using (new EditorGUI.IndentLevelScope())
+            if (_timeManager.objectReferenceValue == null)
             {
-                EditorGUILayout.PropertyField(timing.FindPropertyRelative("_targetFrameRate"), new GUIContent("Target Frame Rate"));
+                EditorGUILayout.HelpBox("Time Coordinator is required. Prism Fanlight does not create a fallback clock.", MessageType.Error);
+            }
+
+            if (_instance.TimeFault == FanlightShowTimeFault.TempoConflict)
+            {
+                EditorGUILayout.HelpBox("Tempo Conflict: two or more Tempo Tracks are active for this Prism Fanlight.", MessageType.Error);
+            }
+            else if (_instance.TimeFault != FanlightShowTimeFault.None)
+            {
+                EditorGUILayout.HelpBox($"Time Fault: {_instance.TimeFault}", MessageType.Error);
+            }
+
+            if (!string.IsNullOrEmpty(_instance.SequenceFault))
+            {
+                EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
             }
         }
 
-        private static void DrawChild(SerializedProperty parent, string propertyName)
+        private void DrawVariationSection()
         {
-            EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
+            DrawChild(_variation, "_standingPositionSpread");
+            DrawChild(_variation, "_heightVariation");
+            DrawChild(_variation, "_armExtensionVariation");
+            DrawChild(_variation, "_penlightDirectionSpread");
+            DrawChild(_variation, "_reactionDelaySeconds");
+            DrawChild(_variation, "_beatJitterBeats");
+            DrawChild(_variation, "_energyResponse");
+            DrawChild(_variation, "_handPositionSpread");
         }
 
+        private void DrawNoiseSection()
+        {
+            EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Seed"));
+
+            DrawChild(_noise, "_phaseAmount");
+            DrawChild(_noise, "_phaseRate");
+            DrawChild(_noise, "_positionAmount");
+            DrawChild(_noise, "_directionAmount");
+            DrawChild(_noise, "_spatialRate");
+            DrawChild(_noise, "_octaves");
+            DrawChild(_noise, "_persistence");
+        }
+
+        private void DrawRestSection()
+        {
+            DrawChild(_rest, "_probability");
+            DrawChild(_rest, "_motionLevel");
+            DrawChild(_rest, "_cycleSeconds");
+            DrawChild(_rest, "_durationSeconds");
+            DrawChild(_rest, "_fadeSeconds");
+            DrawChild(_rest, "_phaseRandomness");
+        }
 
         private void RefreshTimelinePreview()
         {
@@ -615,6 +524,48 @@ namespace PrismFanlight.Editor
                 FanlightLayoutIdRegistry.Invalidate();
                 FanlightLayoutEditorWindow.Open(_instance);
             }
+        }
+
+
+        private static void DrawRenderingLayerMask(SerializedProperty property)
+        {
+            if (GraphicsSettings.currentRenderPipeline == null) return;
+
+            EditorGUI.BeginChangeCheck();
+
+#if UNITY_6000_0_OR_NEWER
+            var mask = EditorGUILayout.RenderingLayerMaskField(new GUIContent("Rendering Layer"), (uint)property.longValue);
+#else
+            var renderingLayerMaskNames = GraphicsSettings.currentRenderPipeline.renderingLayerMaskNames;
+
+            if (renderingLayerMaskNames == null || renderingLayerMaskNames.Length == 0) return;
+
+            var mask = (uint)EditorGUILayout.MaskField(new GUIContent("Rendering Layer"), (int)property.longValue, renderingLayerMaskNames);
+#endif
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.longValue = mask;
+            }
+        }
+
+        private static void DrawUpdateTiming(SerializedProperty timing, string label)
+        {
+            var mode = timing.FindPropertyRelative("_mode");
+
+            EditorGUILayout.PropertyField(mode, new GUIContent(label));
+
+            if (mode.enumValueIndex != (int)FanlightGpuUpdateMode.FixedRate) return;
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                EditorGUILayout.PropertyField(timing.FindPropertyRelative("_targetFrameRate"), new GUIContent("Target Frame Rate"));
+            }
+        }
+
+        private static void DrawChild(SerializedProperty parent, string propertyName)
+        {
+            EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
         }
     }
 }
