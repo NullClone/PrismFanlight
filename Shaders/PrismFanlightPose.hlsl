@@ -56,13 +56,20 @@ PrismHumanPose PrismComputeHumanPose(
     float bounce = sway * 0.5 + 0.5;
     float3 bodyOffset = basis.sideLocal * sway * _AudienceMotionBody.y
         + basis.upLocal * bounce * _AudienceMotionBody.x;
+    float3 motionBodyPosition = lerp(
+        _MotionReferenceBodyPosition.xyz,
+        motionSample.bodyPosition.xyz,
+        motionActivity) * bodyHeight;
+    bodyOffset += PrismTransformAudienceOffset(basis, motionBodyPosition);
     float3 feet = anchor + bodyOffset;
     float neckHeight = max(shoulderHeight, bodyHeight - headHalf * 2.0);
-    float motionLean = lerp(
-        _MotionReferencePenlight.w,
-        motionSample.penlightDirectionBodyLean.w,
+    float4 bodyRotation = PrismNlerpQuaternion(
+        _MotionReferenceBodyRotation,
+        motionSample.bodyRotation,
         motionActivity);
-    float3 leanUp = basis.upLocal * cos(motionLean) + basis.forwardLocal * sin(motionLean);
+    float3 leanUp = SafeNormalize(
+        PrismTransformAudienceOffset(basis, PrismRotateByQuaternion(bodyRotation, float3(0.0, 1.0, 0.0))),
+        basis.upLocal);
 
     PrismHumanPose pose = (PrismHumanPose)0;
     pose.anchorLocal = anchor;

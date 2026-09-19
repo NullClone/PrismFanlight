@@ -76,8 +76,10 @@ namespace PrismFanlight.Rendering
             SetAnimationParams(shader, context, buffers);
             SetAudienceParams(shader, context);
 
-            shader.SetVector(FanlightShaderIds.MotionReferenceArm, buffers.MotionReferenceArm);
-            shader.SetVector(FanlightShaderIds.MotionReferencePenlight, buffers.MotionReferencePenlight);
+            shader.SetVector(FanlightShaderIds.MotionReferenceBodyPosition, buffers.MotionReferenceBodyPosition);
+            shader.SetVector(FanlightShaderIds.MotionReferenceBodyRotation, buffers.MotionReferenceBodyRotation);
+            shader.SetVector(FanlightShaderIds.MotionReferenceHandPosition, buffers.MotionReferenceHandPosition);
+            shader.SetVector(FanlightShaderIds.MotionReferencePenlightRotation, buffers.MotionReferencePenlightRotation);
 
             var generateAudience = audienceEnabled && buffers.HasAudience;
             var kernel = generateAudience

@@ -12,8 +12,8 @@ namespace PrismFanlight.Rendering
         private const int PaletteSlotCount = 6;
 
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
-        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount];
-        private readonly FanlightMotionSample[] _motionSourceSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount * 3];
+        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount];
+        private readonly FanlightMotionSample[] _motionSourceSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount * 3];
         private readonly FanlightMotionAsset[] _motionAssets = new FanlightMotionAsset[3];
         private readonly int[] _motionRevisions = new int[3];
         private readonly bool[] _runtimeBlockPaletteUploaded = new bool[3];
@@ -81,9 +81,13 @@ namespace PrismFanlight.Rendering
 
         internal Vector4 PenlightVariantGripPivotYs { get; private set; }
 
-        internal Vector4 MotionReferenceArm => _motionReferencePose.ArmDirectionExtension;
+        internal Vector4 MotionReferenceBodyPosition => _motionReferencePose.BodyPositionData;
 
-        internal Vector4 MotionReferencePenlight => _motionReferencePose.PenlightDirectionBodyLean;
+        internal Vector4 MotionReferenceBodyRotation => _motionReferencePose.BodyRotationData;
+
+        internal Vector4 MotionReferenceHandPosition => _motionReferencePose.HandPositionData;
+
+        internal Vector4 MotionReferencePenlightRotation => _motionReferencePose.PenlightRotationData;
 
 
         // Methods
@@ -396,14 +400,17 @@ namespace PrismFanlight.Rendering
                 var revision = asset != null ? asset.BakeRevision : 0;
                 if (_motionAssets[i] == asset && _motionRevisions[i] == revision) continue;
 
-                var destinationIndex = i * FanlightMotionAsset.SampleCount;
+                var destinationIndex = i * FanlightMotionAsset.RuntimeSampleCount;
                 if (asset != null && asset.HasValidBake)
                 {
-                    asset.CopyBakedSamples(_motionSourceSamples, destinationIndex);
+                    asset.CopyResampledSamples(
+                        _motionSourceSamples,
+                        destinationIndex,
+                        FanlightMotionAsset.RuntimeSampleCount);
                 }
                 else
                 {
-                    Array.Clear(_motionSourceSamples, destinationIndex, FanlightMotionAsset.SampleCount);
+                    Array.Clear(_motionSourceSamples, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
                 }
 
                 _motionAssets[i] = asset;
@@ -413,12 +420,12 @@ namespace PrismFanlight.Rendering
 
             if (!assetsChanged && _motionWeights.Equals(weights)) return;
 
-            for (var sampleIndex = 0; sampleIndex < FanlightMotionAsset.SampleCount; sampleIndex++)
+            for (var sampleIndex = 0; sampleIndex < FanlightMotionAsset.RuntimeSampleCount; sampleIndex++)
             {
                 _motionSamples[sampleIndex] = BlendMotionSamples(
                     _motionSourceSamples[sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.SampleCount + sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.SampleCount * 2 + sampleIndex],
+                    _motionSourceSamples[FanlightMotionAsset.RuntimeSampleCount + sampleIndex],
+                    _motionSourceSamples[FanlightMotionAsset.RuntimeSampleCount * 2 + sampleIndex],
                     weights);
             }
 
@@ -439,109 +446,59 @@ namespace PrismFanlight.Rendering
             Vector3 weights)
         {
             return new FanlightMotionSample(
-                BlendDirections(
-                    sampleA.ArmDirection,
-                    sampleB.ArmDirection,
-                    sampleC.ArmDirection,
-                    weights,
-                    Vector3.forward),
-                sampleA.ArmExtension * weights.x
-                + sampleB.ArmExtension * weights.y
-                + sampleC.ArmExtension * weights.z,
-                BlendDirections(
-                    sampleA.PenlightDirection,
-                    sampleB.PenlightDirection,
-                    sampleC.PenlightDirection,
-                    weights,
-                    Vector3.up),
-                sampleA.BodyLean * weights.x
-                + sampleB.BodyLean * weights.y
-                + sampleC.BodyLean * weights.z);
+                sampleA.BodyPosition * weights.x
+                + sampleB.BodyPosition * weights.y
+                + sampleC.BodyPosition * weights.z,
+                BlendRotations(
+                    sampleA.BodyRotation,
+                    sampleB.BodyRotation,
+                    sampleC.BodyRotation,
+                    weights),
+                sampleA.HandPosition * weights.x
+                + sampleB.HandPosition * weights.y
+                + sampleC.HandPosition * weights.z,
+                BlendRotations(
+                    sampleA.PenlightRotation,
+                    sampleB.PenlightRotation,
+                    sampleC.PenlightRotation,
+                    weights));
         }
 
-        private static Vector3 BlendDirections(
-            Vector3 directionA,
-            Vector3 directionB,
-            Vector3 directionC,
+        private static Quaternion BlendRotations(
+            Quaternion rotationA,
+            Quaternion rotationB,
+            Quaternion rotationC,
             Vector3 weights,
-            Vector3 fallback)
+            Quaternion fallback = default)
         {
-            var result = fallback;
+            var result = fallback == default ? Quaternion.identity : fallback;
             var totalWeight = 0f;
-            BlendDirection(ref result, ref totalWeight, directionA, weights.x, fallback);
-            BlendDirection(ref result, ref totalWeight, directionB, weights.y, fallback);
-            BlendDirection(ref result, ref totalWeight, directionC, weights.z, fallback);
+            BlendRotation(ref result, ref totalWeight, rotationA, weights.x);
+            BlendRotation(ref result, ref totalWeight, rotationB, weights.y);
+            BlendRotation(ref result, ref totalWeight, rotationC, weights.z);
             return result;
         }
 
-        private static void BlendDirection(
-            ref Vector3 result,
+        private static void BlendRotation(
+            ref Quaternion result,
             ref float totalWeight,
-            Vector3 direction,
-            float weight,
-            Vector3 fallback)
+            Quaternion rotation,
+            float weight)
         {
             if (weight <= 0f) return;
 
-            direction = NormalizeDirection(direction, fallback);
+            rotation = FanlightMotionSample.NormalizeRotation(rotation);
             if (totalWeight <= 0f)
             {
-                result = direction;
+                result = rotation;
                 totalWeight = weight;
                 return;
             }
 
             var nextTotal = totalWeight + weight;
-            result = InterpolateDirection(result, direction, weight / nextTotal);
+            result = FanlightMotionSample.InterpolateRotation(result, rotation, weight / nextTotal);
             totalWeight = nextTotal;
         }
-
-        private static Vector3 InterpolateDirection(Vector3 from, Vector3 to, float weight)
-        {
-            from = NormalizeDirection(from, Vector3.up);
-            to = NormalizeDirection(to, from);
-            weight = Mathf.Clamp01(weight);
-            if (weight <= 0f) return from;
-            if (weight >= 1f) return to;
-
-            var cosine = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
-            if (cosine >= 0.9995f) return NormalizeDirection(Vector3.Lerp(from, to, weight), from);
-
-            if (cosine <= -0.999999f)
-            {
-                var axisAngle = Mathf.PI * weight;
-                var axis = DirectionFallbackAxis(from);
-                return NormalizeDirection(
-                    from * Mathf.Cos(axisAngle) + Vector3.Cross(axis, from) * Mathf.Sin(axisAngle),
-                    from);
-            }
-
-            var theta = Mathf.Acos(cosine);
-            var inverseSinTheta = 1f / Mathf.Sin(theta);
-            var fromWeight = Mathf.Sin((1f - weight) * theta) * inverseSinTheta;
-            var toWeight = Mathf.Sin(weight * theta) * inverseSinTheta;
-            return NormalizeDirection(from * fromWeight + to * toWeight, from);
-        }
-
-        private static Vector3 DirectionFallbackAxis(Vector3 direction)
-        {
-            var absolute = new Vector3(Mathf.Abs(direction.x), Mathf.Abs(direction.y), Mathf.Abs(direction.z));
-            var reference = absolute.x <= absolute.y && absolute.x <= absolute.z
-                ? Vector3.right
-                : absolute.y <= absolute.z
-                    ? Vector3.up
-                    : Vector3.forward;
-            return NormalizeDirection(Vector3.Cross(direction, reference), Vector3.right);
-        }
-
-        private static Vector3 NormalizeDirection(Vector3 direction, Vector3 fallback)
-        {
-            if (!IsFinite(direction) || direction.sqrMagnitude <= 0.000001f) return fallback;
-            return direction.normalized;
-        }
-
-        private static bool IsFinite(Vector3 value) =>
-            float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
         {
