@@ -12,392 +12,524 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2f2b0c1d2e34f509112233445566778, type: 3}
   m_Name: Default Motion Drum Asset
   m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Authoring.FanlightMotionAsset
-  _referenceArmElevation: 65
-  _referenceArmSide: 0
-  _referenceArmExtension: 0.92
-  _referencePenlightElevation: 78
-  _referencePenlightSide: 0
-  _referenceBodyLean: -2
-  _armElevationAmplitude: 120
-  _armSideAmplitude: 0
-  _armExtensionAmplitude: 0.1
-  _penlightElevationAmplitude: 143
-  _penlightSideAmplitude: 0
-  _bodyLeanAmplitude: 6
-  _armElevation:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: -1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.1
-      value: -1
-      inSlope: 1.5625
-      outSlope: 1.5625
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.42
-      value: 0
-      inSlope: 1.5625
-      outSlope: 1.5625
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.72
-      value: 0
-      inSlope: -1.7857145
-      outSlope: -1.7857145
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: -1
-      inSlope: -3.571429
-      outSlope: -3.571429
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _armSide:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _armExtension:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: -1
-      inSlope: 1.9999999
-      outSlope: 1.9999999
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.1
-      value: -0.8
-      inSlope: 2.25
-      outSlope: 2.25
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.42
-      value: 0
-      inSlope: 1.25
-      outSlope: 1.25
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.72
-      value: 0
-      inSlope: -1.7857145
-      outSlope: -1.7857145
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: -1
-      inSlope: -3.571429
-      outSlope: -3.571429
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _penlightElevation:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: -1
-      inSlope: 0.34965038
-      outSlope: 0.34965038
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.1
-      value: -0.96503496
-      inSlope: 1.6826924
-      outSlope: 1.6826924
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.42
-      value: 0
-      inSlope: 1.5078672
-      outSlope: 1.5078672
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.72
-      value: 0
-      inSlope: -1.7857145
-      outSlope: -1.7857145
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: -1
-      inSlope: -3.571429
-      outSlope: -3.571429
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _penlightSide:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _bodyLean:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: -2.3809524
-      outSlope: -2.3809524
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.42
-      value: 0
-      inSlope: -1.1904762
-      outSlope: -1.1904762
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.72
-      value: 0
-      inSlope: 1.7857145
-      outSlope: 1.7857145
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 3.571429
-      outSlope: 3.571429
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _bakedReferencePose:
-    _armDirectionExtension: {x: 0, y: 0.9063078, z: 0.42261824, w: 0.92}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9781476, z: 0.20791166, w: -0.034906585}
-  _bakedSamples:
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.82}
-    _penlightDirectionBodyLean: {x: 0, y: -0.9063078, z: 0.42261824, w: 0.06981317}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.8230735}
-    _penlightDirectionBodyLean: {x: 0, y: -0.9034208, z: 0.42875502, w: 0.065847576}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.82608217}
-    _penlightDirectionBodyLean: {x: 0, y: -0.9042118, z: 0.42708433, w: 0.06175322}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.8290832}
-    _penlightDirectionBodyLean: {x: 0, y: -0.90543115, z: 0.42449313, w: 0.057546284}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.8321338}
-    _penlightDirectionBodyLean: {x: 0, y: -0.90383893, z: 0.42787287, w: 0.053242944}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.8352912}
-    _penlightDirectionBodyLean: {x: 0, y: -0.8960132, z: 0.44402745, w: 0.048859365}
-  - _armDirectionExtension: {x: 0, y: -0.81915206, z: 0.57357645, w: 0.8386127}
-    _penlightDirectionBodyLean: {x: 0, y: -0.87764555, z: 0.4793102, w: 0.04441174}
-  - _armDirectionExtension: {x: 0, y: -0.7995873, z: 0.6005499, w: 0.84215623}
-    _penlightDirectionBodyLean: {x: 0, y: -0.84417325, z: 0.5360704, w: 0.039916225}
-  - _armDirectionExtension: {x: 0, y: -0.75780517, z: 0.6524809, w: 0.8459439}
-    _penlightDirectionBodyLean: {x: 0, y: -0.7973795, z: 0.6034782, w: 0.035389017}
-  - _armDirectionExtension: {x: 0, y: -0.7037329, z: 0.71046466, w: 0.849945}
-    _penlightDirectionBodyLean: {x: 0, y: -0.73624164, z: 0.6767187, w: 0.03084627}
-  - _armDirectionExtension: {x: 0, y: -0.63665813, z: 0.7711462, w: 0.8541259}
-    _penlightDirectionBodyLean: {x: 0, y: -0.659598, z: 0.7516186, w: 0.02630418}
-  - _armDirectionExtension: {x: 0, y: -0.5563293, z: 0.83096194, w: 0.85845315}
-    _penlightDirectionBodyLean: {x: 0, y: -0.5670149, z: 0.8237075, w: 0.021778898}
-  - _armDirectionExtension: {x: 0, y: -0.46312317, z: 0.88629395, w: 0.86289316}
-    _penlightDirectionBodyLean: {x: 0, y: -0.45899668, z: 0.888438, w: 0.01728663}
-  - _armDirectionExtension: {x: 0, y: -0.35814655, z: 0.9336654, w: 0.8674125}
-    _penlightDirectionBodyLean: {x: 0, y: -0.33709812, z: 0.9414695, w: 0.012843523}
-  - _armDirectionExtension: {x: 0, y: -0.24325775, z: 0.9699617, w: 0.87197757}
-    _penlightDirectionBodyLean: {x: 0, y: -0.20392397, z: 0.97898674, w: 0.008465779}
-  - _armDirectionExtension: {x: 0, y: -0.12100474, z: 0.99265194, w: 0.87655485}
-    _penlightDirectionBodyLean: {x: 0, y: -0.06300325, z: 0.9980133, w: 0.004169553}
-  - _armDirectionExtension: {x: 0, y: 0.005518042, z: 0.9999848, w: 0.88111085}
-    _penlightDirectionBodyLean: {x: 0, y: 0.08145037, z: 0.9966774, w: -0.000028970198}
-  - _armDirectionExtension: {x: 0, y: 0.13288033, z: 0.9911321, w: 0.885612}
-    _penlightDirectionBodyLean: {x: 0, y: 0.22486818, z: 0.9743892, w: -0.0041136183}
-  - _armDirectionExtension: {x: 0, y: 0.25756788, z: 0.9662602, w: 0.8900248}
-    _penlightDirectionBodyLean: {x: 0, y: 0.3627074, z: 0.93190306, w: -0.008068213}
-  - _armDirectionExtension: {x: 0, y: 0.3762491, z: 0.92651856, w: 0.89431566}
-    _penlightDirectionBodyLean: {x: 0, y: 0.490834, z: 0.87125313, w: -0.011876588}
-  - _armDirectionExtension: {x: 0, y: 0.48602203, z: 0.87394655, w: 0.89845115}
-    _penlightDirectionBodyLean: {x: 0, y: 0.6058621, z: 0.79556966, w: -0.015522551}
-  - _armDirectionExtension: {x: 0, y: 0.5846144, z: 0.8113113, w: 0.90239763}
-    _penlightDirectionBodyLean: {x: 0, y: 0.70540446, z: 0.708805, w: -0.01898993}
-  - _armDirectionExtension: {x: 0, y: 0.6705119, z: 0.7418988, w: 0.90612173}
-    _penlightDirectionBodyLean: {x: 0, y: 0.7882101, z: 0.6154063, w: -0.02226256}
-  - _armDirectionExtension: {x: 0, y: 0.7430065, z: 0.66928416, w: 0.90958977}
-    _penlightDirectionBodyLean: {x: 0, y: 0.85417855, z: 0.5199798, w: -0.025324255}
-  - _armDirectionExtension: {x: 0, y: 0.80215764, z: 0.5971123, w: 0.91276824}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9042546, z: 0.4269937, w: -0.028158855}
-  - _armDirectionExtension: {x: 0, y: 0.8486784, z: 0.52890927, w: 0.9156237}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9402266, z: 0.34054935, w: -0.030750155}
-  - _armDirectionExtension: {x: 0, y: 0.88375795, z: 0.46794426, w: 0.9181226}
-    _penlightDirectionBodyLean: {x: 0, y: 0.96445614, z: 0.2642429, w: -0.033082012}
-  - _armDirectionExtension: {x: 0, y: 0.90887016, z: 0.41707918, w: 0.92023355}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9795831, z: 0.20103964, w: -0.035139598}
-  - _armDirectionExtension: {x: 0, y: 0.92793775, z: 0.3727353, w: 0.9221114}
-    _penlightDirectionBodyLean: {x: 0, y: 0.98925066, z: 0.14622955, w: -0.037020907}
-  - _armDirectionExtension: {x: 0, y: 0.943294, z: 0.33195853, w: 0.92385775}
-    _penlightDirectionBodyLean: {x: 0, y: 0.99536806, z: 0.096137665, w: -0.038783}
-  - _armDirectionExtension: {x: 0, y: 0.95544845, z: 0.29515806, w: 0.92545897}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9986902, z: 0.05116524, w: -0.040410038}
-  - _armDirectionExtension: {x: 0, y: 0.96488297, z: 0.26268017, w: 0.9269014}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9999323, z: 0.0116352355, w: -0.041886155}
-  - _armDirectionExtension: {x: 0, y: 0.97203916, z: 0.23481889, w: 0.92817146}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.043195516}
-  - _armDirectionExtension: {x: 0, y: 0.9773081, z: 0.21182287, w: 0.9292555}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.044322256}
-  - _armDirectionExtension: {x: 0, y: 0.98102045, z: 0.19390419, w: 0.9301399}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.045250528}
-  - _armDirectionExtension: {x: 0, y: 0.9834379, z: 0.18124533, w: 0.93081105}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.045964483}
-  - _armDirectionExtension: {x: 0, y: 0.98474467, z: 0.17400569, w: 0.9312553}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.04644826}
-  - _armDirectionExtension: {x: 0, y: 0.98504025, z: 0.17232439, w: 0.93145907}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.046686012}
-  - _armDirectionExtension: {x: 0, y: 0.9843322, z: 0.17632379, w: 0.93140864}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.04666189}
-  - _armDirectionExtension: {x: 0, y: 0.9825293, z: 0.186108, w: 0.93109053}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.046360034}
-  - _armDirectionExtension: {x: 0, y: 0.9794349, z: 0.20176032, w: 0.93049103}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.045764595}
-  - _armDirectionExtension: {x: 0, y: 0.9747415, z: 0.22333595, w: 0.9295965}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.044859726}
-  - _armDirectionExtension: {x: 0, y: 0.96802545, z: 0.25085196, w: 0.92839336}
-    _penlightDirectionBodyLean: {x: -0, y: 1, z: -0.00000004371139, w: -0.043629568}
-  - _armDirectionExtension: {x: 0, y: 0.95874333, z: 0.2842731, w: 0.92686796}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9994269, z: 0.03384988, w: -0.042058278}
-  - _armDirectionExtension: {x: 0, y: 0.94623077, z: 0.3234924, w: 0.9250067}
-    _penlightDirectionBodyLean: {x: 0, y: 0.996602, z: 0.08236801, w: -0.040129993}
-  - _armDirectionExtension: {x: 0, y: 0.9297037, z: 0.3683083, w: 0.9227959}
-    _penlightDirectionBodyLean: {x: 0, y: 0.99034363, z: 0.13863419, w: -0.037828866}
-  - _armDirectionExtension: {x: 0, y: 0.9082645, z: 0.41839644, w: 0.92022204}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9792853, z: 0.20248522, w: -0.035139047}
-  - _armDirectionExtension: {x: 0, y: 0.8797439, z: 0.47544792, w: 0.91717625}
-    _penlightDirectionBodyLean: {x: 0, y: 0.96107876, z: 0.2762746, w: -0.031949546}
-  - _armDirectionExtension: {x: 0, y: 0.8412059, z: 0.5407149, w: 0.9135564}
-    _penlightDirectionBodyLean: {x: 0, y: 0.9322332, z: 0.361858, w: -0.028158864}
-  - _armDirectionExtension: {x: 0, y: 0.7911875, z: 0.61157364, w: 0.9094139}
-    _penlightDirectionBodyLean: {x: 0, y: 0.88990897, z: 0.45613816, w: -0.0238208}
-  - _armDirectionExtension: {x: 0, y: 0.72850096, z: 0.68504477, w: 0.9048007}
-    _penlightDirectionBodyLean: {x: 0, y: 0.8316154, z: 0.55535203, w: -0.018989943}
-  - _armDirectionExtension: {x: 0, y: 0.65240246, z: 0.7578727, w: 0.8997692}
-    _penlightDirectionBodyLean: {x: 0, y: 0.75550926, z: 0.655138, w: -0.013720888}
-  - _armDirectionExtension: {x: 0, y: 0.5627401, z: 0.8266339, w: 0.8943713}
-    _penlightDirectionBodyLean: {x: 0, y: 0.66066873, z: 0.7506776, w: -0.008068225}
-  - _armDirectionExtension: {x: 0, y: 0.4600605, z: 0.88788754, w: 0.8886592}
-    _penlightDirectionBodyLean: {x: 0, y: 0.5473094, z: 0.83693033, w: -0.0020865523}
-  - _armDirectionExtension: {x: 0, y: 0.34565946, z: 0.93836004, w: 0.88268507}
-    _penlightDirectionBodyLean: {x: 0, y: 0.4169094, z: 0.90894806, w: 0.0041695405}
-  - _armDirectionExtension: {x: 0, y: 0.22156882, z: 0.97514474, w: 0.876501}
-    _penlightDirectionBodyLean: {x: 0, y: 0.27222016, z: 0.962235, w: 0.010645466}
-  - _armDirectionExtension: {x: 0, y: 0.09047599, z: 0.99589866, w: 0.87015915}
-    _penlightDirectionBodyLean: {x: 0, y: 0.1171491, z: 0.99311435, w: 0.017286621}
-  - _armDirectionExtension: {x: 0, y: -0.044421554, z: 0.9990129, w: 0.86371166}
-    _penlightDirectionBodyLean: {x: 0, y: -0.043485526, z: 0.9990541, w: 0.024038425}
-  - _armDirectionExtension: {x: 0, y: -0.17961292, z: 0.98373735, w: 0.8572107}
-    _penlightDirectionBodyLean: {x: 0, y: -0.20430407, z: 0.97890747, w: 0.030846262}
-  - _armDirectionExtension: {x: 0, y: -0.3115075, z: 0.9502437, w: 0.85070825}
-    _penlightDirectionBodyLean: {x: 0, y: -0.35978845, z: 0.9330339, w: 0.037655566}
-  - _armDirectionExtension: {x: 0, y: -0.4366778, z: 0.89961797, w: 0.8442566}
-    _penlightDirectionBodyLean: {x: 0, y: -0.50472486, z: 0.86328024, w: 0.04441174}
-  - _armDirectionExtension: {x: 0, y: -0.5520919, z: 0.83378327, w: 0.8379078}
-    _penlightDirectionBodyLean: {x: 0, y: -0.63462055, z: 0.77282387, w: 0.051060166}
-  - _armDirectionExtension: {x: 0, y: -0.6553103, z: 0.7553598, w: 0.83171403}
-    _penlightDirectionBodyLean: {x: 0, y: -0.74604523, z: 0.6658953, w: 0.05754628}
-  - _armDirectionExtension: {x: 0, y: -0.74462813, z: 0.6674796, w: 0.8257274}
-    _penlightDirectionBodyLean: {x: 0, y: -0.83685863, z: 0.5474191, w: 0.06381549}
-  _bakeRevision: -136970563
-  _bakeFormatVersion: 2
+  _referencePose:
+    _bodyPosition: {x: 0, y: 0, z: 0, w: 0}
+    _bodyRotation: {x: 0.008726535, y: 0, z: 0, w: 0.9999619}
+    _handPosition: {x: 0.075, y: 0.43, z: 0.43, w: 0}
+    _penlightRotation: {x: 0.17364821, y: 0, z: 0, w: 0.98480785}
+  _samples:
+  - _bodyPosition: {x: 0, y: -0.010849642, z: 0.0032548928, w: 0}
+    _bodyRotation: {x: 0.03239123, y: 0, z: 0, w: 0.99947536}
+    _handPosition: {x: 0.11818587, y: 0.23077832, z: 0.84093606, w: 0}
+    _penlightRotation: {x: 0.83872527, y: 0, z: 0, w: 0.5445548}
+  - _bodyPosition: {x: 0, y: -0.010849997, z: 0.0032549992, w: 0}
+    _bodyRotation: {x: 0.032392003, y: 0, z: 0, w: 0.99947524}
+    _handPosition: {x: 0.118181214, y: 0.23079969, z: 0.8409246, w: 0}
+    _penlightRotation: {x: 0.8459035, y: 0, z: 0, w: 0.53333616}
+  - _bodyPosition: {x: 0, y: -0.0108495625, z: 0.003254869, w: 0}
+    _bodyRotation: {x: 0.032391056, y: 0, z: 0, w: 0.9994753}
+    _handPosition: {x: 0.11814994, y: 0.23094603, z: 0.8408474, w: 0}
+    _penlightRotation: {x: 0.8520583, y: 0, z: 0, w: 0.5234469}
+  - _bodyPosition: {x: 0, y: -0.010847452, z: 0.0032542355, w: 0}
+    _bodyRotation: {x: 0.032386452, y: 0, z: 0, w: 0.9994754}
+    _handPosition: {x: 0.11806914, y: 0.23133402, z: 0.84064615, w: 0}
+    _penlightRotation: {x: 0.8572662, y: 0, z: 0, w: 0.5148737}
+  - _bodyPosition: {x: 0, y: -0.0108424155, z: 0.003252725, w: 0}
+    _bodyRotation: {x: 0.03237547, y: 0, z: 0, w: 0.9994758}
+    _handPosition: {x: 0.11791945, y: 0.23207097, z: 0.8402698, w: 0}
+    _penlightRotation: {x: 0.86160415, y: 0, z: 0, w: 0.5075808}
+  - _bodyPosition: {x: 0, y: -0.010833313, z: 0.003249994, w: 0}
+    _bodyRotation: {x: 0.03235562, y: 0, z: 0, w: 0.99947643}
+    _handPosition: {x: 0.11768508, y: 0.23325527, z: 0.8396746, w: 0}
+    _penlightRotation: {x: 0.8651503, y: 0, z: 0, w: 0.5015127}
+  - _bodyPosition: {x: 0, y: -0.010819105, z: 0.0032457318, w: 0}
+    _bodyRotation: {x: 0.032324642, y: 0, z: 0, w: 0.99947745}
+    _handPosition: {x: 0.11735335, y: 0.23497546, z: 0.8388219, w: 0}
+    _penlightRotation: {x: 0.8679828, y: 0, z: 0, w: 0.4965945}
+  - _bodyPosition: {x: 0, y: -0.010798855, z: 0.0032396563, w: 0}
+    _bodyRotation: {x: 0.032280482, y: 0, z: 0, w: 0.9994789}
+    _handPosition: {x: 0.11691452, y: 0.23731104, z: 0.83767843, w: 0}
+    _penlightRotation: {x: 0.8701802, y: 0, z: 0, w: 0.49273366}
+  - _bodyPosition: {x: 0, y: -0.010771717, z: 0.003231515, w: 0}
+    _bodyRotation: {x: 0.03222131, y: 0, z: 0, w: 0.9994808}
+    _handPosition: {x: 0.11636155, y: 0.24033168, z: 0.83621484, w: 0}
+    _penlightRotation: {x: 0.87182164, y: 0, z: 0, w: 0.4898235}
+  - _bodyPosition: {x: 0, y: -0.010736945, z: 0.0032210834, w: 0}
+    _bodyRotation: {x: 0.032145485, y: 0, z: 0, w: 0.9994832}
+    _handPosition: {x: 0.11568979, y: 0.2440976, z: 0.83440506, w: 0}
+    _penlightRotation: {x: 0.8729869, y: 0, z: 0, w: 0.48774362}
+  - _bodyPosition: {x: 0, y: -0.0106938835, z: 0.0032081648, w: 0}
+    _bodyRotation: {x: 0.03205159, y: 0, z: 0, w: 0.9994862}
+    _handPosition: {x: 0.11489673, y: 0.24865946, z: 0.83222514, w: 0}
+    _penlightRotation: {x: 0.87375665, y: 0, z: 0, w: 0.48636338}
+  - _bodyPosition: {x: 0, y: -0.010641961, z: 0.0031925885, w: 0}
+    _bodyRotation: {x: 0.03193837, y: 0, z: 0, w: 0.99948984}
+    _handPosition: {x: 0.11398174, y: 0.25405836, z: 0.82965326, w: 0}
+    _penlightRotation: {x: 0.87421227, y: 0, z: 0, w: 0.48554394}
+  - _bodyPosition: {x: 0, y: -0.010580697, z: 0.003174209, w: 0}
+    _bodyRotation: {x: 0.031804785, y: 0, z: 0, w: 0.9994942}
+    _handPosition: {x: 0.1129459, y: 0.26032624, z: 0.8266684, w: 0}
+    _penlightRotation: {x: 0.8744361, y: 0, z: 0, w: 0.48514077}
+  - _bodyPosition: {x: 0, y: -0.010509689, z: 0.003152907, w: 0}
+    _bodyRotation: {x: 0.031649943, y: 0, z: 0, w: 0.999499}
+    _handPosition: {x: 0.111791685, y: 0.2674857, z: 0.8232502, w: 0}
+    _penlightRotation: {x: 0.8745106, y: 0, z: 0, w: 0.48500642}
+  - _bodyPosition: {x: 0, y: -0.010428617, z: 0.0031285852, w: 0}
+    _bodyRotation: {x: 0.03147316, y: 0, z: 0, w: 0.9995046}
+    _handPosition: {x: 0.11052286, y: 0.2755506, z: 0.8193785, w: 0}
+    _penlightRotation: {x: 0.8745183, y: 0, z: 0, w: 0.4849928}
+  - _bodyPosition: {x: 0, y: -0.010337234, z: 0.0031011703, w: 0}
+    _bodyRotation: {x: 0.031273898, y: 0, z: 0, w: 0.99951094}
+    _handPosition: {x: 0.109144114, y: 0.2845262, z: 0.81503314, w: 0}
+    _penlightRotation: {x: 0.87451625, y: 0, z: 0, w: 0.4849962}
+  - _bodyPosition: {x: 0, y: -0.010235369, z: 0.0030706108, w: 0}
+    _bodyRotation: {x: 0.031051766, y: 0, z: 0, w: 0.9995178}
+    _handPosition: {x: 0.107661106, y: 0.29440942, z: 0.81019366, w: 0}
+    _penlightRotation: {x: 0.8745045, y: 0, z: 0, w: 0.48501736}
+  - _bodyPosition: {x: 0, y: -0.010122923, z: 0.0030368771, w: 0}
+    _bodyRotation: {x: 0.030806564, y: 0, z: 0, w: 0.99952537}
+    _handPosition: {x: 0.10608009, y: 0.30518943, z: 0.8048393, w: 0}
+    _penlightRotation: {x: 0.87447196, y: 0, z: 0, w: 0.48507604}
+  - _bodyPosition: {x: 0, y: -0.009999862, z: 0.0029999586, w: 0}
+    _bodyRotation: {x: 0.030538213, y: 0, z: 0, w: 0.9995336}
+    _handPosition: {x: 0.10440787, y: 0.3168479, z: 0.7989491, w: 0}
+    _penlightRotation: {x: 0.8744051, y: 0, z: 0, w: 0.48519665}
+  - _bodyPosition: {x: 0, y: -0.009866216, z: 0.002959865, w: 0}
+    _bodyRotation: {x: 0.030246777, y: 0, z: 0, w: 0.9995425}
+    _handPosition: {x: 0.10265164, y: 0.3293593, z: 0.792502, w: 0}
+    _penlightRotation: {x: 0.87428796, y: 0, z: 0, w: 0.48540762}
+  - _bodyPosition: {x: 0, y: -0.009722083, z: 0.0029166248, w: 0}
+    _bodyRotation: {x: 0.029932467, y: 0, z: 0, w: 0.99955195}
+    _handPosition: {x: 0.10081884, y: 0.3426916, z: 0.78547674, w: 0}
+    _penlightRotation: {x: 0.8741032, y: 0, z: 0, w: 0.48574027}
+  - _bodyPosition: {x: 0, y: -0.009567611, z: 0.0028702836, w: 0}
+    _bodyRotation: {x: 0.029595613, y: 0, z: 0, w: 0.99956197}
+    _handPosition: {x: 0.09891709, y: 0.35680673, z: 0.7778528, w: 0}
+    _penlightRotation: {x: 0.8738319, y: 0, z: 0, w: 0.48622832}
+  - _bodyPosition: {x: 0, y: -0.009403012, z: 0.0028209037, w: 0}
+    _bodyRotation: {x: 0.029236667, y: 0, z: 0, w: 0.9995725}
+    _handPosition: {x: 0.09695403, y: 0.37166077, z: 0.7696101, w: 0}
+    _penlightRotation: {x: 0.8734534, y: 0, z: 0, w: 0.4869078}
+  - _bodyPosition: {x: 0, y: -0.009228545, z: 0.0027685638, w: 0}
+    _bodyRotation: {x: 0.028856205, y: 0, z: 0, w: 0.9995836}
+    _handPosition: {x: 0.09493716, y: 0.3872048, z: 0.76072985, w: 0}
+    _penlightRotation: {x: 0.8729464, y: 0, z: 0, w: 0.48781615}
+  - _bodyPosition: {x: 0, y: -0.009044526, z: 0.0027133578, w: 0}
+    _bodyRotation: {x: 0.0284549, y: 0, z: 0, w: 0.9995951}
+    _handPosition: {x: 0.09287388, y: 0.40338516, z: 0.7511945, w: 0}
+    _penlightRotation: {x: 0.8722885, y: 0, z: 0, w: 0.48899177}
+  - _bodyPosition: {x: 0, y: -0.00885131, z: 0.0026553932, w: 0}
+    _bodyRotation: {x: 0.028033542, y: 0, z: 0, w: 0.9996071}
+    _handPosition: {x: 0.090771355, y: 0.42014405, z: 0.7409888, w: 0}
+    _penlightRotation: {x: 0.8714565, y: 0, z: 0, w: 0.4904728}
+  - _bodyPosition: {x: 0, y: -0.008649304, z: 0.0025947911, w: 0}
+    _bodyRotation: {x: 0.027592998, y: 0, z: 0, w: 0.99961925}
+    _handPosition: {x: 0.08863636, y: 0.4374201, z: 0.7300998, w: 0}
+    _penlightRotation: {x: 0.8704267, y: 0, z: 0, w: 0.49229804}
+  - _bodyPosition: {x: 0, y: -0.008438951, z: 0.0025316854, w: 0}
+    _bodyRotation: {x: 0.02713425, y: 0, z: 0, w: 0.9996318}
+    _handPosition: {x: 0.0864753, y: 0.45514905, z: 0.71851724, w: 0}
+    _penlightRotation: {x: 0.8691749, y: 0, z: 0, w: 0.49450484}
+  - _bodyPosition: {x: 0, y: -0.008220736, z: 0.0024662209, w: 0}
+    _bodyRotation: {x: 0.026658354, y: 0, z: 0, w: 0.9996447}
+    _handPosition: {x: 0.08429411, y: 0.4732638, z: 0.7062345, w: 0}
+    _penlightRotation: {x: 0.86767614, y: 0, z: 0, w: 0.4971299}
+  - _bodyPosition: {x: 0, y: -0.007995177, z: 0.0023985533, w: 0}
+    _bodyRotation: {x: 0.026166433, y: 0, z: 0, w: 0.9996577}
+    _handPosition: {x: 0.08209819, y: 0.49169567, z: 0.69324845, w: 0}
+    _penlightRotation: {x: 0.86590546, y: 0, z: 0, w: 0.50020766}
+  - _bodyPosition: {x: 0, y: -0.007762827, z: 0.0023288482, w: 0}
+    _bodyRotation: {x: 0.025659692, y: 0, z: 0, w: 0.99967074}
+    _handPosition: {x: 0.07989241, y: 0.51037407, z: 0.6795601, w: 0}
+    _penlightRotation: {x: 0.8638372, y: 0, z: 0, w: 0.5037711}
+  - _bodyPosition: {x: 0, y: -0.007524266, z: 0.0022572798, w: 0}
+    _bodyRotation: {x: 0.0251394, y: 0, z: 0, w: 0.999684}
+    _handPosition: {x: 0.07768095, y: 0.5292282, z: 0.66517514, w: 0}
+    _penlightRotation: {x: 0.86144555, y: 0, z: 0, w: 0.50785}
+  - _bodyPosition: {x: 0, y: -0.007280105, z: 0.0021840313, w: 0}
+    _bodyRotation: {x: 0.024606885, y: 0, z: 0, w: 0.9996972}
+    _handPosition: {x: 0.07546748, y: 0.5481866, z: 0.65010375, w: 0}
+    _penlightRotation: {x: 0.8587043, y: 0, z: 0, w: 0.5124713}
+  - _bodyPosition: {x: 0, y: -0.0070309737, z: 0.0021092922, w: 0}
+    _bodyRotation: {x: 0.024063528, y: 0, z: 0, w: 0.99971044}
+    _handPosition: {x: 0.07325498, y: 0.56717825, z: 0.6343615, w: 0}
+    _penlightRotation: {x: 0.8555875, y: 0, z: 0, w: 0.5176583}
+  - _bodyPosition: {x: 0, y: -0.0067775254, z: 0.0020332576, w: 0}
+    _bodyRotation: {x: 0.023510745, y: 0, z: 0, w: 0.9997236}
+    _handPosition: {x: 0.0710458, y: 0.58613294, z: 0.6179688, w: 0}
+    _penlightRotation: {x: 0.85206836, y: 0, z: 0, w: 0.5234307}
+  - _bodyPosition: {x: 0, y: -0.006520432, z: 0.0019561297, w: 0}
+    _bodyRotation: {x: 0.022950005, y: 0, z: 0, w: 0.9997366}
+    _handPosition: {x: 0.068841755, y: 0.60498196, z: 0.600952, w: 0}
+    _penlightRotation: {x: 0.8481202, y: 0, z: 0, w: 0.5298038}
+  - _bodyPosition: {x: 0, y: -0.0062603806, z: 0.0018781143, w: 0}
+    _bodyRotation: {x: 0.022382809, y: 0, z: 0, w: 0.9997495}
+    _handPosition: {x: 0.06664409, y: 0.6236584, z: 0.58334255, w: 0}
+    _penlightRotation: {x: 0.8437166, y: 0, z: 0, w: 0.5367888}
+  - _bodyPosition: {x: 0, y: -0.005998069, z: 0.0017994207, w: 0}
+    _bodyRotation: {x: 0.021810671, y: 0, z: 0, w: 0.9997621}
+    _handPosition: {x: 0.06445352, y: 0.6420982, z: 0.5651774, w: 0}
+    _penlightRotation: {x: 0.83883125, y: 0, z: 0, w: 0.5443915}
+  - _bodyPosition: {x: 0, y: -0.0057342043, z: 0.0017202614, w: 0}
+    _bodyRotation: {x: 0.021235144, y: 0, z: 0, w: 0.9997745}
+    _handPosition: {x: 0.06227043, y: 0.6602398, z: 0.54649913, w: 0}
+    _penlightRotation: {x: 0.833438, y: 0, z: 0, w: 0.5526132}
+  - _bodyPosition: {x: 0, y: -0.005469503, z: 0.0016408508, w: 0}
+    _bodyRotation: {x: 0.02065778, y: 0, z: 0, w: 0.9997866}
+    _handPosition: {x: 0.06009481, y: 0.67802554, z: 0.5273555, w: 0}
+    _penlightRotation: {x: 0.827511, y: 0, z: 0, w: 0.5614495}
+  - _bodyPosition: {x: 0, y: -0.00520468, z: 0.0015614041, w: 0}
+    _bodyRotation: {x: 0.02008015, y: 0, z: 0, w: 0.9997985}
+    _handPosition: {x: 0.057926472, y: 0.69540125, z: 0.50779957, w: 0}
+    _penlightRotation: {x: 0.8210257, y: 0, z: 0, w: 0.5708912}
+  - _bodyPosition: {x: 0, y: -0.004940454, z: 0.0014821361, w: 0}
+    _bodyRotation: {x: 0.019503808, y: 0, z: 0, w: 0.9998098}
+    _handPosition: {x: 0.05576506, y: 0.7123172, z: 0.48788893, w: 0}
+    _penlightRotation: {x: 0.8139584, y: 0, z: 0, w: 0.58092314}
+  - _bodyPosition: {x: 0, y: -0.004677541, z: 0.0014032625, w: 0}
+    _bodyRotation: {x: 0.018930329, y: 0, z: 0, w: 0.9998208}
+    _handPosition: {x: 0.053610265, y: 0.7287288, z: 0.46768588, w: 0}
+    _penlightRotation: {x: 0.8062869, y: 0, z: 0, w: 0.5915247}
+  - _bodyPosition: {x: 0, y: -0.0044166516, z: 0.0013249955, w: 0}
+    _bodyRotation: {x: 0.018361254, y: 0, z: 0, w: 0.99983144}
+    _handPosition: {x: 0.0514619, y: 0.74459535, z: 0.44725704, w: 0}
+    _penlightRotation: {x: 0.79799044, y: 0, z: 0, w: 0.60267013}
+  - _bodyPosition: {x: 0, y: -0.004158487, z: 0.001247546, w: 0}
+    _bodyRotation: {x: 0.017798118, y: 0, z: 0, w: 0.99984163}
+    _handPosition: {x: 0.049320035, y: 0.7598822, z: 0.42667264, w: 0}
+    _penlightRotation: {x: 0.78905094, y: 0, z: 0, w: 0.6143278}
+  - _bodyPosition: {x: 0, y: -0.0039037387, z: 0.0011711216, w: 0}
+    _bodyRotation: {x: 0.017242428, y: 0, z: 0, w: 0.99985135}
+    _handPosition: {x: 0.047185045, y: 0.7745597, z: 0.4060056, w: 0}
+    _penlightRotation: {x: 0.77945256, y: 0, z: 0, w: 0.62646127}
+  - _bodyPosition: {x: 0, y: -0.0036530835, z: 0.0010959251, w: 0}
+    _bodyRotation: {x: 0.016695663, y: 0, z: 0, w: 0.99986064}
+    _handPosition: {x: 0.045057856, y: 0.78860337, z: 0.385332, w: 0}
+    _penlightRotation: {x: 0.76918286, y: 0, z: 0, w: 0.6390289}
+  - _bodyPosition: {x: 0, y: -0.003407179, z: 0.0010221537, w: 0}
+    _bodyRotation: {x: 0.016159255, y: 0, z: 0, w: 0.9998695}
+    _handPosition: {x: 0.042939965, y: 0.8019946, z: 0.3647297, w: 0}
+    _penlightRotation: {x: 0.7582326, y: 0, z: 0, w: 0.6519842}
+  - _bodyPosition: {x: 0, y: -0.003166668, z: 0.0009500004, w: 0}
+    _bodyRotation: {x: 0.01563461, y: 0, z: 0, w: 0.99987787}
+    _handPosition: {x: 0.04083348, y: 0.8147199, z: 0.34427768, w: 0}
+    _penlightRotation: {x: 0.7465971, y: 0, z: 0, w: 0.66527647}
+  - _bodyPosition: {x: 0, y: -0.0029321648, z: 0.00087964954, w: 0}
+    _bodyRotation: {x: 0.015123064, y: 0, z: 0, w: 0.99988574}
+    _handPosition: {x: 0.038741335, y: 0.82677096, z: 0.32405606, w: 0}
+    _penlightRotation: {x: 0.73427594, y: 0, z: 0, w: 0.6788511}
+  - _bodyPosition: {x: 0, y: -0.0027042602, z: 0.0008112781, w: 0}
+    _bodyRotation: {x: 0.014625907, y: 0, z: 0, w: 0.9998931}
+    _handPosition: {x: 0.036667146, y: 0.8381447, z: 0.30414426, w: 0}
+    _penlightRotation: {x: 0.7212735, y: 0, z: 0, w: 0.6926504}
+  - _bodyPosition: {x: 0, y: -0.0024835186, z: 0.0007450556, w: 0}
+    _bodyRotation: {x: 0.014144372, y: 0, z: 0, w: 0.9999}
+    _handPosition: {x: 0.034615375, y: 0.84884274, z: 0.28462127, w: 0}
+    _penlightRotation: {x: 0.70759994, y: 0, z: 0, w: 0.7066133}
+  - _bodyPosition: {x: 0, y: -0.0022704685, z: 0.00068114046, w: 0}
+    _bodyRotation: {x: 0.013679612, y: 0, z: 0, w: 0.9999064}
+    _handPosition: {x: 0.032591294, y: 0.85887074, z: 0.26556465, w: 0}
+    _penlightRotation: {x: 0.69327086, y: 0, z: 0, w: 0.72067714}
+  - _bodyPosition: {x: 0, y: -0.0020656053, z: 0.0006196816, w: 0}
+    _bodyRotation: {x: 0.013232711, y: 0, z: 0, w: 0.99991244}
+    _handPosition: {x: 0.03060088, y: 0.8682388, z: 0.24704923, w: 0}
+    _penlightRotation: {x: 0.6783083, y: 0, z: 0, w: 0.73477745}
+  - _bodyPosition: {x: 0, y: -0.0018693894, z: 0.00056081684, w: 0}
+    _bodyRotation: {x: 0.012804671, y: 0, z: 0, w: 0.99991804}
+    _handPosition: {x: 0.028650828, y: 0.8769604, z: 0.22914708, w: 0}
+    _penlightRotation: {x: 0.66274035, y: 0, z: 0, w: 0.7488493}
+  - _bodyPosition: {x: 0, y: -0.0016822373, z: 0.0005046712, w: 0}
+    _bodyRotation: {x: 0.012396401, y: 0, z: 0, w: 0.99992317}
+    _handPosition: {x: 0.02674845, y: 0.88505185, z: 0.21192673, w: 0}
+    _penlightRotation: {x: 0.64660174, y: 0, z: 0, w: 0.76282775}
+  - _bodyPosition: {x: 0, y: -0.0015045239, z: 0.00045135716, w: 0}
+    _bodyRotation: {x: 0.012008719, y: 0, z: 0, w: 0.9999279}
+    _handPosition: {x: 0.024901506, y: 0.892532, z: 0.19545199, w: 0}
+    _penlightRotation: {x: 0.62993395, y: 0, z: 0, w: 0.77664876}
+  - _bodyPosition: {x: 0, y: -0.0013365778, z: 0.00040097334, w: 0}
+    _bodyRotation: {x: 0.011642344, y: 0, z: 0, w: 0.9999322}
+    _handPosition: {x: 0.023118049, y: 0.89942193, z: 0.17978114, w: 0}
+    _penlightRotation: {x: 0.6127847, y: 0, z: 0, w: 0.79024994}
+  - _bodyPosition: {x: 0, y: -0.001178677, z: 0.0003536031, w: 0}
+    _bodyRotation: {x: 0.011297881, y: 0, z: 0, w: 0.99993616}
+    _handPosition: {x: 0.021406395, y: 0.90574366, z: 0.16496761, w: 0}
+    _penlightRotation: {x: 0.59520835, y: 0, z: 0, w: 0.8035714}
+  - _bodyPosition: {x: 0, y: -0.0010310491, z: 0.00030931475, w: 0}
+    _bodyRotation: {x: 0.0109758265, y: 0, z: 0, w: 0.99993986}
+    _handPosition: {x: 0.01977472, y: 0.91152066, z: 0.1510575, w: 0}
+    _penlightRotation: {x: 0.57726556, y: 0, z: 0, w: 0.8165565}
+  - _bodyPosition: {x: 0, y: -0.000893867, z: 0.00026816007, w: 0}
+    _bodyRotation: {x: 0.010676558, y: 0, z: 0, w: 0.999943}
+    _handPosition: {x: 0.018230995, y: 0.9167763, z: 0.13809013, w: 0}
+    _penlightRotation: {x: 0.5590226, y: 0, z: 0, w: 0.8291524}
+  - _bodyPosition: {x: 0, y: -0.00076724234, z: 0.00023017272, w: 0}
+    _bodyRotation: {x: 0.010400322, y: 0, z: 0, w: 0.99994594}
+    _handPosition: {x: 0.016782703, y: 0.9215344, z: 0.12609705, w: 0}
+    _penlightRotation: {x: 0.54055125, y: 0, z: 0, w: 0.8413111}
+  - _bodyPosition: {x: 0, y: -0.00065122964, z: 0.00019536889, w: 0}
+    _bodyRotation: {x: 0.010147235, y: 0, z: 0, w: 0.9999485}
+    _handPosition: {x: 0.015436657, y: 0.92581797, z: 0.11510178, w: 0}
+    _penlightRotation: {x: 0.5219282, y: 0, z: 0, w: 0.85298944}
+  - _bodyPosition: {x: 0, y: -0.0005458178, z: 0.00016374532, w: 0}
+    _bodyRotation: {x: 0.009917273, y: 0, z: 0, w: 0.9999508}
+    _handPosition: {x: 0.014198744, y: 0.92964995, z: 0.10511901, w: 0}
+    _penlightRotation: {x: 0.50323427, y: 0, z: 0, w: 0.86415005}
+  - _bodyPosition: {x: 0, y: -0.00045092852, z: 0.00013527856, w: 0}
+    _bodyRotation: {x: 0.009710267, y: 0, z: 0, w: 0.99995285}
+    _handPosition: {x: 0.013073705, y: 0.9330522, z: 0.09615422, w: 0}
+    _penlightRotation: {x: 0.48455337, y: 0, z: 0, w: 0.8747617}
+  - _bodyPosition: {x: 0, y: -0.00036641513, z: 0.00010992454, w: 0}
+    _bodyRotation: {x: 0.009525895, y: 0, z: 0, w: 0.99995464}
+    _handPosition: {x: 0.012064923, y: 0.93604594, z: 0.08820317, w: 0}
+    _penlightRotation: {x: 0.46597257, y: 0, z: 0, w: 0.8847992}
+  - _bodyPosition: {x: 0, y: -0.00029205703, z: 0.0000876171, w: 0}
+    _bodyRotation: {x: 0.00936368, y: 0, z: 0, w: 0.99995625}
+    _handPosition: {x: 0.01117424, y: 0.93865186, z: 0.08125159, w: 0}
+    _penlightRotation: {x: 0.44758025, y: 0, z: 0, w: 0.8942438}
+  - _bodyPosition: {x: 0, y: -0.00022755994, z: 0.00006826798, w: 0}
+    _bodyRotation: {x: 0.009222976, y: 0, z: 0, w: 0.99995756}
+    _handPosition: {x: 0.010401841, y: 0.9408901, z: 0.07527503, w: 0}
+    _penlightRotation: {x: 0.42946538, y: 0, z: 0, w: 0.9030833}
+  - _bodyPosition: {x: 0, y: -0.00017254945, z: 0.000051764833, w: 0}
+    _bodyRotation: {x: 0.009102965, y: 0, z: 0, w: 0.9999586}
+    _handPosition: {x: 0.00974605, y: 0.94278085, z: 0.07023824, w: 0}
+    _penlightRotation: {x: 0.4117173, y: 0, z: 0, w: 0.91131175}
+  - _bodyPosition: {x: 0, y: -0.000126569, z: 0.000037970694, w: 0}
+    _bodyRotation: {x: 0.009002655, y: 0, z: 0, w: 0.99995947}
+    _handPosition: {x: 0.00920324, y: 0.94434464, z: 0.06609483, w: 0}
+    _penlightRotation: {x: 0.39442328, y: 0, z: 0, w: 0.91892886}
+  - _bodyPosition: {x: 0, y: -0.00008908047, z: 0.000026724143, w: 0}
+    _bodyRotation: {x: 0.008920872, y: 0, z: 0, w: 0.9999603}
+    _handPosition: {x: 0.0087678125, y: 0.94560343, z: 0.062787384, w: 0}
+    _penlightRotation: {x: 0.3776689, y: 0, z: 0, w: 0.92594075}
+  - _bodyPosition: {x: 0, y: -0.000059457263, z: 0.00001783718, w: 0}
+    _bodyRotation: {x: 0.008856246, y: 0, z: 0, w: 0.9999608}
+    _handPosition: {x: 0.008432208, y: 0.9465808, z: 0.06024752, w: 0}
+    _penlightRotation: {x: 0.3615362, y: 0, z: 0, w: 0.9323581}
+  - _bodyPosition: {x: 0, y: -0.000036980844, z: 0.000011094252, w: 0}
+    _bodyRotation: {x: 0.008807213, y: 0, z: 0, w: 0.9999613}
+    _handPosition: {x: 0.008186826, y: 0.9473032, z: 0.0583951, w: 0}
+    _penlightRotation: {x: 0.34610283, y: 0, z: 0, w: 0.9381966}
+  - _bodyPosition: {x: 0, y: -0.000020842182, z: 0.000006252655, w: 0}
+    _bodyRotation: {x: 0.008772003, y: 0, z: 0, w: 0.99996156}
+    _handPosition: {x: 0.0080201905, y: 0.9478006, z: 0.057138883, w: 0}
+    _penlightRotation: {x: 0.3314411, y: 0, z: 0, w: 0.9434759}
+  - _bodyPosition: {x: 0, y: -0.000010135892, z: 0.0000030407678, w: 0}
+    _bodyRotation: {x: 0.008748648, y: 0, z: 0, w: 0.99996173}
+    _handPosition: {x: 0.007918965, y: 0.9481077, z: 0.056376085, w: 0}
+    _penlightRotation: {x: 0.31761712, y: 0, z: 0, w: 0.94821906}
+  - _bodyPosition: {x: 0, y: -0.0000038556873, z: 0.0000011567063, w: 0}
+    _bodyRotation: {x: 0.008734947, y: 0, z: 0, w: 0.99996185}
+    _handPosition: {x: 0.007868101, y: 0.94826484, z: 0.0559926, w: 0}
+    _penlightRotation: {x: 0.30468947, y: 0, z: 0, w: 0.95245177}
+  - _bodyPosition: {x: 0, y: -0.0000008950472, z: 0.00000026851416, w: 0}
+    _bodyRotation: {x: 0.008728488, y: 0, z: 0, w: 0.9999619}
+    _handPosition: {x: 0.007850893, y: 0.94831896, z: 0.05586275, w: 0}
+    _penlightRotation: {x: 0.29270864, y: 0, z: 0, w: 0.9562018}
+  - _bodyPosition: {x: 0, y: -0.000000043329596, z: 0.000000012998879, w: 0}
+    _bodyRotation: {x: 0.00872663, y: 0, z: 0, w: 0.9999619}
+    _handPosition: {x: 0.007849323, y: 0.9483244, z: 0.055850804, w: 0}
+    _penlightRotation: {x: 0.2817158, y: 0, z: 0, w: 0.959498}
+  - _bodyPosition: {x: 0, y: -0.00000006467104, z: 0.000000019401313, w: 0}
+    _bodyRotation: {x: 0.008726677, y: 0, z: 0, w: 0.9999619}
+    _handPosition: {x: 0.00787042, y: 0.9483184, z: 0.055995505, w: 0}
+    _penlightRotation: {x: 0.2717423, y: 0, z: 0, w: 0.96237016}
+  - _bodyPosition: {x: 0, y: -0.0000022751274, z: 0.00000068253814, w: 0}
+    _bodyRotation: {x: 0.008731499, y: 0, z: 0, w: 0.999962}
+    _handPosition: {x: 0.007975952, y: 0.9482865, z: 0.056719877, w: 0}
+    _penlightRotation: {x: 0.2628085, y: 0, z: 0, w: 0.96484804}
+  - _bodyPosition: {x: 0, y: -0.000010815585, z: 0.0000032446756, w: 0}
+    _bodyRotation: {x: 0.00875013, y: 0, z: 0, w: 0.99996173}
+    _handPosition: {x: 0.008227434, y: 0.94820267, z: 0.058445934, w: 0}
+    _penlightRotation: {x: 0.25492284, y: 0, z: 0, w: 0.9669614}
+  - _bodyPosition: {x: 0, y: -0.00002948094, z: 0.000008844282, w: 0}
+    _bodyRotation: {x: 0.00879085, y: 0, z: 0, w: 0.9999614}
+    _handPosition: {x: 0.008678788, y: 0.9480346, z: 0.0615398, w: 0}
+    _penlightRotation: {x: 0.2480815, y: 0, z: 0, w: 0.9687393}
+  - _bodyPosition: {x: 0, y: -0.000061553896, z: 0.00001846617, w: 0}
+    _bodyRotation: {x: 0.008860821, y: 0, z: 0, w: 0.99996084}
+    _handPosition: {x: 0.009377038, y: 0.9477398, z: 0.066312715, w: 0}
+    _penlightRotation: {x: 0.24226665, y: 0, z: 0, w: 0.9702097}
+  - _bodyPosition: {x: 0, y: -0.00010982371, z: 0.000032947115, w: 0}
+    _bodyRotation: {x: 0.008966125, y: 0, z: 0, w: 0.9999598}
+    _handPosition: {x: 0.010362952, y: 0.9472623, z: 0.0730226, w: 0}
+    _penlightRotation: {x: 0.23744668, y: 0, z: 0, w: 0.97140056}
+  - _bodyPosition: {x: 0, y: -0.00017661079, z: 0.00005298324, w: 0}
+    _bodyRotation: {x: 0.009111825, y: 0, z: 0, w: 0.9999585}
+    _handPosition: {x: 0.011671703, y: 0.9465289, z: 0.08187691, w: 0}
+    _penlightRotation: {x: 0.23357458, y: 0, z: 0, w: 0.9723389}
+  - _bodyPosition: {x: 0, y: -0.00026378734, z: 0.0000791362, w: 0}
+    _bodyRotation: {x: 0.009302007, y: 0, z: 0, w: 0.9999567}
+    _handPosition: {x: 0.013332861, y: 0.9454473, z: 0.09303263, w: 0}
+    _penlightRotation: {x: 0.23058729, y: 0, z: 0, w: 0.97305167}
+  - _bodyPosition: {x: 0, y: -0.00037279882, z: 0.00011183965, w: 0}
+    _bodyRotation: {x: 0.009539823, y: 0, z: 0, w: 0.9999545}
+    _handPosition: {x: 0.015370378, y: 0.94390476, z: 0.106597655, w: 0}
+    _penlightRotation: {x: 0.22840492, y: 0, z: 0, w: 0.97356623}
+  - _bodyPosition: {x: 0, y: -0.00050468894, z: 0.00015140668, w: 0}
+    _bodyRotation: {x: 0.009827548, y: 0, z: 0, w: 0.9999517}
+    _handPosition: {x: 0.01780223, y: 0.9417677, z: 0.12263147, w: 0}
+    _penlightRotation: {x: 0.22692989, y: 0, z: 0, w: 0.9739111}
+  - _bodyPosition: {x: 0, y: -0.0006601193, z: 0.0001980358, w: 0}
+    _bodyRotation: {x: 0.010166628, y: 0, z: 0, w: 0.9999483}
+    _handPosition: {x: 0.020639895, y: 0.9388837, z: 0.141146, w: 0}
+    _penlightRotation: {x: 0.22604579, y: 0, z: 0, w: 0.9741167}
+  - _bodyPosition: {x: 0, y: -0.00083939324, z: 0.00025181798, w: 0}
+    _bodyRotation: {x: 0.010557721, y: 0, z: 0, w: 0.99994427}
+    _handPosition: {x: 0.023887582, y: 0.9350842, z: 0.16210549, w: 0}
+    _penlightRotation: {x: 0.22561672, y: 0, z: 0, w: 0.97421616}
+  - _bodyPosition: {x: 0, y: -0.0010424765, z: 0.00031274295, w: 0}
+    _bodyRotation: {x: 0.011000756, y: 0, z: 0, w: 0.9999395}
+    _handPosition: {x: 0.027541546, y: 0.93018895, z: 0.18542774, w: 0}
+    _penlightRotation: {x: 0.22548631, y: 0, z: 0, w: 0.97424644}
+  - _bodyPosition: {x: 0, y: -0.0012690211, z: 0.00038070633, w: 0}
+    _bodyRotation: {x: 0.011494967, y: 0, z: 0, w: 0.99993396}
+    _handPosition: {x: 0.031589396, y: 0.924011, z: 0.21098508, w: 0}
+    _penlightRotation: {x: 0.2254832, y: 0, z: 0, w: 0.97424716}
+  - _bodyPosition: {x: 0, y: -0.0015183849, z: 0.00045551546, w: 0}
+    _bodyRotation: {x: 0.012038957, y: 0, z: 0, w: 0.9999275}
+    _handPosition: {x: 0.036009472, y: 0.9163642, z: 0.23860563, w: 0}
+    _penlightRotation: {x: 0.22571152, y: 0, z: 0, w: 0.9741943}
+  - _bodyPosition: {x: 0, y: -0.0017896586, z: 0.0005368976, w: 0}
+    _bodyRotation: {x: 0.012630739, y: 0, z: 0, w: 0.99992025}
+    _handPosition: {x: 0.04077052, y: 0.9070697, z: 0.26807588, w: 0}
+    _penlightRotation: {x: 0.22663124, y: 0, z: 0, w: 0.97398067}
+  - _bodyPosition: {x: 0, y: -0.002081682, z: 0.0006245046, w: 0}
+    _bodyRotation: {x: 0.013267783, y: 0, z: 0, w: 0.9999121}
+    _handPosition: {x: 0.045831792, y: 0.8959643, z: 0.29914445, w: 0}
+    _penlightRotation: {x: 0.22865164, y: 0, z: 0, w: 0.9735083}
+  - _bodyPosition: {x: 0, y: -0.0023930704, z: 0.0007179211, w: 0}
+    _bodyRotation: {x: 0.013947063, y: 0, z: 0, w: 0.9999027}
+    _handPosition: {x: 0.051143263, y: 0.8829083, z: 0.33152527, w: 0}
+    _penlightRotation: {x: 0.2321046, y: 0, z: 0, w: 0.9726908}
+  - _bodyPosition: {x: 0, y: -0.0027222356, z: 0.0008166707, w: 0}
+    _bodyRotation: {x: 0.0146651175, y: 0, z: 0, w: 0.9998925}
+    _handPosition: {x: 0.056646552, y: 0.8677927, z: 0.36490443, w: 0}
+    _penlightRotation: {x: 0.23724969, y: 0, z: 0, w: 0.9714487}
+  - _bodyPosition: {x: 0, y: -0.0030674094, z: 0.0009202229, w: 0}
+    _bodyRotation: {x: 0.015418084, y: 0, z: 0, w: 0.99988115}
+    _handPosition: {x: 0.06227615, y: 0.8505467, z: 0.39894593, w: 0}
+    _penlightRotation: {x: 0.24427877, y: 0, z: 0, w: 0.96970505}
+  - _bodyPosition: {x: 0, y: -0.003426661, z: 0.0010279983, w: 0}
+    _bodyRotation: {x: 0.016201751, y: 0, z: 0, w: 0.99986875}
+    _handPosition: {x: 0.067961186, y: 0.8311424, z: 0.43329987, w: 0}
+    _penlightRotation: {x: 0.2533208, y: 0, z: 0, w: 0.9673823}
+  - _bodyPosition: {x: 0, y: -0.003797926, z: 0.0011393778, w: 0}
+    _bodyRotation: {x: 0.017011615, y: 0, z: 0, w: 0.9998553}
+    _handPosition: {x: 0.07362727, y: 0.8096003, z: 0.46761003, w: 0}
+    _penlightRotation: {x: 0.2644461, y: 0, z: 0, w: 0.9644005}
+  - _bodyPosition: {x: 0, y: -0.004179023, z: 0.001253707, w: 0}
+    _bodyRotation: {x: 0.017842915, y: 0, z: 0, w: 0.9998408}
+    _handPosition: {x: 0.079199076, y: 0.7859907, z: 0.50152385, w: 0}
+    _penlightRotation: {x: 0.27767113, y: 0, z: 0, w: 0.9606762}
+  - _bodyPosition: {x: 0, y: -0.0045676795, z: 0.0013703038, w: 0}
+    _bodyRotation: {x: 0.01869069, y: 0, z: 0, w: 0.9998254}
+    _handPosition: {x: 0.08460271, y: 0.7604352, z: 0.5347008, w: 0}
+    _penlightRotation: {x: 0.29296282, y: 0, z: 0, w: 0.9561238}
+  - _bodyPosition: {x: 0, y: -0.0049615516, z: 0.0014884657, w: 0}
+    _bodyRotation: {x: 0.019549826, y: 0, z: 0, w: 0.9998089}
+    _handPosition: {x: 0.08976822, y: 0.733105, z: 0.56682116, w: 0}
+    _penlightRotation: {x: 0.310243, y: 0, z: 0, w: 0.9506573}
+  - _bodyPosition: {x: 0, y: -0.0053582494, z: 0.0016074748, w: 0}
+    _bodyRotation: {x: 0.020415118, y: 0, z: 0, w: 0.9997917}
+    _handPosition: {x: 0.0946321, y: 0.7042173, z: 0.59759474, w: 0}
+    _penlightRotation: {x: 0.3293933, y: 0, z: 0, w: 0.9441928}
+  - _bodyPosition: {x: 0, y: -0.0057553533, z: 0.001726606, w: 0}
+    _bodyRotation: {x: 0.021281274, y: 0, z: 0, w: 0.9997736}
+    _handPosition: {x: 0.0991393, y: 0.6740309, z: 0.6267674, w: 0}
+    _penlightRotation: {x: 0.3502598, y: 0, z: 0, w: 0.9366526}
+  - _bodyPosition: {x: 0, y: -0.0061504436, z: 0.0018451331, w: 0}
+    _bodyRotation: {x: 0.022143025, y: 0, z: 0, w: 0.9997549}
+    _handPosition: {x: 0.10324522, y: 0.6428385, z: 0.6541275, w: 0}
+    _penlightRotation: {x: 0.372658, y: 0, z: 0, w: 0.92796886}
+  - _bodyPosition: {x: 0, y: -0.0065411176, z: 0.0019623353, w: 0}
+    _bodyRotation: {x: 0.022995124, y: 0, z: 0, w: 0.9997356}
+    _handPosition: {x: 0.10691686, y: 0.61095977, z: 0.67951, w: 0}
+    _penlightRotation: {x: 0.39637825, y: 0, z: 0, w: 0.9180873}
+  - _bodyPosition: {x: 0, y: -0.006925012, z: 0.0020775036, w: 0}
+    _bodyRotation: {x: 0.02383242, y: 0, z: 0, w: 0.999716}
+    _handPosition: {x: 0.11013361, y: 0.578732, z: 0.7027985, w: 0}
+    _penlightRotation: {x: 0.42119133, y: 0, z: 0, w: 0.90697193}
+  - _bodyPosition: {x: 0, y: -0.0072998283, z: 0.0021899487, w: 0}
+    _bodyRotation: {x: 0.024649903, y: 0, z: 0, w: 0.99969614}
+    _handPosition: {x: 0.11288755, y: 0.5465015, z: 0.7239261, w: 0}
+    _penlightRotation: {x: 0.44685355, y: 0, z: 0, w: 0.89460725}
+  - _bodyPosition: {x: 0, y: -0.0076633533, z: 0.002299006, w: 0}
+    _bodyRotation: {x: 0.025442746, y: 0, z: 0, w: 0.9996763}
+    _handPosition: {x: 0.11518297, y: 0.51461375, z: 0.7428739, w: 0}
+    _penlightRotation: {x: 0.47311312, y: 0, z: 0, w: 0.8810017}
+  - _bodyPosition: {x: 0, y: -0.008013479, z: 0.002404044, w: 0}
+    _bodyRotation: {x: 0.026206344, y: 0, z: 0, w: 0.99965656}
+    _handPosition: {x: 0.11703559, y: 0.48340523, z: 0.75966805, w: 0}
+    _penlightRotation: {x: 0.49971604, y: 0, z: 0, w: 0.8661894}
+  - _bodyPosition: {x: 0, y: -0.008348229, z: 0.002504469, w: 0}
+    _bodyRotation: {x: 0.026936403, y: 0, z: 0, w: 0.99963725}
+    _handPosition: {x: 0.11847129, y: 0.4531955, z: 0.7743754, w: 0}
+    _penlightRotation: {x: 0.5264108, y: 0, z: 0, w: 0.85023034}
+  - _bodyPosition: {x: 0, y: -0.008665778, z: 0.0025997334, w: 0}
+    _bodyRotation: {x: 0.027628928, y: 0, z: 0, w: 0.99961835}
+    _handPosition: {x: 0.11952448, y: 0.42427975, z: 0.78709716, w: 0}
+    _penlightRotation: {x: 0.552955, y: 0, z: 0, w: 0.8332111}
+  - _bodyPosition: {x: 0, y: -0.008964472, z: 0.002689342, w: 0}
+    _bodyRotation: {x: 0.02828032, y: 0, z: 0, w: 0.99960005}
+    _handPosition: {x: 0.12023614, y: 0.39692324, z: 0.7979631, w: 0}
+    _penlightRotation: {x: 0.5791191, y: 0, z: 0, w: 0.81524295}
+  - _bodyPosition: {x: 0, y: -0.009242859, z: 0.002772858, w: 0}
+    _bodyRotation: {x: 0.02888742, y: 0, z: 0, w: 0.99958277}
+    _handPosition: {x: 0.12065207, y: 0.37135658, z: 0.8071238, w: 0}
+    _penlightRotation: {x: 0.60469115, y: 0, z: 0, w: 0.7964601}
+  - _bodyPosition: {x: 0, y: -0.009499699, z: 0.00284991, w: 0}
+    _bodyRotation: {x: 0.029447518, y: 0, z: 0, w: 0.9995663}
+    _handPosition: {x: 0.120820776, y: 0.347772, z: 0.8147436, w: 0}
+    _penlightRotation: {x: 0.62948054, y: 0, z: 0, w: 0.7770163}
+  - _bodyPosition: {x: 0, y: -0.009733996, z: 0.002920199, w: 0}
+    _bodyRotation: {x: 0.029958453, y: 0, z: 0, w: 0.99955124}
+    _handPosition: {x: 0.12079165, y: 0.32632095, z: 0.82099396, w: 0}
+    _penlightRotation: {x: 0.65332043, y: 0, z: 0, w: 0.7570815}
+  - _bodyPosition: {x: 0, y: -0.009945015, z: 0.002983505, w: 0}
+    _bodyRotation: {x: 0.030418614, y: 0, z: 0, w: 0.99953735}
+    _handPosition: {x: 0.120613135, y: 0.3071128, z: 0.82604665, w: 0}
+    _penlightRotation: {x: 0.6760695, y: 0, z: 0, w: 0.73683786}
+  - _bodyPosition: {x: 0, y: -0.010132309, z: 0.0030396928, w: 0}
+    _bodyRotation: {x: 0.030827036, y: 0, z: 0, w: 0.99952483}
+    _handPosition: {x: 0.12033129, y: 0.29021317, z: 0.83006793, w: 0}
+    _penlightRotation: {x: 0.69761306, y: 0, z: 0, w: 0.7164747}
+  - _bodyPosition: {x: 0, y: -0.010295735, z: 0.0030887206, w: 0}
+    _bodyRotation: {x: 0.031183401, y: 0, z: 0, w: 0.9995137}
+    _handPosition: {x: 0.11998843, y: 0.27564415, z: 0.8332144, w: 0}
+    _penlightRotation: {x: 0.7178634, y: 0, z: 0, w: 0.6961841}
+  - _bodyPosition: {x: 0, y: -0.010435479, z: 0.0031306439, w: 0}
+    _bodyRotation: {x: 0.031488124, y: 0, z: 0, w: 0.99950415}
+    _handPosition: {x: 0.11962189, y: 0.2633838, z: 0.8356294, w: 0}
+    _penlightRotation: {x: 0.73675823, y: 0, z: 0, w: 0.6761563}
+  - _bodyPosition: {x: 0, y: -0.010552081, z: 0.0031656243, w: 0}
+    _bodyRotation: {x: 0.031742383, y: 0, z: 0, w: 0.9994961}
+    _handPosition: {x: 0.11926341, y: 0.25336555, z: 0.8374409, w: 0}
+    _penlightRotation: {x: 0.75426036, y: 0, z: 0, w: 0.65657544}
+  - _bodyPosition: {x: 0, y: -0.010646452, z: 0.0031939358, w: 0}
+    _bodyRotation: {x: 0.031948164, y: 0, z: 0, w: 0.99948955}
+    _handPosition: {x: 0.1189382, y: 0.24547823, z: 0.83876073, w: 0}
+    _penlightRotation: {x: 0.7703548, y: 0, z: 0, w: 0.6376156}
+  - _bodyPosition: {x: 0, y: -0.010719903, z: 0.0032159712, w: 0}
+    _bodyRotation: {x: 0.03210833, y: 0, z: 0, w: 0.9994844}
+    _handPosition: {x: 0.11866455, y: 0.23956512, z: 0.83968496, w: 0}
+    _penlightRotation: {x: 0.7850466, y: 0, z: 0, w: 0.61943674}
+  - _bodyPosition: {x: 0, y: -0.010774159, z: 0.003232248, w: 0}
+    _bodyRotation: {x: 0.032226633, y: 0, z: 0, w: 0.9994806}
+    _handPosition: {x: 0.11845349, y: 0.23542286, z: 0.8402959, w: 0}
+    _penlightRotation: {x: 0.7983589, y: 0, z: 0, w: 0.6021819}
+  - _bodyPosition: {x: 0, y: -0.010811388, z: 0.003243416, w: 0}
+    _bodyRotation: {x: 0.03230781, y: 0, z: 0, w: 0.999478}
+    _handPosition: {x: 0.11830845, y: 0.23280028, z: 0.8406648, w: 0}
+    _penlightRotation: {x: 0.81032914, y: 0, z: 0, w: 0.58597517}
+  - _bodyPosition: {x: 0, y: -0.010834216, z: 0.0032502648, w: 0}
+    _bodyRotation: {x: 0.032357592, y: 0, z: 0, w: 0.9994764}
+    _handPosition: {x: 0.118225135, y: 0.2313963, z: 0.84085506, w: 0}
+    _penlightRotation: {x: 0.8210064, y: 0, z: 0, w: 0.570919}
+  - _bodyPosition: {x: 0, y: -0.010845761, z: 0.0032537284, w: 0}
+    _bodyRotation: {x: 0.032382764, y: 0, z: 0, w: 0.99947554}
+    _handPosition: {x: 0.11819114, y: 0.230858, z: 0.8409258, w: 0}
+    _penlightRotation: {x: 0.8304499, y: 0, z: 0, w: 0.5570934}
+  _bakeRevision: 930557131
+  _bakeFormatVersion: 3
+  _editorGeneratorSettings: '{"_preset":0,"_drumParams":{"_recoveryDuration":0.6000000238418579,"_bodyPhaseLag":0.006000000052154064,"_baseElevation":50.900001525878909,"_elevationAmplitude":32.900001525878909,"_baseExtension":0.8799999952316284,"_liftExtension":0.07000000029802323,"_recoveryExtensionArc":-0.054999999701976779,"_strikeExtensionArc":0.014999999664723874,"_baseSideAngle":8.0,"_recoverySideArc":-1.5,"_strikeSideArc":1.0,"_basePitch":26.299999237060548,"_pitchAmplitude":88.4000015258789,"_recoveryPitchArc":12.199999809265137,"_strikePitchArc":7.699999809265137,"_pitchPivot":29.100000381469728,"_bodySink":-0.009999999776482582,"_bodyPush":0.003000000026077032,"_baseBodyLean":1.0,"_bodyLeanAmplitude":2.5,"_referenceHandX":0.07500000298023224,"_referenceHandY":0.4300000071525574,"_referenceHandZ":0.4300000071525574,"_referenceBodyLean":1.0,"_referencePitch":20.0,"_wristPhaseLag":0.1080000028014183},"_wiperSweepAngle":55.0,"_wiperArmElevation":42.0,"_wiperArmExtension":0.8799999952316284,"_wiperPenlightElevation":65.0,"_sasageLowElevation":18.0,"_sasageHighElevation":68.0,"_sasageLowExtension":0.699999988079071,"_sasageHighExtension":0.9599999785423279,"_sasageHoldRatio":0.4000000059604645,"_generatorIntensity":1.0850000381469727,"_circleClockwise":true}'

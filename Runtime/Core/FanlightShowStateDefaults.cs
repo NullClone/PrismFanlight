@@ -8,39 +8,13 @@ namespace PrismFanlight.Core
     {
         // Methods
 
-        internal static FanlightIntentState Intent() => new(1f, 1f, 0.5f);
+        internal static FanlightVisibilityState Visibility() => new(true, true);
 
         internal static FanlightMotionState Motion() => Motion(null);
 
-        internal static FanlightMotionState Motion(FanlightMotionAsset motionAsset) => new(
-            motionAsset, 1f, 0f, 0f, 0f);
+        internal static FanlightMotionState Motion(FanlightMotionAsset motionAsset) => new(motionAsset, 2f, 0f, 0f, 0f);
 
-        internal static FanlightVariationState Variation() => new(
-            0f,
-            0f,
-            0f,
-            0f,
-            0f,
-            0f,
-            0f,
-            0f);
-
-        internal static FanlightNoiseState Noise() => new(0f, 0f, 0f, 0f, 0f, 1, 0f);
-
-        internal static FanlightRestState Rest() => new(0f, 0f, 1f, 0f, 0f, 0f);
-
-        internal static FanlightAudienceBodyState AudienceBody() => new(
-            1.7f,
-            0.5f,
-            0.2f,
-            0.8f,
-            0.16f,
-            0.1f,
-            0.5f,
-            0f,
-            0f);
-
-        internal static FanlightDirectionState Direction() => new(FanlightDirectionMode.WorldDirection, 0f);
+        internal static FanlightIntentState Intent() => new(1f, 1f, 0.5f);
 
         internal static FanlightColorState Color() => new(
             new FanlightColorSource(
@@ -78,6 +52,31 @@ namespace PrismFanlight.Core
                 1,
                 Array.Empty<FanlightBlockPulseEntry>()));
 
-        internal static FanlightVisibilityState Visibility() => new(true, true);
+        internal static FanlightAudienceBodyState AudienceBody() => new(
+            1.7f,
+            0.5f,
+            0.2f,
+            0.8f,
+            0.16f,
+            0.1f,
+            0.5f,
+            0f,
+            0f);
+
+        internal static FanlightDirectionState Direction() => new(FanlightDirectionMode.WorldDirection, 0f);
+
+        internal static FanlightVariationState Variation() => new(
+            0.2f,
+            0.1f,
+            0.5f,
+            0f,
+            0f,
+            0f,
+            0f,
+            0f);
+
+        internal static FanlightNoiseState Noise() => new(0f, 0f, 0.1f, 0.1f, 1f, 1, 0f);
+
+        internal static FanlightRestState Rest() => new(0f, 0f, 1f, 0f, 0f, 0f);
     }
 }
