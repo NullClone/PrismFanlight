@@ -8,9 +8,77 @@ namespace PrismFanlight.Editor
     {
         // Methods
 
-        internal static void GenerateDrum(FanlightMotionAsset asset)
+        internal static void GenerateDrum(FanlightMotionAsset asset, float intensity = 1f)
         {
-            asset.ResetToDrum();
+            GenerateDrum(asset, DrumParameters.CreateDefault(), intensity);
+        }
+
+        internal static void GenerateDrum(FanlightMotionAsset asset, in DrumParameters parameters, float intensity = 1f)
+        {
+            if (asset == null) throw new ArgumentNullException(nameof(asset));
+            if (!float.IsFinite(intensity)) throw new ArgumentOutOfRangeException(nameof(intensity));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            parameters.Validate();
+            intensity = ClampIntensity(intensity);
+
+            var samples = new FanlightMotionSample[128];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = EvaluateDrumSample((float)i / samples.Length, parameters, intensity);
+            }
+
+            var reference = new FanlightMotionSample(
+                Vector3.zero,
+                Quaternion.Euler(parameters.ReferenceBodyLean, 0f, 0f),
+                new Vector3(parameters.ReferenceHandX, parameters.ReferenceHandY, parameters.ReferenceHandZ),
+                Quaternion.AngleAxis(parameters.ReferencePitch, Vector3.right));
+            asset.SetSamples(reference, samples);
+        }
+
+        private static FanlightMotionSample EvaluateDrumSample(float phase, in DrumParameters p, float intensity)
+        {
+            phase = Mathf.Repeat(phase, 1f);
+            var recovering = phase < p.RecoveryDuration;
+            var progress = recovering
+                ? phase / p.RecoveryDuration
+                : (phase - p.RecoveryDuration) / (1f - p.RecoveryDuration);
+            var lift = EvaluateDrumLift(phase, p.RecoveryDuration);
+            var arc = 4f * progress * (1f - progress);
+            arc = arc * arc * arc;
+
+            var elevation = p.BaseElevation + (lift * 2f - 1f) * p.ElevationAmplitude * intensity;
+            var extension = p.BaseExtension + lift * p.LiftExtension;
+            extension += (recovering ? p.RecoveryExtensionArc : p.StrikeExtensionArc) * arc;
+            var sideAngle = p.BaseSideAngle + (recovering ? p.RecoverySideArc : p.StrikeSideArc) * arc;
+            var hand = SphericalPosition(elevation, sideAngle, extension);
+            var wristPhase = Mathf.Repeat(phase - p.WristPhaseLag, 1f);
+            var wristRecovering = wristPhase < p.RecoveryDuration;
+            var wristProgress = wristRecovering
+                ? wristPhase / p.RecoveryDuration
+                : (wristPhase - p.RecoveryDuration) / (1f - p.RecoveryDuration);
+            var wristLift = EvaluateDrumLift(wristPhase, p.RecoveryDuration);
+            var wristArc = 4f * wristProgress * (1f - wristProgress);
+            wristArc = wristArc * wristArc * wristArc;
+            var pitch = p.BasePitch + (1f - wristLift) * p.PitchAmplitude
+                                    + (wristRecovering ? p.RecoveryPitchArc : p.StrikePitchArc) * wristArc;
+            pitch = p.PitchPivot + (pitch - p.PitchPivot) * intensity;
+            var penlightRotation = Quaternion.AngleAxis(pitch, Vector3.right);
+
+            var bodyLoad = 1f - EvaluateDrumLift(phase - p.BodyPhaseLag, p.RecoveryDuration);
+            var bodyPosition = new Vector3(0f, p.BodySink * bodyLoad, p.BodyPush * bodyLoad) * intensity;
+            var bodyRotation = Quaternion.Euler(p.BaseBodyLean + p.BodyLeanAmplitude * bodyLoad * intensity, 0f, 0f);
+            return new FanlightMotionSample(bodyPosition, bodyRotation, hand, penlightRotation);
+        }
+
+        private static float EvaluateDrumLift(float phase, float recoveryDuration)
+        {
+            phase = Mathf.Repeat(phase, 1f);
+            var recovering = phase < recoveryDuration;
+            var progress = recovering
+                ? phase / recoveryDuration
+                : (phase - recoveryDuration) / (1f - recoveryDuration);
+            var eased = progress * progress * progress * (progress * (progress * 6f - 15f) + 10f);
+            return recovering ? eased : 1f - eased;
         }
 
         internal static void GenerateWiper(
@@ -363,6 +431,7 @@ namespace PrismFanlight.Editor
             asset.SetSamples(reference, samples);
         }
 
+
         private static Quaternion CreatePenlightRotation(Vector3 up, Vector3 motionTangent)
         {
             up = SafeNormalize(up, Vector3.up);
@@ -376,7 +445,9 @@ namespace PrismFanlight.Editor
         }
 
         private static Vector3 SphericalPosition(float elevationDegrees, float sideDegrees, float extension)
-            => Direction(elevationDegrees, sideDegrees) * Mathf.Clamp01(extension);
+        {
+            return Direction(elevationDegrees, sideDegrees) * Mathf.Clamp01(extension);
+        }
 
         private static Vector3 Direction(float elevationDegrees, float sideDegrees)
         {
@@ -391,11 +462,9 @@ namespace PrismFanlight.Editor
                 Vector3.up);
         }
 
-        private static Vector3 ClampHand(Vector3 hand)
-            => Vector3.ClampMagnitude(hand, 0.98f);
+        private static Vector3 ClampHand(Vector3 hand) => Vector3.ClampMagnitude(hand, 0.98f);
 
-        private static Vector3 SafeNormalize(Vector3 value, Vector3 fallback)
-            => value.sqrMagnitude > 0.000001f ? value.normalized : fallback;
+        private static Vector3 SafeNormalize(Vector3 value, Vector3 fallback) => value.sqrMagnitude > 0.000001f ? value.normalized : fallback;
 
         private static float PeriodicLift(float phase, float holdRatio)
         {
