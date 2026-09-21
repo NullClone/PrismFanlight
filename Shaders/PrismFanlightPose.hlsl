@@ -13,13 +13,13 @@ float3 PrismComputeSeatAnchor(FanlightSeatData seat)
 
 PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 {
-    float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z * _MotionCycle.w;
+    float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z;
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
-    float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.x * _MotionCycle.w;
+    float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.x;
     float2 block01 = _Blocks[max(seat.blockIndex, 0)].effectCoordinate;
     float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.yz);
     float delayedBeat = _FanlightBeat.y - beatReaction - seatBeatJitter - blockBeatDelay;
-    float personaTiming = (PrismRandom(seat, 6u) * 2.0 - 1.0) * 0.5 * _MotionTiming.y * _MotionCycle.w;
+    float personaTiming = (PrismRandom(seat, 6u) * 2.0 - 1.0) * 0.5 * _MotionTiming.y;
     float phaseNoise = 0.0;
     if (_MotionTiming.z > 0.000001)
     {

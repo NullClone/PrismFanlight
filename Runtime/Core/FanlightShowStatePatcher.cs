@@ -58,9 +58,8 @@ namespace PrismFanlight.Core
             return new FanlightIntentState(
                 Has(patch.Fields, FanlightIntentFields.Energy) ? Lerp(current.Energy, value.Energy, weight) : current.Energy,
                 Has(patch.Fields, FanlightIntentFields.Participation) ? Lerp(current.Participation, value.Participation, weight) : current.Participation,
-                Has(patch.Fields, FanlightIntentFields.Synchronization) ? Lerp(current.Synchronization, value.Synchronization, weight) : current.Synchronization,
-                Has(patch.Fields, FanlightIntentFields.Realism) ? Lerp(current.Realism, value.Realism, weight) : current.Realism,
-                Has(patch.Fields, FanlightIntentFields.Reach) ? Lerp(current.Reach, value.Reach, weight) : current.Reach);
+                Has(patch.Fields, FanlightIntentFields.Synchronization) ? Lerp(current.Synchronization, value.Synchronization, weight) : current.Synchronization
+            );
         }
 
         internal static FanlightMotionState Apply(FanlightMotionState current, FanlightMotionPatch patch, float weight)
@@ -112,13 +111,8 @@ namespace PrismFanlight.Core
                 Has(patch.Fields, FanlightMotionFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
                 Has(patch.Fields, FanlightMotionFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
                 Has(patch.Fields, FanlightMotionFields.BlockDelayXBeats) ? Lerp(current.BlockDelayXBeats, value.BlockDelayXBeats, weight) : current.BlockDelayXBeats,
-                Has(patch.Fields, FanlightMotionFields.BlockDelayYBeats) ? Lerp(current.BlockDelayYBeats, value.BlockDelayYBeats, weight) : current.BlockDelayYBeats,
-                Has(patch.Fields, FanlightMotionFields.MotionAmount) ? Lerp(current.MotionAmount, value.MotionAmount, weight) : current.MotionAmount,
-                Has(patch.Fields, FanlightMotionFields.HeightBias) ? Lerp(current.HeightBias, value.HeightBias, weight) : current.HeightBias,
-                Has(patch.Fields, FanlightMotionFields.SideScale) ? Lerp(current.SideScale, value.SideScale, weight) : current.SideScale,
-                Has(patch.Fields, FanlightMotionFields.ForwardScale) ? Lerp(current.ForwardScale, value.ForwardScale, weight) : current.ForwardScale,
-                Has(patch.Fields, FanlightMotionFields.WristDelayRatio) ? Lerp(current.WristDelayRatio, value.WristDelayRatio, weight) : current.WristDelayRatio,
-                Has(patch.Fields, FanlightMotionFields.Variation) ? Lerp(current.Variation, value.Variation, weight) : current.Variation);
+                Has(patch.Fields, FanlightMotionFields.BlockDelayYBeats) ? Lerp(current.BlockDelayYBeats, value.BlockDelayYBeats, weight) : current.BlockDelayYBeats
+            );
         }
 
         internal static FanlightVariationState Apply(FanlightVariationState current, FanlightVariationPatch patch, float weight)

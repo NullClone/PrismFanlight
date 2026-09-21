@@ -55,8 +55,6 @@ namespace PrismFanlight.Timeline
             var energy = new FanlightWeightedFloat();
             var participation = new FanlightWeightedFloat();
             var synchronization = new FanlightWeightedFloat();
-            var realism = new FanlightWeightedFloat();
-            var reach = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
@@ -66,8 +64,6 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightIntentFields.Energy)) energy.Add(sourceValue.Energy, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Participation)) participation.Add(sourceValue.Participation, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Synchronization)) synchronization.Add(sourceValue.Synchronization, sample.Weight);
-                if (Has(fields, FanlightIntentFields.Realism)) realism.Add(sourceValue.Realism, sample.Weight);
-                if (Has(fields, FanlightIntentFields.Reach)) reach.Add(sourceValue.Reach, sample.Weight);
             }
 
             if (fields == FanlightIntentFields.None)
@@ -81,9 +77,7 @@ namespace PrismFanlight.Timeline
             var value = new FanlightIntentState(
                 energy.Value(fallback.Energy),
                 participation.Value(fallback.Participation),
-                synchronization.Value(fallback.Synchronization),
-                realism.Value(fallback.Realism),
-                reach.Value(fallback.Reach)
+                synchronization.Value(fallback.Synchronization)
             );
 
             patch = new FanlightShowPatch(
@@ -111,12 +105,6 @@ namespace PrismFanlight.Timeline
             var phaseOffsetBeats = new FanlightWeightedFloat();
             var blockDelayXBeats = new FanlightWeightedFloat();
             var blockDelayYBeats = new FanlightWeightedFloat();
-            var motionAmount = new FanlightWeightedFloat();
-            var heightBias = new FanlightWeightedFloat();
-            var sideScale = new FanlightWeightedFloat();
-            var forwardScale = new FanlightWeightedFloat();
-            var wristDelayRatio = new FanlightWeightedFloat();
-            var variation = new FanlightWeightedFloat();
             var assetA = default(FanlightMotionAsset);
             var assetB = default(FanlightMotionAsset);
             var assetWeights = Vector2.zero;
@@ -130,12 +118,6 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightMotionFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
                 if (Has(fields, FanlightMotionFields.BlockDelayXBeats)) blockDelayXBeats.Add(sourceValue.BlockDelayXBeats, sample.Weight);
                 if (Has(fields, FanlightMotionFields.BlockDelayYBeats)) blockDelayYBeats.Add(sourceValue.BlockDelayYBeats, sample.Weight);
-                if (Has(fields, FanlightMotionFields.MotionAmount)) motionAmount.Add(sourceValue.MotionAmount, sample.Weight);
-                if (Has(fields, FanlightMotionFields.HeightBias)) heightBias.Add(sourceValue.HeightBias, sample.Weight);
-                if (Has(fields, FanlightMotionFields.SideScale)) sideScale.Add(sourceValue.SideScale, sample.Weight);
-                if (Has(fields, FanlightMotionFields.ForwardScale)) forwardScale.Add(sourceValue.ForwardScale, sample.Weight);
-                if (Has(fields, FanlightMotionFields.WristDelayRatio)) wristDelayRatio.Add(sourceValue.WristDelayRatio, sample.Weight);
-                if (Has(fields, FanlightMotionFields.Variation)) variation.Add(sourceValue.Variation, sample.Weight);
             }
 
             if (fields == FanlightMotionFields.None)
@@ -153,13 +135,7 @@ namespace PrismFanlight.Timeline
                 beatsPerCycle.Value(fallback.BeatsPerCycle),
                 phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
                 blockDelayXBeats.Value(fallback.BlockDelayXBeats),
-                blockDelayYBeats.Value(fallback.BlockDelayYBeats),
-                motionAmount.Value(fallback.MotionAmount),
-                heightBias.Value(fallback.HeightBias),
-                sideScale.Value(fallback.SideScale),
-                forwardScale.Value(fallback.ForwardScale),
-                wristDelayRatio.Value(fallback.WristDelayRatio),
-                variation.Value(fallback.Variation)
+                blockDelayYBeats.Value(fallback.BlockDelayYBeats)
             );
 
             patch = new FanlightShowPatch(

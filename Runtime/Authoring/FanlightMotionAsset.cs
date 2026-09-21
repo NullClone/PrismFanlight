@@ -25,7 +25,20 @@ namespace PrismFanlight.Authoring
         private int _bakeFormatVersion;
 
 
+#if UNITY_EDITOR
+        [SerializeField, HideInInspector]
+        private string _editorGeneratorSettings;
+#endif
+
         // Properties
+
+#if UNITY_EDITOR
+        internal string EditorGeneratorSettings
+        {
+            get => _editorGeneratorSettings;
+            set => _editorGeneratorSettings = value;
+        }
+#endif
 
         internal bool HasValidBake => _bakeFormatVersion == CurrentBakeFormatVersion
                                       && _referencePose.IsValid
@@ -40,41 +53,6 @@ namespace PrismFanlight.Authoring
 
 
         // Methods
-
-        private void Reset()
-        {
-            ResetToDrum();
-        }
-
-        internal void ResetToDrum()
-        {
-            var samples = new FanlightMotionSample[RuntimeSampleCount];
-            var times = new[] { 0f, 0.10f, 0.42f, 0.72f, 1f };
-            var armValues = new[] { -1f, -1f, 0f, 0f, -1f };
-            var extensionValues = new[] { -1f, -0.8f, 0f, 0f, -1f };
-            var penlightValues = new[] { -1f, -138f / 143f, 0f, 0f, -1f };
-            var bodyValues = new[] { 1f, 0.85f, 0f, 0f, 1f };
-
-            for (var i = 0; i < samples.Length; i++)
-            {
-                var phase = (float)i / samples.Length;
-                var armElevation = 65f + EvaluateSmoothKeys(phase, times, armValues) * 120f;
-                var extension = 0.92f + EvaluateSmoothKeys(phase, times, extensionValues) * 0.1f;
-                var penlightElevation = 78f + EvaluateSmoothKeys(phase, times, penlightValues) * 143f;
-                var bodyLean = -2f + EvaluateSmoothKeys(phase, times, bodyValues) * 6f;
-                samples[i] = CreateDirectionalSample(
-                    CreateHandPosition(armElevation, 0f, extension),
-                    CreateDirection(penlightElevation, 0f),
-                    bodyLean);
-            }
-
-            var reference = CreateDirectionalSample(
-                CreateHandPosition(65f, 0f, 0.92f),
-                CreateDirection(78f, 0f),
-                -2f);
-
-            SetSamples(reference, samples);
-        }
 
         internal void SetSamples(FanlightMotionSample referencePose, FanlightMotionSample[] samples)
         {
@@ -111,10 +89,7 @@ namespace PrismFanlight.Authoring
             return FanlightMotionSample.Interpolate(_samples[sample0], _samples[sample1], samplePosition - sample0);
         }
 
-        internal bool CopyResampledSamples(
-            FanlightMotionSample[] destination,
-            int destinationIndex,
-            int destinationCount)
+        internal bool CopyResampledSamples(FanlightMotionSample[] destination, int destinationIndex, int destinationCount)
         {
             if (!HasValidBake
                 || destination == null
@@ -142,9 +117,11 @@ namespace PrismFanlight.Authoring
         private void RecalculateRevision()
         {
             var revision = 17;
+
             revision = AddSampleToHash(revision, _referencePose);
             revision = unchecked(revision * 31 + _bakeFormatVersion);
             revision = unchecked(revision * 31 + _samples.Length);
+
             for (var i = 0; i < _samples.Length; i++)
             {
                 revision = AddSampleToHash(revision, _samples[i]);
@@ -161,53 +138,12 @@ namespace PrismFanlight.Authoring
             return unchecked(revision * 31 + sample.PenlightRotationData.GetHashCode());
         }
 
-        private static FanlightMotionSample CreateDirectionalSample(
-            Vector3 handPosition,
-            Vector3 penlightDirection,
-            float bodyLeanDegrees)
-        {
-            return new FanlightMotionSample(
-                Vector3.zero,
-                Quaternion.Euler(bodyLeanDegrees, 0f, 0f),
-                handPosition,
-                Quaternion.FromToRotation(Vector3.up, penlightDirection));
-        }
-
-        private static Vector3 CreateHandPosition(float elevationDegrees, float sideDegrees, float extension)
-            => CreateDirection(elevationDegrees, sideDegrees) * Mathf.Clamp01(extension);
-
-        private static Vector3 CreateDirection(float elevationDegrees, float sideDegrees)
-        {
-            var elevation = elevationDegrees * Mathf.Deg2Rad;
-            var side = sideDegrees * Mathf.Deg2Rad;
-            var cosElevation = Mathf.Cos(elevation);
-            return new Vector3(
-                Mathf.Sin(side) * cosElevation,
-                Mathf.Sin(elevation),
-                Mathf.Cos(side) * cosElevation).normalized;
-        }
-
-        private static float EvaluateSmoothKeys(float phase, float[] times, float[] values)
-        {
-            phase = Mathf.Repeat(phase, 1f);
-            for (var i = 0; i < times.Length - 1; i++)
-            {
-                if (phase > times[i + 1]) continue;
-
-                var weight = Mathf.InverseLerp(times[i], times[i + 1], phase);
-                weight = weight * weight * (3f - 2f * weight);
-                return Mathf.LerpUnclamped(values[i], values[i + 1], weight);
-            }
-
-            return values[^1];
-        }
-
-        private static bool IsSupportedSampleCount(int sampleCount)
-            => sampleCount == 64 || sampleCount == 128 || sampleCount == 256;
+        private static bool IsSupportedSampleCount(int sampleCount) => sampleCount is 64 or 128 or 256;
 
         private static bool HasValidSamples(FanlightMotionSample[] samples)
         {
             if (samples == null) return false;
+
             for (var i = 0; i < samples.Length; i++)
             {
                 if (!samples[i].IsValid) return false;

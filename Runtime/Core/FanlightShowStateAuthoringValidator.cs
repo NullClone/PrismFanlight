@@ -14,9 +14,7 @@ namespace PrismFanlight.Core
                 return new FanlightIntentState(
                     value.Energy,
                     value.Participation,
-                    value.Synchronization,
-                    value.Realism,
-                    value.Reach);
+                    value.Synchronization);
             }
             catch (ArgumentException)
             {
@@ -33,13 +31,7 @@ namespace PrismFanlight.Core
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
                     value.BlockDelayXBeats,
-                    value.BlockDelayYBeats,
-                    value.MotionAmount,
-                    value.HeightBias,
-                    value.SideScale,
-                    value.ForwardScale,
-                    value.WristDelayRatio,
-                    value.Variation);
+                    value.BlockDelayYBeats);
             }
             catch (ArgumentException)
             {

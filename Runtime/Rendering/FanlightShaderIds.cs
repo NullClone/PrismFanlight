@@ -44,7 +44,6 @@ namespace PrismFanlight.Rendering
         internal static readonly int ReferenceSeatSpacing = Shader.PropertyToID("_ReferenceSeatSpacing");
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
         internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
-        internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");
         internal static readonly int MotionReferenceBodyPosition = Shader.PropertyToID("_MotionReferenceBodyPosition");
         internal static readonly int MotionReferenceBodyRotation = Shader.PropertyToID("_MotionReferenceBodyRotation");
         internal static readonly int MotionReferenceHandPosition = Shader.PropertyToID("_MotionReferenceHandPosition");

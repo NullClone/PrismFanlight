@@ -34,7 +34,6 @@ float4 _LodCameraPos;
 float4 _ReferenceSeatSpacing;
 float4 _MotionTiming;
 float4 _MotionCycle;
-float4 _MotionParameters;
 float4 _MotionReferenceBodyPosition;
 float4 _MotionReferenceBodyRotation;
 float4 _MotionReferenceHandPosition;

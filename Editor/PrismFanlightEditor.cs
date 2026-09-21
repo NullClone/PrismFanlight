@@ -297,12 +297,6 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
             }
 
-            DrawChild(_motion, "_motionAmount");
-            DrawChild(_motion, "_heightBias");
-            DrawChild(_motion, "_sideScale");
-            DrawChild(_motion, "_forwardScale");
-            DrawChild(_motion, "_wristDelayRatio");
-            DrawChild(_motion, "_variation");
             DrawChild(_motion, "_beatsPerCycle");
             DrawChild(_motion, "_phaseOffsetBeats");
             DrawChild(_motion, "_blockDelayXBeats");
@@ -314,8 +308,6 @@ namespace PrismFanlight.Editor
             DrawChild(_intent, "_energy");
             DrawChild(_intent, "_participation");
             DrawChild(_intent, "_synchronization");
-            DrawChild(_intent, "_realism");
-            DrawChild(_intent, "_reach");
         }
 
         private void DrawAudienceSection()
