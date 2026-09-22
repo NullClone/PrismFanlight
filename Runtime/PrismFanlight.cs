@@ -103,7 +103,6 @@ namespace PrismFanlight
         private FanlightTimeManager _tempoScopeManager;
         private int _tempoScopeRevision = int.MinValue;
         private FanlightShowTimeFault _timeFault;
-        private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _heldTimelineSample;
         private bool _hasHeldTimelineState;
@@ -178,7 +177,7 @@ namespace PrismFanlight
 
         private void LateUpdate()
         {
-            if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null || _evaluationId == long.MaxValue)
+            if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null)
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
@@ -197,9 +196,7 @@ namespace PrismFanlight
                 return;
             }
 
-            _evaluationId++;
-
-            if (!_timeManager.TrySampleClock(_evaluationId, out var clock, out _timeFault))
+            if (!_timeManager.TrySampleClock(UnityEngine.Time.frameCount, out var clock, out _timeFault))
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
