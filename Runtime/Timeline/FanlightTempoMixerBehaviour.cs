@@ -37,13 +37,11 @@ namespace PrismFanlight.Timeline
 
             target.MarkScheduledTimelineEvaluation();
 
-            if (_source == null || !_source.HasClips)
+            if (!TryEnsureDefinition(target, out var hasClips) || !hasClips)
             {
                 target.ClearScheduledTempoCandidate(this);
                 return;
             }
-
-            if (!TryEnsureDefinition(target)) return;
 
             var sequencePlayable = playable.GetGraph().GetRootPlayable(0);
 
@@ -81,48 +79,113 @@ namespace PrismFanlight.Timeline
 
             _lastTarget = target;
             Definition = null;
+            _source = null;
             _definitionTimeManager = null;
             _definitionTempoRevision = int.MinValue;
         }
 
-        private bool TryEnsureDefinition(PrismFanlight target)
+        private bool TryEnsureDefinition(PrismFanlight target, out bool hasClips)
         {
+            hasClips = false;
             var timeManager = target.TimeManager;
 
             if (timeManager == null)
             {
-                target.ClearScheduledTempoCandidate(this);
                 target.ReportTimelineFault("Tempo Track requires a bound PrismFanlight with a Fanlight Time Manager.");
                 Definition = null;
+                _source = null;
                 _definitionTimeManager = null;
                 _definitionTempoRevision = int.MinValue;
                 return false;
             }
 
+            if (_track is not FanlightTempoTrack tempoTrack)
+            {
+                target.ReportTimelineFault("Tempo Track is not configured correctly.");
+                Definition = null;
+                _source = null;
+                _definitionTimeManager = null;
+                _definitionTempoRevision = int.MinValue;
+                return false;
+            }
+
+            if (!tempoTrack.TryBuildTempoSource(out var source, out var sourceError))
+            {
+                target.ReportTimelineFault(sourceError);
+                Definition = null;
+                _source = null;
+                _definitionTimeManager = null;
+                _definitionTempoRevision = int.MinValue;
+                return false;
+            }
+
+            if (!source.HasClips)
+            {
+                Definition = null;
+                _source = null;
+                _definitionTimeManager = null;
+                _definitionTempoRevision = int.MinValue;
+                return true;
+            }
+
+            hasClips = true;
+
             if (Definition != null
                 && _definitionTimeManager == timeManager
-                && _definitionTempoRevision == timeManager.DefaultTempoRevision)
+                && _definitionTempoRevision == timeManager.DefaultTempoRevision
+                && SourcesEqual(_source, source))
             {
                 return true;
             }
 
             if (!FanlightTempoDefinitionBuilder.TryBuildDefinition(
-                    _source,
+                    source,
                     timeManager.DefaultBpm,
                     out var definition,
                     out var error))
             {
-                target.ClearScheduledTempoCandidate(this);
                 target.ReportTimelineFault(error);
                 Definition = null;
+                _source = null;
                 _definitionTimeManager = null;
                 _definitionTempoRevision = int.MinValue;
+                hasClips = false;
                 return false;
             }
 
             Definition = definition;
+            _source = source;
             _definitionTimeManager = timeManager;
             _definitionTempoRevision = timeManager.DefaultTempoRevision;
+            return true;
+        }
+
+        private static bool SourcesEqual(FanlightTempoSource a, FanlightTempoSource b)
+        {
+            if (a == null || b == null) return false;
+
+            if (a.BeatsPerBar != b.BeatsPerBar
+                || a.BeatUnit != b.BeatUnit
+                || a.MusicalOriginSeconds != b.MusicalOriginSeconds)
+            {
+                return false;
+            }
+
+            var aStarts = a.Starts.Span;
+            var bStarts = b.Starts.Span;
+
+            if (aStarts.Length != bStarts.Length) return false;
+
+            var aEnds = a.Ends.Span;
+            var bEnds = b.Ends.Span;
+            var aBpms = a.Bpms.Span;
+            var bBpms = b.Bpms.Span;
+
+            for (var i = 0; i < aStarts.Length; i++)
+            {
+                if (aStarts[i] != bStarts[i] || aEnds[i] != bEnds[i] || aBpms[i] != bBpms[i]) return false;
+            }
+
             return true;
         }
 
