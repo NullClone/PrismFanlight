@@ -26,25 +26,36 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
+            var includedFields = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out _)
+                ? mask.Direction
+                : FanlightDirectionFields.All;
+
             var mode = _value.FindPropertyRelative("_mode");
 
-            EditorGUILayout.PropertyField(mode);
+            using (new EditorGUI.DisabledScope(!includedFields.HasFlag(FanlightDirectionFields.Mode)))
+            {
+                EditorGUILayout.PropertyField(mode);
+            }
 
             if (!mode.hasMultipleDifferentValues)
             {
                 if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
                 {
-                    DrawChild("_direction");
+                    DrawChild("_direction", includedFields.HasFlag(FanlightDirectionFields.Direction));
                 }
             }
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawChild(string propertyName)
+        private void DrawChild(string propertyName, bool included)
         {
             var property = _value.FindPropertyRelative(propertyName);
-            EditorGUILayout.PropertyField(property);
+
+            using (new EditorGUI.DisabledScope(!included))
+            {
+                EditorGUILayout.PropertyField(property);
+            }
         }
     }
 }

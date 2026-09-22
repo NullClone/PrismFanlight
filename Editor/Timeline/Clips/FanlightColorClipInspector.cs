@@ -1,3 +1,4 @@
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
@@ -25,7 +26,12 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            FanlightColorIntensityEditorUtility.DrawColorState(_value);
+            var included = !FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out _) || mask.Color.HasFlag(FanlightColorFields.Source);
+
+            using (new EditorGUI.DisabledScope(!included))
+            {
+                FanlightColorIntensityEditorUtility.DrawColorState(_value);
+            }
 
             serializedObject.ApplyModifiedProperties();
         }

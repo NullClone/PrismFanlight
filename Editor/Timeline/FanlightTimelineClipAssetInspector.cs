@@ -21,6 +21,8 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
+            var hasMask = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out var patchKind);
+
             var property = serializedObject.GetIterator();
             var enterChildren = true;
 
@@ -32,7 +34,7 @@ namespace PrismFanlight.Editor
 
                 if (property.propertyPath == ValuePropertyName)
                 {
-                    DrawChildren(property);
+                    DrawChildren(property, hasMask, mask, patchKind);
                     continue;
                 }
 
@@ -42,7 +44,11 @@ namespace PrismFanlight.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private static void DrawChildren(SerializedProperty property)
+        private static void DrawChildren(
+            SerializedProperty property,
+            bool hasMask,
+            FanlightTimelineFieldMask mask,
+            FanlightTimelinePatchKind patchKind)
         {
             var child = property.Copy();
             var end = child.GetEndProperty();
@@ -51,7 +57,13 @@ namespace PrismFanlight.Editor
             while (child.NextVisible(enterChildren) && !SerializedProperty.EqualContents(child, end))
             {
                 enterChildren = false;
-                EditorGUILayout.PropertyField(child, true);
+
+                var included = !hasMask || FanlightTimelineFieldMaskResolver.IsFieldIncluded(mask, patchKind, child.name);
+
+                using (new EditorGUI.DisabledScope(!included))
+                {
+                    EditorGUILayout.PropertyField(child, true);
+                }
             }
         }
     }

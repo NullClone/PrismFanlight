@@ -35,28 +35,38 @@ namespace PrismFanlight.Editor
         internal static void DrawIntensityState(
             SerializedProperty state,
             FanlightLayoutAsset layout = null,
-            bool requireLayout = false)
+            bool requireLayout = false,
+            FanlightIntensityFields includedFields = FanlightIntensityFields.All)
         {
-            var baseIntensity = state.FindPropertyRelative("_baseIntensity");
-            EditorGUILayout.PropertyField(baseIntensity, new GUIContent("Intensity"));
-
-            if (!baseIntensity.hasMultipleDifferentValues && (!float.IsFinite(baseIntensity.floatValue) || baseIntensity.floatValue < 0f))
+            using (new EditorGUI.DisabledScope(!includedFields.HasFlag(FanlightIntensityFields.BaseIntensity)))
             {
-                EditorGUILayout.HelpBox("Base Intensity must be a finite value of 0 or greater.", MessageType.Error);
+                var baseIntensity = state.FindPropertyRelative("_baseIntensity");
+                EditorGUILayout.PropertyField(baseIntensity, new GUIContent("Intensity"));
+
+                if (!baseIntensity.hasMultipleDifferentValues && (!float.IsFinite(baseIntensity.floatValue) || baseIntensity.floatValue < 0f))
+                {
+                    EditorGUILayout.HelpBox("Base Intensity must be a finite value of 0 or greater.", MessageType.Error);
+                }
             }
 
-            var randomIntensity = state.FindPropertyRelative("_randomIntensity");
-            EditorGUILayout.PropertyField(randomIntensity, new GUIContent("Random Intensity"));
-
-            if (!randomIntensity.hasMultipleDifferentValues
-                && (!float.IsFinite(randomIntensity.floatValue) || randomIntensity.floatValue < 0f || randomIntensity.floatValue > 1f))
+            using (new EditorGUI.DisabledScope(!includedFields.HasFlag(FanlightIntensityFields.RandomIntensity)))
             {
-                EditorGUILayout.HelpBox("Random Intensity must be between 0 and 1.", MessageType.Error);
+                var randomIntensity = state.FindPropertyRelative("_randomIntensity");
+                EditorGUILayout.PropertyField(randomIntensity, new GUIContent("Random Intensity"));
+
+                if (!randomIntensity.hasMultipleDifferentValues
+                    && (!float.IsFinite(randomIntensity.floatValue) || randomIntensity.floatValue < 0f || randomIntensity.floatValue > 1f))
+                {
+                    EditorGUILayout.HelpBox("Random Intensity must be between 0 and 1.", MessageType.Error);
+                }
             }
 
             EditorGUILayout.Space();
 
-            DrawIntensityMask(state.FindPropertyRelative("_mask"), layout, requireLayout);
+            using (new EditorGUI.DisabledScope(!includedFields.HasFlag(FanlightIntensityFields.Mask)))
+            {
+                DrawIntensityMask(state.FindPropertyRelative("_mask"), layout, requireLayout);
+            }
         }
 
         internal static bool IsBlockPalette(SerializedProperty state)

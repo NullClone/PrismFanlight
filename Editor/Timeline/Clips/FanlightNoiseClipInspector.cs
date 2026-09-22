@@ -1,3 +1,4 @@
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
@@ -25,17 +26,25 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            DrawChild("_phaseAmount");
-            DrawChild("_positionAmount");
-            DrawChild("_directionAmount");
+            var includedFields = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out _)
+                ? mask.Noise
+                : FanlightNoiseFields.All;
+
+            DrawChild("_phaseAmount", includedFields.HasFlag(FanlightNoiseFields.PhaseAmount));
+            DrawChild("_positionAmount", includedFields.HasFlag(FanlightNoiseFields.PositionAmount));
+            DrawChild("_directionAmount", includedFields.HasFlag(FanlightNoiseFields.DirectionAmount));
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawChild(string propertyName)
+        private void DrawChild(string propertyName, bool included)
         {
             var property = _value.FindPropertyRelative(propertyName);
-            EditorGUILayout.PropertyField(property);
+
+            using (new EditorGUI.DisabledScope(!included))
+            {
+                EditorGUILayout.PropertyField(property);
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ namespace PrismFanlight.Core
 
         internal static FanlightMotionState Motion(FanlightMotionAsset motionAsset) => new(motionAsset, 2f, 0f, 0f, 0f);
 
-        internal static FanlightIntentState Intent() => new(1f, 1f, 0.5f);
+        internal static FanlightIntentState Intent() => new(1f, 0.5f, 0.5f);
 
         internal static FanlightColorState Color() => new(
             new FanlightColorSource(

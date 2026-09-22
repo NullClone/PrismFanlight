@@ -1,4 +1,5 @@
 using PrismFanlight.Authoring;
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEditor.Timeline;
@@ -28,7 +29,11 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            FanlightColorIntensityEditorUtility.DrawIntensityState(_value, ResolveLayout());
+            var includedFields = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out _)
+                ? mask.Intensity
+                : FanlightIntensityFields.All;
+
+            FanlightColorIntensityEditorUtility.DrawIntensityState(_value, ResolveLayout(), includedFields: includedFields);
 
             serializedObject.ApplyModifiedProperties();
         }
