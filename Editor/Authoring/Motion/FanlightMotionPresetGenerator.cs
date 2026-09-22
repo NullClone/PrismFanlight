@@ -155,40 +155,53 @@ namespace PrismFanlight.Editor
         }
 
 
-        internal static void GenerateSasage(
-            FanlightMotionAsset asset,
-            float lowElevation,
-            float highElevation,
-            float lowExtension,
-            float highExtension,
-            float holdRatio,
-            float intensity)
+        internal static void GenerateSasage(FanlightMotionAsset asset, float intensity = 1f)
         {
+            GenerateSasage(asset, SasageParameters.CreateDefault(), intensity);
+        }
+
+        internal static void GenerateSasage(FanlightMotionAsset asset, in SasageParameters parameters, float intensity = 1f)
+        {
+            if (asset == null) throw new ArgumentNullException(nameof(asset));
+            if (!float.IsFinite(intensity)) throw new ArgumentOutOfRangeException(nameof(intensity));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            parameters.Validate();
             intensity = ClampIntensity(intensity);
-            lowElevation = Mathf.Clamp(lowElevation, -10f, 45f);
-            highElevation = Mathf.Clamp(Mathf.Max(lowElevation, highElevation), 30f, 90f);
-            lowExtension = Mathf.Clamp(lowExtension, 0.4f, 0.9f);
-            highExtension = Mathf.Clamp(Mathf.Max(lowExtension, highExtension), 0.7f, 1f);
-            holdRatio = Mathf.Clamp(holdRatio, 0.1f, 0.55f);
-            var referenceHand = SphericalPosition(lowElevation, 0f, lowExtension);
-            GenerateTrajectory(
-                asset,
-                128,
-                referenceHand,
-                Direction(lowElevation + 28f, 0f),
-                phase =>
-                {
-                    var lift = PeriodicLift(phase, holdRatio);
-                    var side = Mathf.Sin(phase * Mathf.PI * 2f) * 0.04f * intensity;
-                    return SphericalPosition(
-                        Mathf.Lerp(lowElevation, highElevation, lift),
-                        side * Mathf.Rad2Deg,
-                        Mathf.Lerp(lowExtension, highExtension, lift));
-                },
-                phase => new Vector3(0f, PeriodicLift(phase, holdRatio) * 0.025f * intensity, 0f),
-                phase => Quaternion.Euler(-1f - PeriodicLift(phase, holdRatio) * 4f * intensity, 0f, 0f),
-                0.18f,
-                0.35f);
+
+            var samples = new FanlightMotionSample[128];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = EvaluateSasageSample((float)i / samples.Length, parameters, intensity);
+            }
+
+            var reference = new FanlightMotionSample(
+                Vector3.zero,
+                Quaternion.Euler(parameters.BaseBodyLean, 0f, 0f),
+                SphericalPosition(parameters.LowElevation, parameters.BaseSideAngle, parameters.LowExtension),
+                CreatePenlightRotation(Direction(parameters.PenlightLowElevation, parameters.BaseSideAngle), Vector3.forward));
+            asset.SetSamples(reference, samples);
+        }
+
+        private static FanlightMotionSample EvaluateSasageSample(float phase, in SasageParameters p, float intensity)
+        {
+            var lift = PeriodicLift(phase, p.TopHoldRatio);
+            var sideSway = Mathf.Sin(phase * Mathf.PI * 2f) * p.SideSwayAmplitude * intensity;
+            var hand = SphericalPosition(
+                Mathf.Lerp(p.LowElevation, p.HighElevation, lift),
+                p.BaseSideAngle + sideSway,
+                Mathf.Lerp(p.LowExtension, p.HighExtension, lift));
+
+            var wristPhase = phase - p.WristPhaseLag;
+            var wristLift = PeriodicLift(wristPhase, p.TopHoldRatio);
+            var penlightSide = p.BaseSideAngle + Mathf.Sin(wristPhase * Mathf.PI * 2f) * p.PenlightSideAmplitude * intensity;
+            var penlightElevation = p.PenlightLowElevation + p.PenlightRiseArc * wristLift * intensity;
+            var penlightRotation = CreatePenlightRotation(Direction(penlightElevation, penlightSide), Vector3.forward);
+
+            var bodyLift = PeriodicLift(phase - p.BodyPhaseLag, p.TopHoldRatio);
+            var bodyPosition = new Vector3(0f, p.BodyRiseLift * bodyLift * intensity, 0f);
+            var bodyRotation = Quaternion.Euler(p.BaseBodyLean + p.BodyLeanAmplitude * bodyLift * intensity, 0f, 0f);
+
+            return new FanlightMotionSample(bodyPosition, bodyRotation, hand, penlightRotation);
         }
 
         internal static void GeneratePowerPump(FanlightMotionAsset asset, float intensity)

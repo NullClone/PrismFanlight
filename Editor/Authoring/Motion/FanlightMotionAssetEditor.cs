@@ -70,6 +70,11 @@ namespace PrismFanlight.Editor
         private bool _wiperFoldoutPenlight = true;
         private bool _wiperFoldoutBody = true;
         private bool _wiperAutoBake;
+        private bool _sasageFoldoutTiming = true;
+        private bool _sasageFoldoutArm = true;
+        private bool _sasageFoldoutPenlight = true;
+        private bool _sasageFoldoutBody = true;
+        private bool _sasageAutoBake;
         private float _phase;
 
         private SettingsContainer _settingsContainer;
@@ -91,35 +96,7 @@ namespace PrismFanlight.Editor
 
         private WiperParameters WiperParams => Settings.WiperParams;
 
-        private float SasageLowElevation
-        {
-            get => _settingsProperty.FindPropertyRelative("_sasageLowElevation").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_sasageLowElevation").floatValue = value;
-        }
-
-        private float SasageHighElevation
-        {
-            get => _settingsProperty.FindPropertyRelative("_sasageHighElevation").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_sasageHighElevation").floatValue = value;
-        }
-
-        private float SasageLowExtension
-        {
-            get => _settingsProperty.FindPropertyRelative("_sasageLowExtension").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_sasageLowExtension").floatValue = value;
-        }
-
-        private float SasageHighExtension
-        {
-            get => _settingsProperty.FindPropertyRelative("_sasageHighExtension").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_sasageHighExtension").floatValue = value;
-        }
-
-        private float SasageHoldRatio
-        {
-            get => _settingsProperty.FindPropertyRelative("_sasageHoldRatio").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_sasageHoldRatio").floatValue = value;
-        }
+        private SasageParameters SasageParams => Settings.SasageParams;
 
         private float GeneratorIntensity
         {
@@ -135,9 +112,13 @@ namespace PrismFanlight.Editor
 
         private FanlightMotionGeneratorSettings Settings => _settingsContainer.Settings;
 
-        private bool AutoBake => Preset == MotionPreset.Drum
-            ? _drumAutoBake
-            : Preset == MotionPreset.Wiper && _wiperAutoBake;
+        private bool AutoBake => Preset switch
+        {
+            MotionPreset.Drum => _drumAutoBake,
+            MotionPreset.Wiper => _wiperAutoBake,
+            MotionPreset.Sasage => _sasageAutoBake,
+            _ => false
+        };
 
 
         // Methods
@@ -193,6 +174,11 @@ namespace PrismFanlight.Editor
             DrawGeneratorParameter("_wiperParams", fieldName);
         }
 
+        private void DrawSasageParameter(string fieldName)
+        {
+            DrawGeneratorParameter("_sasageParams", fieldName);
+        }
+
         private void DrawGeneratorParameter(string parameterProperty, string fieldName)
         {
             var field = "_" + char.ToLowerInvariant(fieldName[0]) + fieldName.Substring(1);
@@ -229,11 +215,7 @@ namespace PrismFanlight.Editor
                     DrawWiperControls();
                     break;
                 case MotionPreset.Sasage:
-                    SasageLowElevation = EditorGUILayout.Slider("Low Elevation", SasageLowElevation, -10f, 45f);
-                    SasageHighElevation = EditorGUILayout.Slider("High Elevation", SasageHighElevation, 30f, 90f);
-                    SasageLowExtension = EditorGUILayout.Slider("Low Reach", SasageLowExtension, 0.4f, 0.9f);
-                    SasageHighExtension = EditorGUILayout.Slider("High Reach", SasageHighExtension, 0.7f, 1f);
-                    SasageHoldRatio = EditorGUILayout.Slider("Top Hold Ratio", SasageHoldRatio, 0.1f, 0.55f);
+                    DrawSasageControls();
                     break;
                 case MotionPreset.Circle:
                     CircleClockwise = EditorGUILayout.Toggle("Clockwise", CircleClockwise);
@@ -405,6 +387,70 @@ namespace PrismFanlight.Editor
             }
         }
 
+        private void DrawSasageControls()
+        {
+            EditorGUILayout.Space();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _sasageAutoBake = EditorGUILayout.ToggleLeft("Auto Bake on Change", _sasageAutoBake, GUILayout.Width(160));
+                if (GUILayout.Button("Reset Defaults", EditorStyles.miniButton, GUILayout.Width(100)))
+                {
+                    Settings.SasageParams = SasageParameters.CreateDefault();
+                    Settings.GeneratorIntensity = 1f;
+                    _settingsEditor.Update();
+                    _generateRequested = true;
+                    GUI.FocusControl(null);
+                }
+            }
+
+            _sasageFoldoutTiming = EditorGUILayout.Foldout(_sasageFoldoutTiming, "Timing & Rhythm", true, EditorStyles.foldoutHeader);
+            if (_sasageFoldoutTiming)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawSasageParameter(nameof(SasageParameters.TopHoldRatio));
+                    DrawSasageParameter(nameof(SasageParameters.BodyPhaseLag));
+                    DrawSasageParameter(nameof(SasageParameters.WristPhaseLag));
+                }
+            }
+
+            _sasageFoldoutArm = EditorGUILayout.Foldout(_sasageFoldoutArm, "Arm Reach & Sway", true, EditorStyles.foldoutHeader);
+            if (_sasageFoldoutArm)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawSasageParameter(nameof(SasageParameters.LowElevation));
+                    DrawSasageParameter(nameof(SasageParameters.HighElevation));
+                    DrawSasageParameter(nameof(SasageParameters.LowExtension));
+                    DrawSasageParameter(nameof(SasageParameters.HighExtension));
+                    DrawSasageParameter(nameof(SasageParameters.BaseSideAngle));
+                    DrawSasageParameter(nameof(SasageParameters.SideSwayAmplitude));
+                }
+            }
+
+            _sasageFoldoutPenlight = EditorGUILayout.Foldout(_sasageFoldoutPenlight, "Penlight Follow", true, EditorStyles.foldoutHeader);
+            if (_sasageFoldoutPenlight)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawSasageParameter(nameof(SasageParameters.PenlightLowElevation));
+                    DrawSasageParameter(nameof(SasageParameters.PenlightRiseArc));
+                    DrawSasageParameter(nameof(SasageParameters.PenlightSideAmplitude));
+                }
+            }
+
+            _sasageFoldoutBody = EditorGUILayout.Foldout(_sasageFoldoutBody, "Body Bounce & Lean", true, EditorStyles.foldoutHeader);
+            if (_sasageFoldoutBody)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawSasageParameter(nameof(SasageParameters.BodyRiseLift));
+                    DrawSasageParameter(nameof(SasageParameters.BaseBodyLean));
+                    DrawSasageParameter(nameof(SasageParameters.BodyLeanAmplitude));
+                }
+            }
+        }
+
         private static void DrawSampleStatus(FanlightMotionAsset asset)
         {
             EditorGUILayout.Space();
@@ -450,14 +496,7 @@ namespace PrismFanlight.Editor
                     FanlightMotionPresetGenerator.GenerateWiper(asset, WiperParams, GeneratorIntensity);
                     break;
                 case MotionPreset.Sasage:
-                    FanlightMotionPresetGenerator.GenerateSasage(
-                        asset,
-                        SasageLowElevation,
-                        SasageHighElevation,
-                        SasageLowExtension,
-                        SasageHighExtension,
-                        SasageHoldRatio,
-                        GeneratorIntensity);
+                    FanlightMotionPresetGenerator.GenerateSasage(asset, SasageParams, GeneratorIntensity);
                     break;
                 case MotionPreset.PowerPump:
                     FanlightMotionPresetGenerator.GeneratePowerPump(asset, GeneratorIntensity);

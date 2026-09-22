@@ -18,19 +18,7 @@ namespace PrismFanlight.Editor
         private WiperParameters _wiperParams = WiperParameters.CreateDefault();
 
         [SerializeField]
-        private float _sasageLowElevation = 18f;
-
-        [SerializeField]
-        private float _sasageHighElevation = 68f;
-
-        [SerializeField]
-        private float _sasageLowExtension = 0.7f;
-
-        [SerializeField]
-        private float _sasageHighExtension = 0.96f;
-
-        [SerializeField]
-        private float _sasageHoldRatio = 0.4f;
+        private SasageParameters _sasageParams = SasageParameters.CreateDefault();
 
         [SerializeField]
         private float _generatorIntensity = 1f;
@@ -59,34 +47,10 @@ namespace PrismFanlight.Editor
             set => _wiperParams = value;
         }
 
-        internal float SasageLowElevation
+        internal SasageParameters SasageParams
         {
-            get => _sasageLowElevation;
-            set => _sasageLowElevation = value;
-        }
-
-        internal float SasageHighElevation
-        {
-            get => _sasageHighElevation;
-            set => _sasageHighElevation = value;
-        }
-
-        internal float SasageLowExtension
-        {
-            get => _sasageLowExtension;
-            set => _sasageLowExtension = value;
-        }
-
-        internal float SasageHighExtension
-        {
-            get => _sasageHighExtension;
-            set => _sasageHighExtension = value;
-        }
-
-        internal float SasageHoldRatio
-        {
-            get => _sasageHoldRatio;
-            set => _sasageHoldRatio = value;
+            get => _sasageParams;
+            set => _sasageParams = value;
         }
 
         internal float GeneratorIntensity
