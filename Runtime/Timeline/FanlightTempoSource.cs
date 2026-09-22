@@ -16,8 +16,6 @@ namespace PrismFanlight.Timeline
 
         internal int BeatUnit { get; }
 
-        internal double MusicalOriginSeconds { get; }
-
         internal bool HasClips => Starts.Length > 0;
 
 
@@ -28,15 +26,13 @@ namespace PrismFanlight.Timeline
             ReadOnlyMemory<double> ends,
             ReadOnlyMemory<double> bpms,
             int beatsPerBar,
-            int beatUnit,
-            double musicalOriginSeconds)
+            int beatUnit)
         {
             Starts = starts.Span.ToArray();
             Ends = ends.Span.ToArray();
             Bpms = bpms.Span.ToArray();
             BeatsPerBar = beatsPerBar;
             BeatUnit = beatUnit;
-            MusicalOriginSeconds = musicalOriginSeconds;
         }
     }
 }

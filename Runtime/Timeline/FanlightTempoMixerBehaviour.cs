@@ -164,12 +164,7 @@ namespace PrismFanlight.Timeline
         {
             if (a == null || b == null) return false;
 
-            if (a.BeatsPerBar != b.BeatsPerBar
-                || a.BeatUnit != b.BeatUnit
-                || a.MusicalOriginSeconds != b.MusicalOriginSeconds)
-            {
-                return false;
-            }
+            if (a.BeatsPerBar != b.BeatsPerBar || a.BeatUnit != b.BeatUnit) return false;
 
             var aStarts = a.Starts.Span;
             var bStarts = b.Starts.Span;

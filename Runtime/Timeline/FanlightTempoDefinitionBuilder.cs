@@ -17,7 +17,6 @@ namespace PrismFanlight.Timeline
         internal static bool TryBuildSource(
             int beatsPerBar,
             int beatUnit,
-            double musicalOriginSeconds,
             IEnumerable<TimelineClip> sourceClips,
             out FanlightTempoSource source,
             out string error)
@@ -41,8 +40,7 @@ namespace PrismFanlight.Timeline
                     Array.Empty<double>(),
                     Array.Empty<double>(),
                     beatsPerBar,
-                    beatUnit,
-                    musicalOriginSeconds);
+                    beatUnit);
                 error = string.Empty;
                 return true;
             }
@@ -51,13 +49,6 @@ namespace PrismFanlight.Timeline
             {
                 source = null;
                 error = "Tempo Track time signature is invalid.";
-                return false;
-            }
-
-            if (!IsFinite(musicalOriginSeconds))
-            {
-                source = null;
-                error = "Tempo Track Musical Origin Seconds must be finite.";
                 return false;
             }
 
@@ -106,8 +97,7 @@ namespace PrismFanlight.Timeline
                 ends,
                 bpms,
                 beatsPerBar,
-                beatUnit,
-                musicalOriginSeconds);
+                beatUnit);
             error = string.Empty;
             return true;
         }
@@ -170,7 +160,7 @@ namespace PrismFanlight.Timeline
             }
 
             var originBeat = EvaluateRawBeat(
-                source.MusicalOriginSeconds,
+                clipStarts[0],
                 starts,
                 bpms,
                 rawBeats,

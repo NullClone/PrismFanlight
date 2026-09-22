@@ -20,17 +20,12 @@ namespace PrismFanlight.Timeline
         [SerializeField]
         private FanlightBeatUnit _beatUnit = FanlightBeatUnit.u4;
 
-        [SerializeField]
-        private double _musicalOriginSeconds;
-
 
         // Properties
 
         internal int BeatsPerBar => _beatsPerBar;
 
         internal int BeatUnit => (int)_beatUnit;
-
-        internal double MusicalOriginSeconds => _musicalOriginSeconds;
 
         // Methods
 
@@ -78,7 +73,6 @@ namespace PrismFanlight.Timeline
             return FanlightTempoDefinitionBuilder.TryBuildSource(
                 BeatsPerBar,
                 BeatUnit,
-                MusicalOriginSeconds,
                 GetClips(),
                 out source,
                 out error);
