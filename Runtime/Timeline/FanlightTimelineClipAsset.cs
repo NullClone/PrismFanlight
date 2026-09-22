@@ -9,7 +9,7 @@ namespace PrismFanlight.Timeline
     {
         // Properties
 
-        public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.ClipIn;
+        public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.ClipIn | ClipCaps.Extrapolation;
 
         internal abstract FanlightTimelineClipValue Value { get; }
 
