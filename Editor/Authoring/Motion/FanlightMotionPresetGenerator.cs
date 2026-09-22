@@ -81,40 +81,76 @@ namespace PrismFanlight.Editor
             return recovering ? eased : 1f - eased;
         }
 
-        internal static void GenerateWiper(
-            FanlightMotionAsset asset,
-            float sweepAngle,
-            float armElevation,
-            float armExtension,
-            float penlightElevation,
-            float intensity)
+        internal static void GenerateWiper(FanlightMotionAsset asset, float intensity = 1f)
         {
+            GenerateWiper(asset, WiperParameters.CreateDefault(), intensity);
+        }
+
+        internal static void GenerateWiper(FanlightMotionAsset asset, in WiperParameters parameters, float intensity = 1f)
+        {
+            if (asset == null) throw new ArgumentNullException(nameof(asset));
+            if (!float.IsFinite(intensity)) throw new ArgumentOutOfRangeException(nameof(intensity));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            parameters.Validate();
             intensity = ClampIntensity(intensity);
-            sweepAngle = Mathf.Clamp(sweepAngle, 20f, 75f) * intensity;
-            armElevation = Mathf.Clamp(armElevation, 20f, 70f);
-            armExtension = Mathf.Clamp(armExtension, 0.5f, 1f);
-            penlightElevation = Mathf.Clamp(penlightElevation, 30f, 90f);
-            var referenceHand = SphericalPosition(armElevation, 0f, armExtension);
-            GenerateTrajectory(
-                asset,
-                128,
-                referenceHand,
-                Direction(penlightElevation, 0f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return SphericalPosition(
-                        armElevation + Mathf.Cos(angle * 2f) * 5f * intensity,
-                        Mathf.Sin(angle) * sweepAngle,
-                        armExtension - (1f - Mathf.Cos(angle * 2f)) * 0.025f);
-                },
-                phase => new Vector3(Mathf.Sin(phase * Mathf.PI * 2f) * 0.018f * intensity, 0f, 0f),
-                phase => Quaternion.Euler(
-                    -1f,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 3f * intensity),
-                0.28f,
-                0.25f);
+
+            var samples = new FanlightMotionSample[128];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var phase = (float)i / samples.Length;
+                var hand = EvaluateWiperHand(phase, parameters, intensity);
+
+                var wristSide = EvaluateWiperSide(phase - parameters.WristPhaseLag, parameters.TurnaroundEase);
+                var wristCenter = 1f - wristSide * wristSide;
+                var penlightDirection = Direction(
+                    parameters.PenlightElevation
+                    + parameters.PenlightCenterElevationArc * wristCenter * intensity,
+                    parameters.SideBias
+                    + parameters.PenlightSideAmplitude * wristSide * intensity);
+
+                var bodySide = EvaluateWiperSide(phase - parameters.BodyPhaseLag, parameters.TurnaroundEase);
+                var bodyTurn = bodySide * bodySide;
+                var bodyPosition = new Vector3(
+                    bodySide * parameters.BodySideShift * intensity,
+                    -bodyTurn * parameters.BodyVerticalBounce * intensity,
+                    0f);
+                var bodyRotation = Quaternion.Euler(
+                    parameters.BaseBodyLean,
+                    bodySide * parameters.BodyYawAmplitude * intensity,
+                    -bodySide * parameters.BodyRollAmplitude * intensity);
+
+                samples[i] = new FanlightMotionSample(
+                    bodyPosition,
+                    bodyRotation,
+                    hand,
+                    CreatePenlightRotation(penlightDirection, Vector3.forward));
+            }
+
+            var referenceDirection = Direction(parameters.PenlightElevation, parameters.SideBias);
+            var reference = new FanlightMotionSample(
+                Vector3.zero,
+                Quaternion.Euler(parameters.BaseBodyLean, 0f, 0f),
+                SphericalPosition(parameters.BaseElevation, parameters.SideBias, parameters.BaseExtension),
+                CreatePenlightRotation(referenceDirection, Vector3.forward));
+            asset.SetSamples(reference, samples);
+        }
+
+        private static Vector3 EvaluateWiperHand(float phase, in WiperParameters parameters, float intensity)
+        {
+            var side = EvaluateWiperSide(phase, parameters.TurnaroundEase);
+            var center = 1f - side * side;
+            return SphericalPosition(
+                parameters.BaseElevation + parameters.CenterElevationArc * center * intensity,
+                parameters.SideBias + parameters.SweepAngle * side * intensity,
+                parameters.BaseExtension + parameters.CenterExtensionArc * center * intensity);
+        }
+
+        private static float EvaluateWiperSide(float phase, float turnaroundEase)
+        {
+            var side = Mathf.Sin(Mathf.Repeat(phase, 1f) * Mathf.PI * 2f);
+            var magnitude = Mathf.Abs(side);
+            var exponent = Mathf.Lerp(1f, 4f, turnaroundEase);
+            return Mathf.Sign(side) * (1f - Mathf.Pow(1f - magnitude, exponent));
         }
 
         internal static void GenerateSasage(

@@ -48,6 +48,11 @@ namespace PrismFanlight.Editor
         private bool _drumFoldoutBody = true;
         private bool _drumFoldoutReference;
         private bool _drumAutoBake;
+        private bool _wiperFoldoutTiming = true;
+        private bool _wiperFoldoutArm = true;
+        private bool _wiperFoldoutPenlight = true;
+        private bool _wiperFoldoutBody = true;
+        private bool _wiperAutoBake;
         private float _phase;
 
         private SettingsContainer _settingsContainer;
@@ -66,29 +71,7 @@ namespace PrismFanlight.Editor
 
         private DrumParameters DrumParams => Settings.DrumParams;
 
-        private float WiperSweepAngle
-        {
-            get => _settingsProperty.FindPropertyRelative("_wiperSweepAngle").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_wiperSweepAngle").floatValue = value;
-        }
-
-        private float WiperArmElevation
-        {
-            get => _settingsProperty.FindPropertyRelative("_wiperArmElevation").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_wiperArmElevation").floatValue = value;
-        }
-
-        private float WiperArmExtension
-        {
-            get => _settingsProperty.FindPropertyRelative("_wiperArmExtension").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_wiperArmExtension").floatValue = value;
-        }
-
-        private float WiperPenlightElevation
-        {
-            get => _settingsProperty.FindPropertyRelative("_wiperPenlightElevation").floatValue;
-            set => _settingsProperty.FindPropertyRelative("_wiperPenlightElevation").floatValue = value;
-        }
+        private WiperParameters WiperParams => Settings.WiperParams;
 
         private float SasageLowElevation
         {
@@ -134,6 +117,10 @@ namespace PrismFanlight.Editor
 
         private FanlightMotionGeneratorSettings Settings => _settingsContainer.Settings;
 
+        private bool AutoBake => Preset == MotionPreset.Drum
+                                 ? _drumAutoBake
+                                 : Preset == MotionPreset.Wiper && _wiperAutoBake;
+
         // Methods
 
         private void OnEnable()
@@ -171,8 +158,18 @@ namespace PrismFanlight.Editor
 
         private void DrawDrumParameter(string fieldName)
         {
+            DrawGeneratorParameter("_drumParams", fieldName);
+        }
+
+        private void DrawWiperParameter(string fieldName)
+        {
+            DrawGeneratorParameter("_wiperParams", fieldName);
+        }
+
+        private void DrawGeneratorParameter(string parameterProperty, string fieldName)
+        {
             var field = "_" + char.ToLowerInvariant(fieldName[0]) + fieldName.Substring(1);
-            EditorGUILayout.PropertyField(_settingsProperty.FindPropertyRelative("_drumParams")
+            EditorGUILayout.PropertyField(_settingsProperty.FindPropertyRelative(parameterProperty)
                 .FindPropertyRelative(field));
         }
 
@@ -202,14 +199,7 @@ namespace PrismFanlight.Editor
                     DrawDrumControls();
                     break;
                 case MotionPreset.Wiper:
-                    WiperSweepAngle = EditorGUILayout.Slider("Sweep Angle", WiperSweepAngle, 20f, 75f);
-                    WiperArmElevation = EditorGUILayout.Slider("Hand Elevation", WiperArmElevation, 20f, 70f);
-                    WiperArmExtension = EditorGUILayout.Slider("Hand Reach", WiperArmExtension, 0.5f, 1f);
-                    WiperPenlightElevation = EditorGUILayout.Slider(
-                        "Penlight Elevation",
-                        WiperPenlightElevation,
-                        30f,
-                        90f);
+                    DrawWiperControls();
                     break;
                 case MotionPreset.Sasage:
                     SasageLowElevation = EditorGUILayout.Slider("Low Elevation", SasageLowElevation, -10f, 45f);
@@ -227,7 +217,7 @@ namespace PrismFanlight.Editor
             var after = JsonUtility.ToJson(Settings);
             var changed = before != after;
             var generate = GUILayout.Button("Generate Motion") || _generateRequested
-                                                               || (changed && previousPreset == Preset && Preset == MotionPreset.Drum && _drumAutoBake);
+                                                               || (changed && previousPreset == Preset && AutoBake);
             if (changed || generate)
             {
                 Undo.RecordObject(asset, generate ? "Generate Motion" : "Edit Motion Settings");
@@ -248,7 +238,7 @@ namespace PrismFanlight.Editor
 
             if (!string.IsNullOrEmpty(_generationError))
                 EditorGUILayout.HelpBox(_generationError, MessageType.Error);
-            if (!_drumAutoBake || Preset != MotionPreset.Drum)
+            if (!AutoBake)
                 EditorGUILayout.HelpBox("Generate Motion applies the current settings to the motion asset.", MessageType.Info);
         }
 
@@ -340,6 +330,77 @@ namespace PrismFanlight.Editor
             }
         }
 
+        private void DrawWiperControls()
+        {
+            EditorGUILayout.Space();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _wiperAutoBake = EditorGUILayout.ToggleLeft("Auto Bake on Change", _wiperAutoBake, GUILayout.Width(160));
+                if (GUILayout.Button("Reset Defaults", EditorStyles.miniButton, GUILayout.Width(100)))
+                {
+                    Settings.WiperParams = WiperParameters.CreateDefault();
+                    Settings.GeneratorIntensity = 1f;
+                    _settingsEditor.Update();
+                    _generateRequested = true;
+                    GUI.FocusControl(null);
+                }
+
+                if (GUILayout.Button("Copy Code", EditorStyles.miniButton, GUILayout.Width(80)))
+                {
+                    CopyWiperParamsToClipboard();
+                }
+            }
+
+            _wiperFoldoutTiming = EditorGUILayout.Foldout(_wiperFoldoutTiming, "Timing & Rhythm", true, EditorStyles.foldoutHeader);
+            if (_wiperFoldoutTiming)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawWiperParameter(nameof(WiperParameters.TurnaroundEase));
+                    DrawWiperParameter(nameof(WiperParameters.BodyPhaseLag));
+                    DrawWiperParameter(nameof(WiperParameters.WristPhaseLag));
+                }
+            }
+
+            _wiperFoldoutArm = EditorGUILayout.Foldout(_wiperFoldoutArm, "Arm Swing & Reach", true, EditorStyles.foldoutHeader);
+            if (_wiperFoldoutArm)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawWiperParameter(nameof(WiperParameters.SideBias));
+                    DrawWiperParameter(nameof(WiperParameters.BaseElevation));
+                    DrawWiperParameter(nameof(WiperParameters.SweepAngle));
+                    DrawWiperParameter(nameof(WiperParameters.CenterElevationArc));
+                    DrawWiperParameter(nameof(WiperParameters.BaseExtension));
+                    DrawWiperParameter(nameof(WiperParameters.CenterExtensionArc));
+                }
+            }
+
+            _wiperFoldoutPenlight = EditorGUILayout.Foldout(_wiperFoldoutPenlight, "Penlight Follow", true, EditorStyles.foldoutHeader);
+            if (_wiperFoldoutPenlight)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawWiperParameter(nameof(WiperParameters.PenlightElevation));
+                    DrawWiperParameter(nameof(WiperParameters.PenlightSideAmplitude));
+                    DrawWiperParameter(nameof(WiperParameters.PenlightCenterElevationArc));
+                }
+            }
+
+            _wiperFoldoutBody = EditorGUILayout.Foldout(_wiperFoldoutBody, "Body Sway & Balance", true, EditorStyles.foldoutHeader);
+            if (_wiperFoldoutBody)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    DrawWiperParameter(nameof(WiperParameters.BodySideShift));
+                    DrawWiperParameter(nameof(WiperParameters.BodyVerticalBounce));
+                    DrawWiperParameter(nameof(WiperParameters.BaseBodyLean));
+                    DrawWiperParameter(nameof(WiperParameters.BodyYawAmplitude));
+                    DrawWiperParameter(nameof(WiperParameters.BodyRollAmplitude));
+                }
+            }
+        }
+
         private void CopyDrumParamsToClipboard()
         {
             var p = DrumParams;
@@ -371,6 +432,32 @@ namespace PrismFanlight.Editor
     ReferenceBodyLean = {p.ReferenceBodyLean:R}f,
     ReferencePitch = {p.ReferencePitch:R}f,
     WristPhaseLag = {p.WristPhaseLag:R}f
+}}");
+            GUIUtility.systemCopyBuffer = text;
+        }
+
+        private void CopyWiperParamsToClipboard()
+        {
+            var p = WiperParams;
+            var text = FormattableString.Invariant($@"new WiperParameters
+{{
+    TurnaroundEase = {p.TurnaroundEase:R}f,
+    BodyPhaseLag = {p.BodyPhaseLag:R}f,
+    WristPhaseLag = {p.WristPhaseLag:R}f,
+    SideBias = {p.SideBias:R}f,
+    BaseElevation = {p.BaseElevation:R}f,
+    SweepAngle = {p.SweepAngle:R}f,
+    CenterElevationArc = {p.CenterElevationArc:R}f,
+    BaseExtension = {p.BaseExtension:R}f,
+    CenterExtensionArc = {p.CenterExtensionArc:R}f,
+    PenlightElevation = {p.PenlightElevation:R}f,
+    PenlightSideAmplitude = {p.PenlightSideAmplitude:R}f,
+    PenlightCenterElevationArc = {p.PenlightCenterElevationArc:R}f,
+    BodySideShift = {p.BodySideShift:R}f,
+    BodyVerticalBounce = {p.BodyVerticalBounce:R}f,
+    BaseBodyLean = {p.BaseBodyLean:R}f,
+    BodyYawAmplitude = {p.BodyYawAmplitude:R}f,
+    BodyRollAmplitude = {p.BodyRollAmplitude:R}f
 }}");
             GUIUtility.systemCopyBuffer = text;
         }
@@ -417,13 +504,7 @@ namespace PrismFanlight.Editor
                     FanlightMotionPresetGenerator.GenerateDrum(asset, DrumParams, GeneratorIntensity);
                     break;
                 case MotionPreset.Wiper:
-                    FanlightMotionPresetGenerator.GenerateWiper(
-                        asset,
-                        WiperSweepAngle,
-                        WiperArmElevation,
-                        WiperArmExtension,
-                        WiperPenlightElevation,
-                        GeneratorIntensity);
+                    FanlightMotionPresetGenerator.GenerateWiper(asset, WiperParams, GeneratorIntensity);
                     break;
                 case MotionPreset.Sasage:
                     FanlightMotionPresetGenerator.GenerateSasage(

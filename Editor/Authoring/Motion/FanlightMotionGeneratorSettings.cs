@@ -15,16 +15,7 @@ namespace PrismFanlight.Editor
         private DrumParameters _drumParams = DrumParameters.CreateDefault();
 
         [SerializeField]
-        private float _wiperSweepAngle = 55f;
-
-        [SerializeField]
-        private float _wiperArmElevation = 42f;
-
-        [SerializeField]
-        private float _wiperArmExtension = 0.88f;
-
-        [SerializeField]
-        private float _wiperPenlightElevation = 65f;
+        private WiperParameters _wiperParams = WiperParameters.CreateDefault();
 
         [SerializeField]
         private float _sasageLowElevation = 18f;
@@ -61,28 +52,10 @@ namespace PrismFanlight.Editor
             set => _drumParams = value;
         }
 
-        internal float WiperSweepAngle
+        internal WiperParameters WiperParams
         {
-            get => _wiperSweepAngle;
-            set => _wiperSweepAngle = value;
-        }
-
-        internal float WiperArmElevation
-        {
-            get => _wiperArmElevation;
-            set => _wiperArmElevation = value;
-        }
-
-        internal float WiperArmExtension
-        {
-            get => _wiperArmExtension;
-            set => _wiperArmExtension = value;
-        }
-
-        internal float WiperPenlightElevation
-        {
-            get => _wiperPenlightElevation;
-            set => _wiperPenlightElevation = value;
+            get => _wiperParams;
+            set => _wiperParams = value;
         }
 
         internal float SasageLowElevation
