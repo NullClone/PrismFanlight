@@ -38,6 +38,7 @@ namespace PrismFanlight.Editor
         [SerializeField]
         private bool _circleClockwise = true;
 
+
         // Properties
 
         internal int Preset

@@ -29,9 +29,9 @@ namespace PrismFanlight.Editor
 
             var reference = new FanlightMotionSample(
                 Vector3.zero,
-                Quaternion.Euler(parameters.ReferenceBodyLean, 0f, 0f),
-                new Vector3(parameters.ReferenceHandX, parameters.ReferenceHandY, parameters.ReferenceHandZ),
-                Quaternion.AngleAxis(parameters.ReferencePitch, Vector3.right));
+                Quaternion.Euler(parameters.BaseBodyLean, 0f, 0f),
+                SphericalPosition(parameters.BaseElevation, parameters.BaseSideAngle, parameters.BaseExtension),
+                Quaternion.AngleAxis(parameters.BasePitch, Vector3.right));
             asset.SetSamples(reference, samples);
         }
 
@@ -80,6 +80,7 @@ namespace PrismFanlight.Editor
             var eased = progress * progress * progress * (progress * (progress * 6f - 15f) + 10f);
             return recovering ? eased : 1f - eased;
         }
+
 
         internal static void GenerateWiper(FanlightMotionAsset asset, float intensity = 1f)
         {
@@ -152,6 +153,7 @@ namespace PrismFanlight.Editor
             var exponent = Mathf.Lerp(1f, 4f, turnaroundEase);
             return Mathf.Sign(side) * (1f - Mathf.Pow(1f - magnitude, exponent));
         }
+
 
         internal static void GenerateSasage(
             FanlightMotionAsset asset,

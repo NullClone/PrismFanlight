@@ -68,23 +68,9 @@ namespace PrismFanlight.Editor
         [SerializeField, Range(0f, 15f)]
         private float _bodyLeanAmplitude = 2.5f;
 
-        [SerializeField, Range(-0.5f, 0.5f)]
-        private float _referenceHandX = 0.075f;
-
-        [SerializeField, Range(0f, 1f)]
-        private float _referenceHandY = 0.43f;
-
-        [SerializeField, Range(0f, 1f)]
-        private float _referenceHandZ = 0.43f;
-
-        [SerializeField, Range(-10f, 20f)]
-        private float _referenceBodyLean = 1f;
-
-        [SerializeField, Range(-45f, 90f)]
-        private float _referencePitch = 20f;
-
         [SerializeField, Range(0f, 0.25f)]
         private float _wristPhaseLag = 0.06f;
+
 
         // Properties
 
@@ -208,41 +194,12 @@ namespace PrismFanlight.Editor
             set => _bodyLeanAmplitude = value;
         }
 
-        internal float ReferenceHandX
-        {
-            get => _referenceHandX;
-            set => _referenceHandX = value;
-        }
-
-        internal float ReferenceHandY
-        {
-            get => _referenceHandY;
-            set => _referenceHandY = value;
-        }
-
-        internal float ReferenceHandZ
-        {
-            get => _referenceHandZ;
-            set => _referenceHandZ = value;
-        }
-
-        internal float ReferenceBodyLean
-        {
-            get => _referenceBodyLean;
-            set => _referenceBodyLean = value;
-        }
-
-        internal float ReferencePitch
-        {
-            get => _referencePitch;
-            set => _referencePitch = value;
-        }
-
         internal float WristPhaseLag
         {
             get => _wristPhaseLag;
             set => _wristPhaseLag = value;
         }
+
 
         // Methods
 
@@ -270,20 +227,15 @@ namespace PrismFanlight.Editor
             RequireRange(_bodyPush, -0.05f, 0.05f, nameof(BodyPush));
             RequireRange(_baseBodyLean, -10f, 20f, nameof(BaseBodyLean));
             RequireRange(_bodyLeanAmplitude, 0f, 15f, nameof(BodyLeanAmplitude));
-            RequireRange(_referenceHandX, -0.5f, 0.5f, nameof(ReferenceHandX));
-            RequireRange(_referenceHandY, 0f, 1f, nameof(ReferenceHandY));
-            RequireRange(_referenceHandZ, 0f, 1f, nameof(ReferenceHandZ));
-            RequireRange(_referenceBodyLean, -10f, 20f, nameof(ReferenceBodyLean));
-            RequireRange(_referencePitch, -45f, 90f, nameof(ReferencePitch));
             RequireRange(_wristPhaseLag, 0f, 0.25f, nameof(WristPhaseLag));
-            if (new Vector3(ReferenceHandX, ReferenceHandY, ReferenceHandZ).sqrMagnitude > 1f)
-                throw new ArgumentException("Reference hand must remain within the arm length.");
         }
 
         private static void RequireRange(float value, float minimum, float maximum, string name)
         {
             if (!float.IsFinite(value) || value < minimum || value > maximum)
+            {
                 throw new ArgumentOutOfRangeException(name, $"{name} must be between {minimum} and {maximum}.");
+            }
         }
     }
 }

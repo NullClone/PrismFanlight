@@ -13,14 +13,32 @@ namespace PrismFanlight.Editor
             Drum,
             Wiper,
             Sasage,
+
+            [InspectorName("Power Pump (Experimental)")]
             PowerPump,
+
+            [InspectorName("Double Pump (Experimental)")]
             DoublePump,
+
+            [InspectorName("Diagonal Pump (Experimental)")]
             DiagonalPump,
+
+            [InspectorName("Forward Thrust (Experimental)")]
             ForwardThrust,
+
+            [InspectorName("Overhead Swing (Experimental)")]
             OverheadSwing,
+
+            [InspectorName("Circle (Experimental)")]
             Circle,
+
+            [InspectorName("Figure Eight (Experimental)")]
             FigureEight,
+
+            [InspectorName("Groove Bounce (Experimental)")]
             GrooveBounce,
+
+            [InspectorName("Raised Sway (Experimental)")]
             RaisedSway
         }
 
@@ -46,7 +64,6 @@ namespace PrismFanlight.Editor
         private bool _drumFoldoutArm = true;
         private bool _drumFoldoutPitch = true;
         private bool _drumFoldoutBody = true;
-        private bool _drumFoldoutReference;
         private bool _drumAutoBake;
         private bool _wiperFoldoutTiming = true;
         private bool _wiperFoldoutArm = true;
@@ -60,6 +77,7 @@ namespace PrismFanlight.Editor
         private SerializedProperty _settingsProperty;
         private bool _generateRequested;
         private string _generationError;
+
 
         // Properties
 
@@ -118,22 +136,27 @@ namespace PrismFanlight.Editor
         private FanlightMotionGeneratorSettings Settings => _settingsContainer.Settings;
 
         private bool AutoBake => Preset == MotionPreset.Drum
-                                 ? _drumAutoBake
-                                 : Preset == MotionPreset.Wiper && _wiperAutoBake;
+            ? _drumAutoBake
+            : Preset == MotionPreset.Wiper && _wiperAutoBake;
+
 
         // Methods
 
         private void OnEnable()
         {
             _settingsContainer = CreateInstance<SettingsContainer>();
+
             LoadSettings();
+
             Undo.undoRedoPerformed += OnUndoRedo;
         }
 
         private void OnDisable()
         {
             Undo.undoRedoPerformed -= OnUndoRedo;
+
             _settingsEditor?.Dispose();
+
             if (_settingsContainer != null) DestroyImmediate(_settingsContainer);
         }
 
@@ -141,8 +164,12 @@ namespace PrismFanlight.Editor
         {
             var asset = (FanlightMotionAsset)target;
             var settings = new FanlightMotionGeneratorSettings();
+
             if (!string.IsNullOrEmpty(asset.EditorGeneratorSettings))
+            {
                 JsonUtility.FromJsonOverwrite(asset.EditorGeneratorSettings, settings);
+            }
+
             _settingsContainer.Settings = settings;
             _settingsEditor?.Dispose();
             _settingsEditor = new SerializedObject(_settingsContainer);
@@ -169,8 +196,8 @@ namespace PrismFanlight.Editor
         private void DrawGeneratorParameter(string parameterProperty, string fieldName)
         {
             var field = "_" + char.ToLowerInvariant(fieldName[0]) + fieldName.Substring(1);
-            EditorGUILayout.PropertyField(_settingsProperty.FindPropertyRelative(parameterProperty)
-                .FindPropertyRelative(field));
+
+            EditorGUILayout.PropertyField(_settingsProperty.FindPropertyRelative(parameterProperty).FindPropertyRelative(field));
         }
 
 
@@ -256,11 +283,6 @@ namespace PrismFanlight.Editor
                     _generateRequested = true;
                     GUI.FocusControl(null);
                 }
-
-                if (GUILayout.Button("Copy Code", EditorStyles.miniButton, GUILayout.Width(80)))
-                {
-                    CopyDrumParamsToClipboard();
-                }
             }
 
             _drumFoldoutTiming = EditorGUILayout.Foldout(_drumFoldoutTiming, "Timing & Rhythm", true, EditorStyles.foldoutHeader);
@@ -315,19 +337,6 @@ namespace PrismFanlight.Editor
                     DrawDrumParameter(nameof(DrumParameters.BodyLeanAmplitude));
                 }
             }
-
-            _drumFoldoutReference = EditorGUILayout.Foldout(_drumFoldoutReference, "Reference Pose", true, EditorStyles.foldoutHeader);
-            if (_drumFoldoutReference)
-            {
-                using (new EditorGUI.IndentLevelScope())
-                {
-                    DrawDrumParameter(nameof(DrumParameters.ReferenceHandX));
-                    DrawDrumParameter(nameof(DrumParameters.ReferenceHandY));
-                    DrawDrumParameter(nameof(DrumParameters.ReferenceHandZ));
-                    DrawDrumParameter(nameof(DrumParameters.ReferenceBodyLean));
-                    DrawDrumParameter(nameof(DrumParameters.ReferencePitch));
-                }
-            }
         }
 
         private void DrawWiperControls()
@@ -343,11 +352,6 @@ namespace PrismFanlight.Editor
                     _settingsEditor.Update();
                     _generateRequested = true;
                     GUI.FocusControl(null);
-                }
-
-                if (GUILayout.Button("Copy Code", EditorStyles.miniButton, GUILayout.Width(80)))
-                {
-                    CopyWiperParamsToClipboard();
                 }
             }
 
@@ -401,68 +405,7 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private void CopyDrumParamsToClipboard()
-        {
-            var p = DrumParams;
-            var text = FormattableString.Invariant($@"new DrumParameters
-{{
-    RecoveryDuration = {p.RecoveryDuration:R}f,
-    BodyPhaseLag = {p.BodyPhaseLag:R}f,
-    BaseElevation = {p.BaseElevation:R}f,
-    ElevationAmplitude = {p.ElevationAmplitude:R}f,
-    BaseExtension = {p.BaseExtension:R}f,
-    LiftExtension = {p.LiftExtension:R}f,
-    RecoveryExtensionArc = {p.RecoveryExtensionArc:R}f,
-    StrikeExtensionArc = {p.StrikeExtensionArc:R}f,
-    BaseSideAngle = {p.BaseSideAngle:R}f,
-    RecoverySideArc = {p.RecoverySideArc:R}f,
-    StrikeSideArc = {p.StrikeSideArc:R}f,
-    BasePitch = {p.BasePitch:R}f,
-    PitchAmplitude = {p.PitchAmplitude:R}f,
-    RecoveryPitchArc = {p.RecoveryPitchArc:R}f,
-    StrikePitchArc = {p.StrikePitchArc:R}f,
-    PitchPivot = {p.PitchPivot:R}f,
-    BodySink = {p.BodySink:R}f,
-    BodyPush = {p.BodyPush:R}f,
-    BaseBodyLean = {p.BaseBodyLean:R}f,
-    BodyLeanAmplitude = {p.BodyLeanAmplitude:R}f,
-    ReferenceHandX = {p.ReferenceHandX:R}f,
-    ReferenceHandY = {p.ReferenceHandY:R}f,
-    ReferenceHandZ = {p.ReferenceHandZ:R}f,
-    ReferenceBodyLean = {p.ReferenceBodyLean:R}f,
-    ReferencePitch = {p.ReferencePitch:R}f,
-    WristPhaseLag = {p.WristPhaseLag:R}f
-}}");
-            GUIUtility.systemCopyBuffer = text;
-        }
-
-        private void CopyWiperParamsToClipboard()
-        {
-            var p = WiperParams;
-            var text = FormattableString.Invariant($@"new WiperParameters
-{{
-    TurnaroundEase = {p.TurnaroundEase:R}f,
-    BodyPhaseLag = {p.BodyPhaseLag:R}f,
-    WristPhaseLag = {p.WristPhaseLag:R}f,
-    SideBias = {p.SideBias:R}f,
-    BaseElevation = {p.BaseElevation:R}f,
-    SweepAngle = {p.SweepAngle:R}f,
-    CenterElevationArc = {p.CenterElevationArc:R}f,
-    BaseExtension = {p.BaseExtension:R}f,
-    CenterExtensionArc = {p.CenterExtensionArc:R}f,
-    PenlightElevation = {p.PenlightElevation:R}f,
-    PenlightSideAmplitude = {p.PenlightSideAmplitude:R}f,
-    PenlightCenterElevationArc = {p.PenlightCenterElevationArc:R}f,
-    BodySideShift = {p.BodySideShift:R}f,
-    BodyVerticalBounce = {p.BodyVerticalBounce:R}f,
-    BaseBodyLean = {p.BaseBodyLean:R}f,
-    BodyYawAmplitude = {p.BodyYawAmplitude:R}f,
-    BodyRollAmplitude = {p.BodyRollAmplitude:R}f
-}}");
-            GUIUtility.systemCopyBuffer = text;
-        }
-
-        private void DrawSampleStatus(FanlightMotionAsset asset)
+        private static void DrawSampleStatus(FanlightMotionAsset asset)
         {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Baked Transform Clip", EditorStyles.boldLabel);
@@ -545,6 +488,7 @@ namespace PrismFanlight.Editor
                     break;
             }
         }
+
 
         private sealed class SettingsContainer : ScriptableObject
         {

@@ -323,14 +323,14 @@ namespace PrismFanlight.Editor
         [OnOpenAsset]
         private static bool OnOpenAsset(int instanceId, int line)
         {
-            if (EditorUtility.EntityIdToObject(instanceId) is not FanlightLayoutAsset layout)
+            if (EditorUtility.EntityIdToObject(instanceId) is FanlightLayoutAsset layout)
             {
-                return false;
+                Open(layout);
+
+                return true;
             }
 
-            Open(layout);
-
-            return true;
+            return false;
         }
 
         internal static void Open(FanlightLayoutAsset layout) => Open(null, layout);
