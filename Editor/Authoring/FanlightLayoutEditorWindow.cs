@@ -306,6 +306,7 @@ namespace PrismFanlight.Editor
 
         // Methods
 
+        /*
         [MenuItem("Window/Prism Fanlight/Layout Editor")]
         private static void OpenFromMenu()
         {
@@ -317,6 +318,7 @@ namespace PrismFanlight.Editor
 
             if (window.FollowCurrentSelection(true)) window.QueueSelectionFollow();
         }
+        */
 
         [OnOpenAsset]
         private static bool OnOpenAsset(int instanceId, int line)
