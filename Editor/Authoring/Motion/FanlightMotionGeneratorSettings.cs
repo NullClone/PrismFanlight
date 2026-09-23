@@ -12,6 +12,9 @@ namespace PrismFanlight.Editor
         private int _preset = 0;
 
         [SerializeField]
+        private int _bakedPreset = -1;
+
+        [SerializeField]
         private DrumParameters _drumParams = DrumParameters.CreateDefault();
 
         [SerializeField]
@@ -33,6 +36,12 @@ namespace PrismFanlight.Editor
         {
             get => _preset;
             set => _preset = value;
+        }
+
+        internal int BakedPreset
+        {
+            get => _bakedPreset;
+            set => _bakedPreset = value;
         }
 
         internal DrumParameters DrumParams

@@ -14,7 +14,8 @@ namespace PrismFanlight.Core
                 return new FanlightIntentState(
                     value.Energy,
                     value.Participation,
-                    value.Synchronization);
+                    value.Synchronization,
+                    value.TransitionScatter);
             }
             catch (ArgumentException)
             {

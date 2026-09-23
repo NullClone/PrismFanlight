@@ -1,5 +1,4 @@
 using System;
-using PrismFanlight.Authoring;
 using UnityEngine;
 
 namespace PrismFanlight.Core
@@ -58,7 +57,8 @@ namespace PrismFanlight.Core
             return new FanlightIntentState(
                 Has(patch.Fields, FanlightIntentFields.Energy) ? Lerp(current.Energy, value.Energy, weight) : current.Energy,
                 Has(patch.Fields, FanlightIntentFields.Participation) ? Lerp(current.Participation, value.Participation, weight) : current.Participation,
-                Has(patch.Fields, FanlightIntentFields.Synchronization) ? Lerp(current.Synchronization, value.Synchronization, weight) : current.Synchronization
+                Has(patch.Fields, FanlightIntentFields.Synchronization) ? Lerp(current.Synchronization, value.Synchronization, weight) : current.Synchronization,
+                Has(patch.Fields, FanlightIntentFields.TransitionScatter) ? Lerp(current.TransitionScatter, value.TransitionScatter, weight) : current.TransitionScatter
             );
         }
 
@@ -67,49 +67,51 @@ namespace PrismFanlight.Core
             ValidateMask((int)patch.Fields, (int)FanlightMotionFields.All, nameof(patch));
 
             var value = patch.Value;
-            var assetA = current.GetAsset(0);
-            var assetB = current.GetAsset(1);
-            var assetC = current.GetAsset(2);
-            var assetWeights = new Vector3(
+            var sourceA = current.GetSource(0);
+            var sourceB = current.GetSource(1);
+            var sourceC = current.GetSource(2);
+            var sourceWeights = new Vector3(
                 current.GetAssetWeight(0),
                 current.GetAssetWeight(1),
                 current.GetAssetWeight(2));
 
-            if (Has(patch.Fields, FanlightMotionFields.MotionAsset))
+            if (Has(patch.Fields, FanlightMotionFields.Source))
             {
-                assetA = null;
-                assetB = null;
-                assetC = null;
-                assetWeights = Vector3.zero;
+                sourceA = default;
+                sourceB = default;
+                sourceC = default;
+                sourceWeights = Vector3.zero;
                 var currentWeight = 1f - weight;
                 var incomingWeight = weight;
 
                 for (var i = 0; i < 3; i++)
                 {
-                    AddAsset(
-                        current.GetAsset(i),
+                    AddMotionSource(
+                        current.GetSource(i),
                         current.GetAssetWeight(i) * currentWeight,
-                        ref assetA,
-                        ref assetB,
-                        ref assetC,
-                        ref assetWeights);
-                    AddAsset(
-                        value.GetAsset(i),
+                        ref sourceA,
+                        ref sourceB,
+                        ref sourceC,
+                        ref sourceWeights);
+                }
+
+                for (var i = 0; i < 3; i++)
+                {
+                    AddMotionSource(
+                        value.GetSource(i),
                         value.GetAssetWeight(i) * incomingWeight,
-                        ref assetA,
-                        ref assetB,
-                        ref assetC,
-                        ref assetWeights);
+                        ref sourceA,
+                        ref sourceB,
+                        ref sourceC,
+                        ref sourceWeights);
                 }
             }
 
-            return FanlightMotionState.BlendAssets(
-                assetA,
-                assetB,
-                assetC,
-                assetWeights,
-                Has(patch.Fields, FanlightMotionFields.BeatsPerCycle) ? Lerp(current.BeatsPerCycle, value.BeatsPerCycle, weight) : current.BeatsPerCycle,
-                Has(patch.Fields, FanlightMotionFields.PhaseOffsetBeats) ? Lerp(current.PhaseOffsetBeats, value.PhaseOffsetBeats, weight) : current.PhaseOffsetBeats,
+            return FanlightMotionState.BlendSources(
+                sourceA,
+                sourceB,
+                sourceC,
+                sourceWeights,
                 Has(patch.Fields, FanlightMotionFields.BlockDelayXBeats) ? Lerp(current.BlockDelayXBeats, value.BlockDelayXBeats, weight) : current.BlockDelayXBeats,
                 Has(patch.Fields, FanlightMotionFields.BlockDelayYBeats) ? Lerp(current.BlockDelayYBeats, value.BlockDelayYBeats, weight) : current.BlockDelayYBeats
             );
@@ -300,56 +302,38 @@ namespace PrismFanlight.Core
 
         private static float Lerp(float current, float incoming, float weight) => current + (incoming - current) * weight;
 
-        private static void AddAsset(
-            FanlightMotionAsset asset,
+        private static void AddMotionSource(
+            FanlightMotionSource source,
             float weight,
-            ref FanlightMotionAsset assetA,
-            ref FanlightMotionAsset assetB,
-            ref FanlightMotionAsset assetC,
+            ref FanlightMotionSource sourceA,
+            ref FanlightMotionSource sourceB,
+            ref FanlightMotionSource sourceC,
             ref Vector3 weights)
         {
             if (weight <= 0.000001f) return;
 
-            if (assetA == asset)
-            {
-                weights.x += weight;
-                return;
-            }
-
-            if (assetB == asset)
-            {
-                weights.y += weight;
-                return;
-            }
-
-            if (assetC == asset)
-            {
-                weights.z += weight;
-                return;
-            }
-
             if (weights.x <= 0.000001f)
             {
-                assetA = asset;
+                sourceA = source;
                 weights.x = weight;
                 return;
             }
 
             if (weights.y <= 0.000001f)
             {
-                assetB = asset;
+                sourceB = source;
                 weights.y = weight;
                 return;
             }
 
             if (weights.z <= 0.000001f)
             {
-                assetC = asset;
+                sourceC = source;
                 weights.z = weight;
                 return;
             }
 
-            throw new InvalidOperationException("Motion evaluation cannot contain more than three assets.");
+            throw new InvalidOperationException("Motion evaluation cannot contain more than three sources.");
         }
 
         private static void AddColorSource(

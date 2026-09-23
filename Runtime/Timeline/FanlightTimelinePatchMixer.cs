@@ -1,5 +1,4 @@
 using System;
-using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 
@@ -55,6 +54,7 @@ namespace PrismFanlight.Timeline
             var energy = new FanlightWeightedFloat();
             var participation = new FanlightWeightedFloat();
             var synchronization = new FanlightWeightedFloat();
+            var transitionScatter = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
@@ -64,6 +64,7 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightIntentFields.Energy)) energy.Add(sourceValue.Energy, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Participation)) participation.Add(sourceValue.Participation, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Synchronization)) synchronization.Add(sourceValue.Synchronization, sample.Weight);
+                if (Has(fields, FanlightIntentFields.TransitionScatter)) transitionScatter.Add(sourceValue.TransitionScatter, sample.Weight);
             }
 
             if (fields == FanlightIntentFields.None)
@@ -77,7 +78,8 @@ namespace PrismFanlight.Timeline
             var value = new FanlightIntentState(
                 energy.Value(fallback.Energy),
                 participation.Value(fallback.Participation),
-                synchronization.Value(fallback.Synchronization)
+                synchronization.Value(fallback.Synchronization),
+                transitionScatter.Value(fallback.TransitionScatter)
             );
 
             patch = new FanlightShowPatch(
@@ -101,21 +103,30 @@ namespace PrismFanlight.Timeline
         {
             ValidateMask((int)fields, (int)FanlightMotionFields.All);
 
-            var beatsPerCycle = new FanlightWeightedFloat();
-            var phaseOffsetBeats = new FanlightWeightedFloat();
             var blockDelayXBeats = new FanlightWeightedFloat();
             var blockDelayYBeats = new FanlightWeightedFloat();
-            var assetA = default(FanlightMotionAsset);
-            var assetB = default(FanlightMotionAsset);
-            var assetWeights = Vector2.zero;
+            var sourceA = default(FanlightMotionSource);
+            var sourceB = default(FanlightMotionSource);
+            var sourceWeights = Vector2.zero;
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Motion;
-                if (Has(fields, FanlightMotionFields.MotionAsset)) AddAsset(sourceValue.MotionAsset, sample.Weight, ref assetA, ref assetB, ref assetWeights);
-                if (Has(fields, FanlightMotionFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
-                if (Has(fields, FanlightMotionFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
+                if (Has(fields, FanlightMotionFields.Source))
+                {
+                    if (i == 0)
+                    {
+                        sourceA = sourceValue.GetSource(0);
+                        sourceWeights.x = sample.Weight;
+                    }
+                    else
+                    {
+                        sourceB = sourceValue.GetSource(0);
+                        sourceWeights.y = sample.Weight;
+                    }
+                }
+
                 if (Has(fields, FanlightMotionFields.BlockDelayXBeats)) blockDelayXBeats.Add(sourceValue.BlockDelayXBeats, sample.Weight);
                 if (Has(fields, FanlightMotionFields.BlockDelayYBeats)) blockDelayYBeats.Add(sourceValue.BlockDelayYBeats, sample.Weight);
             }
@@ -127,13 +138,11 @@ namespace PrismFanlight.Timeline
             }
 
             var fallback = FanlightTimelineDefaults.MotionState();
-            var value = FanlightMotionState.BlendAssets(
-                Has(fields, FanlightMotionFields.MotionAsset) ? assetA : fallback.MotionAsset,
-                Has(fields, FanlightMotionFields.MotionAsset) ? assetB : null,
-                null,
-                Has(fields, FanlightMotionFields.MotionAsset) ? new Vector3(assetWeights.x, assetWeights.y, 0f) : new Vector3(1f, 0f, 0f),
-                beatsPerCycle.Value(fallback.BeatsPerCycle),
-                phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
+            var value = FanlightMotionState.BlendSources(
+                Has(fields, FanlightMotionFields.Source) ? sourceA : fallback.GetSource(0),
+                Has(fields, FanlightMotionFields.Source) ? sourceB : default,
+                default,
+                Has(fields, FanlightMotionFields.Source) ? new Vector3(sourceWeights.x, sourceWeights.y, 0f) : new Vector3(1f, 0f, 0f),
                 blockDelayXBeats.Value(fallback.BlockDelayXBeats),
                 blockDelayYBeats.Value(fallback.BlockDelayYBeats)
             );
@@ -552,36 +561,6 @@ namespace PrismFanlight.Timeline
         private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
-
-        private static void AddAsset(
-            FanlightMotionAsset asset,
-            float weight,
-            ref FanlightMotionAsset assetA,
-            ref FanlightMotionAsset assetB,
-            ref Vector2 weights)
-        {
-            if (assetA == asset)
-            {
-                weights.x += weight;
-                return;
-            }
-
-            if (weights.x <= 0.000001f)
-            {
-                assetA = asset;
-                weights.x = weight;
-                return;
-            }
-
-            if (assetB == asset)
-            {
-                weights.y += weight;
-                return;
-            }
-
-            assetB = asset;
-            weights.y += weight;
-        }
 
         private static void ValidateMask(int fields, int all)
         {

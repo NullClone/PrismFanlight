@@ -17,6 +17,9 @@ namespace PrismFanlight.Core
         [SerializeField, Range(0f, 1f)]
         private float _synchronization;
 
+        [SerializeField, Range(0f, 1f)]
+        private float _transitionScatter;
+
 
         // Properties
 
@@ -25,15 +28,17 @@ namespace PrismFanlight.Core
         internal float Participation => _participation;
 
         internal float Synchronization => _synchronization;
+        internal float TransitionScatter => _transitionScatter;
 
 
         // Methods
 
-        internal FanlightIntentState(float energy, float participation, float synchronization)
+        internal FanlightIntentState(float energy, float participation, float synchronization, float transitionScatter)
         {
             _energy = FanlightStateValidation.RequireRange(energy, 0f, 1f, nameof(energy));
             _participation = FanlightStateValidation.RequireRange(participation, 0f, 1f, nameof(participation));
             _synchronization = FanlightStateValidation.RequireRange(synchronization, 0f, 1f, nameof(synchronization));
+            _transitionScatter = FanlightStateValidation.RequireRange(transitionScatter, 0f, 1f, nameof(transitionScatter));
         }
     }
 }

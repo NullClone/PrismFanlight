@@ -33,11 +33,10 @@ float4 _LodCameraPos;
 
 float4 _ReferenceSeatSpacing;
 float4 _MotionTiming;
-float4 _MotionCycle;
-float4 _MotionReferenceBodyPosition;
-float4 _MotionReferenceBodyRotation;
-float4 _MotionReferenceHandPosition;
-float4 _MotionReferencePenlightRotation;
+float4 _MotionCycleA;
+float4 _MotionCycleB;
+float4 _MotionCycleC;
+float _MotionTransitionScatter;
 int _SwingMode;
 float3 _SwingAxis;
 float3 _SwingTargetPos;

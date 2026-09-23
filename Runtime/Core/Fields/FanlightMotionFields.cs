@@ -6,11 +6,9 @@ namespace PrismFanlight.Core
     internal enum FanlightMotionFields
     {
         None = 0,
-        MotionAsset = 1 << 0,
-        BeatsPerCycle = 1 << 1,
-        PhaseOffsetBeats = 1 << 2,
+        Source = 1 << 0,
         BlockDelayXBeats = 1 << 3,
         BlockDelayYBeats = 1 << 4,
-        All = MotionAsset | BeatsPerCycle | PhaseOffsetBeats | BlockDelayXBeats | BlockDelayYBeats
+        All = Source | BlockDelayXBeats | BlockDelayYBeats
     }
 }

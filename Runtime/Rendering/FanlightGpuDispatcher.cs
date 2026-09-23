@@ -76,10 +76,6 @@ namespace PrismFanlight.Rendering
             SetAnimationParams(shader, context, buffers);
             SetAudienceParams(shader, context);
 
-            shader.SetVector(FanlightShaderIds.MotionReferenceBodyPosition, buffers.MotionReferenceBodyPosition);
-            shader.SetVector(FanlightShaderIds.MotionReferenceBodyRotation, buffers.MotionReferenceBodyRotation);
-            shader.SetVector(FanlightShaderIds.MotionReferenceHandPosition, buffers.MotionReferenceHandPosition);
-            shader.SetVector(FanlightShaderIds.MotionReferencePenlightRotation, buffers.MotionReferencePenlightRotation);
 
             var generateAudience = audienceEnabled && buffers.HasAudience;
             var kernel = generateAudience
@@ -343,11 +339,17 @@ namespace PrismFanlight.Rendering
             var worldDirection = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
 
             shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(0f, asynchrony, noise.PhaseAmount, noise.PhaseRate));
-            shader.SetVector(FanlightShaderIds.MotionCycle, new Vector4(
-                motion.BeatsPerCycle,
-                motion.PhaseOffsetBeats,
-                0f,
-                0f));
+            for (var i = 0; i < 3; i++)
+            {
+                var source = motion.GetSource(i);
+                shader.SetVector(FanlightShaderIds.MotionCycles[i], new Vector4(
+                    Mathf.Max(0.001f, source.BeatsPerCycle),
+                    source.PhaseOffsetBeats,
+                    motion.GetAssetWeight(i),
+                    0f));
+            }
+
+            shader.SetFloat(FanlightShaderIds.MotionTransitionScatter, intent.TransitionScatter);
             shader.SetInt(FanlightShaderIds.SwingMode, (int)direction.Mode);
             shader.SetVector(FanlightShaderIds.SwingAxis, new Vector3(worldDirection.x, worldDirection.y, worldDirection.z));
             var target = context.Frame.SwingTargetWorldPosition;

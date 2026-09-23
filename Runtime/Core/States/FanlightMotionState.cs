@@ -27,10 +27,10 @@ namespace PrismFanlight.Core
 
 
         [NonSerialized]
-        private FanlightMotionAsset _secondaryMotionAsset;
+        private FanlightMotionSource _secondarySource;
 
         [NonSerialized]
-        private FanlightMotionAsset _tertiaryMotionAsset;
+        private FanlightMotionSource _tertiarySource;
 
         [NonSerialized]
         private Vector3 _assetWeights;
@@ -62,42 +62,42 @@ namespace PrismFanlight.Core
             _phaseOffsetBeats = FanlightStateValidation.RequireRange(phaseOffsetBeats, -64f, 64f, nameof(phaseOffsetBeats));
             _blockDelayXBeats = FanlightStateValidation.RequireRange(blockDelayXBeats, -64f, 64f, nameof(blockDelayXBeats));
             _blockDelayYBeats = FanlightStateValidation.RequireRange(blockDelayYBeats, -64f, 64f, nameof(blockDelayYBeats));
-            _secondaryMotionAsset = null;
-            _tertiaryMotionAsset = null;
+            _secondarySource = default;
+            _tertiarySource = default;
             _assetWeights = new Vector3(1f, 0f, 0f);
         }
 
-        internal static FanlightMotionState BlendAssets(
-            FanlightMotionAsset assetA,
-            FanlightMotionAsset assetB,
-            FanlightMotionAsset assetC,
-            Vector3 assetWeights,
-            float beatsPerCycle,
-            float phaseOffsetBeats,
+        internal static FanlightMotionState BlendSources(
+            FanlightMotionSource sourceA,
+            FanlightMotionSource sourceB,
+            FanlightMotionSource sourceC,
+            Vector3 sourceWeights,
             float blockDelayXBeats,
             float blockDelayYBeats)
         {
             var state = new FanlightMotionState(
-                assetA,
-                beatsPerCycle,
-                phaseOffsetBeats,
+                sourceA.Asset,
+                sourceA.BeatsPerCycle,
+                sourceA.PhaseOffsetBeats,
                 blockDelayXBeats,
                 blockDelayYBeats)
             {
-                _secondaryMotionAsset = assetB,
-                _tertiaryMotionAsset = assetC,
-                _assetWeights = NormalizeWeights(assetWeights)
+                _secondarySource = sourceB,
+                _tertiarySource = sourceC,
+                _assetWeights = NormalizeWeights(sourceWeights)
             };
             return state;
         }
 
-        internal FanlightMotionAsset GetAsset(int index) => index switch
+        internal FanlightMotionSource GetSource(int index) => index switch
         {
-            0 => _motionAsset,
-            1 => _secondaryMotionAsset,
-            2 => _tertiaryMotionAsset,
+            0 => new(_motionAsset, _beatsPerCycle, _phaseOffsetBeats),
+            1 => _secondarySource,
+            2 => _tertiarySource,
             _ => throw new ArgumentOutOfRangeException(nameof(index))
         };
+
+        internal FanlightMotionAsset GetAsset(int index) => GetSource(index).Asset;
 
         internal float GetAssetWeight(int index)
         {

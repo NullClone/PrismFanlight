@@ -44,22 +44,6 @@ namespace PrismFanlight.Editor
 
         // Fields
 
-        private static readonly string[] PresetNames =
-        {
-            "Drum",
-            "Wiper",
-            "Sasage",
-            "Power Pump",
-            "Double Pump",
-            "Diagonal Pump",
-            "Forward Thrust",
-            "Overhead Swing",
-            "Circle",
-            "Figure Eight",
-            "Groove Bounce",
-            "Raised Sway"
-        };
-
         private bool _drumFoldoutTiming = true;
         private bool _drumFoldoutArm = true;
         private bool _drumFoldoutPitch = true;
@@ -76,6 +60,7 @@ namespace PrismFanlight.Editor
         private bool _sasageFoldoutBody = true;
         private bool _sasageAutoBake;
         private float _phase;
+
 
         private SettingsContainer _settingsContainer;
         private SerializedObject _settingsEditor;
@@ -202,7 +187,7 @@ namespace PrismFanlight.Editor
             var previousPreset = Preset;
             _generateRequested = false;
             EditorGUILayout.LabelField("Motion Generator", EditorStyles.boldLabel);
-            Preset = (MotionPreset)EditorGUILayout.Popup("Motion", (int)Preset, PresetNames);
+            Preset = (MotionPreset)EditorGUILayout.EnumPopup("Preset", Preset);
 
             GeneratorIntensity = EditorGUILayout.Slider("Intensity", GeneratorIntensity, 0.65f, 1.25f);
 
@@ -232,8 +217,13 @@ namespace PrismFanlight.Editor
                 Undo.RecordObject(asset, generate ? "Generate Motion" : "Edit Motion Settings");
                 try
                 {
-                    if (generate) Generate(asset);
-                    asset.EditorGeneratorSettings = after;
+                    if (generate)
+                    {
+                        Generate(asset);
+                        Settings.BakedPreset = (int)Preset;
+                    }
+
+                    asset.EditorGeneratorSettings = JsonUtility.ToJson(Settings);
                     EditorUtility.SetDirty(asset);
                     _generationError = null;
                 }

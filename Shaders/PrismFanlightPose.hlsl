@@ -11,7 +11,7 @@ float3 PrismComputeSeatAnchor(FanlightSeatData seat)
     return localPosition;
 }
 
-PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
+PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat, float beatsPerCycle, float phaseOffsetBeats)
 {
     float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z;
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
@@ -28,7 +28,7 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
             clamp(_MotionNoiseOctaves, 1, 4),
             saturate(_MotionNoise.w)) * _MotionTiming.z / (2.0 * PRISM_FANLIGHT_PI);
     }
-    float cyclePhase = frac((delayedBeat + _MotionCycle.y) / max(0.001, _MotionCycle.x) + personaTiming + phaseNoise);
+    float cyclePhase = frac((delayedBeat + phaseOffsetBeats) / max(0.001, beatsPerCycle) + personaTiming + phaseNoise);
     float bodyPhase = cyclePhase * 2.0 * PRISM_FANLIGHT_PI;
 
     PrismCrowdRhythm rhythm = (PrismCrowdRhythm)0;
@@ -39,8 +39,9 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 
 PrismHumanPose PrismComputeHumanPose(
     FanlightSeatData seat,
-    PrismCrowdRhythm rhythm,
+    float sway,
     PrismAudienceBasis basis,
+    FanlightMotionSample referencePose,
     FanlightMotionSample motionSample,
     float motionActivity)
 {
@@ -52,19 +53,18 @@ PrismHumanPose PrismComputeHumanPose(
     float armHalfWidth = _AudienceArm.x;
     float shoulderOffset = _AudienceArm.y;
     float headHalf = _AudienceArm.z;
-    float sway = sin(rhythm.bodyPhase);
     float bounce = sway * 0.5 + 0.5;
     float3 bodyOffset = basis.sideLocal * sway * _AudienceMotionBody.y
         + basis.upLocal * bounce * _AudienceMotionBody.x;
     float3 motionBodyPosition = lerp(
-        _MotionReferenceBodyPosition.xyz,
+        referencePose.bodyPosition.xyz,
         motionSample.bodyPosition.xyz,
         motionActivity) * bodyHeight;
     bodyOffset += PrismTransformAudienceOffset(basis, motionBodyPosition);
     float3 feet = anchor + bodyOffset;
     float neckHeight = max(shoulderHeight, bodyHeight - headHalf * 2.0);
     float4 bodyRotation = PrismNlerpQuaternion(
-        _MotionReferenceBodyRotation,
+        referencePose.bodyRotation,
         motionSample.bodyRotation,
         motionActivity);
     float3 leanUp = SafeNormalize(

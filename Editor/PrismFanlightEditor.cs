@@ -308,6 +308,7 @@ namespace PrismFanlight.Editor
             DrawChild(_intent, "_energy");
             DrawChild(_intent, "_participation");
             DrawChild(_intent, "_synchronization");
+            DrawChild(_intent, "_transitionScatter");
         }
 
         private void DrawAudienceSection()

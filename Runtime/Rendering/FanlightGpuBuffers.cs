@@ -12,8 +12,7 @@ namespace PrismFanlight.Rendering
         private const int PaletteSlotCount = 6;
 
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
-        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount];
-        private readonly FanlightMotionSample[] _motionSourceSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount * 3];
+        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount * 3 + 3];
         private readonly FanlightMotionAsset[] _motionAssets = new FanlightMotionAsset[3];
         private readonly int[] _motionRevisions = new int[3];
         private readonly bool[] _runtimeBlockPaletteUploaded = new bool[3];
@@ -24,8 +23,6 @@ namespace PrismFanlight.Rendering
         private uint[] _runtimeBlockPulseGroups = Array.Empty<uint>();
         private uint[] _runtimeBlockPulseGroupCandidate = Array.Empty<uint>();
         private bool[] _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
-        private FanlightMotionSample _motionReferencePose;
-        private Vector3 _motionWeights;
         private bool _hasMotionData;
 
 
@@ -80,14 +77,6 @@ namespace PrismFanlight.Rendering
         internal uint[] PenlightVariantOffsets { get; private set; } = Array.Empty<uint>();
 
         internal Vector4 PenlightVariantGripPivotYs { get; private set; }
-
-        internal Vector4 MotionReferenceBodyPosition => _motionReferencePose.BodyPositionData;
-
-        internal Vector4 MotionReferenceBodyRotation => _motionReferencePose.BodyRotationData;
-
-        internal Vector4 MotionReferenceHandPosition => _motionReferencePose.HandPositionData;
-
-        internal Vector4 MotionReferencePenlightRotation => _motionReferencePose.PenlightRotationData;
 
 
         // Methods
@@ -383,121 +372,40 @@ namespace PrismFanlight.Rendering
         {
             if (MotionSampleBuffer == null) throw new InvalidOperationException("Motion sample buffer is not allocated.");
 
-            var weights = new Vector3(
-                motion.GetAssetWeight(0),
-                motion.GetAssetWeight(1),
-                motion.GetAssetWeight(2));
-            var assetsChanged = !_hasMotionData;
-
             for (var i = 0; i < 3; i++)
             {
                 var asset = motion.GetAsset(i);
-                if (weights[i] > 0f && (asset == null || !asset.HasValidBake))
+                if (motion.GetAssetWeight(i) > 0f && (asset == null || !asset.HasValidBake))
                 {
                     throw new InvalidOperationException("Motion state contains an invalid baked asset.");
                 }
 
                 var revision = asset != null ? asset.BakeRevision : 0;
-                if (_motionAssets[i] == asset && _motionRevisions[i] == revision) continue;
+                if (_hasMotionData && _motionAssets[i] == asset && _motionRevisions[i] == revision) continue;
 
                 var destinationIndex = i * FanlightMotionAsset.RuntimeSampleCount;
+                var referenceIndex = FanlightMotionAsset.RuntimeSampleCount * 3 + i;
                 if (asset != null && asset.HasValidBake)
                 {
                     asset.CopyResampledSamples(
-                        _motionSourceSamples,
+                        _motionSamples,
                         destinationIndex,
                         FanlightMotionAsset.RuntimeSampleCount);
+                    _motionSamples[referenceIndex] = asset.ReferencePose;
                 }
                 else
                 {
-                    Array.Clear(_motionSourceSamples, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
+                    Array.Clear(_motionSamples, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
+                    _motionSamples[referenceIndex] = default;
                 }
 
+                MotionSampleBuffer.SetData(_motionSamples, destinationIndex, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
+                MotionSampleBuffer.SetData(_motionSamples, referenceIndex, referenceIndex, 1);
                 _motionAssets[i] = asset;
                 _motionRevisions[i] = revision;
-                assetsChanged = true;
             }
 
-            if (!assetsChanged && _motionWeights.Equals(weights)) return;
-
-            for (var sampleIndex = 0; sampleIndex < FanlightMotionAsset.RuntimeSampleCount; sampleIndex++)
-            {
-                _motionSamples[sampleIndex] = BlendMotionSamples(
-                    _motionSourceSamples[sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.RuntimeSampleCount + sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.RuntimeSampleCount * 2 + sampleIndex],
-                    weights);
-            }
-
-            _motionReferencePose = BlendMotionSamples(
-                _motionAssets[0] != null ? _motionAssets[0].ReferencePose : default,
-                _motionAssets[1] != null ? _motionAssets[1].ReferencePose : default,
-                _motionAssets[2] != null ? _motionAssets[2].ReferencePose : default,
-                weights);
-            MotionSampleBuffer.SetData(_motionSamples);
-            _motionWeights = weights;
             _hasMotionData = true;
-        }
-
-        private static FanlightMotionSample BlendMotionSamples(
-            FanlightMotionSample sampleA,
-            FanlightMotionSample sampleB,
-            FanlightMotionSample sampleC,
-            Vector3 weights)
-        {
-            return new FanlightMotionSample(
-                sampleA.BodyPosition * weights.x
-                + sampleB.BodyPosition * weights.y
-                + sampleC.BodyPosition * weights.z,
-                BlendRotations(
-                    sampleA.BodyRotation,
-                    sampleB.BodyRotation,
-                    sampleC.BodyRotation,
-                    weights),
-                sampleA.HandPosition * weights.x
-                + sampleB.HandPosition * weights.y
-                + sampleC.HandPosition * weights.z,
-                BlendRotations(
-                    sampleA.PenlightRotation,
-                    sampleB.PenlightRotation,
-                    sampleC.PenlightRotation,
-                    weights));
-        }
-
-        private static Quaternion BlendRotations(
-            Quaternion rotationA,
-            Quaternion rotationB,
-            Quaternion rotationC,
-            Vector3 weights,
-            Quaternion fallback = default)
-        {
-            var result = fallback == default ? Quaternion.identity : fallback;
-            var totalWeight = 0f;
-            BlendRotation(ref result, ref totalWeight, rotationA, weights.x);
-            BlendRotation(ref result, ref totalWeight, rotationB, weights.y);
-            BlendRotation(ref result, ref totalWeight, rotationC, weights.z);
-            return result;
-        }
-
-        private static void BlendRotation(
-            ref Quaternion result,
-            ref float totalWeight,
-            Quaternion rotation,
-            float weight)
-        {
-            if (weight <= 0f) return;
-
-            rotation = FanlightMotionSample.NormalizeRotation(rotation);
-            if (totalWeight <= 0f)
-            {
-                result = rotation;
-                totalWeight = weight;
-                return;
-            }
-
-            var nextTotal = totalWeight + weight;
-            result = FanlightMotionSample.InterpolateRotation(result, rotation, weight / nextTotal);
-            totalWeight = nextTotal;
         }
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
@@ -701,11 +609,8 @@ namespace PrismFanlight.Rendering
             _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
             Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
             Array.Clear(_motionSamples, 0, _motionSamples.Length);
-            Array.Clear(_motionSourceSamples, 0, _motionSourceSamples.Length);
             Array.Clear(_motionAssets, 0, _motionAssets.Length);
             Array.Clear(_motionRevisions, 0, _motionRevisions.Length);
-            _motionReferencePose = default;
-            _motionWeights = default;
             _hasMotionData = false;
         }
     }
