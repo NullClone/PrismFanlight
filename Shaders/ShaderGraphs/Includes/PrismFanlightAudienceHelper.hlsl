@@ -26,9 +26,9 @@ void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positio
     float3 worldPos;
     if (partType >= 1.5)
     {
-        float3 camRight = UNITY_MATRIX_V._m00_m01_m02;
-        float3 camUp    = UNITY_MATRIX_V._m10_m11_m12;
-        worldPos = p0 + (camRight * (uv.x - 0.5) + camUp * (uv.y - 0.5)) * (halfWidth * 2.0);
+        float3 side = UNITY_MATRIX_V._m00_m01_m02;
+        float3 camUp = UNITY_MATRIX_V._m10_m11_m12;
+        worldPos = p0 + (side * (uv.x - 0.5) + camUp * (uv.y - 0.5)) * (halfWidth * 2.0);
         capT = 0.5;
     }
     else
@@ -39,15 +39,15 @@ void GetAudienceBodyVertex_float(float2 uv, float instanceId, out float3 positio
         axis /= segLen;
 
         float3 view = _WorldSpaceCameraPos.xyz - center;
-        float3 side = cross(axis, view);
+        float3 side = cross(view, axis);
         float sideLen = length(side);
-        side = sideLen > 1e-4 ? side / sideLen : float3(1.0, 0.0, 0.0);
+        side = sideLen > 1e-4 ? side / sideLen : float3(-1.0, 0.0, 0.0);
 
         worldPos = center + side * (uv.x - 0.5) * (halfWidth * 2.0);
         capT = saturate(halfWidth / segLen);
     }
 
-    positionOS = mul(UNITY_MATRIX_I_M, float4(worldPos, 1.0)).xyz;
+    positionOS = mul(UNITY_MATRIX_I_M, float4(GetCameraRelativePositionWS(worldPos), 1.0)).xyz;
 }
 
 void GetAudienceBodyCoverage_float(float2 uv, float capT, out float coverage)

@@ -34,8 +34,8 @@ float3 PrismStabilizeFanlightRadius(float3 positionOS, uint seatIndex)
     if (dot(screenRadiusWS, screenRadiusWS) <= 0.00000001)
         return positionWS;
 
-    float4 centerCS = mul(UNITY_MATRIX_VP, float4(centerWS, 1.0));
-    float4 positionCS = mul(UNITY_MATRIX_VP, float4(positionWS, 1.0));
+    float4 centerCS = mul(UNITY_MATRIX_VP, float4(GetCameraRelativePositionWS(centerWS), 1.0));
+    float4 positionCS = mul(UNITY_MATRIX_VP, float4(GetCameraRelativePositionWS(positionWS), 1.0));
     if (centerCS.w <= 0.0001 || positionCS.w <= 0.0001)
         return positionWS;
 
@@ -57,13 +57,7 @@ void GetFanlightObjectPosition_float(float3 positionOS, float instanceId, out fl
 {
     uint seatIndex = PrismFanlightSeatIndex(instanceId);
     float3 positionWS = PrismStabilizeFanlightRadius(positionOS, seatIndex);
-    outPositionOS = mul(UNITY_MATRIX_I_M, float4(positionWS, 1.0)).xyz;
-}
-
-void GetFanlightWorldPosition_float(float3 positionOS, float instanceId, out float3 outPositionWS)
-{
-    uint seatIndex = PrismFanlightSeatIndex(instanceId);
-    outPositionWS = mul(_FanlightMatrices[seatIndex], float4(positionOS, 1.0)).xyz;
+    outPositionOS = mul(UNITY_MATRIX_I_M, float4(GetCameraRelativePositionWS(positionWS), 1.0)).xyz;
 }
 
 #endif
