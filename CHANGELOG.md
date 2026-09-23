@@ -5,122 +5,179 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [1.6.0] - 2026-08-05
+## [1.7.0] - 2026-09-023
 
-### ✨正式リリース✨
-### ⚠️注意️ : 以前のバージョンと互換性はありません⚠️
+### ⚠️ Warning: Not compatible with previous versions ⚠️
 
 ### Added
-- 色のモードを追加しました
+- Added Intensity modes
+  - Radial Wave
+  - Sparkle
+  - Angular Wave
+  - Block Pulse
+- Added the Layout Editor window
+  - Opens by double-clicking a Layout asset and follows the current selection
+  - Edit blocks and rows, with copy & paste and height adjustment
+  - The Block Overlay now supports editing multiple blocks at once
+- Added a Motion Generator that builds Drum, Wiper and Sasage motions from parameters
+- Added a preset feature to Timeline clips
+- Added distance-based LOD
+- Added BPM tick marks to Tempo clips
+- Added Transition Scatter to Intent, staggering motion changes across the audience
+- Added "Use Suggested Cycle" to Motion clips
+
+### Changed
+- Updated the penlight model and the component's icon
+- Changed the default penlight color to white
+- Culling now only runs during playback
+- Removed Speed Multiplier from Timeline clips (only Blending, Clip In and Extrapolation are allowed)
+- Moved the creation menu to `GameObject/Light/Prism Fanlight` and the component to `Rendering/Prism Fanlight`
+- Tempo now starts counting beats from the beginning of each clip
+- Motion clips now blend smoothly even when their motions have different cycles
+- Changed how motion is sampled
+- Re-tuned the Drum, Wiper and Sasage default motions
+- Reorganized the Inspector's sections
+- Parameters not included by a track's fields are now shown as disabled in the Inspector
+- Unified the names of newly created assets
+- Renamed Intensity modes (Random Sparkle → Sparkle, Block Alternating Pulse → Block Pulse)
+
+### Fixed
+- Fixed the preview being cleared while editing
+- Fixed incorrect direction blending for Color and Intensity
+- Fixed an error when no audience material is assigned
+- Fixed an error when reusing a Time Manager
+- Fixed the Tempo not being rebuilt when a clip was changed
+- Fixed an error when selecting "Everything" in the field settings
+- Fixed incorrect rotation axes in the Layout Editor
+- Fixed Frame Selected in the Layout Editor
+
+### Removed
+- Removed material editor from Inspector
+- Removed default settings from the Tempo track
+- Removed fallback and intensity from Direction
+- Removed Realism and Reach from Intent
+- Removed Motion Amount, Height Bias, Side Scale, Forward Scale, Wrist Delay Ratio and Variation from Motion
+- Removed the deprecated audience shader
+
+
+## [1.6.0] - 2026-08-05
+
+### ✨ Official release ✨
+### ⚠️ Warning: Not compatible with previous versions ⚠️
+
+### Added
+- Added Color modes
   - Color Palette
   - Linear Gradient
   - Block Palette
-- 強度のモードを追加しました
+- Added Intensity modes
   - Pulse
   - Traveling Wave
-- モーションのプリセットを追加しました
+- Added Motion presets
   - Drum
   - Wiper
   - Sasage
-- テンポをタイムラインから制御できるようにしました
-- レイアウトの設定をオーバーレイから操作できるようにしました
+- Tempo can now be controlled from the Timeline
+- Layout settings can now be edited from the scene overlay
 
 ### Changed
-- インスペクターの操作性を大幅に改善しました
-- 時間をプロバイダーで制御するように統一しました
-- すべてのパラメーターを整理し、見た目をクリップと統一しました
-- シーンビュー上で選択しているブロックに対する動作を改善しました
-- カメラの処理を見直し、パフォーマンスが大幅に向上しました
-- 観客シェーダーをシェーダーグラフに移行
+- Greatly improved Inspector usability
+- Unified time control through a Provider
+- Reorganized all parameters and unified their appearance with clips
+- Improved behavior for the block selected in the Scene View
+- Reworked camera handling, greatly improving performance
+- Migrated the audience shader to Shader Graph
 
 ### Fixed
-- 未使用の変数の警告が出ていたため修正
+- Fixed a warning caused by an unused variable
 
 ### Removed
-- プロバイダーをコンポーネントで管理しないようにしました
-- TimelineでのVisibility機能を削除
-- VisibilityUpdateを廃止
-- 観客の従来のシェーダーを非推奨
+- Providers are no longer managed via components
+- Removed the Visibility feature from Timeline
+- Removed VisibilityUpdate
+- Deprecated the legacy audience shader
+
 
 ## [1.5.0] - 2026-07-22
 
 ### Added
-- 観客の動きをベイクできるようにし、より細かく制御できるようにしました
+- Audience motion can now be baked for finer control
 
 ### Changed
-- TimelineのクリップをPriorityで評価するように変更しました
-- デフォルトの値を更新しました
-- インスペクターの見た目を改善しました
+- Timeline clips are now evaluated by Priority
+- Updated default values
+- Improved the Inspector's appearance
 
 ### Fixed
-- 新規トラックにクリップを配置したときにエラーが出る問題を修正
-- Timeline上で停止時にプレビューが正しく反映されない問題を修正
+- Fixed an error when placing a clip on a newly created track
+- Fixed the preview not updating correctly when Timeline is stopped
 
 
 ## [1.4.0] - 2026-07-20
 
-### ⚠️注意️⚠️ 以前のバージョンと互換性はありません
+### ⚠️ Warning ⚠️ Not compatible with previous versions
 
 ### Added
-- すべてのコードを書き直し、基盤を強化しました
-- 複数の形のペンライトをサポート
-- 再現性を完全に担保します
-- 時間の経路を一本化しました
-- など... 多くの機能が改善されています✨
+- Rewrote all code to strengthen the foundation
+- Added support for multiple penlight shapes
+- Fully guarantees reproducibility
+- Unified the time evaluation path
+- ...and many more improvements ✨
 
 ### Changed
-- <b>ライセンスを更新しました（クレジットを任意に）</b>
-- インスペクターなども含め見た目を一新しました
+- <b>Updated the license (credit is now optional)</b>
+- Overhauled the appearance, including the Inspector
 
 ### Fixed
-- コードが大幅に変更されたため、修正については明記できません
+- Not listed, as the code changed too extensively to itemize
+
 
 ## [1.3.0] - 2026-07-13
 
 ### Added
-- Timelineでオーバーライドしているパラメーターを強調
-- Timelineのクリップの見た目を強化
-- Gradient専用Timelineトラックを追加
+- Highlighted parameters overridden by Timeline
+- Improved the appearance of Timeline clips
+- Added a dedicated Gradient Timeline track
 
 ### Changed
-- すべてのコードでリファクタを実施
+- Refactored all code
 
 ### Fixed
-- チカチカする問題を修正
+- Fixed a flickering issue
 
 
 ## [1.2.0] - 2026-07-12
 
-### <b>Timelineを完全にサポートしました！！</b>
+### <b>Full Timeline support!!</b>
 
 ### Added
-- すべてのパラメーターをTimelineでサポート
-- メニューからペンライトを作成出来るように
+- Added Timeline support for all parameters
+- Penlights can now be created from the menu
 
 ### Changed
-- ライセンスを更新
-- コードスタイルを統一
-- namespaceを統一
+- Updated the license
+- Unified the code style
+- Unified namespaces
 
 ### Removed
-- 通常プレビューを廃止
+- Removed the standard preview
 
 
 ## [1.1.0] - 2026-07-11
 
 ### Added
-- Timelineをサポート
-- LOD機能を実装
-- ブロック単位での位置の変更をできるように
+- Added Timeline support
+- Implemented LOD feature
+- Positions can now be changed per block
 
 ### Changed
-- リファクタリングを実施
-- Seed機能を導入し再現性を向上
+- Refactored code
+- Introduced a Seed feature to improve reproducibility
 
 ### Removed
-- 不要なパラメーターを削除
+- Removed unnecessary parameters
 
 
 ## [1.0.0] - 2026-06-03
 
-- 初回リリース
+- Initial release
