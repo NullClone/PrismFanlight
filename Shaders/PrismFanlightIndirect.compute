@@ -12,6 +12,7 @@
 #include "PrismFanlightAudience.hlsl"
 #include "PrismFanlightColorKernel.hlsl"
 
+
 [numthreads(128, 1, 1)]
 void ResolveSeatChroma(uint3 dispatchId : SV_DispatchThreadID)
 {
@@ -153,7 +154,8 @@ void BuildVisibleInstances(uint3 dispatchId : SV_DispatchThreadID, uint groupInd
     GroupMemoryBarrierWithGroupSync();
 
     if (visible)
-        _PenlightVisibleIndices[_PenlightVariantOffsets[variantIndex] + _GroupVariantBaseOffset[variantIndex] + localSlot] = id;
+        _PenlightVisibleIndices[_PenlightVariantOffsets[variantIndex] + _GroupVariantBaseOffset[variantIndex] +
+            localSlot] = id;
 
     if (audienceVisible)
     {
@@ -187,4 +189,3 @@ void GenerateAllFrameData(uint3 dispatchId : SV_DispatchThreadID)
         PrismBuildAudienceParts(id, pose, arm);
     }
 }
-

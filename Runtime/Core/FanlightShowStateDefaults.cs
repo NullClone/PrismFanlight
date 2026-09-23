@@ -18,7 +18,7 @@ namespace PrismFanlight.Core
 
         internal static FanlightColorState Color() => new(
             new FanlightColorSource(
-                FanlightColorMode.LinearGradient,
+                FanlightColorMode.StablePalette,
                 UnityEngine.Color.red,
                 UnityEngine.Color.yellow,
                 UnityEngine.Color.green,
