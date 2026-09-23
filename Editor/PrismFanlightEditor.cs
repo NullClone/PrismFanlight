@@ -139,22 +139,29 @@ namespace PrismFanlight.Editor
             }
 
             _generalSection.DrawSection(DrawGeneralSection);
-            _motionSection.DrawSection(DrawMotionSection, _instance);
-            _intentSection.DrawSection(DrawIntentSection, _instance);
+            _motionSection.DrawSection(DrawMotionSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Motion, "_motion"));
+            _intentSection.DrawSection(DrawIntentSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Intent, "_intent"));
             _colorSection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawColorState(_color, _instance.LayoutAsset, true);
-            }, _instance);
+            }, _instance, menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Color, "_color"));
             _intensitySection.DrawSection(() =>
             {
                 FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity, _instance.LayoutAsset, true);
-            }, _instance);
-            _audienceSection.DrawSection(DrawAudienceSection, _instance);
-            _directionSection.DrawSection(DrawDirectionSection, _instance);
+            }, _instance, menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Intensity, "_intensity"));
+            _audienceSection.DrawSection(DrawAudienceSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.AudienceBody, "_audienceBody"));
+            _directionSection.DrawSection(DrawDirectionSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Direction, "_direction"));
             _timeSection.DrawSection(DrawTimeSection, _instance);
-            _variationSection.DrawSection(DrawVariationSection, _instance);
-            _noiseSection.DrawSection(DrawNoiseSection, _instance);
-            _restSection.DrawSection(DrawRestSection, _instance);
+            _variationSection.DrawSection(DrawVariationSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Variation, "_variation"));
+            _noiseSection.DrawSection(DrawNoiseSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Noise, "_noise"));
+            _restSection.DrawSection(DrawRestSection, _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Rest, "_rest"));
 
             if (serializedObject.ApplyModifiedProperties())
             {
@@ -424,6 +431,35 @@ namespace PrismFanlight.Editor
                     TimelineEditor.Refresh(RefreshReason.SceneNeedsUpdate);
                     return;
                 }
+            }
+        }
+
+        private void AddStateClipboardItems(GenericMenu menu, FanlightTimelinePatchKind kind, string propertyPath)
+        {
+            menu.AddSeparator("");
+
+            if (targets.Length == 1)
+            {
+                menu.AddItem(new GUIContent("Copy"), false, () => FanlightStateClipboard.Copy(targets, kind, propertyPath));
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Copy"));
+            }
+
+            if (FanlightStateClipboard.CanPaste(kind))
+            {
+                menu.AddItem(new GUIContent("Paste"), false, () =>
+                {
+                    if (FanlightStateClipboard.Paste(targets, kind, propertyPath))
+                    {
+                        RefreshTimelinePreview();
+                    }
+                });
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Paste"));
             }
         }
 

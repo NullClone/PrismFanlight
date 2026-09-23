@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEditor.Presets;
 using UnityEditor.Rendering;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 namespace PrismFanlight.Editor
@@ -12,7 +13,28 @@ namespace PrismFanlight.Editor
             using (new EditorGUI.DisabledScope(!HaveSameType(targets)))
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(new GUIContent("Clip Preset"), EditorStyles.boldLabel);
+                if (FanlightStateClipboard.TryGetClipKind(targets, out var kind))
+                {
+                    using (new EditorGUI.DisabledScope(targets.Length != 1))
+                    {
+                        if (GUILayout.Button("Copy", GUILayout.Width(56)))
+                        {
+                            FanlightStateClipboard.Copy(targets, kind, "_value");
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(!FanlightStateClipboard.CanPaste(kind)))
+                    {
+                        if (GUILayout.Button("Paste", GUILayout.Width(56)))
+                        {
+                            if (FanlightStateClipboard.Paste(targets, kind, "_value"))
+                            {
+                                TimelineEditor.Refresh(RefreshReason.ContentsModified);
+                            }
+                        }
+                    }
+                }
+
 
                 GUILayout.FlexibleSpace();
 

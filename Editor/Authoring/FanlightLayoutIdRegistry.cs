@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using UnityEditor;
-using UnityEngine;
 
 namespace PrismFanlight.Editor
 {

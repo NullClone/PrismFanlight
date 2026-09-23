@@ -22,9 +22,13 @@ namespace PrismFanlight.Editor
             }
         }
 
-        internal static void DrawSection<TTrack>(this PrismFanlightSection<TTrack> section, Action draw, PrismFanlight fanlight) where TTrack : TrackAsset, new()
+        internal static void DrawSection<TTrack>(
+            this PrismFanlightSection<TTrack> section,
+            Action draw,
+            PrismFanlight fanlight,
+            Action<GenericMenu> addMenuItems = null) where TTrack : TrackAsset, new()
         {
-            if (section.DrawHeader(fanlight))
+            if (section.DrawHeader(fanlight, addMenuItems))
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
@@ -71,7 +75,7 @@ namespace PrismFanlight.Editor
     {
         internal PrismFanlightSection(string title) : base(new GUIContent(title)) { }
 
-        internal bool DrawHeader(PrismFanlight fanlight)
+        internal bool DrawHeader(PrismFanlight fanlight, Action<GenericMenu> addMenuItems = null)
         {
             CoreEditorUtils.DrawSplitter();
 
@@ -79,7 +83,11 @@ namespace PrismFanlight.Editor
                 title: title,
                 state: expand,
                 documentationURL: PrismFanlight.HelpUrl,
-                customMenuContextAction: menu => AddTimelineTrackMenuItem(menu, fanlight));
+                customMenuContextAction: menu =>
+                {
+                    AddTimelineTrackMenuItem(menu, fanlight);
+                    addMenuItems?.Invoke(menu);
+                });
 
             return expand;
         }

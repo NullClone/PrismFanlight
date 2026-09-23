@@ -2,7 +2,6 @@ using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
-using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
@@ -48,13 +47,6 @@ namespace PrismFanlight.Editor
 
                 EditorGUILayout.PropertyField(beatsPerCycle);
                 EditorGUILayout.PropertyField(_value.FindPropertyRelative("_phaseOffsetBeats"));
-                if (targets.Length == 1 && motionAsset.objectReferenceValue is FanlightMotionAsset currentAsset)
-                {
-                    if (GUILayout.Button("Use Suggested Cycle"))
-                    {
-                        beatsPerCycle.floatValue = FanlightMotionCycleDefaults.Suggest(currentAsset);
-                    }
-                }
             }
 
             DrawChild("_blockDelayXBeats", includedFields.HasFlag(FanlightMotionFields.BlockDelayXBeats));
