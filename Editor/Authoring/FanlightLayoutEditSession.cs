@@ -4,7 +4,6 @@ using PrismFanlight.Authoring;
 using PrismFanlight.Rendering;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -13,7 +12,7 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        private static readonly Dictionary<int, FanlightLayoutEditSession> Sessions = new();
+        private static readonly Dictionary<EntityId, FanlightLayoutEditSession> Sessions = new();
         private static bool _previewRefreshQueued;
 
         private readonly FanlightCompiledLayout _compiled;
@@ -66,7 +65,7 @@ namespace PrismFanlight.Editor
         {
             if (source == null || !source.IsInitialized) return null;
 
-            var key = source.GetInstanceID();
+            var key = source.GetEntityId();
             if (!Sessions.TryGetValue(key, out var session) || session.Source != source)
             {
                 session = new FanlightLayoutEditSession(source);
@@ -86,11 +85,11 @@ namespace PrismFanlight.Editor
         {
             if (source == null) return;
 
-            Sessions.Remove(source.GetInstanceID());
+            Sessions.Remove(source.GetEntityId());
 
             if (Application.isPlaying) return;
 
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in FanlightSceneObjectUtility.FindFanlights())
             {
                 if (fanlight.LayoutAsset == source) fanlight.ClearEditorLayoutPreview();
             }
@@ -253,7 +252,7 @@ namespace PrismFanlight.Editor
 
         internal void ApplyPreviewToAllInstances(int changedBlockIndex)
         {
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in FanlightSceneObjectUtility.FindFanlights())
             {
                 if (fanlight.LayoutAsset == Source) fanlight.SetEditorLayoutPreview(_runtimeLayout, changedBlockIndex);
             }
@@ -286,7 +285,7 @@ namespace PrismFanlight.Editor
 
             if (Application.isPlaying) return;
 
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in FanlightSceneObjectUtility.FindFanlights())
             {
                 fanlight.ClearEditorLayoutPreview();
             }
@@ -304,7 +303,7 @@ namespace PrismFanlight.Editor
         {
             _previewRefreshQueued = false;
 
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in FanlightSceneObjectUtility.FindFanlights())
             {
                 var layout = fanlight.LayoutAsset;
                 if (layout == null || !layout.IsInitialized)

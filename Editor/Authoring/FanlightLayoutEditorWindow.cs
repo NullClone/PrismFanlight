@@ -307,9 +307,9 @@ namespace PrismFanlight.Editor
         // Methods
 
         [OnOpenAsset]
-        private static bool OnOpenAsset(int instanceId, int line)
+        private static bool OnOpenAsset(EntityId entityId, int line)
         {
-            if (EditorUtility.EntityIdToObject(instanceId) is FanlightLayoutAsset layout)
+            if (EditorUtility.EntityIdToObject(entityId) is FanlightLayoutAsset layout)
             {
                 Open(layout);
 
@@ -1353,7 +1353,7 @@ namespace PrismFanlight.Editor
         private static List<PrismFanlight> CollectLayoutInstances(FanlightLayoutAsset layout)
         {
             var results = new List<PrismFanlight>();
-            var fanlights = FindObjectsByType<PrismFanlight>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var fanlights = FanlightSceneObjectUtility.FindFanlights(FindObjectsInactive.Include);
 
             for (var i = 0; i < fanlights.Length; i++)
             {

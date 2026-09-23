@@ -83,7 +83,7 @@ namespace PrismFanlight.Authoring
             {
                 var variant = _variants[i];
                 AddUInt(variant.StableVariantId);
-                AddInt(variant.Mesh != null ? variant.Mesh.GetInstanceID() : 0);
+                AddInt(variant.Mesh != null ? variant.Mesh.GetEntityId().GetHashCode() : 0);
                 if (variant.Mesh != null && variant.Mesh.subMeshCount > 0)
                 {
                     AddUInt(variant.Mesh.GetIndexCount(0));

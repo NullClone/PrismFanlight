@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace PrismFanlight.Editor
 {
@@ -70,7 +69,7 @@ namespace PrismFanlight.Editor
 
         private static void ValidateSceneInstances()
         {
-            foreach (var fanlight in Object.FindObjectsByType<PrismFanlight>(FindObjectsSortMode.None))
+            foreach (var fanlight in FanlightSceneObjectUtility.FindFanlights())
             {
                 var layout = fanlight.LayoutAsset;
                 fanlight.SetEditorLayoutBlocked(layout != null && layout.IsInitialized && IsDuplicate(layout));
