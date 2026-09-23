@@ -12,16 +12,17 @@ namespace PrismFanlight.Rendering
         private const int PaletteSlotCount = 6;
 
         private readonly FanlightBlockData[] _singleBlockUpload = new FanlightBlockData[1];
-        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount];
-        private readonly FanlightMotionSample[] _motionSourceSamples = new FanlightMotionSample[FanlightMotionAsset.SampleCount * 3];
+        private readonly FanlightMotionSample[] _motionSamples = new FanlightMotionSample[FanlightMotionAsset.RuntimeSampleCount * 3 + 3];
         private readonly FanlightMotionAsset[] _motionAssets = new FanlightMotionAsset[3];
         private readonly int[] _motionRevisions = new int[3];
         private readonly bool[] _runtimeBlockPaletteUploaded = new bool[3];
         private uint[] _runtimeBlockPaletteSlots = Array.Empty<uint>();
         private uint[] _runtimeBlockPaletteCandidate = Array.Empty<uint>();
         private bool[] _runtimeBlockPaletteAssigned = Array.Empty<bool>();
-        private FanlightMotionSample _motionReferencePose;
-        private Vector3 _motionWeights;
+        private readonly bool[] _runtimeBlockPulseGroupsUploaded = new bool[3];
+        private uint[] _runtimeBlockPulseGroups = Array.Empty<uint>();
+        private uint[] _runtimeBlockPulseGroupCandidate = Array.Empty<uint>();
+        private bool[] _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
         private bool _hasMotionData;
 
 
@@ -51,6 +52,8 @@ namespace PrismFanlight.Rendering
 
         internal ComputeBuffer RuntimeBlockPaletteBuffer { get; private set; }
 
+        internal ComputeBuffer RuntimeBlockPulseGroupBuffer { get; private set; }
+
         internal ComputeBuffer RandomBuffer { get; private set; }
 
         internal ComputeBuffer MotionSampleBuffer { get; private set; }
@@ -75,10 +78,6 @@ namespace PrismFanlight.Rendering
 
         internal Vector4 PenlightVariantGripPivotYs { get; private set; }
 
-        internal Vector4 MotionReferenceArm => _motionReferencePose.ArmDirectionExtension;
-
-        internal Vector4 MotionReferencePenlight => _motionReferencePose.PenlightDirectionBodyLean;
-
 
         // Methods
 
@@ -100,6 +99,10 @@ namespace PrismFanlight.Rendering
             _runtimeBlockPaletteCandidate = new uint[BlockCount];
             _runtimeBlockPaletteAssigned = new bool[BlockCount];
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            _runtimeBlockPulseGroups = new uint[BlockCount * 3];
+            _runtimeBlockPulseGroupCandidate = new uint[BlockCount];
+            _runtimeBlockPulseGroupAssigned = new bool[BlockCount];
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
 
             var assignments = BuildVariantAssignments(layout, appearance, out var counts);
             PenlightVariantOffsets = BuildVariantOffsets(counts);
@@ -116,6 +119,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer = new ComputeBuffer(SeatCount, sizeof(float) * 4, ComputeBufferType.Structured);
             ResolvedMaskBuffer = new ComputeBuffer(SeatCount, sizeof(float), ComputeBufferType.Structured);
             RuntimeBlockPaletteBuffer = new ComputeBuffer(BlockCount * 3, sizeof(uint), ComputeBufferType.Structured);
+            RuntimeBlockPulseGroupBuffer = new ComputeBuffer(BlockCount * 3, sizeof(uint), ComputeBufferType.Structured);
             RandomBuffer = new ComputeBuffer(SeatCount, FanlightRandomData.Stride, ComputeBufferType.Structured);
             MotionSampleBuffer = new ComputeBuffer(_motionSamples.Length, FanlightMotionSample.Stride, ComputeBufferType.Structured);
             PenlightArgsBuffer = new GraphicsBuffer(
@@ -152,6 +156,7 @@ namespace PrismFanlight.Rendering
             BlockBuffer.SetData(BuildBlockData(layout, appearance.BoundsPadding));
             LocalBounds = ExpandBounds(layout.LocalBounds, appearance.BoundsPadding);
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
         }
 
         internal void UpdateBlock(FanlightPenlightRuntimeAppearance appearance, FanlightRuntimeLayout layout, int blockIndex)
@@ -178,7 +183,12 @@ namespace PrismFanlight.Rendering
 
         private static FanlightBlockData ToBlockData(FanlightBakedBlockData block, float boundsPadding)
         {
-            return new FanlightBlockData(block.localCenter, block.radius + boundsPadding, block.startIndex, block.count);
+            return new FanlightBlockData(
+                block.localCenter,
+                block.radius + boundsPadding,
+                block.startIndex,
+                block.count,
+                block.effectCoordinate);
         }
 
         private static Bounds ExpandBounds(Bounds bounds, float boundsPadding)
@@ -270,6 +280,78 @@ namespace PrismFanlight.Rendering
             }
         }
 
+        internal void UpdateRuntimeBlockPulseGroupData(FanlightIntensityState intensity, FanlightRuntimeLayout layout)
+        {
+            if (RuntimeBlockPulseGroupBuffer == null
+                || layout == null
+                || layout.BlockCount != BlockCount)
+            {
+                throw new InvalidOperationException("Runtime Block Pulse Group Buffer is not available.");
+            }
+
+            for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
+            {
+                if (intensity.GetMaskWeight(sourceIndex) <= 0f) continue;
+                var mask = intensity.GetMask(sourceIndex);
+                if (mask.Mode != FanlightIntensityMaskMode.BlockAlternatingPulse) continue;
+
+                Array.Clear(_runtimeBlockPulseGroupCandidate, 0, _runtimeBlockPulseGroupCandidate.Length);
+                Array.Clear(_runtimeBlockPulseGroupAssigned, 0, _runtimeBlockPulseGroupAssigned.Length);
+                for (var entryIndex = 0; entryIndex < mask.BlockPulseEntryCount; entryIndex++)
+                {
+                    var entry = mask.GetBlockPulseEntry(entryIndex);
+                    var blockIndex = layout.GetBlockIndex(entry.StableBlockId);
+                    if (blockIndex < 0)
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse contains an unknown Stable Block ID.");
+                    }
+
+                    if (_runtimeBlockPulseGroupAssigned[blockIndex])
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse contains a duplicate Stable Block ID.");
+                    }
+
+                    _runtimeBlockPulseGroupAssigned[blockIndex] = true;
+                    _runtimeBlockPulseGroupCandidate[blockIndex] = (uint)entry.Group;
+                }
+
+                var laneStart = sourceIndex * BlockCount;
+                var changed = !_runtimeBlockPulseGroupsUploaded[sourceIndex];
+
+                for (var blockIndex = 0; blockIndex < _runtimeBlockPulseGroupAssigned.Length; blockIndex++)
+                {
+                    if (!_runtimeBlockPulseGroupAssigned[blockIndex])
+                    {
+                        throw new InvalidOperationException(
+                            "Block Alternating Pulse must specify every Block in the active Layout.");
+                    }
+
+                    if (_runtimeBlockPulseGroups[laneStart + blockIndex]
+                        != _runtimeBlockPulseGroupCandidate[blockIndex])
+                    {
+                        changed = true;
+                    }
+                }
+
+                if (!changed) continue;
+
+                Array.Copy(
+                    _runtimeBlockPulseGroupCandidate,
+                    0,
+                    _runtimeBlockPulseGroups,
+                    laneStart,
+                    BlockCount);
+                RuntimeBlockPulseGroupBuffer.SetData(
+                    _runtimeBlockPulseGroups,
+                    laneStart,
+                    laneStart,
+                    BlockCount);
+                _runtimeBlockPulseGroupsUploaded[sourceIndex] = true;
+            }
+        }
+
         internal bool HasMotionAssetChanges(FanlightMotionState motion)
         {
             if (MotionSampleBuffer == null) throw new InvalidOperationException("Motion sample buffer is not allocated.");
@@ -290,169 +372,41 @@ namespace PrismFanlight.Rendering
         {
             if (MotionSampleBuffer == null) throw new InvalidOperationException("Motion sample buffer is not allocated.");
 
-            var weights = new Vector3(
-                motion.GetAssetWeight(0),
-                motion.GetAssetWeight(1),
-                motion.GetAssetWeight(2));
-            var assetsChanged = !_hasMotionData;
-
             for (var i = 0; i < 3; i++)
             {
                 var asset = motion.GetAsset(i);
-                if (weights[i] > 0f && (asset == null || !asset.HasValidBake))
+                if (motion.GetAssetWeight(i) > 0f && (asset == null || !asset.HasValidBake))
                 {
                     throw new InvalidOperationException("Motion state contains an invalid baked asset.");
                 }
 
                 var revision = asset != null ? asset.BakeRevision : 0;
-                if (_motionAssets[i] == asset && _motionRevisions[i] == revision) continue;
+                if (_hasMotionData && _motionAssets[i] == asset && _motionRevisions[i] == revision) continue;
 
-                var destinationIndex = i * FanlightMotionAsset.SampleCount;
+                var destinationIndex = i * FanlightMotionAsset.RuntimeSampleCount;
+                var referenceIndex = FanlightMotionAsset.RuntimeSampleCount * 3 + i;
                 if (asset != null && asset.HasValidBake)
                 {
-                    asset.CopyBakedSamples(_motionSourceSamples, destinationIndex);
+                    asset.CopyResampledSamples(
+                        _motionSamples,
+                        destinationIndex,
+                        FanlightMotionAsset.RuntimeSampleCount);
+                    _motionSamples[referenceIndex] = asset.ReferencePose;
                 }
                 else
                 {
-                    Array.Clear(_motionSourceSamples, destinationIndex, FanlightMotionAsset.SampleCount);
+                    Array.Clear(_motionSamples, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
+                    _motionSamples[referenceIndex] = default;
                 }
 
+                MotionSampleBuffer.SetData(_motionSamples, destinationIndex, destinationIndex, FanlightMotionAsset.RuntimeSampleCount);
+                MotionSampleBuffer.SetData(_motionSamples, referenceIndex, referenceIndex, 1);
                 _motionAssets[i] = asset;
                 _motionRevisions[i] = revision;
-                assetsChanged = true;
             }
 
-            if (!assetsChanged && _motionWeights.Equals(weights)) return;
-
-            for (var sampleIndex = 0; sampleIndex < FanlightMotionAsset.SampleCount; sampleIndex++)
-            {
-                _motionSamples[sampleIndex] = BlendMotionSamples(
-                    _motionSourceSamples[sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.SampleCount + sampleIndex],
-                    _motionSourceSamples[FanlightMotionAsset.SampleCount * 2 + sampleIndex],
-                    weights);
-            }
-
-            _motionReferencePose = BlendMotionSamples(
-                _motionAssets[0] != null ? _motionAssets[0].ReferencePose : default,
-                _motionAssets[1] != null ? _motionAssets[1].ReferencePose : default,
-                _motionAssets[2] != null ? _motionAssets[2].ReferencePose : default,
-                weights);
-            MotionSampleBuffer.SetData(_motionSamples);
-            _motionWeights = weights;
             _hasMotionData = true;
         }
-
-        private static FanlightMotionSample BlendMotionSamples(
-            FanlightMotionSample sampleA,
-            FanlightMotionSample sampleB,
-            FanlightMotionSample sampleC,
-            Vector3 weights)
-        {
-            return new FanlightMotionSample(
-                BlendDirections(
-                    sampleA.ArmDirection,
-                    sampleB.ArmDirection,
-                    sampleC.ArmDirection,
-                    weights,
-                    Vector3.forward),
-                sampleA.ArmExtension * weights.x
-                + sampleB.ArmExtension * weights.y
-                + sampleC.ArmExtension * weights.z,
-                BlendDirections(
-                    sampleA.PenlightDirection,
-                    sampleB.PenlightDirection,
-                    sampleC.PenlightDirection,
-                    weights,
-                    Vector3.up),
-                sampleA.BodyLean * weights.x
-                + sampleB.BodyLean * weights.y
-                + sampleC.BodyLean * weights.z);
-        }
-
-        private static Vector3 BlendDirections(
-            Vector3 directionA,
-            Vector3 directionB,
-            Vector3 directionC,
-            Vector3 weights,
-            Vector3 fallback)
-        {
-            var result = fallback;
-            var totalWeight = 0f;
-            BlendDirection(ref result, ref totalWeight, directionA, weights.x, fallback);
-            BlendDirection(ref result, ref totalWeight, directionB, weights.y, fallback);
-            BlendDirection(ref result, ref totalWeight, directionC, weights.z, fallback);
-            return result;
-        }
-
-        private static void BlendDirection(
-            ref Vector3 result,
-            ref float totalWeight,
-            Vector3 direction,
-            float weight,
-            Vector3 fallback)
-        {
-            if (weight <= 0f) return;
-
-            direction = NormalizeDirection(direction, fallback);
-            if (totalWeight <= 0f)
-            {
-                result = direction;
-                totalWeight = weight;
-                return;
-            }
-
-            var nextTotal = totalWeight + weight;
-            result = InterpolateDirection(result, direction, weight / nextTotal);
-            totalWeight = nextTotal;
-        }
-
-        private static Vector3 InterpolateDirection(Vector3 from, Vector3 to, float weight)
-        {
-            from = NormalizeDirection(from, Vector3.up);
-            to = NormalizeDirection(to, from);
-            weight = Mathf.Clamp01(weight);
-            if (weight <= 0f) return from;
-            if (weight >= 1f) return to;
-
-            var cosine = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
-            if (cosine >= 0.9995f) return NormalizeDirection(Vector3.Lerp(from, to, weight), from);
-
-            if (cosine <= -0.999999f)
-            {
-                var axisAngle = Mathf.PI * weight;
-                var axis = DirectionFallbackAxis(from);
-                return NormalizeDirection(
-                    from * Mathf.Cos(axisAngle) + Vector3.Cross(axis, from) * Mathf.Sin(axisAngle),
-                    from);
-            }
-
-            var theta = Mathf.Acos(cosine);
-            var inverseSinTheta = 1f / Mathf.Sin(theta);
-            var fromWeight = Mathf.Sin((1f - weight) * theta) * inverseSinTheta;
-            var toWeight = Mathf.Sin(weight * theta) * inverseSinTheta;
-            return NormalizeDirection(from * fromWeight + to * toWeight, from);
-        }
-
-        private static Vector3 DirectionFallbackAxis(Vector3 direction)
-        {
-            var absolute = new Vector3(Mathf.Abs(direction.x), Mathf.Abs(direction.y), Mathf.Abs(direction.z));
-            var reference = absolute.x <= absolute.y && absolute.x <= absolute.z
-                ? Vector3.right
-                : absolute.y <= absolute.z
-                    ? Vector3.up
-                    : Vector3.forward;
-            return NormalizeDirection(Vector3.Cross(direction, reference), Vector3.right);
-        }
-
-        private static Vector3 NormalizeDirection(Vector3 direction, Vector3 fallback)
-        {
-            if (!IsFinite(direction) || direction.sqrMagnitude <= 0.000001f) return fallback;
-            return direction.normalized;
-        }
-
-        private static bool IsFinite(Vector3 value) =>
-            float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
 
         private static void ResetArgs(GraphicsBuffer argsBuffer, Mesh mesh)
         {
@@ -615,6 +569,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer?.Release();
             ResolvedMaskBuffer?.Release();
             RuntimeBlockPaletteBuffer?.Release();
+            RuntimeBlockPulseGroupBuffer?.Release();
             RandomBuffer?.Release();
             MotionSampleBuffer?.Release();
             PenlightArgsBuffer?.Release();
@@ -633,6 +588,7 @@ namespace PrismFanlight.Rendering
             ResolvedChromaBuffer = null;
             ResolvedMaskBuffer = null;
             RuntimeBlockPaletteBuffer = null;
+            RuntimeBlockPulseGroupBuffer = null;
             RandomBuffer = null;
             MotionSampleBuffer = null;
             PenlightArgsBuffer = null;
@@ -648,12 +604,13 @@ namespace PrismFanlight.Rendering
             _runtimeBlockPaletteCandidate = Array.Empty<uint>();
             _runtimeBlockPaletteAssigned = Array.Empty<bool>();
             Array.Clear(_runtimeBlockPaletteUploaded, 0, _runtimeBlockPaletteUploaded.Length);
+            _runtimeBlockPulseGroups = Array.Empty<uint>();
+            _runtimeBlockPulseGroupCandidate = Array.Empty<uint>();
+            _runtimeBlockPulseGroupAssigned = Array.Empty<bool>();
+            Array.Clear(_runtimeBlockPulseGroupsUploaded, 0, _runtimeBlockPulseGroupsUploaded.Length);
             Array.Clear(_motionSamples, 0, _motionSamples.Length);
-            Array.Clear(_motionSourceSamples, 0, _motionSourceSamples.Length);
             Array.Clear(_motionAssets, 0, _motionAssets.Length);
             Array.Clear(_motionRevisions, 0, _motionRevisions.Length);
-            _motionReferencePose = default;
-            _motionWeights = default;
             _hasMotionData = false;
         }
     }

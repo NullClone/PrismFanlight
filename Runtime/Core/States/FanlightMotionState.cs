@@ -13,25 +13,6 @@ namespace PrismFanlight.Core
         private FanlightMotionAsset _motionAsset;
 
         [Space]
-        [SerializeField, Range(0f, 2f)]
-        private float _motionAmount;
-
-        [SerializeField, Range(-1f, 1f)]
-        private float _heightBias;
-
-        [SerializeField, Range(0f, 2f)]
-        private float _sideScale;
-
-        [SerializeField, Range(0f, 2f)]
-        private float _forwardScale;
-
-        [SerializeField, Range(0f, 0.5f)]
-        private float _wristDelayRatio;
-
-        [SerializeField, Range(0f, 1f)]
-        private float _variation;
-
-        [Space]
         [SerializeField]
         private float _beatsPerCycle;
 
@@ -46,10 +27,10 @@ namespace PrismFanlight.Core
 
 
         [NonSerialized]
-        private FanlightMotionAsset _secondaryMotionAsset;
+        private FanlightMotionSource _secondarySource;
 
         [NonSerialized]
-        private FanlightMotionAsset _tertiaryMotionAsset;
+        private FanlightMotionSource _tertiarySource;
 
         [NonSerialized]
         private Vector3 _assetWeights;
@@ -67,19 +48,6 @@ namespace PrismFanlight.Core
 
         internal float BlockDelayYBeats => _blockDelayYBeats;
 
-        internal float MotionAmount => _motionAmount;
-
-        internal float HeightBias => _heightBias;
-
-        internal float SideScale => _sideScale;
-
-        internal float ForwardScale => _forwardScale;
-
-        internal float WristDelayRatio => _wristDelayRatio;
-
-        internal float Variation => _variation;
-
-
         // Methods
 
         internal FanlightMotionState(
@@ -87,73 +55,49 @@ namespace PrismFanlight.Core
             float beatsPerCycle,
             float phaseOffsetBeats,
             float blockDelayXBeats,
-            float blockDelayYBeats,
-            float motionAmount,
-            float heightBias,
-            float sideScale,
-            float forwardScale,
-            float wristDelayRatio,
-            float variation)
+            float blockDelayYBeats)
         {
             _motionAsset = motionAsset;
             _beatsPerCycle = FanlightStateValidation.RequireRange(beatsPerCycle, 0.001f, 64f, nameof(beatsPerCycle));
             _phaseOffsetBeats = FanlightStateValidation.RequireRange(phaseOffsetBeats, -64f, 64f, nameof(phaseOffsetBeats));
             _blockDelayXBeats = FanlightStateValidation.RequireRange(blockDelayXBeats, -64f, 64f, nameof(blockDelayXBeats));
             _blockDelayYBeats = FanlightStateValidation.RequireRange(blockDelayYBeats, -64f, 64f, nameof(blockDelayYBeats));
-            _motionAmount = FanlightStateValidation.RequireRange(motionAmount, 0f, 2f, nameof(motionAmount));
-            _heightBias = FanlightStateValidation.RequireRange(heightBias, -1f, 1f, nameof(heightBias));
-            _sideScale = FanlightStateValidation.RequireRange(sideScale, 0f, 2f, nameof(sideScale));
-            _forwardScale = FanlightStateValidation.RequireRange(forwardScale, 0f, 2f, nameof(forwardScale));
-            _wristDelayRatio = FanlightStateValidation.RequireRange(wristDelayRatio, 0f, 0.5f, nameof(wristDelayRatio));
-            _variation = FanlightStateValidation.RequireRange(variation, 0f, 1f, nameof(variation));
-            _secondaryMotionAsset = null;
-            _tertiaryMotionAsset = null;
+            _secondarySource = default;
+            _tertiarySource = default;
             _assetWeights = new Vector3(1f, 0f, 0f);
         }
 
-        internal static FanlightMotionState BlendAssets(
-            FanlightMotionAsset assetA,
-            FanlightMotionAsset assetB,
-            FanlightMotionAsset assetC,
-            Vector3 assetWeights,
-            float beatsPerCycle,
-            float phaseOffsetBeats,
+        internal static FanlightMotionState BlendSources(
+            FanlightMotionSource sourceA,
+            FanlightMotionSource sourceB,
+            FanlightMotionSource sourceC,
+            Vector3 sourceWeights,
             float blockDelayXBeats,
-            float blockDelayYBeats,
-            float motionAmount,
-            float heightBias,
-            float sideScale,
-            float forwardScale,
-            float wristDelayRatio,
-            float variation)
+            float blockDelayYBeats)
         {
             var state = new FanlightMotionState(
-                assetA,
-                beatsPerCycle,
-                phaseOffsetBeats,
+                sourceA.Asset,
+                sourceA.BeatsPerCycle,
+                sourceA.PhaseOffsetBeats,
                 blockDelayXBeats,
-                blockDelayYBeats,
-                motionAmount,
-                heightBias,
-                sideScale,
-                forwardScale,
-                wristDelayRatio,
-                variation)
+                blockDelayYBeats)
             {
-                _secondaryMotionAsset = assetB,
-                _tertiaryMotionAsset = assetC,
-                _assetWeights = NormalizeWeights(assetWeights)
+                _secondarySource = sourceB,
+                _tertiarySource = sourceC,
+                _assetWeights = NormalizeWeights(sourceWeights)
             };
             return state;
         }
 
-        internal FanlightMotionAsset GetAsset(int index) => index switch
+        internal FanlightMotionSource GetSource(int index) => index switch
         {
-            0 => _motionAsset,
-            1 => _secondaryMotionAsset,
-            2 => _tertiaryMotionAsset,
+            0 => new(_motionAsset, _beatsPerCycle, _phaseOffsetBeats),
+            1 => _secondarySource,
+            2 => _tertiarySource,
             _ => throw new ArgumentOutOfRangeException(nameof(index))
         };
+
+        internal FanlightMotionAsset GetAsset(int index) => GetSource(index).Asset;
 
         internal float GetAssetWeight(int index)
         {

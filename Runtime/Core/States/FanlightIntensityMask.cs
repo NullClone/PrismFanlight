@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PrismFanlight.Core
@@ -33,10 +34,22 @@ namespace PrismFanlight.Core
         private Vector2 _origin;
 
         [SerializeField]
-        private Vector2 _direction;
+        private float _localYawDegrees;
 
         [SerializeField]
         private float _wavelength;
+
+        [SerializeField]
+        private FanlightRadialWaveDirection _radialWaveDirection;
+
+        [SerializeField]
+        private FanlightAngularWaveDirection _angularWaveDirection;
+
+        [SerializeField, Min(1)]
+        private int _angularArmCount;
+
+        [SerializeField]
+        private FanlightBlockPulseEntry[] _blockPulseEntries;
 
 
         // Properties
@@ -57,9 +70,20 @@ namespace PrismFanlight.Core
 
         internal Vector2 Origin => _origin;
 
-        internal Vector2 Direction => _direction;
+        internal float LocalYawDegrees => _localYawDegrees;
 
         internal float Wavelength => _wavelength;
+
+        internal FanlightRadialWaveDirection RadialWaveDirection => _radialWaveDirection;
+
+        internal FanlightAngularWaveDirection AngularWaveDirection => _angularWaveDirection;
+
+        internal int AngularArmCount => _angularArmCount;
+
+        internal int BlockPulseEntryCount => _blockPulseEntries?.Length ?? 0;
+
+        internal bool UsesLocalYaw => _mode == FanlightIntensityMaskMode.TravelingWave
+                                      || _mode == FanlightIntensityMaskMode.AngularWave;
 
 
         // Methods
@@ -73,8 +97,12 @@ namespace PrismFanlight.Core
             float holdRatio,
             float releaseRatio,
             Vector2 origin,
-            Vector2 direction,
-            float wavelength)
+            float localYawDegrees,
+            float wavelength,
+            FanlightRadialWaveDirection radialWaveDirection,
+            FanlightAngularWaveDirection angularWaveDirection,
+            int angularArmCount,
+            FanlightBlockPulseEntry[] blockPulseEntries)
         {
             _mode = mode;
             _beatsPerCycle = beatsPerCycle;
@@ -84,16 +112,36 @@ namespace PrismFanlight.Core
             _holdRatio = holdRatio;
             _releaseRatio = releaseRatio;
             _origin = origin;
-            _direction = direction;
+            _localYawDegrees = localYawDegrees;
             _wavelength = wavelength;
+            _radialWaveDirection = radialWaveDirection;
+            _angularWaveDirection = angularWaveDirection;
+            _angularArmCount = angularArmCount;
+            _blockPulseEntries = blockPulseEntries == null
+                ? Array.Empty<FanlightBlockPulseEntry>()
+                : (FanlightBlockPulseEntry[])blockPulseEntries.Clone();
             ValidateAndNormalize();
         }
 
+        internal FanlightBlockPulseEntry GetBlockPulseEntry(int index) => _blockPulseEntries[index];
+
         internal FanlightIntensityMask Validated()
         {
-            var value = this;
-            value.ValidateAndNormalize();
-            return value;
+            return new FanlightIntensityMask(
+                _mode,
+                _beatsPerCycle,
+                _phaseOffsetBeats,
+                _minimumIntensityRatio,
+                _attackRatio,
+                _holdRatio,
+                _releaseRatio,
+                _origin,
+                _localYawDegrees,
+                _wavelength,
+                _radialWaveDirection,
+                _angularWaveDirection,
+                _angularArmCount,
+                _blockPulseEntries);
         }
 
         internal bool ContentEquals(in FanlightIntensityMask other)
@@ -106,8 +154,20 @@ namespace PrismFanlight.Core
                 FanlightIntensityMaskMode.Pulse => EnvelopeEquals(other),
                 FanlightIntensityMaskMode.TravelingWave => EnvelopeEquals(other)
                                                            && _origin.Equals(other._origin)
-                                                           && _direction.Equals(other._direction)
+                                                           && _localYawDegrees.Equals(other._localYawDegrees)
                                                            && _wavelength.Equals(other._wavelength),
+                FanlightIntensityMaskMode.RadialWave => EnvelopeEquals(other)
+                                                        && _origin.Equals(other._origin)
+                                                        && _wavelength.Equals(other._wavelength)
+                                                        && _radialWaveDirection == other._radialWaveDirection,
+                FanlightIntensityMaskMode.RandomSparkle => EnvelopeEquals(other),
+                FanlightIntensityMaskMode.AngularWave => EnvelopeEquals(other)
+                                                         && _origin.Equals(other._origin)
+                                                         && _localYawDegrees.Equals(other._localYawDegrees)
+                                                         && _angularWaveDirection == other._angularWaveDirection
+                                                         && _angularArmCount == other._angularArmCount,
+                FanlightIntensityMaskMode.BlockAlternatingPulse => EnvelopeEquals(other)
+                                                                   && BlockPulseEntriesEqual(other),
                 _ => false
             };
         }
@@ -124,15 +184,54 @@ namespace PrismFanlight.Core
                 case FanlightIntensityMaskMode.TravelingWave:
                     ValidateEnvelope();
                     _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
-                    _direction = FanlightStateValidation.RequireDirection(_direction, nameof(_direction));
+                    _localYawDegrees = FanlightStateValidation.NormalizeDegrees(
+                        _localYawDegrees,
+                        nameof(_localYawDegrees));
                     _wavelength = FanlightStateValidation.RequireMinimumExclusive(
                         _wavelength,
                         0f,
                         nameof(_wavelength));
                     break;
+                case FanlightIntensityMaskMode.RadialWave:
+                    ValidateEnvelope();
+                    _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
+                    _wavelength = FanlightStateValidation.RequireMinimumExclusive(
+                        _wavelength,
+                        0f,
+                        nameof(_wavelength));
+                    ValidateRadialWaveDirection();
+                    break;
+                case FanlightIntensityMaskMode.RandomSparkle:
+                    ValidateEnvelope();
+                    break;
+                case FanlightIntensityMaskMode.AngularWave:
+                    ValidateEnvelope();
+                    _origin = FanlightStateValidation.RequireFinite(_origin, nameof(_origin));
+                    _localYawDegrees = FanlightStateValidation.NormalizeDegrees(
+                        _localYawDegrees,
+                        nameof(_localYawDegrees));
+                    ValidateAngularWaveDirection();
+                    ValidateAngularArmCount();
+                    break;
+                case FanlightIntensityMaskMode.BlockAlternatingPulse:
+                    ValidateEnvelope();
+                    ValidateBlockPulseEntries();
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(_mode));
             }
+        }
+
+        private bool BlockPulseEntriesEqual(in FanlightIntensityMask other)
+        {
+            if (BlockPulseEntryCount != other.BlockPulseEntryCount) return false;
+
+            for (var i = 0; i < BlockPulseEntryCount; i++)
+            {
+                if (!GetBlockPulseEntry(i).Equals(other.GetBlockPulseEntry(i))) return false;
+            }
+
+            return true;
         }
 
         private bool EnvelopeEquals(in FanlightIntensityMask other)
@@ -183,6 +282,55 @@ namespace PrismFanlight.Core
                 throw new ArgumentOutOfRangeException(
                     nameof(_attackRatio),
                     "Attack, Hold, and Release Ratio must total more than 0 and no more than 1.");
+            }
+        }
+
+        private void ValidateRadialWaveDirection()
+        {
+            if (_radialWaveDirection != FanlightRadialWaveDirection.Outward
+                && _radialWaveDirection != FanlightRadialWaveDirection.Inward)
+            {
+                throw new ArgumentOutOfRangeException(nameof(_radialWaveDirection));
+            }
+        }
+
+        private void ValidateAngularWaveDirection()
+        {
+            if (_angularWaveDirection != FanlightAngularWaveDirection.Clockwise
+                && _angularWaveDirection != FanlightAngularWaveDirection.Counterclockwise)
+            {
+                throw new ArgumentOutOfRangeException(nameof(_angularWaveDirection));
+            }
+        }
+
+        private void ValidateAngularArmCount()
+        {
+            if (_angularArmCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(_angularArmCount));
+            }
+        }
+
+        private void ValidateBlockPulseEntries()
+        {
+            if (_blockPulseEntries == null || _blockPulseEntries.Length == 0)
+            {
+                throw new ArgumentException(
+                    "Block Alternating Pulse requires a complete Stable Block ID mapping.",
+                    nameof(_blockPulseEntries));
+            }
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < _blockPulseEntries.Length; i++)
+            {
+                var entry = _blockPulseEntries[i];
+                _ = new FanlightBlockPulseEntry(entry.StableBlockId, entry.Group);
+                if (!ids.Add(entry.StableBlockId))
+                {
+                    throw new ArgumentException(
+                        "Block Alternating Pulse Stable Block IDs must be unique.",
+                        nameof(_blockPulseEntries));
+                }
             }
         }
     }

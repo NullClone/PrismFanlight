@@ -1,10 +1,12 @@
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
 namespace PrismFanlight.Editor
 {
     [CustomEditor(typeof(FanlightColorClip))]
-    internal sealed class FanlightColorClipEditor : UnityEditor.Editor
+    [CanEditMultipleObjects]
+    internal sealed class FanlightColorClipInspector : UnityEditor.Editor
     {
         // Fields
 
@@ -20,9 +22,16 @@ namespace PrismFanlight.Editor
 
         public override void OnInspectorGUI()
         {
+            FanlightPresetEditor.Draw(targets);
+
             serializedObject.Update();
 
-            FanlightColorIntensityEditorUtility.DrawColorState(_value);
+            var included = !FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out _) || mask.Color.HasFlag(FanlightColorFields.Source);
+
+            using (new EditorGUI.DisabledScope(!included))
+            {
+                FanlightColorIntensityEditorUtility.DrawColorState(_value);
+            }
 
             serializedObject.ApplyModifiedProperties();
         }

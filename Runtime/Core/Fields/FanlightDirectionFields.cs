@@ -7,8 +7,7 @@ namespace PrismFanlight.Core
     {
         None = 0,
         Mode = 1 << 0,
-        WorldYawDegrees = 1 << 1,
-        AimStrength = 1 << 2,
-        All = Mode | WorldYawDegrees | AimStrength
+        Direction = 1 << 1,
+        All = Mode | Direction
     }
 }

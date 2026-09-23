@@ -1,7 +1,7 @@
 #ifndef PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 #define PRISM_FANLIGHT_SHADER_GRAPH_HELPER_INCLUDED
 
-#include "PrismFanlightColor.hlsl"
+#include "../../PrismFanlightColor.hlsl"
 
 StructuredBuffer<uint> _VisibleIndices;
 StructuredBuffer<float4x4> _FanlightMatrices;

@@ -35,6 +35,8 @@ namespace PrismFanlight.Core
 
         internal FanlightIntensityMask Mask => _mask;
 
+        internal float ResolvedLocalYawDegrees => ResolveLocalYawDegrees();
+
 
         // Methods
 
@@ -137,6 +139,20 @@ namespace PrismFanlight.Core
             return false;
         }
 
+        internal bool HasRandomSparkleMask()
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                if (GetMaskWeight(i) > 0f
+                    && GetMask(i).Mode == FanlightIntensityMaskMode.RandomSparkle)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static Vector3 NormalizeWeights(Vector3 weights)
         {
             if (!FanlightStateValidation.IsFinite(weights)) throw new ArgumentOutOfRangeException(nameof(weights));
@@ -146,6 +162,29 @@ namespace PrismFanlight.Core
             var total = weights.x + weights.y + weights.z;
             if (total <= 0.000001f) return new Vector3(1f, 0f, 0f);
             return weights / total;
+        }
+
+        private float ResolveLocalYawDegrees()
+        {
+            var resolvedYaw = 0f;
+            var accumulatedWeight = 0d;
+
+            for (var i = 0; i < 3; i++)
+            {
+                var mask = GetMask(i);
+                var weight = GetMaskWeight(i);
+                if (weight <= 0f || !mask.UsesLocalYaw) continue;
+
+                resolvedYaw = accumulatedWeight <= 0d
+                    ? mask.LocalYawDegrees
+                    : FanlightStateValidation.LerpShortestDegrees(
+                        resolvedYaw,
+                        mask.LocalYawDegrees,
+                        (float)(weight / (accumulatedWeight + weight)));
+                accumulatedWeight += weight;
+            }
+
+            return resolvedYaw;
         }
     }
 }

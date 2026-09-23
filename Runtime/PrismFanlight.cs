@@ -10,12 +10,12 @@ namespace PrismFanlight
 {
     [ExecuteAlways]
     [HelpURL(HelpUrl)]
-    [AddComponentMenu("Prism Fanlight/Prism Fanlight")]
+    [AddComponentMenu("Rendering/Prism Fanlight")]
     public sealed class PrismFanlight : MonoBehaviour
     {
         // Fields
 
-        public const string HelpUrl = ""; //https://github.com/NullClone/PrismFanlight
+        public const string HelpUrl = "https://github.com/NullClone/PrismFanlight";
 
 
         [SerializeField]
@@ -35,6 +35,13 @@ namespace PrismFanlight
 
         [SerializeField]
         private Camera _cullingCamera;
+
+        [SerializeField]
+        private bool _enableAudienceLod;
+
+        [SerializeField]
+        [Min(0.01f)]
+        private float _audienceLodDistance = 100f;
 
         [SerializeField]
         private FanlightGpuUpdateTiming _updateMode = FanlightGpuUpdateTiming.FixedRate(60f);
@@ -96,7 +103,6 @@ namespace PrismFanlight
         private FanlightTimeManager _tempoScopeManager;
         private int _tempoScopeRevision = int.MinValue;
         private FanlightShowTimeFault _timeFault;
-        private long _evaluationId;
         private long _renderFrameId;
         private FanlightShowSample _heldTimelineSample;
         private bool _hasHeldTimelineState;
@@ -117,6 +123,8 @@ namespace PrismFanlight
         // Properties
 
         internal FanlightLayoutAsset LayoutAsset => _layoutAsset;
+
+        internal FanlightTimeManager TimeManager => _timeManager;
 
         private FanlightGpuUpdateTiming AnimationUpdate => _updateMode.Validated();
 
@@ -152,6 +160,12 @@ namespace PrismFanlight
             {
                 _motion = FanlightShowStateDefaults.Motion(defaultMotionAsset);
             }
+
+            var defaultLayoutAsset = Resources.Load<FanlightLayoutAsset>("Default Layout Asset");
+            if (defaultLayoutAsset != null)
+            {
+                _layoutAsset = defaultLayoutAsset;
+            }
         }
 #endif
 
@@ -163,7 +177,7 @@ namespace PrismFanlight
 
         private void LateUpdate()
         {
-            if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null || _evaluationId == long.MaxValue)
+            if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null)
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
@@ -182,9 +196,7 @@ namespace PrismFanlight
                 return;
             }
 
-            _evaluationId++;
-
-            if (!_timeManager.TrySampleClock(_evaluationId, out var clock, out _timeFault))
+            if (!_timeManager.TrySampleClock(UnityEngine.Time.frameCount, out var clock, out _timeFault))
             {
                 ClearScheduledTempoCandidates();
                 ClearScheduledContributions();
@@ -310,7 +322,6 @@ namespace PrismFanlight
             _tempoScopeResolver = null;
             _tempoScopeManager = null;
             _tempoScopeRevision = int.MinValue;
-            ClearHeldTimelineState();
         }
 
         internal void SetScheduledTempoCandidate(object sourceToken, in FanlightTempoCandidate candidate)
@@ -485,16 +496,24 @@ namespace PrismFanlight
             if (!_renderer.IsReady) return;
 
             _renderFrameId = _renderFrameId == long.MaxValue ? 1L : _renderFrameId + 1L;
+
             var frame = new FanlightFrameContext(
                 _renderFrameId,
                 transform.localToWorldMatrix,
                 _swingTarget != null ? _swingTarget.position : Vector3.zero);
 
+            var hasCullingCamera = _cullingCamera != null;
+            var enableCulling = Application.isPlaying && _enableCulling && hasCullingCamera;
+            var enableAudienceLod = Application.isPlaying && _enableAudienceLod && hasCullingCamera;
+            var audienceLodDistance = Mathf.Max(0.01f, _audienceLodDistance);
+
             _renderer.Render(
                 sample,
                 frame,
                 _cullingCamera,
-                _enableCulling && _cullingCamera != null,
+                enableCulling,
+                enableAudienceLod,
+                audienceLodDistance,
                 gameObject.layer,
                 _renderingLayerMask,
                 AnimationUpdate);
@@ -644,8 +663,7 @@ namespace PrismFanlight
                 return null;
             }
 
-            if (_assetRuntimeLayout == null
-                || _assetRuntimeLayout.ContentHash != _layoutAsset.ContentHash)
+            if (_assetRuntimeLayout == null || _assetRuntimeLayout.ContentHash != _layoutAsset.ContentHash)
             {
                 _assetRuntimeLayout = FanlightRuntimeLayout.FromArtifact(_layoutAsset);
             }

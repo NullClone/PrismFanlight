@@ -3,6 +3,7 @@
 
 StructuredBuffer<uint> _FanlightStableAssignments;
 StructuredBuffer<uint> _RuntimeBlockPalettes;
+StructuredBuffer<uint> _RuntimeBlockPulseGroups;
 RWStructuredBuffer<float4> _FanlightResolvedChroma;
 RWStructuredBuffer<float> _FanlightResolvedMask;
 
@@ -10,37 +11,43 @@ float4 _ColorSourceModes[3];
 float4 _ColorSourcePalette[18];
 float4 _ColorSourceA[3];
 float4 _ColorSourceB[3];
+float4 _ColorResolvedDirection;
 float4 _ColorSourceGeometry[3];
 float4 _ColorSourceParameters[3];
 float _MaskCompletedBeat;
 float4 _MaskSourceModes[3];
 float4 _MaskSourceTiming[3];
 float4 _MaskSourceEnvelope[3];
+float4 _MaskResolvedDirection;
 float4 _MaskSourceGeometry[3];
 
 float3 PrismEvaluateColorSource(uint sourceIndex, uint seatIndex, FanlightSeatData seat)
 {
     uint mode = (uint)round(_ColorSourceModes[sourceIndex].x);
+    float3 chroma = 0.0;
+
     if (mode == 0u)
     {
         uint paletteSlot = min(_FanlightStableAssignments[seatIndex] & 7u, 5u);
-        return _ColorSourcePalette[sourceIndex * 6u + paletteSlot].rgb;
+        chroma = _ColorSourcePalette[sourceIndex * 6u + paletteSlot].rgb;
     }
-
-    if (mode == 1u)
+    else if (mode == 1u)
     {
         float2 origin = _ColorSourceGeometry[sourceIndex].xy;
-        float2 direction = _ColorSourceGeometry[sourceIndex].zw;
         float width = max(_ColorSourceParameters[sourceIndex].x, 0.000001);
         float offset = _ColorSourceParameters[sourceIndex].y;
-        float coordinate = dot(seat.localPositionSeed.xz - origin, direction) / width + 0.5 + offset;
-        return lerp(_ColorSourceA[sourceIndex].rgb, _ColorSourceB[sourceIndex].rgb, saturate(coordinate));
+        float coordinate = dot(seat.localPositionSeed.xz - origin, _ColorResolvedDirection.xy) / width + 0.5 + offset;
+        chroma = lerp(_ColorSourceA[sourceIndex].rgb, _ColorSourceB[sourceIndex].rgb, saturate(coordinate));
+    }
+    else
+    {
+        uint blockIndex = (uint)max(seat.blockIndex, 0);
+        uint blockOffset = (uint)max(0.0, round(_ColorSourceModes[sourceIndex].z));
+        uint blockPaletteSlot = min(_RuntimeBlockPalettes[blockOffset + blockIndex], 5u);
+        chroma = _ColorSourcePalette[sourceIndex * 6u + blockPaletteSlot].rgb;
     }
 
-    uint blockIndex = (uint)max(seat.blockIndex, 0);
-    uint blockOffset = (uint)max(0.0, round(_ColorSourceModes[sourceIndex].z));
-    uint blockPaletteSlot = min(_RuntimeBlockPalettes[blockOffset + blockIndex], 5u);
-    return _ColorSourcePalette[sourceIndex * 6u + blockPaletteSlot].rgb;
+    return chroma;
 }
 
 float PrismSmooth01(float value)
@@ -48,6 +55,7 @@ float PrismSmooth01(float value)
     value = saturate(value);
     return value * value * (3.0 - 2.0 * value);
 }
+
 
 float PrismEvaluateMaskEnvelope(uint sourceIndex, float phase)
 {
@@ -89,10 +97,38 @@ float PrismEvaluateMaskSource(uint sourceIndex, FanlightSeatData seat)
     if (mode == 2u)
     {
         float2 origin = _MaskSourceGeometry[sourceIndex].xy;
-        float2 direction = _MaskSourceGeometry[sourceIndex].zw;
         float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
-        float spatialPhase = dot(seat.localPositionSeed.xz - origin, direction) / wavelength;
+        float spatialPhase = dot(seat.localPositionSeed.xz - origin, _MaskResolvedDirection.xy) / wavelength;
         phase -= spatialPhase;
+    }
+    else if (mode == 3u)
+    {
+        float2 origin = _MaskSourceGeometry[sourceIndex].xy;
+        float wavelength = max(_MaskSourceTiming[sourceIndex].z, 0.000001);
+        float directionSign = _MaskSourceModes[sourceIndex].z;
+        float spatialPhase = length(seat.localPositionSeed.xz - origin) / wavelength;
+        phase -= directionSign * spatialPhase;
+    }
+    else if (mode == 4u)
+    {
+        phase += PrismRandom(seat, 2u);
+    }
+    else if (mode == 5u)
+    {
+        float2 origin = _MaskSourceGeometry[sourceIndex].xy;
+        float2 delta = seat.localPositionSeed.xz - origin;
+        float crossValue = _MaskResolvedDirection.y * delta.x - _MaskResolvedDirection.x * delta.y;
+        float dotValue = dot(_MaskResolvedDirection.xy, delta);
+        float armCount = max(1.0, round(_MaskSourceTiming[sourceIndex].z));
+        float angularPhase = atan2(crossValue, dotValue) / (2.0 * PRISM_FANLIGHT_PI) * armCount;
+        phase -= _MaskSourceModes[sourceIndex].z * angularPhase;
+    }
+    else if (mode == 6u)
+    {
+        uint blockIndex = (uint)max(seat.blockIndex, 0);
+        uint blockOffset = (uint)max(0.0, round(_MaskSourceModes[sourceIndex].w));
+        uint group = min(_RuntimeBlockPulseGroups[blockOffset + blockIndex], 1u);
+        phase += (float)group * 0.5;
     }
 
     return saturate(PrismEvaluateMaskEnvelope(sourceIndex, frac(phase)));

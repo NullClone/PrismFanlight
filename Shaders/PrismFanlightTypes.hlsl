@@ -4,16 +4,18 @@
 struct FanlightSeatData
 {
     float4 localPositionSeed;
-    float4 planePositionBlock;
     int blockIndex;
-    uint placementFlags;
-    float2 padding;
+    uint padding0;
+    uint padding1;
+    uint padding2;
 };
 
 struct FanlightBlockData
 {
     float4 localCenterRadius;
-    float4 indexRange;
+    float2 effectCoordinate;
+    int startIndex;
+    int count;
 };
 
 struct FanlightAudiencePart
@@ -45,8 +47,10 @@ struct FanlightRandomData
 
 struct FanlightMotionSample
 {
-    float4 armDirectionExtension;
-    float4 penlightDirectionBodyLean;
+    float4 bodyPosition;
+    float4 bodyRotation;
+    float4 handPosition;
+    float4 penlightRotation;
 };
 
 struct PrismArm
@@ -83,5 +87,27 @@ struct PrismHumanPose
     float armHalfWidth;
     float headHalf;
 };
+
+float4 PrismNormalizeQuaternion(float4 rotation)
+{
+    float squareMagnitude = dot(rotation, rotation);
+    return squareMagnitude > 0.000001
+        ? rotation * rsqrt(squareMagnitude)
+        : float4(0.0, 0.0, 0.0, 1.0);
+}
+
+float4 PrismNlerpQuaternion(float4 from, float4 to, float weight)
+{
+    from = PrismNormalizeQuaternion(from);
+    to = PrismNormalizeQuaternion(to);
+    to *= dot(from, to) < 0.0 ? -1.0 : 1.0;
+    return PrismNormalizeQuaternion(lerp(from, to, saturate(weight)));
+}
+
+float3 PrismRotateByQuaternion(float4 rotation, float3 value)
+{
+    rotation = PrismNormalizeQuaternion(rotation);
+    return value + 2.0 * cross(rotation.xyz, cross(rotation.xyz, value) + rotation.w * value);
+}
 
 #endif

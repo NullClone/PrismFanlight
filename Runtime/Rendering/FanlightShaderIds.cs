@@ -18,6 +18,7 @@ namespace PrismFanlight.Rendering
         internal static readonly int ResolvedChroma = Shader.PropertyToID("_FanlightResolvedChroma");
         internal static readonly int ResolvedMask = Shader.PropertyToID("_FanlightResolvedMask");
         internal static readonly int RuntimeBlockPalettes = Shader.PropertyToID("_RuntimeBlockPalettes");
+        internal static readonly int RuntimeBlockPulseGroups = Shader.PropertyToID("_RuntimeBlockPulseGroups");
         internal static readonly int Randoms = Shader.PropertyToID("_FanlightRandoms");
         internal static readonly int MotionSamples = Shader.PropertyToID("_MotionSamples");
         internal static readonly int AudienceParts = Shader.PropertyToID("_AudienceParts");
@@ -40,13 +41,17 @@ namespace PrismFanlight.Rendering
         internal static readonly int AudienceLod = Shader.PropertyToID("_AudienceLod");
         internal static readonly int LodCameraPos = Shader.PropertyToID("_LodCameraPos");
 
-        internal static readonly int SeatPitch = Shader.PropertyToID("_SeatPitch");
-        internal static readonly int BlockCount = Shader.PropertyToID("_BlockCount");
+        internal static readonly int ReferenceSeatSpacing = Shader.PropertyToID("_ReferenceSeatSpacing");
         internal static readonly int MotionTiming = Shader.PropertyToID("_MotionTiming");
-        internal static readonly int MotionCycle = Shader.PropertyToID("_MotionCycle");
-        internal static readonly int MotionParameters = Shader.PropertyToID("_MotionParameters");
-        internal static readonly int MotionReferenceArm = Shader.PropertyToID("_MotionReferenceArm");
-        internal static readonly int MotionReferencePenlight = Shader.PropertyToID("_MotionReferencePenlight");
+
+        internal static readonly int[] MotionCycles =
+        {
+            Shader.PropertyToID("_MotionCycleA"),
+            Shader.PropertyToID("_MotionCycleB"),
+            Shader.PropertyToID("_MotionCycleC")
+        };
+
+        internal static readonly int MotionTransitionScatter = Shader.PropertyToID("_MotionTransitionScatter");
         internal static readonly int SwingMode = Shader.PropertyToID("_SwingMode");
         internal static readonly int SwingAxis = Shader.PropertyToID("_SwingAxis");
         internal static readonly int SwingTargetPos = Shader.PropertyToID("_SwingTargetPos");
@@ -71,12 +76,14 @@ namespace PrismFanlight.Rendering
         internal static readonly int ColorSourcePalette = Shader.PropertyToID("_ColorSourcePalette");
         internal static readonly int ColorSourceA = Shader.PropertyToID("_ColorSourceA");
         internal static readonly int ColorSourceB = Shader.PropertyToID("_ColorSourceB");
+        internal static readonly int ColorResolvedDirection = Shader.PropertyToID("_ColorResolvedDirection");
         internal static readonly int ColorSourceGeometry = Shader.PropertyToID("_ColorSourceGeometry");
         internal static readonly int ColorSourceParameters = Shader.PropertyToID("_ColorSourceParameters");
         internal static readonly int MaskCompletedBeat = Shader.PropertyToID("_MaskCompletedBeat");
         internal static readonly int MaskSourceModes = Shader.PropertyToID("_MaskSourceModes");
         internal static readonly int MaskSourceTiming = Shader.PropertyToID("_MaskSourceTiming");
         internal static readonly int MaskSourceEnvelope = Shader.PropertyToID("_MaskSourceEnvelope");
+        internal static readonly int MaskResolvedDirection = Shader.PropertyToID("_MaskResolvedDirection");
         internal static readonly int MaskSourceGeometry = Shader.PropertyToID("_MaskSourceGeometry");
     }
 }

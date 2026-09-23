@@ -18,28 +18,37 @@ namespace PrismFanlight.Editor
             if (track is not FanlightTempoTrack tempoTrack) return options;
 
             var errors = new List<string>();
+            FanlightTempoSource source = null;
 
-            if (!tempoTrack.TryBuildRuntimeDefinition(out _, out var definitionError))
+            if (!tempoTrack.TryBuildTempoSource(out source, out var sourceError))
             {
-                errors.Add(definitionError);
+                errors.Add(sourceError);
             }
 
-            if (binding == null)
+            var target = ResolveTarget(binding);
+
+            if (source is { HasClips: true } && binding == null)
             {
                 errors.Add("Tempo Track binding is missing. Bind it to the target PrismFanlight component.");
             }
-            else if (binding is not PrismFanlight && binding is not GameObject)
+            else if (source is { HasClips: true } && target == null)
             {
                 errors.Add("Tempo Track binding has the wrong type.");
+            }
+            else if (source is { HasClips: true } && target.TimeManager == null)
+            {
+                errors.Add("Tempo Track requires the bound PrismFanlight to reference a Fanlight Time Manager.");
+            }
+            else if (source is { HasClips: true }
+                     && !tempoTrack.TryBuildRuntimeDefinition(target.TimeManager, out _, out var definitionError))
+            {
+                errors.Add(definitionError);
             }
 
             if (tempoTrack.timelineAsset != null && CountTempoTracks(tempoTrack.timelineAsset) > 1)
             {
                 errors.Add("A Timeline Asset can contain only one Fanlight Tempo Track.");
             }
-
-            var target = binding as PrismFanlight;
-            if (target == null && binding is GameObject gameObject) target = gameObject.GetComponent<PrismFanlight>();
 
             if (target != null)
             {
@@ -56,6 +65,12 @@ namespace PrismFanlight.Editor
             }
 
             return options;
+        }
+
+        private static PrismFanlight ResolveTarget(Object binding)
+        {
+            if (binding is PrismFanlight target) return target;
+            return binding is GameObject gameObject ? gameObject.GetComponent<PrismFanlight>() : null;
         }
 
         private static int CountTempoTracks(TimelineAsset timeline)

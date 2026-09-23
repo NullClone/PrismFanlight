@@ -33,9 +33,19 @@ namespace PrismFanlight.Rendering
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance,
             bool audienceEnabled)
         {
-            SetVisibilityParams(shader, context, cullingCamera, cullingEnabled, audienceEnabled, buffers);
+            SetVisibilityParams(
+                shader,
+                context,
+                cullingCamera,
+                cullingEnabled,
+                audienceLodEnabled,
+                audienceLodDistance,
+                audienceEnabled,
+                buffers);
 
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.PenlightArgs, buffers.PenlightArgsBuffer);
             shader.SetBuffer(kernels.ClearIndirectArgs, FanlightShaderIds.AudienceArgs, buffers.AudienceArgsBuffer);
@@ -66,8 +76,6 @@ namespace PrismFanlight.Rendering
             SetAnimationParams(shader, context, buffers);
             SetAudienceParams(shader, context);
 
-            shader.SetVector(FanlightShaderIds.MotionReferenceArm, buffers.MotionReferenceArm);
-            shader.SetVector(FanlightShaderIds.MotionReferencePenlight, buffers.MotionReferencePenlight);
 
             var generateAudience = audienceEnabled && buffers.HasAudience;
             var kernel = generateAudience
@@ -75,6 +83,7 @@ namespace PrismFanlight.Rendering
                 : kernels.GenerateAllAnimation;
 
             shader.SetBuffer(kernel, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernel, FanlightShaderIds.Blocks, buffers.BlockBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.Randoms, buffers.RandomBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.MotionSamples, buffers.MotionSampleBuffer);
             shader.SetBuffer(kernel, FanlightShaderIds.PenlightVariantAssignments, buffers.PenlightVariantAssignmentBuffer);
@@ -126,8 +135,8 @@ namespace PrismFanlight.Rendering
                     _colorSourceGeometry[sourceIndex] = new Vector4(
                         source.Origin.x,
                         source.Origin.y,
-                        source.Direction.x,
-                        source.Direction.y);
+                        0f,
+                        0f);
                     _colorSourceParameters[sourceIndex] = new Vector4(source.Width, source.Offset, 0f, 0f);
 
                     continue;
@@ -140,15 +149,13 @@ namespace PrismFanlight.Rendering
             }
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(
-                context.Layout.BlockCount2D.x,
-                context.Layout.BlockCount2D.y,
-                0f,
-                0f));
             shader.SetVectorArray(FanlightShaderIds.ColorSourceModes, _colorSourceModes);
             shader.SetVectorArray(FanlightShaderIds.ColorSourcePalette, _colorSourcePalette);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceA, _colorSourceA);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceB, _colorSourceB);
+            shader.SetVector(
+                FanlightShaderIds.ColorResolvedDirection,
+                ToLocalDirection(color.ResolvedLocalYawDegrees));
             shader.SetVectorArray(FanlightShaderIds.ColorSourceGeometry, _colorSourceGeometry);
             shader.SetVectorArray(FanlightShaderIds.ColorSourceParameters, _colorSourceParameters);
             shader.SetBuffer(kernels.ResolveSeatChroma, FanlightShaderIds.Seats, buffers.SeatBuffer);
@@ -166,19 +173,34 @@ namespace PrismFanlight.Rendering
             ComputeShader shader,
             FanlightGpuKernels kernels,
             FanlightGpuBuffers buffers,
-            in FanlightGpuDispatchContext context)
+            in FanlightGpuDispatchContext context,
+            bool updateBlockPulseGroups)
         {
             var intensity = context.Sample.State.Intensity.Validated();
+            if (updateBlockPulseGroups)
+            {
+                buffers.UpdateRuntimeBlockPulseGroupData(intensity, context.Layout);
+            }
 
             for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++)
             {
                 var mask = intensity.GetMask(sourceIndex);
                 var weight = intensity.GetMaskWeight(sourceIndex);
+                var directionSign = mask.Mode switch
+                {
+                    FanlightIntensityMaskMode.RadialWave => mask.RadialWaveDirection == FanlightRadialWaveDirection.Outward
+                        ? 1f
+                        : -1f,
+                    FanlightIntensityMaskMode.AngularWave => mask.AngularWaveDirection == FanlightAngularWaveDirection.Clockwise
+                        ? 1f
+                        : -1f,
+                    _ => 0f
+                };
                 _maskSourceModes[sourceIndex] = new Vector4(
                     (int)mask.Mode,
                     weight,
-                    0f,
-                    0f);
+                    directionSign,
+                    sourceIndex * buffers.BlockCount);
                 _maskSourceTiming[sourceIndex] = Vector4.zero;
                 _maskSourceEnvelope[sourceIndex] = Vector4.zero;
                 _maskSourceGeometry[sourceIndex] = Vector4.zero;
@@ -196,14 +218,25 @@ namespace PrismFanlight.Rendering
                     mask.HoldRatio,
                     mask.ReleaseRatio);
 
-                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave)
+                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave
+                    || mask.Mode == FanlightIntensityMaskMode.RadialWave)
                 {
                     _maskSourceTiming[sourceIndex].z = mask.Wavelength;
+                }
+                else if (mask.Mode == FanlightIntensityMaskMode.AngularWave)
+                {
+                    _maskSourceTiming[sourceIndex].z = mask.AngularArmCount;
+                }
+
+                if (mask.Mode == FanlightIntensityMaskMode.TravelingWave
+                    || mask.Mode == FanlightIntensityMaskMode.RadialWave
+                    || mask.Mode == FanlightIntensityMaskMode.AngularWave)
+                {
                     _maskSourceGeometry[sourceIndex] = new Vector4(
                         mask.Origin.x,
                         mask.Origin.y,
-                        mask.Direction.x,
-                        mask.Direction.y);
+                        0f,
+                        0f);
                 }
             }
 
@@ -212,16 +245,18 @@ namespace PrismFanlight.Rendering
             shader.SetVectorArray(FanlightShaderIds.MaskSourceModes, _maskSourceModes);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceTiming, _maskSourceTiming);
             shader.SetVectorArray(FanlightShaderIds.MaskSourceEnvelope, _maskSourceEnvelope);
+            shader.SetVector(
+                FanlightShaderIds.MaskResolvedDirection,
+                ToLocalDirection(intensity.ResolvedLocalYawDegrees));
             shader.SetVectorArray(FanlightShaderIds.MaskSourceGeometry, _maskSourceGeometry);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Seats, buffers.SeatBuffer);
+            shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.Randoms, buffers.RandomBuffer);
+            shader.SetBuffer(
+                kernels.ResolveSeatMask,
+                FanlightShaderIds.RuntimeBlockPulseGroups,
+                buffers.RuntimeBlockPulseGroupBuffer);
             shader.SetBuffer(kernels.ResolveSeatMask, FanlightShaderIds.ResolvedMask, buffers.ResolvedMaskBuffer);
             shader.Dispatch(kernels.ResolveSeatMask, Mathf.CeilToInt((float)buffers.SeatCount / InstanceThreadGroupSize), 1, 1);
-        }
-
-        private static Vector3 ComputeWorldDirection(FanlightDirectionState direction)
-        {
-            var yaw = direction.WorldYawDegrees * Mathf.Deg2Rad;
-            return new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
         }
 
         private static Color ToLinearChroma(Color value)
@@ -231,17 +266,22 @@ namespace PrismFanlight.Rendering
             return linear;
         }
 
+        private static Vector4 ToLocalDirection(float localYawDegrees)
+        {
+            var radians = localYawDegrees * Mathf.Deg2Rad;
+            return new Vector4(Mathf.Sin(radians), Mathf.Cos(radians), 0f, 0f);
+        }
+
         private static void SetAudienceParams(ComputeShader shader, in FanlightGpuDispatchContext context)
         {
             var state = context.Sample.State;
             var audience = state.AudienceBody;
-            var realism = state.Intent.Realism;
             var energy = state.Intent.Energy;
             var worldScale = FanlightGeometryBuilder.GetMaxScale(context.Frame.LocalToWorld);
 
             shader.SetVector(FanlightShaderIds.AudienceShape, new Vector4(
                 audience.Height,
-                state.Variation.HeightVariation * realism,
+                state.Variation.HeightVariation,
                 audience.ShoulderHeightRatio,
                 audience.Width * 0.5f));
             shader.SetVector(FanlightShaderIds.AudienceArm, new Vector4(
@@ -251,8 +291,8 @@ namespace PrismFanlight.Rendering
                 audience.ArmLengthLimit));
             shader.SetFloat(FanlightShaderIds.AudienceWorldScale, worldScale);
             shader.SetVector(FanlightShaderIds.AudienceMotionBody, new Vector4(
-                audience.Bounce * realism * energy,
-                audience.Sway * realism * energy,
+                audience.Bounce * energy,
+                audience.Sway * energy,
                 0f,
                 0f));
         }
@@ -272,7 +312,6 @@ namespace PrismFanlight.Rendering
             var rest = state.Rest;
             var direction = state.Direction;
             var musical = sample.MusicalPosition;
-            var realism = intent.Realism;
             var asynchrony = 1f - intent.Synchronization;
 
             shader.SetInt(FanlightShaderIds.InstanceCount, buffers.SeatCount);
@@ -292,43 +331,47 @@ namespace PrismFanlight.Rendering
                 musical.BeatsPerBar,
                 0f));
 
-            shader.SetVector(FanlightShaderIds.SeatPitch, new Vector4(layout.SeatPitch.x, layout.SeatPitch.y, 0f, 0f));
-            shader.SetVector(FanlightShaderIds.BlockCount, new Vector4(layout.BlockCount2D.x, layout.BlockCount2D.y, 0f, 0f));
+            shader.SetVector(
+                FanlightShaderIds.ReferenceSeatSpacing,
+                new Vector4(layout.ReferenceSeatSpacing.x, layout.ReferenceSeatSpacing.y, 0f, 0f));
 
-            var worldDirection = ComputeWorldDirection(direction);
-            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(intent.Reach, asynchrony, noise.PhaseAmount * realism, noise.PhaseRate));
-            shader.SetVector(FanlightShaderIds.MotionCycle, new Vector4(
-                motion.BeatsPerCycle,
-                motion.PhaseOffsetBeats,
-                motion.WristDelayRatio,
-                motion.Variation));
-            shader.SetVector(FanlightShaderIds.MotionParameters, new Vector4(
-                motion.MotionAmount,
-                motion.HeightBias,
-                motion.SideScale,
-                motion.ForwardScale));
+            var yaw = direction.Direction * Mathf.Deg2Rad;
+            var worldDirection = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw)).normalized;
+
+            shader.SetVector(FanlightShaderIds.MotionTiming, new Vector4(0f, asynchrony, noise.PhaseAmount, noise.PhaseRate));
+            for (var i = 0; i < 3; i++)
+            {
+                var source = motion.GetSource(i);
+                shader.SetVector(FanlightShaderIds.MotionCycles[i], new Vector4(
+                    Mathf.Max(0.001f, source.BeatsPerCycle),
+                    source.PhaseOffsetBeats,
+                    motion.GetAssetWeight(i),
+                    0f));
+            }
+
+            shader.SetFloat(FanlightShaderIds.MotionTransitionScatter, intent.TransitionScatter);
             shader.SetInt(FanlightShaderIds.SwingMode, (int)direction.Mode);
-            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector4(worldDirection.x, worldDirection.y, worldDirection.z, 0f));
+            shader.SetVector(FanlightShaderIds.SwingAxis, new Vector3(worldDirection.x, worldDirection.y, worldDirection.z));
             var target = context.Frame.SwingTargetWorldPosition;
-            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector4(target.x, target.y, target.z, direction.AimStrength));
+            shader.SetVector(FanlightShaderIds.SwingTargetPos, new Vector3(target.x, target.y, target.z));
             shader.SetVector(FanlightShaderIds.MotionVariation, new Vector4(
-                variation.StandingPositionSpread * realism,
-                variation.ArmExtensionVariation * realism,
-                variation.PenlightDirectionSpread * realism,
+                variation.StandingPositionSpread,
+                variation.ArmExtensionVariation,
+                variation.PenlightDirectionSpread,
                 0f));
             shader.SetVector(FanlightShaderIds.MotionNoise, new Vector4(
-                noise.PositionAmount * realism,
-                noise.DirectionAmount * realism,
+                noise.PositionAmount,
+                noise.DirectionAmount,
                 noise.SpatialRate,
                 noise.Persistence));
             shader.SetInt(FanlightShaderIds.MotionNoiseOctaves, noise.Octaves);
             shader.SetVector(FanlightShaderIds.MotionHuman, new Vector4(
-                intent.Energy * 2f,
-                variation.EnergyResponse * realism,
-                variation.ReactionDelaySeconds * asynchrony * realism,
+                intent.Energy,
+                variation.EnergyResponse,
+                variation.ReactionDelaySeconds * asynchrony,
                 0f));
             shader.SetVector(FanlightShaderIds.MotionRest, new Vector4(
-                rest.Probability * realism,
+                rest.Probability,
                 rest.MotionLevel,
                 1f - intent.Participation,
                 0f));
@@ -336,13 +379,13 @@ namespace PrismFanlight.Rendering
                 rest.CycleSeconds,
                 rest.DurationSeconds,
                 rest.FadeSeconds,
-                rest.PhaseRandomness * realism));
+                rest.PhaseRandomness));
             shader.SetVector(FanlightShaderIds.MotionBeatSpread, new Vector4(
-                variation.BeatJitterBeats * asynchrony * realism,
+                variation.BeatJitterBeats * asynchrony,
                 motion.BlockDelayXBeats,
                 motion.BlockDelayYBeats,
                 0f));
-            shader.SetFloat(FanlightShaderIds.HandPositionSpread, variation.HandPositionSpread * realism);
+            shader.SetFloat(FanlightShaderIds.HandPositionSpread, variation.HandPositionSpread);
         }
 
         private void SetVisibilityParams(
@@ -350,6 +393,8 @@ namespace PrismFanlight.Rendering
             in FanlightGpuDispatchContext context,
             Camera cullingCamera,
             bool cullingEnabled,
+            bool audienceLodEnabled,
+            float audienceLodDistance,
             bool audienceEnabled,
             FanlightGpuBuffers buffers)
         {
@@ -360,9 +405,11 @@ namespace PrismFanlight.Rendering
             shader.SetFloat(FanlightShaderIds.CullingScale, FanlightGeometryBuilder.GetMaxScale(context.Frame.LocalToWorld));
             shader.SetInt(FanlightShaderIds.EnableCulling, cullingEnabled ? 1 : 0);
             shader.SetInt(FanlightShaderIds.EnableAudience, audienceEnabled ? 1 : 0);
-            shader.SetInt(FanlightShaderIds.EnableAudienceLod, 0);
-            shader.SetVector(FanlightShaderIds.AudienceLod, Vector4.zero);
-            var cameraPosition = cullingEnabled ? cullingCamera.transform.position : Vector3.zero;
+            shader.SetInt(FanlightShaderIds.EnableAudienceLod, audienceLodEnabled ? 1 : 0);
+            shader.SetVector(FanlightShaderIds.AudienceLod, new Vector4(audienceLodDistance, 0f, 0f, 0f));
+            var cameraPosition = cullingEnabled || audienceLodEnabled
+                ? cullingCamera.transform.position
+                : Vector3.zero;
             shader.SetVector(FanlightShaderIds.LodCameraPos, new Vector4(cameraPosition.x, cameraPosition.y, cameraPosition.z, 1f));
 
             if (!cullingEnabled) return;

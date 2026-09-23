@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Authoring
 {
-    [CreateAssetMenu(fileName = "Penlight", menuName = "Prism Fanlight/Penlight Asset")]
+    [CreateAssetMenu(fileName = "New Penlight Asset", menuName = "Prism Fanlight/Penlight Asset")]
     public sealed class FanlightPenlightAsset : ScriptableObject
     {
         // Fields

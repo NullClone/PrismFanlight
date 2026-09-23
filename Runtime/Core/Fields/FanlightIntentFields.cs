@@ -9,8 +9,7 @@ namespace PrismFanlight.Core
         Energy = 1 << 0,
         Participation = 1 << 1,
         Synchronization = 1 << 2,
-        Realism = 1 << 3,
-        Reach = 1 << 4,
-        All = Energy | Participation | Synchronization | Realism | Reach
+        TransitionScatter = 1 << 3,
+        All = Energy | Participation | Synchronization | TransitionScatter
     }
 }

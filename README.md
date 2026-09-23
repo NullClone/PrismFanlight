@@ -1,75 +1,62 @@
 # Prism Fanlight
 
-`Prism Fanlight`は、大規模な観客とペンライト演出をTimeline上で制御できるツールです。
+English | [日本語](README_ja.md)
 
-## 主な機能
+`Prism Fanlight` is a tool for controlling large-audience penlight shows from Unity's Timeline.
 
 <p align="left">
   <img width="60%" src="https://github.com/user-attachments/assets/cceb3440-762a-459a-b176-35b94c7fe74a">
 </p>
 
-- **Timelineによる演出** — モーション・カラーなどのパラメーターを細かく制御できます
-- **リアルなモーション** — リアルかつ様々な動きに対応することができます
-- **完全な再現性** — 時間に対して完全に動きを再現することができます
-- **GPU駆動の描画** — GPUを使用して描画しているため、大量の観客でも軽量です
-- **レイアウトシステム** — 観客・ペンライトを大規模な座席レイアウト上で調整できます
-- **カリング機能** — 必要な観客・ペンライトだけを描画対象として判定します
+## Usage
 
-## 使用方法
-
-1. パッケージマネージャーを開きます `Window > Package Manager`
-2. 左上の`+`ボタンから`Add package from git URL...`を選択します。
+1. Open the Package Manager: `Window > Package Manager`
+2. Click the `+` button in the top-left corner and select `Add package from git URL...`.
 
 <p align="center">
   <img width="50%" src="https://github.com/user-attachments/assets/ed1fc738-0412-40e8-aa84-b32b643c31cb">
 </p>
 
-3. 以下のURLを入力します。
+3. Enter the following URL.
    ```bash
    https://github.com/NullClone/PrismFanlight.git
    ```
-   
-4. インストール完了後、`Create Other/Prism Fanlight`からシーン上に配置してください。
+
+4. Once installed, create it in your scene via `Light/Prism Fanlight`.
 
 > [!NOTE]
-> また、[ここから](https://github.com/NullClone/PrismFanlight/releases/latest)`.unitypackage`をUnity上にドロップすることでインストールも可能です。
+> You can also install it by dragging the `.unitypackage` from [the latest release](https://github.com/NullClone/PrismFanlight/releases/latest) onto Unity.
 
-## 注意点
-
-- 大量のペンライトを描画する場合にパフォーマンスが著しく低下する可能性があります。
-- Compute Shaderが使えない環境では動作しません。
-
-## 動作確認
+## Requirements
 
 - Unity 6.3
 - URP / ~~HDRP~~
 
 ## Todo
-- [x] Timeline サポート
-- [ ] HDRP サポート
-- [ ] ~~Built-in サポート~~
-- [x] カリング 機能
-- [x] 複数持ち 機能
-- [x] 観客の描画 機能
-- [x] 再現性を完全に担保
-- [x] ベイク機能の実装
-- [ ] レイアウト機能の強化
-- [ ] 色のモードを追加 (Rainbow)
-- [ ] 専用のポストプロセッシング
-- [ ] サンプルを追加
+- [ ] HDRP support
+- [ ] ~~Built-in support~~
+- [ ] Add samples
+- [ ] LOD feature
+- [x] Multi-instance support
+- [x] Preset feature
+- [x] Improved layout tools
+- [ ] Add a color mode (Rainbow)
+- [ ] Dedicated post-processing
 
-## ライセンス
+## License
 
-本ツールは **MITライセンス** のもとで公開されています（詳細は `LICENSE` ファイルをご確認ください）。
+This tool is released under the **MIT License** (see the `LICENSE` file for details).
 
-商用・非商用問わず自由にご利用いただけます。
-必須ではありませんが、本ツールを気に入っていただけましたら、以下の2点についてご協力とご配慮をいただけますと幸いです。
+You're free to use it for both commercial and non-commercial projects.
+It's not required, but if you find this tool useful, I'd appreciate your consideration on the following two points.
 
-### 1. クレジット表記
-制作物のスタッフロール、または同梱のドキュメント等に、制作者名とリポジトリのURLを明記していただけると励みになります。
+### 1. Credit
+
+If you could mention the author's name and the repository URL in your project's staff roll or accompanying documentation, it would mean a lot.
 
 `Tools developed by NullClone (github.com/NullClone/PrismFanlight)`
 
-### 2. 法人・大規模チームでのご利用について
-法人または大規模なプロジェクトで本ツールをご利用の際は、メールやSNS等でご一報いただけますと大変嬉しいです。
-また、ご報告いただいたプロジェクトにつきましては、私のポートフォリオとして掲載・ご紹介させていただけますと幸いです。
+### 2. Use by companies or large teams
+
+If you're using this tool at a company or on a large-scale project, I'd be delighted to hear about it via email or social media.
+With your permission, I'd also love to feature the project in my portfolio.

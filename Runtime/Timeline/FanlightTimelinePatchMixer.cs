@@ -1,5 +1,4 @@
 using System;
-using PrismFanlight.Authoring;
 using PrismFanlight.Core;
 using UnityEngine;
 
@@ -55,8 +54,7 @@ namespace PrismFanlight.Timeline
             var energy = new FanlightWeightedFloat();
             var participation = new FanlightWeightedFloat();
             var synchronization = new FanlightWeightedFloat();
-            var realism = new FanlightWeightedFloat();
-            var reach = new FanlightWeightedFloat();
+            var transitionScatter = new FanlightWeightedFloat();
 
             for (var i = 0; i < samples.Length; i++)
             {
@@ -66,8 +64,7 @@ namespace PrismFanlight.Timeline
                 if (Has(fields, FanlightIntentFields.Energy)) energy.Add(sourceValue.Energy, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Participation)) participation.Add(sourceValue.Participation, sample.Weight);
                 if (Has(fields, FanlightIntentFields.Synchronization)) synchronization.Add(sourceValue.Synchronization, sample.Weight);
-                if (Has(fields, FanlightIntentFields.Realism)) realism.Add(sourceValue.Realism, sample.Weight);
-                if (Has(fields, FanlightIntentFields.Reach)) reach.Add(sourceValue.Reach, sample.Weight);
+                if (Has(fields, FanlightIntentFields.TransitionScatter)) transitionScatter.Add(sourceValue.TransitionScatter, sample.Weight);
             }
 
             if (fields == FanlightIntentFields.None)
@@ -82,8 +79,7 @@ namespace PrismFanlight.Timeline
                 energy.Value(fallback.Energy),
                 participation.Value(fallback.Participation),
                 synchronization.Value(fallback.Synchronization),
-                realism.Value(fallback.Realism),
-                reach.Value(fallback.Reach)
+                transitionScatter.Value(fallback.TransitionScatter)
             );
 
             patch = new FanlightShowPatch(
@@ -107,35 +103,32 @@ namespace PrismFanlight.Timeline
         {
             ValidateMask((int)fields, (int)FanlightMotionFields.All);
 
-            var beatsPerCycle = new FanlightWeightedFloat();
-            var phaseOffsetBeats = new FanlightWeightedFloat();
             var blockDelayXBeats = new FanlightWeightedFloat();
             var blockDelayYBeats = new FanlightWeightedFloat();
-            var motionAmount = new FanlightWeightedFloat();
-            var heightBias = new FanlightWeightedFloat();
-            var sideScale = new FanlightWeightedFloat();
-            var forwardScale = new FanlightWeightedFloat();
-            var wristDelayRatio = new FanlightWeightedFloat();
-            var variation = new FanlightWeightedFloat();
-            var assetA = default(FanlightMotionAsset);
-            var assetB = default(FanlightMotionAsset);
-            var assetWeights = Vector2.zero;
+            var sourceA = default(FanlightMotionSource);
+            var sourceB = default(FanlightMotionSource);
+            var sourceWeights = Vector2.zero;
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Motion;
-                if (Has(fields, FanlightMotionFields.MotionAsset)) AddAsset(sourceValue.MotionAsset, sample.Weight, ref assetA, ref assetB, ref assetWeights);
-                if (Has(fields, FanlightMotionFields.BeatsPerCycle)) beatsPerCycle.Add(sourceValue.BeatsPerCycle, sample.Weight);
-                if (Has(fields, FanlightMotionFields.PhaseOffsetBeats)) phaseOffsetBeats.Add(sourceValue.PhaseOffsetBeats, sample.Weight);
+                if (Has(fields, FanlightMotionFields.Source))
+                {
+                    if (i == 0)
+                    {
+                        sourceA = sourceValue.GetSource(0);
+                        sourceWeights.x = sample.Weight;
+                    }
+                    else
+                    {
+                        sourceB = sourceValue.GetSource(0);
+                        sourceWeights.y = sample.Weight;
+                    }
+                }
+
                 if (Has(fields, FanlightMotionFields.BlockDelayXBeats)) blockDelayXBeats.Add(sourceValue.BlockDelayXBeats, sample.Weight);
                 if (Has(fields, FanlightMotionFields.BlockDelayYBeats)) blockDelayYBeats.Add(sourceValue.BlockDelayYBeats, sample.Weight);
-                if (Has(fields, FanlightMotionFields.MotionAmount)) motionAmount.Add(sourceValue.MotionAmount, sample.Weight);
-                if (Has(fields, FanlightMotionFields.HeightBias)) heightBias.Add(sourceValue.HeightBias, sample.Weight);
-                if (Has(fields, FanlightMotionFields.SideScale)) sideScale.Add(sourceValue.SideScale, sample.Weight);
-                if (Has(fields, FanlightMotionFields.ForwardScale)) forwardScale.Add(sourceValue.ForwardScale, sample.Weight);
-                if (Has(fields, FanlightMotionFields.WristDelayRatio)) wristDelayRatio.Add(sourceValue.WristDelayRatio, sample.Weight);
-                if (Has(fields, FanlightMotionFields.Variation)) variation.Add(sourceValue.Variation, sample.Weight);
             }
 
             if (fields == FanlightMotionFields.None)
@@ -145,21 +138,13 @@ namespace PrismFanlight.Timeline
             }
 
             var fallback = FanlightTimelineDefaults.MotionState();
-            var value = FanlightMotionState.BlendAssets(
-                Has(fields, FanlightMotionFields.MotionAsset) ? assetA : fallback.MotionAsset,
-                Has(fields, FanlightMotionFields.MotionAsset) ? assetB : null,
-                null,
-                Has(fields, FanlightMotionFields.MotionAsset) ? new Vector3(assetWeights.x, assetWeights.y, 0f) : new Vector3(1f, 0f, 0f),
-                beatsPerCycle.Value(fallback.BeatsPerCycle),
-                phaseOffsetBeats.Value(fallback.PhaseOffsetBeats),
+            var value = FanlightMotionState.BlendSources(
+                Has(fields, FanlightMotionFields.Source) ? sourceA : fallback.GetSource(0),
+                Has(fields, FanlightMotionFields.Source) ? sourceB : default,
+                default,
+                Has(fields, FanlightMotionFields.Source) ? new Vector3(sourceWeights.x, sourceWeights.y, 0f) : new Vector3(1f, 0f, 0f),
                 blockDelayXBeats.Value(fallback.BlockDelayXBeats),
-                blockDelayYBeats.Value(fallback.BlockDelayYBeats),
-                motionAmount.Value(fallback.MotionAmount),
-                heightBias.Value(fallback.HeightBias),
-                sideScale.Value(fallback.SideScale),
-                forwardScale.Value(fallback.ForwardScale),
-                wristDelayRatio.Value(fallback.WristDelayRatio),
-                variation.Value(fallback.Variation)
+                blockDelayYBeats.Value(fallback.BlockDelayYBeats)
             );
 
             patch = new FanlightShowPatch(
@@ -423,16 +408,14 @@ namespace PrismFanlight.Timeline
             ValidateMask((int)fields, (int)FanlightDirectionFields.All);
 
             var mode = new FanlightDiscreteValue<FanlightDirectionMode>();
-            var worldYawDegrees = new FanlightWeightedAngle();
-            var aimStrength = new FanlightWeightedFloat();
+            var direction = new FanlightWeightedAngle();
 
             for (var i = 0; i < samples.Length; i++)
             {
                 var sample = samples[i];
                 var sourceValue = sample.Value.Direction;
                 if (Has(fields, FanlightDirectionFields.Mode)) mode.Consider(sourceValue.Mode, sample.Weight, sample.StartSeconds);
-                if (Has(fields, FanlightDirectionFields.WorldYawDegrees)) worldYawDegrees.AddDegrees(sourceValue.WorldYawDegrees, sample.Weight);
-                if (Has(fields, FanlightDirectionFields.AimStrength)) aimStrength.Add(sourceValue.AimStrength, sample.Weight);
+                if (Has(fields, FanlightDirectionFields.Direction)) direction.AddDegrees(sourceValue.Direction, sample.Weight);
             }
 
             if (fields == FanlightDirectionFields.None)
@@ -444,8 +427,7 @@ namespace PrismFanlight.Timeline
             var fallback = FanlightTimelineDefaults.DirectionState();
             var value = new FanlightDirectionState(
                 mode.Value(fallback.Mode),
-                worldYawDegrees.ValueDegrees(fallback.WorldYawDegrees),
-                aimStrength.Value(fallback.AimStrength)
+                direction.ValueDegrees(fallback.Direction)
             );
 
             patch = new FanlightShowPatch(
@@ -579,36 +561,6 @@ namespace PrismFanlight.Timeline
         private static bool Has(FanlightColorFields fields, FanlightColorFields field) => (fields & field) != 0;
 
         private static bool Has(FanlightIntensityFields fields, FanlightIntensityFields field) => (fields & field) != 0;
-
-        private static void AddAsset(
-            FanlightMotionAsset asset,
-            float weight,
-            ref FanlightMotionAsset assetA,
-            ref FanlightMotionAsset assetB,
-            ref Vector2 weights)
-        {
-            if (assetA == asset)
-            {
-                weights.x += weight;
-                return;
-            }
-
-            if (weights.x <= 0.000001f)
-            {
-                assetA = asset;
-                weights.x = weight;
-                return;
-            }
-
-            if (assetB == asset)
-            {
-                weights.y += weight;
-                return;
-            }
-
-            assetB = asset;
-            weights.y += weight;
-        }
 
         private static void ValidateMask(int fields, int all)
         {

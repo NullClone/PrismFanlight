@@ -13,16 +13,7 @@ namespace PrismFanlight.Authoring
         internal Vector3 localPosition;
 
         [SerializeField]
-        internal Vector2 planePosition;
-
-        [SerializeField]
-        internal Vector2 blockCoordinates;
-
-        [SerializeField]
         internal int blockIndex;
-
-        [SerializeField]
-        internal uint placementFlags;
     }
 
     [Serializable]
@@ -42,6 +33,9 @@ namespace PrismFanlight.Authoring
 
         [SerializeField]
         internal ulong contentHash;
+
+        [SerializeField]
+        internal Vector2 effectCoordinate;
     }
 
     [PreferBinarySerialization]
@@ -49,8 +43,7 @@ namespace PrismFanlight.Authoring
     {
         // Fields
 
-        internal const int CurrentFormatVersion = 2;
-
+        internal const int CurrentFormatVersion = 3;
 
         [SerializeField]
         private int _formatVersion;
@@ -60,6 +53,9 @@ namespace PrismFanlight.Authoring
 
         [SerializeField]
         private ulong _contentHash;
+
+        [SerializeField]
+        private Vector2 _referenceSeatSpacing;
 
         [SerializeField]
         private Bounds _localBounds;
@@ -78,6 +74,8 @@ namespace PrismFanlight.Authoring
         internal string LayoutId => _layoutId ?? string.Empty;
 
         internal ulong ContentHash => _contentHash;
+
+        internal Vector2 ReferenceSeatSpacing => _referenceSeatSpacing;
 
         internal Bounds LocalBounds => _localBounds;
 
@@ -98,24 +96,19 @@ namespace PrismFanlight.Authoring
 
         internal bool Matches(FanlightLayoutAsset layout)
         {
-            if (layout == null || !layout.IsInitialized) return false;
+            if (layout == null) return false;
 
-            if (_formatVersion != CurrentFormatVersion
-                || !string.Equals(LayoutId, layout.LayoutId.Value, StringComparison.Ordinal)
-                || _contentHash == 0UL
-                || _contentHash != layout.ContentHash
-                || SeatCount != layout.TotalSeatCount
-                || BlockCount != layout.TotalBlockCount)
-            {
-                return false;
-            }
-
-            return true;
+            return _formatVersion == CurrentFormatVersion
+                   && string.Equals(LayoutId, layout.LayoutId.Value, StringComparison.Ordinal)
+                   && _contentHash != 0UL
+                   && _contentHash == layout.ContentHash
+                   && BlockCount == layout.BlockCount;
         }
 
         internal void Initialize(
             string layoutId,
             ulong contentHash,
+            Vector2 referenceSeatSpacing,
             Bounds localBounds,
             FanlightBakedSeatRecord[] seats,
             FanlightBakedBlockRecord[] blocks)
@@ -123,6 +116,7 @@ namespace PrismFanlight.Authoring
             _formatVersion = CurrentFormatVersion;
             _layoutId = layoutId;
             _contentHash = contentHash;
+            _referenceSeatSpacing = referenceSeatSpacing;
             _localBounds = localBounds;
             _seats = seats == null
                 ? Array.Empty<FanlightBakedSeatRecord>()

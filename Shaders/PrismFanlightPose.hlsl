@@ -7,21 +7,19 @@ float3 PrismComputeSeatAnchor(FanlightSeatData seat)
 {
     float3 localPosition = seat.localPositionSeed.xyz;
     float2 jitter = float2(PrismRandom(seat, 0u), PrismRandom(seat, 1u)) * 2.0 - 1.0;
-    localPosition.xz += jitter * _MotionVariation.x * _SeatPitch.xy;
+    localPosition.xz += jitter * _MotionVariation.x * _ReferenceSeatSpacing.xy;
     return localPosition;
 }
 
-PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
+PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat, float beatsPerCycle, float phaseOffsetBeats)
 {
-    float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z * _MotionCycle.w;
+    float reactionDelay = PrismRandom(seat, 3u) * _MotionHuman.z;
     float beatReaction = reactionDelay * max(1.0, _FanlightTempo.y) / 60.0;
-    float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.x * _MotionCycle.w;
-    float2 block01 = float2(
-        _BlockCount.x > 1.0 ? seat.planePositionBlock.z / max(1.0, _BlockCount.x - 1.0) : 0.5,
-        _BlockCount.y > 1.0 ? seat.planePositionBlock.w / max(1.0, _BlockCount.y - 1.0) : 0.5);
+    float seatBeatJitter = (PrismRandom(seat, 5u) * 2.0 - 1.0) * _MotionBeatSpread.x;
+    float2 block01 = _Blocks[max(seat.blockIndex, 0)].effectCoordinate;
     float blockBeatDelay = dot(block01 - 0.5, _MotionBeatSpread.yz);
     float delayedBeat = _FanlightBeat.y - beatReaction - seatBeatJitter - blockBeatDelay;
-    float personaTiming = (PrismRandom(seat, 6u) * 2.0 - 1.0) * 0.5 * _MotionTiming.y * _MotionCycle.w;
+    float personaTiming = (PrismRandom(seat, 6u) * 2.0 - 1.0) * 0.5 * _MotionTiming.y;
     float phaseNoise = 0.0;
     if (_MotionTiming.z > 0.000001)
     {
@@ -30,7 +28,7 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
             clamp(_MotionNoiseOctaves, 1, 4),
             saturate(_MotionNoise.w)) * _MotionTiming.z / (2.0 * PRISM_FANLIGHT_PI);
     }
-    float cyclePhase = frac((delayedBeat + _MotionCycle.y) / max(0.001, _MotionCycle.x) + personaTiming + phaseNoise);
+    float cyclePhase = frac((delayedBeat + phaseOffsetBeats) / max(0.001, beatsPerCycle) + personaTiming + phaseNoise);
     float bodyPhase = cyclePhase * 2.0 * PRISM_FANLIGHT_PI;
 
     PrismCrowdRhythm rhythm = (PrismCrowdRhythm)0;
@@ -41,8 +39,9 @@ PrismCrowdRhythm PrismComputeCrowdRhythm(FanlightSeatData seat)
 
 PrismHumanPose PrismComputeHumanPose(
     FanlightSeatData seat,
-    PrismCrowdRhythm rhythm,
+    float sway,
     PrismAudienceBasis basis,
+    FanlightMotionSample referencePose,
     FanlightMotionSample motionSample,
     float motionActivity)
 {
@@ -54,17 +53,23 @@ PrismHumanPose PrismComputeHumanPose(
     float armHalfWidth = _AudienceArm.x;
     float shoulderOffset = _AudienceArm.y;
     float headHalf = _AudienceArm.z;
-    float sway = sin(rhythm.bodyPhase);
     float bounce = sway * 0.5 + 0.5;
     float3 bodyOffset = basis.sideLocal * sway * _AudienceMotionBody.y
         + basis.upLocal * bounce * _AudienceMotionBody.x;
+    float3 motionBodyPosition = lerp(
+        referencePose.bodyPosition.xyz,
+        motionSample.bodyPosition.xyz,
+        motionActivity) * bodyHeight;
+    bodyOffset += PrismTransformAudienceOffset(basis, motionBodyPosition);
     float3 feet = anchor + bodyOffset;
     float neckHeight = max(shoulderHeight, bodyHeight - headHalf * 2.0);
-    float motionLean = lerp(
-        _MotionReferencePenlight.w,
-        motionSample.penlightDirectionBodyLean.w,
+    float4 bodyRotation = PrismNlerpQuaternion(
+        referencePose.bodyRotation,
+        motionSample.bodyRotation,
         motionActivity);
-    float3 leanUp = basis.upLocal * cos(motionLean) + basis.forwardLocal * sin(motionLean);
+    float3 leanUp = SafeNormalize(
+        PrismTransformAudienceOffset(basis, PrismRotateByQuaternion(bodyRotation, float3(0.0, 1.0, 0.0))),
+        basis.upLocal);
 
     PrismHumanPose pose = (PrismHumanPose)0;
     pose.anchorLocal = anchor;

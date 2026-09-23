@@ -6,7 +6,7 @@ namespace PrismFanlight.Time
 {
     [ExecuteAlways]
     [HelpURL(PrismFanlight.HelpUrl)]
-    [AddComponentMenu("Prism Fanlight/Fanlight Time Manager")]
+    //[AddComponentMenu("Prism Fanlight/Fanlight Time Manager")]
     public sealed class FanlightTimeManager : MonoBehaviour
     {
         // Fields

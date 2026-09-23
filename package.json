@@ -1,13 +1,21 @@
 {
   "name": "com.null.prism-fanlight",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "displayName": "Prism Fanlight",
+  "description": "Unity Audience and Penlight System for Virtual Live",
   "unity": "6000.3",
-  "dependencies": {
-    "com.unity.timeline": "1.8.10",
-    "com.unity.mathematics": "1.3.3"
+  "author": {
+    "name": "Null"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NullClone/PrismFanlight.git"
   },
   "license": "MIT",
   "licensesUrl": "https://github.com/NullClone/PrismFanlight/blob/main/LICENSE.md",
-  "changelogUrl": "https://github.com/NullClone/PrismFanlight/blob/main/CHANGELOG.md"
+  "changelogUrl": "https://github.com/NullClone/PrismFanlight/blob/main/CHANGELOG.md",
+  "dependencies": {
+    "com.unity.timeline": "1.8.10",
+    "com.unity.mathematics": "1.3.3"
+  }
 }

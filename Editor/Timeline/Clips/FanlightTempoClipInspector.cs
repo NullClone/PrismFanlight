@@ -3,26 +3,29 @@ using UnityEditor;
 
 namespace PrismFanlight.Editor
 {
-    [CustomEditor(typeof(FanlightIntensityClip))]
-    internal sealed class FanlightIntensityClipEditor : UnityEditor.Editor
+    [CustomEditor(typeof(FanlightTempoClip))]
+    [CanEditMultipleObjects]
+    internal sealed class FanlightTempoClipInspector : UnityEditor.Editor
     {
         // Fields
 
-        private SerializedProperty _value;
+        private SerializedProperty _bpm;
 
 
         // Methods
 
         private void OnEnable()
         {
-            _value = serializedObject.FindProperty(nameof(_value));
+            _bpm = serializedObject.FindProperty(nameof(_bpm));
         }
 
         public override void OnInspectorGUI()
         {
+            FanlightPresetEditor.Draw(targets);
+
             serializedObject.Update();
 
-            FanlightColorIntensityEditorUtility.DrawIntensityState(_value);
+            EditorGUILayout.PropertyField(_bpm);
 
             serializedObject.ApplyModifiedProperties();
         }

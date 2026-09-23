@@ -45,6 +45,7 @@ namespace PrismFanlight.Editor
             QueryNode(1, planes, localToWorld, results);
         }
 
+
         private void QueryNode(int node, Plane[] planes, Matrix4x4 localToWorld, List<int> results)
         {
             if (node >= _nodes.Length || !_valid[node]) return;

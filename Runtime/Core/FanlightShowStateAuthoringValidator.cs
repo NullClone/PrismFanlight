@@ -15,8 +15,7 @@ namespace PrismFanlight.Core
                     value.Energy,
                     value.Participation,
                     value.Synchronization,
-                    value.Realism,
-                    value.Reach);
+                    value.TransitionScatter);
             }
             catch (ArgumentException)
             {
@@ -33,13 +32,7 @@ namespace PrismFanlight.Core
                     value.BeatsPerCycle,
                     value.PhaseOffsetBeats,
                     value.BlockDelayXBeats,
-                    value.BlockDelayYBeats,
-                    value.MotionAmount,
-                    value.HeightBias,
-                    value.SideScale,
-                    value.ForwardScale,
-                    value.WristDelayRatio,
-                    value.Variation);
+                    value.BlockDelayYBeats);
             }
             catch (ArgumentException)
             {
@@ -131,7 +124,7 @@ namespace PrismFanlight.Core
         {
             try
             {
-                return new FanlightDirectionState(value.Mode, value.WorldYawDegrees, value.AimStrength);
+                return new FanlightDirectionState(value.Mode, value.Direction);
             }
             catch (ArgumentException)
             {
