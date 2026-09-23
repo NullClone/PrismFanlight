@@ -306,20 +306,6 @@ namespace PrismFanlight.Editor
 
         // Methods
 
-        /*
-        [MenuItem("Window/Prism Fanlight/Layout Editor")]
-        private static void OpenFromMenu()
-        {
-            var window = GetWindow<FanlightLayoutEditorWindow>();
-            window.titleContent = new GUIContent("Fanlight Layout");
-            window.Show();
-            window.Focus();
-            if (window._locked) return;
-
-            if (window.FollowCurrentSelection(true)) window.QueueSelectionFollow();
-        }
-        */
-
         [OnOpenAsset]
         private static bool OnOpenAsset(int instanceId, int line)
         {
