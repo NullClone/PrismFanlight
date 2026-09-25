@@ -10,37 +10,13 @@ namespace PrismFanlight.Editor
     {
         private enum MotionPreset
         {
-            Drum,
-            Wiper,
-            Sasage,
-
-            [InspectorName("Power Pump (Experimental)")]
-            PowerPump,
-
-            [InspectorName("Double Pump (Experimental)")]
-            DoublePump,
-
-            [InspectorName("Diagonal Pump (Experimental)")]
-            DiagonalPump,
-
-            [InspectorName("Forward Thrust (Experimental)")]
-            ForwardThrust,
-
-            [InspectorName("Overhead Swing (Experimental)")]
-            OverheadSwing,
-
-            [InspectorName("Circle (Experimental)")]
-            Circle,
-
-            [InspectorName("Figure Eight (Experimental)")]
-            FigureEight,
-
-            [InspectorName("Groove Bounce (Experimental)")]
-            GrooveBounce,
-
-            [InspectorName("Raised Sway (Experimental)")]
-            RaisedSway
+            Idle = 12,
+            Drum = 0,
+            Wiper = 1,
+            Sasage = 2,
+            Cheer = 13
         }
+
 
         // Fields
 
@@ -83,16 +59,11 @@ namespace PrismFanlight.Editor
 
         private SasageParameters SasageParams => Settings.SasageParams;
 
+
         private float GeneratorIntensity
         {
             get => _settingsProperty.FindPropertyRelative("_generatorIntensity").floatValue;
             set => _settingsProperty.FindPropertyRelative("_generatorIntensity").floatValue = value;
-        }
-
-        private bool CircleClockwise
-        {
-            get => _settingsProperty.FindPropertyRelative("_circleClockwise").boolValue;
-            set => _settingsProperty.FindPropertyRelative("_circleClockwise").boolValue = value;
         }
 
         private FanlightMotionGeneratorSettings Settings => _settingsContainer.Settings;
@@ -201,9 +172,6 @@ namespace PrismFanlight.Editor
                     break;
                 case MotionPreset.Sasage:
                     DrawSasageControls();
-                    break;
-                case MotionPreset.Circle:
-                    CircleClockwise = EditorGUILayout.Toggle("Clockwise", CircleClockwise);
                     break;
             }
 
@@ -398,23 +366,20 @@ namespace PrismFanlight.Editor
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
-                    DrawSasageParameter(nameof(SasageParameters.TopHoldRatio));
-                    DrawSasageParameter(nameof(SasageParameters.BodyPhaseLag));
                     DrawSasageParameter(nameof(SasageParameters.WristPhaseLag));
                 }
             }
 
-            _sasageFoldoutArm = EditorGUILayout.Foldout(_sasageFoldoutArm, "Arm Reach & Sway", true, EditorStyles.foldoutHeader);
+            _sasageFoldoutArm = EditorGUILayout.Foldout(_sasageFoldoutArm, "Arm Trajectory", true, EditorStyles.foldoutHeader);
             if (_sasageFoldoutArm)
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
-                    DrawSasageParameter(nameof(SasageParameters.LowElevation));
-                    DrawSasageParameter(nameof(SasageParameters.HighElevation));
-                    DrawSasageParameter(nameof(SasageParameters.LowExtension));
-                    DrawSasageParameter(nameof(SasageParameters.HighExtension));
-                    DrawSasageParameter(nameof(SasageParameters.BaseSideAngle));
-                    DrawSasageParameter(nameof(SasageParameters.SideSwayAmplitude));
+                    DrawSasageParameter(nameof(SasageParameters.SideAmplitude));
+                    DrawSasageParameter(nameof(SasageParameters.BaseHandHeight));
+                    DrawSasageParameter(nameof(SasageParameters.VerticalAmplitude));
+                    DrawSasageParameter(nameof(SasageParameters.BaseHandDepth));
+                    DrawSasageParameter(nameof(SasageParameters.DepthAmplitude));
                 }
             }
 
@@ -423,9 +388,8 @@ namespace PrismFanlight.Editor
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
-                    DrawSasageParameter(nameof(SasageParameters.PenlightLowElevation));
-                    DrawSasageParameter(nameof(SasageParameters.PenlightRiseArc));
-                    DrawSasageParameter(nameof(SasageParameters.PenlightSideAmplitude));
+                    DrawSasageParameter(nameof(SasageParameters.PenlightTangentWeight));
+                    DrawSasageParameter(nameof(SasageParameters.PenlightUpwardBias));
                 }
             }
 
@@ -437,6 +401,7 @@ namespace PrismFanlight.Editor
                     DrawSasageParameter(nameof(SasageParameters.BodyRiseLift));
                     DrawSasageParameter(nameof(SasageParameters.BaseBodyLean));
                     DrawSasageParameter(nameof(SasageParameters.BodyLeanAmplitude));
+                    DrawSasageParameter(nameof(SasageParameters.BodyRollAmplitude));
                 }
             }
         }
@@ -479,6 +444,9 @@ namespace PrismFanlight.Editor
         {
             switch (Preset)
             {
+                case MotionPreset.Idle:
+                    FanlightMotionPresetGenerator.GenerateIdle(asset, GeneratorIntensity);
+                    break;
                 case MotionPreset.Drum:
                     FanlightMotionPresetGenerator.GenerateDrum(asset, DrumParams, GeneratorIntensity);
                     break;
@@ -488,32 +456,8 @@ namespace PrismFanlight.Editor
                 case MotionPreset.Sasage:
                     FanlightMotionPresetGenerator.GenerateSasage(asset, SasageParams, GeneratorIntensity);
                     break;
-                case MotionPreset.PowerPump:
-                    FanlightMotionPresetGenerator.GeneratePowerPump(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.DoublePump:
-                    FanlightMotionPresetGenerator.GenerateDoublePump(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.DiagonalPump:
-                    FanlightMotionPresetGenerator.GenerateDiagonalPump(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.ForwardThrust:
-                    FanlightMotionPresetGenerator.GenerateForwardThrust(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.OverheadSwing:
-                    FanlightMotionPresetGenerator.GenerateOverheadSwing(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.Circle:
-                    FanlightMotionPresetGenerator.GenerateCircle(asset, GeneratorIntensity, CircleClockwise);
-                    break;
-                case MotionPreset.FigureEight:
-                    FanlightMotionPresetGenerator.GenerateFigureEight(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.GrooveBounce:
-                    FanlightMotionPresetGenerator.GenerateGrooveBounce(asset, GeneratorIntensity);
-                    break;
-                case MotionPreset.RaisedSway:
-                    FanlightMotionPresetGenerator.GenerateRaisedSway(asset, GeneratorIntensity);
+                case MotionPreset.Cheer:
+                    FanlightMotionPresetGenerator.GenerateCheer(asset, GeneratorIntensity);
                     break;
             }
         }

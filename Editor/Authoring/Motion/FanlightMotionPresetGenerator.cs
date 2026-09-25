@@ -8,10 +8,28 @@ namespace PrismFanlight.Editor
     {
         // Methods
 
-        internal static void GenerateDrum(FanlightMotionAsset asset, float intensity = 1f)
+        internal static void GenerateIdle(FanlightMotionAsset asset, float intensity)
         {
-            GenerateDrum(asset, DrumParameters.CreateDefault(), intensity);
+            intensity = ClampIntensity(intensity);
+            GenerateTrajectory(
+                asset,
+                128,
+                new Vector3(0f, 0.28f, 0.55f),
+                new Vector3(0f, 0.75f, 0.5f),
+                phase =>
+                {
+                    var angle = phase * Mathf.PI * 2f;
+                    return ClampHand(new Vector3(
+                        Mathf.Sin(angle) * 0.025f * intensity,
+                        0.28f + Mathf.Sin(angle) * 0.025f * intensity,
+                        0.55f + Mathf.Cos(angle) * 0.015f * intensity));
+                },
+                phase => new Vector3(0f, Mathf.Sin(phase * Mathf.PI * 2f) * 0.005f * intensity, 0f),
+                phase => Quaternion.Euler(-1f + Mathf.Sin(phase * Mathf.PI * 2f) * 0.8f * intensity, 0f, 0f),
+                0.15f,
+                0.25f);
         }
+
 
         internal static void GenerateDrum(FanlightMotionAsset asset, in DrumParameters parameters, float intensity = 1f)
         {
@@ -82,11 +100,6 @@ namespace PrismFanlight.Editor
         }
 
 
-        internal static void GenerateWiper(FanlightMotionAsset asset, float intensity = 1f)
-        {
-            GenerateWiper(asset, WiperParameters.CreateDefault(), intensity);
-        }
-
         internal static void GenerateWiper(FanlightMotionAsset asset, in WiperParameters parameters, float intensity = 1f)
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));
@@ -155,11 +168,6 @@ namespace PrismFanlight.Editor
         }
 
 
-        internal static void GenerateSasage(FanlightMotionAsset asset, float intensity = 1f)
-        {
-            GenerateSasage(asset, SasageParameters.CreateDefault(), intensity);
-        }
-
         internal static void GenerateSasage(FanlightMotionAsset asset, in SasageParameters parameters, float intensity = 1f)
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));
@@ -169,147 +177,58 @@ namespace PrismFanlight.Editor
             intensity = ClampIntensity(intensity);
 
             var samples = new FanlightMotionSample[128];
+            var phaseStep = 0.5f / samples.Length;
             for (var i = 0; i < samples.Length; i++)
             {
-                samples[i] = EvaluateSasageSample((float)i / samples.Length, parameters, intensity);
+                var phase = (float)i / samples.Length;
+                var angle = phase * Mathf.PI * 2f;
+                var hand = EvaluateSasageHand(phase, parameters, intensity);
+                var wristPhase = phase - parameters.WristPhaseLag;
+                var wristHand = EvaluateSasageHand(wristPhase, parameters, intensity);
+                var tangent = SafeNormalize(
+                    EvaluateSasageHand(wristPhase + phaseStep, parameters, intensity)
+                    - EvaluateSasageHand(wristPhase - phaseStep, parameters, intensity),
+                    Vector3.up);
+                var radial = SafeNormalize(wristHand, new Vector3(0f, 0.96f, 0.28f));
+                var penlightDirection = SafeNormalize(
+                    Vector3.Lerp(radial, tangent, parameters.PenlightTangentWeight)
+                    + Vector3.up * parameters.PenlightUpwardBias,
+                    radial);
+                var bodyPosition = new Vector3(
+                    0f,
+                    (1f - Mathf.Cos(angle)) * parameters.BodyRiseLift * intensity,
+                    0f);
+                var bodyRotation = Quaternion.Euler(
+                    parameters.BaseBodyLean - Mathf.Sin(angle) * parameters.BodyLeanAmplitude * intensity,
+                    0f,
+                    -Mathf.Sin(angle) * parameters.BodyRollAmplitude * intensity);
+
+                samples[i] = new FanlightMotionSample(
+                    bodyPosition,
+                    bodyRotation,
+                    hand,
+                    CreatePenlightRotation(penlightDirection, Vector3.right));
             }
 
             var reference = new FanlightMotionSample(
                 Vector3.zero,
-                Quaternion.Euler(parameters.BaseBodyLean, 0f, 0f),
-                SphericalPosition(parameters.LowElevation, parameters.BaseSideAngle, parameters.LowExtension),
-                CreatePenlightRotation(Direction(parameters.PenlightLowElevation, parameters.BaseSideAngle), Vector3.forward));
+                Quaternion.Euler(-1f, 0f, 0f),
+                ClampHand(new Vector3(0f, 0.62f, 0.42f)),
+                CreatePenlightRotation(new Vector3(0f, 0.96f, 0.28f), Vector3.right));
             asset.SetSamples(reference, samples);
         }
 
-        private static FanlightMotionSample EvaluateSasageSample(float phase, in SasageParameters p, float intensity)
+        private static Vector3 EvaluateSasageHand(float phase, in SasageParameters parameters, float intensity)
         {
-            var lift = PeriodicLift(phase, p.TopHoldRatio);
-            var sideSway = Mathf.Sin(phase * Mathf.PI * 2f) * p.SideSwayAmplitude * intensity;
-            var hand = SphericalPosition(
-                Mathf.Lerp(p.LowElevation, p.HighElevation, lift),
-                p.BaseSideAngle + sideSway,
-                Mathf.Lerp(p.LowExtension, p.HighExtension, lift));
-
-            var wristPhase = phase - p.WristPhaseLag;
-            var wristLift = PeriodicLift(wristPhase, p.TopHoldRatio);
-            var penlightSide = p.BaseSideAngle + Mathf.Sin(wristPhase * Mathf.PI * 2f) * p.PenlightSideAmplitude * intensity;
-            var penlightElevation = p.PenlightLowElevation + p.PenlightRiseArc * wristLift * intensity;
-            var penlightRotation = CreatePenlightRotation(Direction(penlightElevation, penlightSide), Vector3.forward);
-
-            var bodyLift = PeriodicLift(phase - p.BodyPhaseLag, p.TopHoldRatio);
-            var bodyPosition = new Vector3(0f, p.BodyRiseLift * bodyLift * intensity, 0f);
-            var bodyRotation = Quaternion.Euler(p.BaseBodyLean + p.BodyLeanAmplitude * bodyLift * intensity, 0f, 0f);
-
-            return new FanlightMotionSample(bodyPosition, bodyRotation, hand, penlightRotation);
+            var angle = phase * Mathf.PI * 2f;
+            return ClampHand(new Vector3(
+                Mathf.Sin(angle) * parameters.SideAmplitude * intensity,
+                parameters.BaseHandHeight - Mathf.Cos(angle) * parameters.VerticalAmplitude * intensity,
+                parameters.BaseHandDepth + Mathf.Sin(angle) * parameters.DepthAmplitude * intensity));
         }
 
-        internal static void GeneratePowerPump(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0f, 0.62f, 0.42f),
-                new Vector3(0f, 0.96f, 0.28f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.12f * intensity,
-                        0.37f - Mathf.Cos(angle) * 0.49f * intensity,
-                        0.34f + Mathf.Sin(angle) * 0.18f * intensity));
-                },
-                phase => new Vector3(0f, (1f - Mathf.Cos(phase * Mathf.PI * 2f)) * 0.018f * intensity, 0f),
-                phase => Quaternion.Euler(
-                    -2f - Mathf.Sin(phase * Mathf.PI * 2f) * 4f * intensity,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 2.5f * intensity),
-                0.32f,
-                0.38f);
-        }
 
-        internal static void GenerateDoublePump(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0f, 0.58f, 0.40f),
-                new Vector3(0f, 0.95f, 0.31f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 4f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.08f * intensity,
-                        0.38f - Mathf.Cos(angle) * 0.43f * intensity,
-                        0.36f + Mathf.Sin(angle) * 0.14f * intensity));
-                },
-                phase => new Vector3(0f, (1f - Mathf.Cos(phase * Mathf.PI * 4f)) * 0.012f * intensity, 0f),
-                phase => Quaternion.Euler(-2f - Mathf.Sin(phase * Mathf.PI * 4f) * 3f * intensity, 0f, 0f),
-                0.3f,
-                0.4f);
-        }
-
-        internal static void GenerateDiagonalPump(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0.24f, 0.58f, 0.38f),
-                new Vector3(0.3f, 0.9f, 0.3f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    var drive = -Mathf.Cos(angle);
-                    var orbit = Mathf.Sin(angle);
-                    return ClampHand(new Vector3(
-                        0.08f + drive * 0.36f * intensity + orbit * 0.08f,
-                        0.40f + drive * 0.40f * intensity - orbit * 0.06f,
-                        0.34f + orbit * 0.14f * intensity));
-                },
-                phase => new Vector3(
-                    -Mathf.Cos(phase * Mathf.PI * 2f) * 0.018f * intensity,
-                    0f,
-                    0f),
-                phase => Quaternion.Euler(
-                    -2f - Mathf.Sin(phase * Mathf.PI * 2f) * 2f,
-                    0f,
-                    -Mathf.Cos(phase * Mathf.PI * 2f) * 5f * intensity),
-                0.34f,
-                0.36f);
-        }
-
-        internal static void GenerateForwardThrust(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0f, 0.38f, 0.55f),
-                new Vector3(0f, 0.62f, 0.78f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.13f * intensity,
-                        0.40f + Mathf.Sin(angle) * 0.17f * intensity,
-                        0.40f - Mathf.Cos(angle) * 0.36f * intensity));
-                },
-                phase => new Vector3(
-                    Mathf.Sin(phase * Mathf.PI * 2f) * 0.01f,
-                    0f,
-                    (1f - Mathf.Cos(phase * Mathf.PI * 2f)) * 0.018f * intensity),
-                phase => Quaternion.Euler(
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 5f * intensity,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 2f),
-                0.22f,
-                0.18f);
-        }
-
-        internal static void GenerateOverheadSwing(FanlightMotionAsset asset, float intensity)
+        internal static void GenerateCheer(FanlightMotionAsset asset, float intensity)
         {
             intensity = ClampIntensity(intensity);
             GenerateTrajectory(
@@ -331,113 +250,6 @@ namespace PrismFanlight.Editor
                     0f,
                     -Mathf.Sin(phase * Mathf.PI * 2f) * 6f * intensity),
                 0.42f,
-                0.32f);
-        }
-
-        internal static void GenerateCircle(FanlightMotionAsset asset, float intensity, bool clockwise)
-        {
-            intensity = ClampIntensity(intensity);
-            var direction = clockwise ? -1f : 1f;
-            GenerateTrajectory(
-                asset,
-                256,
-                new Vector3(0f, 0.60f, 0.28f),
-                new Vector3(0f, 0.95f, 0.22f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f * direction;
-                    return ClampHand(new Vector3(
-                        Mathf.Cos(angle) * 0.48f * intensity,
-                        0.54f + Mathf.Sin(angle) * 0.36f * intensity,
-                        0.25f + Mathf.Cos(angle + Mathf.PI * 0.5f) * 0.10f * intensity));
-                },
-                phase => new Vector3(
-                    Mathf.Cos(phase * Mathf.PI * 2f * direction) * 0.02f * intensity,
-                    0.008f * (1f - Mathf.Cos(phase * Mathf.PI * 4f)),
-                    0f),
-                phase => Quaternion.Euler(
-                    -2f,
-                    0f,
-                    -Mathf.Cos(phase * Mathf.PI * 2f * direction) * 5f * intensity),
-                0.68f,
-                0.08f);
-        }
-
-        internal static void GenerateFigureEight(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                256,
-                new Vector3(0f, 0.58f, 0.26f),
-                new Vector3(0f, 0.95f, 0.22f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.50f * intensity,
-                        0.57f + Mathf.Sin(angle * 2f) * 0.27f * intensity,
-                        0.25f + Mathf.Cos(angle) * 0.10f * intensity));
-                },
-                phase => new Vector3(Mathf.Sin(phase * Mathf.PI * 2f) * 0.018f * intensity, 0f, 0f),
-                phase => Quaternion.Euler(
-                    -2f,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 5f * intensity),
-                0.62f,
-                0.12f);
-        }
-
-        internal static void GenerateGrooveBounce(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0f, 0.45f, 0.52f),
-                new Vector3(0f, 0.88f, 0.48f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.18f * intensity,
-                        0.45f + Mathf.Sin(angle * 2f) * 0.20f * intensity,
-                        0.50f + Mathf.Cos(angle) * 0.10f * intensity));
-                },
-                phase => new Vector3(
-                    Mathf.Sin(phase * Mathf.PI * 2f) * 0.018f * intensity,
-                    (1f - Mathf.Cos(phase * Mathf.PI * 4f)) * 0.012f * intensity,
-                    0f),
-                phase => Quaternion.Euler(
-                    -1f - Mathf.Sin(phase * Mathf.PI * 4f) * 3f * intensity,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 4f * intensity),
-                0.3f,
-                0.28f);
-        }
-
-        internal static void GenerateRaisedSway(FanlightMotionAsset asset, float intensity)
-        {
-            intensity = ClampIntensity(intensity);
-            GenerateTrajectory(
-                asset,
-                128,
-                new Vector3(0f, 0.78f, 0.30f),
-                new Vector3(0f, 0.98f, 0.18f),
-                phase =>
-                {
-                    var angle = phase * Mathf.PI * 2f;
-                    return ClampHand(new Vector3(
-                        Mathf.Sin(angle) * 0.32f * intensity,
-                        0.76f + Mathf.Cos(angle * 2f) * 0.07f * intensity,
-                        0.30f + Mathf.Cos(angle) * 0.08f * intensity));
-                },
-                phase => new Vector3(Mathf.Sin(phase * Mathf.PI * 2f) * 0.018f * intensity, 0f, 0f),
-                phase => Quaternion.Euler(
-                    -2f,
-                    0f,
-                    -Mathf.Sin(phase * Mathf.PI * 2f) * 4f * intensity),
-                0.34f,
                 0.32f);
         }
 
@@ -516,21 +328,6 @@ namespace PrismFanlight.Editor
         private static Vector3 ClampHand(Vector3 hand) => Vector3.ClampMagnitude(hand, 0.98f);
 
         private static Vector3 SafeNormalize(Vector3 value, Vector3 fallback) => value.sqrMagnitude > 0.000001f ? value.normalized : fallback;
-
-        private static float PeriodicLift(float phase, float holdRatio)
-        {
-            phase = Mathf.Repeat(phase, 1f);
-            var travel = Mathf.Max(0.08f, (1f - holdRatio) * 0.5f);
-            if (phase < travel) return Smooth01(phase / travel);
-            if (phase < travel + holdRatio) return 1f;
-            return 1f - Smooth01((phase - travel - holdRatio) / travel);
-        }
-
-        private static float Smooth01(float value)
-        {
-            value = Mathf.Clamp01(value);
-            return value * value * (3f - 2f * value);
-        }
 
         private static float ClampIntensity(float intensity) => Mathf.Clamp(intensity, 0.65f, 1.25f);
     }

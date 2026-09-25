@@ -9,7 +9,7 @@ namespace PrismFanlight.Editor
         // Fields
 
         [SerializeField]
-        private int _preset = 0;
+        private int _preset;
 
         [SerializeField]
         private int _bakedPreset = -1;
@@ -25,9 +25,6 @@ namespace PrismFanlight.Editor
 
         [SerializeField]
         private float _generatorIntensity = 1f;
-
-        [SerializeField]
-        private bool _circleClockwise = true;
 
 
         // Properties
@@ -66,12 +63,6 @@ namespace PrismFanlight.Editor
         {
             get => _generatorIntensity;
             set => _generatorIntensity = value;
-        }
-
-        internal bool CircleClockwise
-        {
-            get => _circleClockwise;
-            set => _circleClockwise = value;
         }
     }
 }
