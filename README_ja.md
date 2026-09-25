@@ -1,14 +1,55 @@
-# Prism Fanlight
+<h1 align="center">
+  Prism Fanlight
+</h1>
 
-[English](README.md) | 日本語
-
-`Prism Fanlight`は、大規模な観客とペンライト演出をTimeline上で制御できるツールです。
-
-<p align="left">
-  <img width="60%" src="https://github.com/user-attachments/assets/cceb3440-762a-459a-b176-35b94c7fe74a">
+<p align="center">
+    <img src="https://img.shields.io/github/v/release/NullClone/PrismFanlight" alt="Latest Release"></a>
+  <a href="https://github.com/NullClone/PrismFanlight/blob/main/LICENSE.md">
+    <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg" alt="License MIT"></a>
 </p>
 
-## 使用方法
+<p align="center">
+  <a href="#概要">概要</a> •
+  <a href="#機能">機能</a> •
+  <a href="#インストール">インストール</a> •
+  <a href="#はじめかた">はじめかた</a> •
+  <a href="#動作環境">動作環境</a> •
+  <a href="#ライセンス">ライセンス</a>
+</p>
+
+
+<p align="center">
+  <a href="README.md">English</a> | 日本語
+</p>
+
+## 概要
+
+Prism Fanlightは、バーチャルライブで大規模な観客によるペンライト演出を実現するためのシステムです。
+
+低負荷で数万人規模の観客を描画することができ、Timelineから色や明るさなどを細かく制御できます。
+
+## 機能
+
+- **Timeline 制御**
+  - モーション、色、明るさ、BPM を専用トラックで制御
+  - ブレンド機能によるクリップ間のスムーズな遷移
+  - シーク、逆再生、スクラブ、ループに対応
+- **ライティング・カラー演出**
+  - パレット配色やグラデーションによる会場全体の色制御
+  - ウェーブ、パルス、ランダムな明滅など、空間全体を走る多彩な発光パターン
+  - 楽曲テンポに連動したビート同期演出
+- **観客モーション**
+  - 基本的なペンライト動作プリセットを同梱
+  - 自然にモーションを切り替えれるブレンド機能
+- **観客席 レイアウト編集**
+  - ブロック・列・座席単位での自由な会場設計
+  - グリッド生成やミラー配置などの編集支援機能
+  - ランタイム実行用データへの事前ベイク機構
+- **GPU 描画と最適化**
+  - 数万人規模の観客の姿勢・発光計算および描画を GPU で一括処理
+  - 視錐台カリングと距離に応じた観客の LOD
+
+## インストール
 
 1. パッケージマネージャーを開きます `Window > Package Manager`
 2. 左上の`+`ボタンから`Add package from git URL...`を選択します。
@@ -21,27 +62,22 @@
    ```bash
    https://github.com/NullClone/PrismFanlight.git
    ```
-   
-4. インストール完了後、`Light/Prism Fanlight`からシーン上に配置してください。
 
 > [!NOTE]
 > また、[ここから](https://github.com/NullClone/PrismFanlight/releases/latest)`.unitypackage`をUnity上にドロップすることでインストールも可能です。
 
+## はじめかた
+
+1. `GameObject > Light > Prism Fanlight`からシーン上に配置します。
+2. Inspectorで既定の演出を設定します。Timelineのクリップがない時はこの設定で動きます。
+3. Layoutアセットをダブルクリックしてレイアウトエディターを開き、会場を編集してBakeします。
+4. TimelineにPrism Fanlightのトラックを追加し、クリップを配置します。
+
 ## 動作環境
 
-- Unity 6.3
-- URP / ~~HDRP~~
-
-## Todo
-- [ ] HDRP サポート
-- [ ] ~~Built-in サポート~~
-- [ ] サンプルを追加
-- [ ] LOD 機能
-- [x] 複数持ち 機能
-- [x] プリセット 機能
-- [x] レイアウト 強化
-- [ ] 色のモードを追加 (Rainbow)
-- [ ] 専用のポストプロセッシング
+- Unity 6.3 – 6.5
+- URP または HDRP
+- Compute Shaderに対応したプラットフォーム
 
 ## ライセンス
 
