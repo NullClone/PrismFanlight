@@ -256,6 +256,18 @@ namespace PrismFanlight.Authoring
             _activeBake = artifact;
         }
 
+        internal void RegenerateLayoutId()
+        {
+            string layoutId;
+            do
+            {
+                layoutId = Guid.NewGuid().ToString("N");
+            } while (string.Equals(layoutId, _layoutId, StringComparison.Ordinal));
+
+            _layoutId = layoutId;
+            _contentHash = 0UL;
+        }
+
         private bool TryValidateAuthoring()
         {
             if (!LayoutId.IsValid
