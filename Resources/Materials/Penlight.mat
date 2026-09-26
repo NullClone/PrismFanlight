@@ -21,7 +21,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Penlight
-  m_Shader: {fileID: -6465566751694194690, guid: 90e96071edb50c44688a4bfbc5e9ab68, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 90e96071edb50c44688a4bfbc5e9ab68,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -32,6 +33,7 @@ Material:
   m_CustomRenderQueue: 2000
   stringTagMap:
     MotionVector: User
+    RenderType: Opaque
   disabledShaderPasses:
   - MOTIONVECTORS
   - SHADOWCASTER
@@ -180,6 +182,7 @@ Material:
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _Gradient_MinMax: {r: -2, g: 1.5, b: 0, a: 0}
     - _Min: {r: 0, g: 1.15, b: 0, a: 0}
+    - _Penlight_Gradient: {r: 0.35, g: 1.18, b: 0, a: 0}
     - _Remap_In: {r: 0, g: 0.27, b: 0, a: 0}
     - _Remap_Out: {r: 0, g: 0.97, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}

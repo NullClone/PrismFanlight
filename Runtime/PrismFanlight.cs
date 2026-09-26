@@ -31,7 +31,7 @@ namespace PrismFanlight
         private uint _renderingLayerMask = 1u;
 
         [SerializeField]
-        private bool _enableCulling;
+        private bool _enableCulling = true;
 
         [SerializeField]
         private Camera _cullingCamera;
