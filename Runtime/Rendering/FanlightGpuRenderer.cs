@@ -193,7 +193,8 @@ namespace PrismFanlight.Rendering
             float audienceLodDistance,
             int layer,
             uint renderingLayerMask,
-            in FanlightGpuUpdateTiming animationTiming)
+            in FanlightGpuUpdateTiming animationTiming,
+            float outputIntensityScale)
         {
             if (!_isInitialized) return;
 
@@ -338,7 +339,7 @@ namespace PrismFanlight.Rendering
             }
 
             _properties.SetBuffer(FanlightShaderIds.Matrices, _buffers.MatrixBuffer);
-            SetEmissionProperties(_properties, sample.State.Intensity);
+            SetEmissionProperties(_properties, sample.State.Intensity, outputIntensityScale);
             _properties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.PenlightVisibleIndexBuffer);
             _properties.SetBuffer(FanlightShaderIds.PenlightVisibleIndices, _buffers.PenlightVisibleIndexBuffer);
 
@@ -351,7 +352,7 @@ namespace PrismFanlight.Rendering
             {
                 var audienceBounds = worldBounds;
                 audienceBounds.Expand(2f);
-                DrawAudience(layer, renderingLayerMask, audienceBounds, sample.State.Intensity);
+                DrawAudience(layer, renderingLayerMask, audienceBounds, sample.State.Intensity, outputIntensityScale);
             }
         }
 
@@ -454,13 +455,14 @@ namespace PrismFanlight.Rendering
             int layer,
             uint renderingLayerMask,
             Bounds worldBounds,
-            FanlightIntensityState intensity)
+            FanlightIntensityState intensity,
+            float outputIntensityScale)
         {
             _audienceProperties ??= new MaterialPropertyBlock();
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceParts, _buffers.AudiencePartBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.VisibleIndices, _buffers.AudienceVisibleIndexBuffer);
             _audienceProperties.SetBuffer(FanlightShaderIds.AudienceVisibleIndices, _buffers.AudienceVisibleIndexBuffer);
-            SetEmissionProperties(_audienceProperties, intensity);
+            SetEmissionProperties(_audienceProperties, intensity, outputIntensityScale);
 
             var renderParams = new RenderParams(_audienceMaterial)
             {
@@ -477,12 +479,13 @@ namespace PrismFanlight.Rendering
 
         private void SetEmissionProperties(
             MaterialPropertyBlock properties,
-            FanlightIntensityState intensity)
+            FanlightIntensityState intensity,
+            float outputIntensityScale)
         {
             properties.SetBuffer(FanlightShaderIds.StableAssignments, _buffers.StableAssignmentBuffer);
             properties.SetBuffer(FanlightShaderIds.ResolvedChroma, _buffers.ResolvedChromaBuffer);
             properties.SetBuffer(FanlightShaderIds.ResolvedMask, _buffers.ResolvedMaskBuffer);
-            properties.SetFloat(FanlightShaderIds.BaseIntensity, intensity.BaseIntensity);
+            properties.SetFloat(FanlightShaderIds.BaseIntensity, intensity.BaseIntensity * outputIntensityScale);
             properties.SetFloat(FanlightShaderIds.RandomIntensity, intensity.RandomIntensity);
         }
 

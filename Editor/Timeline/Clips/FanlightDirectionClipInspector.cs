@@ -1,4 +1,4 @@
-﻿using PrismFanlight.Core;
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
@@ -30,32 +30,9 @@ namespace PrismFanlight.Editor
                 ? mask.Direction
                 : FanlightDirectionFields.All;
 
-            var mode = _value.FindPropertyRelative("_mode");
-
-            using (new EditorGUI.DisabledScope(!includedFields.HasFlag(FanlightDirectionFields.Mode)))
-            {
-                EditorGUILayout.PropertyField(mode);
-            }
-
-            if (!mode.hasMultipleDifferentValues)
-            {
-                if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
-                {
-                    DrawChild("_direction", includedFields.HasFlag(FanlightDirectionFields.Direction));
-                }
-            }
+            FanlightStateEditorUtility.DrawDirection(_value, includedFields);
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void DrawChild(string propertyName, bool included)
-        {
-            var property = _value.FindPropertyRelative(propertyName);
-
-            using (new EditorGUI.DisabledScope(!included))
-            {
-                EditorGUILayout.PropertyField(property);
-            }
         }
     }
 }

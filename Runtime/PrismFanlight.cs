@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PrismFanlight.Authoring;
 using PrismFanlight.Core;
+using PrismFanlight.Live;
 using PrismFanlight.Rendering;
 using PrismFanlight.Time;
 using UnityEngine;
@@ -112,6 +113,7 @@ namespace PrismFanlight
         private bool _baseStateValid;
         private string _baseStateFault = string.Empty;
         private FanlightRuntimeLayout _assetRuntimeLayout;
+        private FanlightLiveControl _liveControl;
 
 
 #if UNITY_EDITOR
@@ -239,6 +241,8 @@ namespace PrismFanlight
                 Dispose();
                 return;
             }
+
+            ApplyLiveInput(time);
 
             _contributionBuffer.Clear();
 
@@ -426,6 +430,16 @@ namespace PrismFanlight
             Dispose();
         }
 
+        internal void RegisterLiveControl(FanlightLiveControl liveControl)
+        {
+            _liveControl = liveControl;
+        }
+
+        internal void UnregisterLiveControl(FanlightLiveControl liveControl)
+        {
+            if (_liveControl == liveControl) _liveControl = null;
+        }
+
         internal void SetTimeManager(FanlightTimeManager timeManager)
         {
             if (_timeManager != timeManager) ClearHeldTimelineState();
@@ -516,7 +530,8 @@ namespace PrismFanlight
                 audienceLodDistance,
                 gameObject.layer,
                 _renderingLayerMask,
-                AnimationUpdate);
+                AnimationUpdate,
+                _liveControl != null && Application.isPlaying ? _liveControl.OutputIntensityScale : 1f);
         }
 
         private void ClearScheduledContributions()
@@ -572,6 +587,62 @@ namespace PrismFanlight
                 _baseStateValid = false;
                 _baseStateFault = exception.Message;
             }
+        }
+
+        private void ApplyLiveInput(in FanlightShowTimeSample time)
+        {
+            if (_liveControl == null || !Application.isPlaying) return;
+
+            if (_liveControl.TryTakeDueLook(time, out var look))
+            {
+                try
+                {
+                    ApplyLivePatch(look.Patch);
+                    _liveControl.ReportApplied(look);
+                }
+                catch (ArgumentException exception)
+                {
+                    _liveControl.ReportFault(look.name, exception.Message);
+                }
+                catch (InvalidOperationException exception)
+                {
+                    _liveControl.ReportFault(look.name, exception.Message);
+                }
+            }
+
+            try
+            {
+                if (_liveControl.TryTakeParameterPatch(BaseState, out var parameterPatch))
+                {
+                    ApplyLivePatch(parameterPatch);
+                }
+            }
+            catch (ArgumentException exception)
+            {
+                _liveControl.ReportFault("Live Parameter", exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                _liveControl.ReportFault("Live Parameter", exception.Message);
+            }
+        }
+
+        private void ApplyLivePatch(in FanlightShowPatch patch)
+        {
+            var state = FanlightShowStatePatcher.Apply(BaseState, patch, 1f);
+            _ = FanlightShowStatePatcher.Validate(state);
+
+            _intent = state.Intent;
+            _motion = state.Motion;
+            _variation = state.Variation;
+            _noise = state.Noise;
+            _rest = state.Rest;
+            _audienceBody = state.AudienceBody;
+            _direction = state.Direction;
+            _color = state.Color;
+            _intensity = state.Intensity;
+
+            ValidateBaseState();
         }
 
         private void EnsureTempoScopeResolver()

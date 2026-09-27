@@ -9,9 +9,9 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightSectionExtensions
     {
-        internal static void DrawSection(this PrismFanlightSection section, Action draw)
+        internal static void DrawSection(this PrismFanlightSection section, Action draw, Action<GenericMenu> addMenuItems = null)
         {
-            if (section.DrawHeader())
+            if (section.DrawHeader(addMenuItems))
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
@@ -58,14 +58,15 @@ namespace PrismFanlight.Editor
             this.title = title;
         }
 
-        internal bool DrawHeader()
+        internal bool DrawHeader(Action<GenericMenu> addMenuItems = null)
         {
             CoreEditorUtils.DrawSplitter();
 
             expand = CoreEditorUtils.DrawHeaderFoldout(
                 title: title,
                 state: expand,
-                documentationURL: PrismFanlight.HelpUrl);
+                documentationURL: PrismFanlight.HelpUrl,
+                customMenuContextAction: addMenuItems);
 
             return expand;
         }

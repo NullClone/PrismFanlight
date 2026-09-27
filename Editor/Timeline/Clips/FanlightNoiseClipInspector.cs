@@ -30,21 +30,9 @@ namespace PrismFanlight.Editor
                 ? mask.Noise
                 : FanlightNoiseFields.All;
 
-            DrawChild("_phaseAmount", includedFields.HasFlag(FanlightNoiseFields.PhaseAmount));
-            DrawChild("_positionAmount", includedFields.HasFlag(FanlightNoiseFields.PositionAmount));
-            DrawChild("_directionAmount", includedFields.HasFlag(FanlightNoiseFields.DirectionAmount));
+            FanlightStateEditorUtility.DrawNoise(_value, includedFields);
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void DrawChild(string propertyName, bool included)
-        {
-            var property = _value.FindPropertyRelative(propertyName);
-
-            using (new EditorGUI.DisabledScope(!included))
-            {
-                EditorGUILayout.PropertyField(property);
-            }
         }
     }
 }

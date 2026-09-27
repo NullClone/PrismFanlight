@@ -139,28 +139,34 @@ namespace PrismFanlight.Editor
             }
 
             _generalSection.DrawSection(DrawGeneralSection);
+
             _motionSection.DrawSection(DrawMotionSection, _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Motion, "_motion"));
-            _intentSection.DrawSection(DrawIntentSection, _instance,
+
+            _intentSection.DrawSection(() => FanlightStateEditorUtility.DrawIntent(_intent), _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Intent, "_intent"));
-            _colorSection.DrawSection(() =>
-            {
-                FanlightColorIntensityEditorUtility.DrawColorState(_color, _instance.LayoutAsset, true);
-            }, _instance, menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Color, "_color"));
-            _intensitySection.DrawSection(() =>
-            {
-                FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity, _instance.LayoutAsset, true);
-            }, _instance, menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Intensity, "_intensity"));
-            _audienceSection.DrawSection(DrawAudienceSection, _instance,
+
+            _colorSection.DrawSection(() => FanlightColorIntensityEditorUtility.DrawColorState(_color, _instance.LayoutAsset, true), _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Color, "_color"));
+
+            _intensitySection.DrawSection(() => FanlightColorIntensityEditorUtility.DrawIntensityState(_intensity, _instance.LayoutAsset, true), _instance,
+                menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Intensity, "_intensity"));
+
+            _audienceSection.DrawSection(() => FanlightStateEditorUtility.DrawAudienceBody(_audienceBody), _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.AudienceBody, "_audienceBody"));
-            _directionSection.DrawSection(DrawDirectionSection, _instance,
+
+            _directionSection.DrawSection(() => FanlightStateEditorUtility.DrawDirection(_direction, swingTarget: _swingTarget), _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Direction, "_direction"));
+
             _timeSection.DrawSection(DrawTimeSection, _instance);
-            _variationSection.DrawSection(DrawVariationSection, _instance,
+
+            _variationSection.DrawSection(() => FanlightStateEditorUtility.DrawVariation(_variation), _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Variation, "_variation"));
+
             _noiseSection.DrawSection(DrawNoiseSection, _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Noise, "_noise"));
-            _restSection.DrawSection(DrawRestSection, _instance,
+
+            _restSection.DrawSection(() => FanlightStateEditorUtility.DrawRest(_rest), _instance,
                 menu => AddStateClipboardItems(menu, FanlightTimelinePatchKind.Rest, "_rest"));
 
             if (serializedObject.ApplyModifiedProperties())
@@ -279,75 +285,31 @@ namespace PrismFanlight.Editor
 
         private void DrawMotionSection()
         {
-            var motionAsset = _motion.FindPropertyRelative("_motionAsset");
-
-            using (new EditorGUILayout.HorizontalScope())
+            FanlightStateEditorUtility.DrawMotion(_motion, drawAssetField: motionAsset =>
             {
-                EditorGUILayout.PropertyField(motionAsset);
-
-                if (GUILayout.Button("New", GUILayout.Width(45)))
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    CreateMotionAsset(motionAsset);
-                }
+                    EditorGUILayout.PropertyField(motionAsset);
 
-                using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
-                {
-                    if (GUILayout.Button("Clone", GUILayout.Width(50)))
+                    if (GUILayout.Button("New", GUILayout.Width(45)))
                     {
-                        CloneMotionAsset(motionAsset);
+                        CreateMotionAsset(motionAsset);
+                    }
+
+                    using (new EditorGUI.DisabledScope(motionAsset.objectReferenceValue == null))
+                    {
+                        if (GUILayout.Button("Clone", GUILayout.Width(50)))
+                        {
+                            CloneMotionAsset(motionAsset);
+                        }
                     }
                 }
-            }
 
-            if (motionAsset.objectReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
-            }
-
-            DrawChild(_motion, "_beatsPerCycle");
-            DrawChild(_motion, "_phaseOffsetBeats");
-            DrawChild(_motion, "_blockDelayXBeats");
-            DrawChild(_motion, "_blockDelayYBeats");
-        }
-
-        private void DrawIntentSection()
-        {
-            DrawChild(_intent, "_energy");
-            DrawChild(_intent, "_participation");
-            DrawChild(_intent, "_synchronization");
-            DrawChild(_intent, "_transitionScatter");
-        }
-
-        private void DrawAudienceSection()
-        {
-            DrawChild(_audienceBody, "_height");
-            DrawChild(_audienceBody, "_width");
-            DrawChild(_audienceBody, "_headSize");
-            DrawChild(_audienceBody, "_armWidth");
-            DrawChild(_audienceBody, "_armLengthLimit");
-            DrawChild(_audienceBody, "_shoulderHeightRatio");
-            DrawChild(_audienceBody, "_shoulderSideOffset");
-            DrawChild(_audienceBody, "_bounce");
-            DrawChild(_audienceBody, "_sway");
-        }
-
-        private void DrawDirectionSection()
-        {
-            var mode = _direction.FindPropertyRelative("_mode");
-
-            EditorGUILayout.PropertyField(mode, new GUIContent("Mode"));
-
-            if (!mode.hasMultipleDifferentValues)
-            {
-                if (mode.enumValueIndex == (int)FanlightDirectionMode.WorldDirection)
+                if (motionAsset.objectReferenceValue == null)
                 {
-                    DrawChild(_direction, "_direction");
+                    EditorGUILayout.HelpBox("A baked Motion Asset is required.", MessageType.Error);
                 }
-                else
-                {
-                    EditorGUILayout.PropertyField(_swingTarget, new GUIContent("Target"));
-                }
-            }
+            });
         }
 
         private void DrawTimeSection()
@@ -374,39 +336,11 @@ namespace PrismFanlight.Editor
             }
         }
 
-        private void DrawVariationSection()
-        {
-            DrawChild(_variation, "_standingPositionSpread");
-            DrawChild(_variation, "_heightVariation");
-            DrawChild(_variation, "_armExtensionVariation");
-            DrawChild(_variation, "_penlightDirectionSpread");
-            DrawChild(_variation, "_reactionDelaySeconds");
-            DrawChild(_variation, "_beatJitterBeats");
-            DrawChild(_variation, "_energyResponse");
-            DrawChild(_variation, "_handPositionSpread");
-        }
-
         private void DrawNoiseSection()
         {
             EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Seed"));
 
-            DrawChild(_noise, "_phaseAmount");
-            DrawChild(_noise, "_phaseRate");
-            DrawChild(_noise, "_positionAmount");
-            DrawChild(_noise, "_directionAmount");
-            DrawChild(_noise, "_spatialRate");
-            DrawChild(_noise, "_octaves");
-            DrawChild(_noise, "_persistence");
-        }
-
-        private void DrawRestSection()
-        {
-            DrawChild(_rest, "_probability");
-            DrawChild(_rest, "_motionLevel");
-            DrawChild(_rest, "_cycleSeconds");
-            DrawChild(_rest, "_durationSeconds");
-            DrawChild(_rest, "_fadeSeconds");
-            DrawChild(_rest, "_phaseRandomness");
+            FanlightStateEditorUtility.DrawNoise(_noise, includeBaselineFields: true);
         }
 
         private void RefreshTimelinePreview()
