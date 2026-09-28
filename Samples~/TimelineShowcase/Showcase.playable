@@ -1,0 +1,2172 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7968997880525492803
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 1
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0.4
+      _holdRatio: 0
+      _releaseRatio: 0.6
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries: []
+--- !u!114 &-6897385602954309025
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 0
+    _randomIntensity: 0
+    _mask:
+      _mode: 0
+      _beatsPerCycle: 1
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 1
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries: []
+--- !u!114 &-6501825960437524280
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4c5e75b1e2405cbbb1c06c2d6352c9, type: 3}
+  m_Name: FanlightColorClip(Clone)(Clone)(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorClip
+  _value:
+    _source:
+      _mode: 1
+      _slot1: {r: 1, g: 0, b: 0, a: 1}
+      _slot2: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+      _slot3: {r: 0, g: 1, b: 0, a: 1}
+      _slot4: {r: 0, g: 1, b: 1, a: 1}
+      _slot5: {r: 0, g: 0, b: 1, a: 1}
+      _slot6: {r: 1, g: 0, b: 1, a: 1}
+      _colorA: {r: 0, g: 0.16396236, b: 1, a: 1}
+      _colorB: {r: 0, g: 0, b: 1, a: 1}
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _width: 10
+      _offset: 0
+      _blockPaletteEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _paletteSlot: 1
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _paletteSlot: 0
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _paletteSlot: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _paletteSlot: 0
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _paletteSlot: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _paletteSlot: 0
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _paletteSlot: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _paletteSlot: 0
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _paletteSlot: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _paletteSlot: 0
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _paletteSlot: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _paletteSlot: 0
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _paletteSlot: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _paletteSlot: 0
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _paletteSlot: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _paletteSlot: 0
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _paletteSlot: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _paletteSlot: 0
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _paletteSlot: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _paletteSlot: 0
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _paletteSlot: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _paletteSlot: 0
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _paletteSlot: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _paletteSlot: 0
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _paletteSlot: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _paletteSlot: 0
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _paletteSlot: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _paletteSlot: 0
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _paletteSlot: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _paletteSlot: 0
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _paletteSlot: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _paletteSlot: 0
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _paletteSlot: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _paletteSlot: 0
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _paletteSlot: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _paletteSlot: 0
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _paletteSlot: 0
+--- !u!114 &-4292847522375513712
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e489458cc9ac4068846c56c62ab689f9, type: 3}
+  m_Name: Fanlight Tempo Track
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightTempoTrack
+  m_Version: 3
+  m_AnimClip: {fileID: 0}
+  m_Locked: 0
+  m_Muted: 0
+  m_CustomPlayableFullTypename: 
+  m_Curves: {fileID: 0}
+  m_Parent: {fileID: 1860697256142460499}
+  m_Children: []
+  m_Clips:
+  - m_Version: 1
+    m_Start: 0
+    m_ClipIn: 0
+    m_Asset: {fileID: -3712359399937114672}
+    m_Duration: 40
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: -4292847522375513712}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0
+    m_BlendOutDuration: 0
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: 120 BPM
+  m_Markers:
+    m_Objects: []
+  _beatsPerBar: 4
+  _beatUnit: 4
+--- !u!114 &-3712359399937114672
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1683bcfa95c4715867f5c5fda060764, type: 3}
+  m_Name: FanlightTempoClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightTempoClip
+  _bpm: 120
+--- !u!114 &-2785391973391604489
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4c5e75b1e2405cbbb1c06c2d6352c9, type: 3}
+  m_Name: FanlightColorClip(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorClip
+  _value:
+    _source:
+      _mode: 2
+      _slot1: {r: 1, g: 0, b: 0, a: 1}
+      _slot2: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+      _slot3: {r: 0, g: 1, b: 0, a: 1}
+      _slot4: {r: 0, g: 1, b: 1, a: 1}
+      _slot5: {r: 0, g: 0, b: 1, a: 1}
+      _slot6: {r: 1, g: 0, b: 1, a: 1}
+      _colorA: {r: 1, g: 1, b: 1, a: 1}
+      _colorB: {r: 1, g: 1, b: 1, a: 1}
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _width: 10
+      _offset: 0
+      _blockPaletteEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _paletteSlot: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _paletteSlot: 0
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _paletteSlot: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _paletteSlot: 0
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _paletteSlot: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _paletteSlot: 0
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _paletteSlot: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _paletteSlot: 0
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _paletteSlot: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _paletteSlot: 0
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _paletteSlot: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _paletteSlot: 0
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _paletteSlot: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _paletteSlot: 0
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _paletteSlot: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _paletteSlot: 0
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _paletteSlot: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _paletteSlot: 0
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _paletteSlot: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _paletteSlot: 0
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _paletteSlot: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _paletteSlot: 0
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _paletteSlot: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _paletteSlot: 0
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _paletteSlot: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _paletteSlot: 0
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _paletteSlot: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _paletteSlot: 0
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _paletteSlot: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _paletteSlot: 0
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _paletteSlot: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _paletteSlot: 0
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _paletteSlot: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _paletteSlot: 0
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _paletteSlot: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _paletteSlot: 0
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _paletteSlot: 0
+--- !u!114 &-1649941376347030949
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 0
+      _beatsPerCycle: 1
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 1
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries: []
+--- !u!114 &-1155495914502201140
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6a6f0a1b2c34890945566778899aabc, type: 3}
+  m_Name: FanlightMotionClip(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightMotionClip
+  _value:
+    _motionAsset: {fileID: 11400000, guid: d5f3ab35a224258479dc366b4ded1736, type: 2}
+    _beatsPerCycle: 2
+    _phaseOffsetBeats: 0
+    _blockDelayXBeats: 0
+    _blockDelayYBeats: 0
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfda56da833e2384a9677cd3c976a436, type: 3}
+  m_Name: Showcase
+  m_EditorClassIdentifier: Unity.Timeline::UnityEngine.Timeline.TimelineAsset
+  m_Version: 0
+  m_Tracks:
+  - {fileID: 1860697256142460499}
+  m_FixedDuration: 0
+  m_EditorSettings:
+    m_Framerate: 60
+    m_ScenePreview: 1
+  m_DurationMode: 0
+  m_MarkerTrack: {fileID: 0}
+--- !u!114 &14535331287821186
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4c5e75b1e2405cbbb1c06c2d6352c9, type: 3}
+  m_Name: FanlightColorClip(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorClip
+  _value:
+    _source:
+      _mode: 0
+      _slot1: {r: 0, g: 1, b: 0, a: 1}
+      _slot2: {r: 0, g: 1, b: 0, a: 1}
+      _slot3: {r: 0, g: 1, b: 0, a: 1}
+      _slot4: {r: 0, g: 1, b: 1, a: 1}
+      _slot5: {r: 0, g: 1, b: 1, a: 1}
+      _slot6: {r: 0, g: 1, b: 1, a: 1}
+      _colorA: {r: 1, g: 1, b: 1, a: 1}
+      _colorB: {r: 1, g: 1, b: 1, a: 1}
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _width: 10
+      _offset: 0
+      _blockPaletteEntries: []
+--- !u!114 &495425072200423917
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4c5e75b1e2405cbbb1c06c2d6352c9, type: 3}
+  m_Name: FanlightColorClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorClip
+  _value:
+    _source:
+      _mode: 0
+      _slot1: {r: 1, g: 0, b: 0, a: 1}
+      _slot2: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+      _slot3: {r: 0, g: 1, b: 0, a: 1}
+      _slot4: {r: 0, g: 1, b: 1, a: 1}
+      _slot5: {r: 0, g: 0, b: 1, a: 1}
+      _slot6: {r: 1, g: 0, b: 1, a: 1}
+      _colorA: {r: 1, g: 1, b: 1, a: 1}
+      _colorB: {r: 1, g: 1, b: 1, a: 1}
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _width: 10
+      _offset: 0
+      _blockPaletteEntries: []
+--- !u!114 &825289468854891472
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6c215eb1c1a4fbbb91d5bf3c5cf6e8c, type: 3}
+  m_Name: Fanlight Intensity Track
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityTrack
+  m_Version: 3
+  m_AnimClip: {fileID: 0}
+  m_Locked: 0
+  m_Muted: 0
+  m_CustomPlayableFullTypename: 
+  m_Curves: {fileID: 0}
+  m_Parent: {fileID: 1860697256142460499}
+  m_Children: []
+  m_Clips:
+  - m_Version: 1
+    m_Start: 2.0166666666666666
+    m_ClipIn: 2.0166666666666666
+    m_Asset: {fileID: -1649941376347030949}
+    m_Duration: 5.466666666666667
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 1.9833333333333334
+    m_BlendOutDuration: 0.4833333333333334
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 7
+    m_ClipIn: 0
+    m_Asset: {fileID: -7968997880525492803}
+    m_Duration: 7.483333333333333
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.4833333333333334
+    m_BlendOutDuration: 0.5166666666666675
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 13.966666666666667
+    m_ClipIn: 0
+    m_Asset: {fileID: 3260189159204715324}
+    m_Duration: 7.483333333333333
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.5166666666666675
+    m_BlendOutDuration: 0.43333333333333357
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 21.016666666666666
+    m_ClipIn: 0
+    m_Asset: {fileID: 8800231124074153096}
+    m_Duration: 4.983333333333334
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.43333333333333357
+    m_BlendOutDuration: 1.966666666666665
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 27.966666666666665
+    m_ClipIn: 0
+    m_Asset: {fileID: 6631557510287011103}
+    m_Duration: 4.516666666666669
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.5500000000000007
+    m_BlendOutDuration: 0.4833333333333343
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 24.033333333333335
+    m_ClipIn: 0
+    m_Asset: {fileID: 6694634222744933085}
+    m_Duration: 4.483333333333331
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 1.966666666666665
+    m_BlendOutDuration: 0.5500000000000007
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 32
+    m_ClipIn: 0
+    m_Asset: {fileID: 8707341861807427419}
+    m_Duration: 4.516666666666666
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.4833333333333343
+    m_BlendOutDuration: 0.4833333333333343
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 36.03333333333333
+    m_ClipIn: 0
+    m_Asset: {fileID: 6731755062301908831}
+    m_Duration: 3.9666666666666686
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 1.9424142837524414
+    m_BlendInDuration: 0.4833333333333343
+    m_BlendOutDuration: -1
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: Infinity
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  - m_Version: 1
+    m_Start: 0
+    m_ClipIn: 0
+    m_Asset: {fileID: -6897385602954309025}
+    m_Duration: 4
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 825289468854891472}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: -1
+    m_BlendOutDuration: 1.9833333333333334
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightIntensityClip
+  m_Markers:
+    m_Objects: []
+  _trackPriority: 0
+  _fields: 5
+--- !u!114 &1650843450035000975
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c901cd6e5d7c4b08834493d8e41fdea9, type: 3}
+  m_Name: Fanlight Color Track
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorTrack
+  m_Version: 3
+  m_AnimClip: {fileID: 0}
+  m_Locked: 0
+  m_Muted: 0
+  m_CustomPlayableFullTypename: 
+  m_Curves: {fileID: 0}
+  m_Parent: {fileID: 1860697256142460499}
+  m_Children: []
+  m_Clips:
+  - m_Version: 1
+    m_Start: 21
+    m_ClipIn: 0
+    m_Asset: {fileID: 495425072200423917}
+    m_Duration: 7.516666666666666
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 1650843450035000975}
+    m_EaseInDuration: 0.6668300628662109
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.4166666666666643
+    m_BlendOutDuration: 0.5500000000000007
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightColorClip
+  - m_Version: 1
+    m_Start: 7
+    m_ClipIn: 0.8833333333333355
+    m_Asset: {fileID: 14535331287821186}
+    m_Duration: 7.483333333333337
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 1650843450035000975}
+    m_EaseInDuration: 0.9930222034454346
+    m_EaseOutDuration: 0
+    m_BlendInDuration: -1
+    m_BlendOutDuration: 0.516666666666671
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 7
+    m_DisplayName: FanlightColorClip
+  - m_Version: 1
+    m_Start: 13.966666666666667
+    m_ClipIn: 0
+    m_Asset: {fileID: 4536499181089230926}
+    m_Duration: 7.4499999999999975
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 1650843450035000975}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.516666666666671
+    m_BlendOutDuration: 0.4166666666666643
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightColorClip
+  - m_Version: 1
+    m_Start: 32
+    m_ClipIn: 0
+    m_Asset: {fileID: -6501825960437524280}
+    m_Duration: 8
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 1650843450035000975}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.4833333333333343
+    m_BlendOutDuration: -1
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: Infinity
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightColorClip
+  - m_Version: 1
+    m_Start: 27.966666666666665
+    m_ClipIn: 0
+    m_Asset: {fileID: -2785391973391604489}
+    m_Duration: 4.516666666666669
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 1650843450035000975}
+    m_EaseInDuration: 0.6668300628662109
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.5500000000000007
+    m_BlendOutDuration: 0.4833333333333343
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightColorClip
+  m_Markers:
+    m_Objects: []
+  _trackPriority: 0
+  _fields: 1
+--- !u!114 &1860697256142460499
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0fc6f5187a81dc47999eefade6f0935, type: 3}
+  m_Name: Penlight
+  m_EditorClassIdentifier: Unity.Timeline::UnityEngine.Timeline.GroupTrack
+  m_Version: 3
+  m_AnimClip: {fileID: 0}
+  m_Locked: 0
+  m_Muted: 0
+  m_CustomPlayableFullTypename: 
+  m_Curves: {fileID: 0}
+  m_Parent: {fileID: 11400000}
+  m_Children:
+  - {fileID: -4292847522375513712}
+  - {fileID: 5994550405078823366}
+  - {fileID: 825289468854891472}
+  - {fileID: 1650843450035000975}
+  m_Clips: []
+  m_Markers:
+    m_Objects: []
+--- !u!114 &3260189159204715324
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 6
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 0.5
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 90
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0
+--- !u!114 &3322189251185698068
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6a6f0a1b2c34890945566778899aabc, type: 3}
+  m_Name: FanlightMotionClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightMotionClip
+  _value:
+    _motionAsset: {fileID: 11400000, guid: a8f5e09af868e8a44903599ae612b3ae, type: 2}
+    _beatsPerCycle: 4
+    _phaseOffsetBeats: 0
+    _blockDelayXBeats: 0
+    _blockDelayYBeats: 0
+--- !u!114 &4180292292829109754
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6a6f0a1b2c34890945566778899aabc, type: 3}
+  m_Name: FanlightMotionClip
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightMotionClip
+  _value:
+    _motionAsset: {fileID: 11400000, guid: ab97a0ba0fb7c40408625aeadfac577f, type: 2}
+    _beatsPerCycle: 2
+    _phaseOffsetBeats: 0
+    _blockDelayXBeats: 0
+    _blockDelayYBeats: 0
+--- !u!114 &4536499181089230926
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4c5e75b1e2405cbbb1c06c2d6352c9, type: 3}
+  m_Name: FanlightColorClip(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightColorClip
+  _value:
+    _source:
+      _mode: 1
+      _slot1: {r: 1, g: 0, b: 0, a: 1}
+      _slot2: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+      _slot3: {r: 0, g: 1, b: 0, a: 1}
+      _slot4: {r: 0, g: 1, b: 1, a: 1}
+      _slot5: {r: 0, g: 0, b: 1, a: 1}
+      _slot6: {r: 1, g: 0, b: 1, a: 1}
+      _colorA: {r: 1, g: 0.29170325, b: 0, a: 1}
+      _colorB: {r: 1, g: 0, b: 0, a: 1}
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 0
+      _width: 10
+      _offset: 0
+      _blockPaletteEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _paletteSlot: 1
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _paletteSlot: 0
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _paletteSlot: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _paletteSlot: 0
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _paletteSlot: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _paletteSlot: 0
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _paletteSlot: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _paletteSlot: 0
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _paletteSlot: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _paletteSlot: 0
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _paletteSlot: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _paletteSlot: 0
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _paletteSlot: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _paletteSlot: 0
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _paletteSlot: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _paletteSlot: 0
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _paletteSlot: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _paletteSlot: 0
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _paletteSlot: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _paletteSlot: 0
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _paletteSlot: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _paletteSlot: 0
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _paletteSlot: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _paletteSlot: 0
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _paletteSlot: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _paletteSlot: 0
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _paletteSlot: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _paletteSlot: 0
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _paletteSlot: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _paletteSlot: 0
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _paletteSlot: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _paletteSlot: 0
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _paletteSlot: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _paletteSlot: 0
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _paletteSlot: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _paletteSlot: 0
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _paletteSlot: 0
+--- !u!114 &5994550405078823366
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07b7a0b1c2d349a0a566778899aabbcd, type: 3}
+  m_Name: Fanlight Motion Track
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightMotionTrack
+  m_Version: 3
+  m_AnimClip: {fileID: 0}
+  m_Locked: 0
+  m_Muted: 0
+  m_CustomPlayableFullTypename: 
+  m_Curves: {fileID: 0}
+  m_Parent: {fileID: 1860697256142460499}
+  m_Children: []
+  m_Clips:
+  - m_Version: 1
+    m_Start: 2.0166666666666666
+    m_ClipIn: 0
+    m_Asset: {fileID: 4180292292829109754}
+    m_Duration: 6.116666666666666
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 5994550405078823366}
+    m_EaseInDuration: 1.0557479858398438
+    m_EaseOutDuration: 0
+    m_BlendInDuration: -1
+    m_BlendOutDuration: 0.6499999999999995
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 2.0166666666666666
+    m_DisplayName: Default Motion Idle Asset
+  - m_Version: 1
+    m_Start: 7.483333333333333
+    m_ClipIn: 0
+    m_Asset: {fileID: 3322189251185698068}
+    m_Duration: 5
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 5994550405078823366}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.6499999999999995
+    m_BlendOutDuration: 0.4833333333333343
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightMotionClip
+  - m_Version: 1
+    m_Start: 12
+    m_ClipIn: 0
+    m_Asset: {fileID: -1155495914502201140}
+    m_Duration: 5
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 5994550405078823366}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.4833333333333343
+    m_BlendOutDuration: 0.966666666666665
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: 0
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightMotionClip
+  - m_Version: 1
+    m_Start: 16.033333333333335
+    m_ClipIn: 0
+    m_Asset: {fileID: 6128826841057065518}
+    m_Duration: 23.966666666666665
+    m_TimeScale: 1
+    m_ParentTrack: {fileID: 5994550405078823366}
+    m_EaseInDuration: 0
+    m_EaseOutDuration: 0
+    m_BlendInDuration: 0.966666666666665
+    m_BlendOutDuration: -1
+    m_MixInCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_MixOutCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_BlendInCurveMode: 0
+    m_BlendOutCurveMode: 0
+    m_ExposedParameterNames: []
+    m_AnimationCurves: {fileID: 0}
+    m_Recordable: 0
+    m_PostExtrapolationMode: 0
+    m_PreExtrapolationMode: 0
+    m_PostExtrapolationTime: Infinity
+    m_PreExtrapolationTime: 0
+    m_DisplayName: FanlightMotionClip
+  m_Markers:
+    m_Objects: []
+  _trackPriority: 0
+  _fields: 1
+--- !u!114 &6128826841057065518
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6a6f0a1b2c34890945566778899aabc, type: 3}
+  m_Name: FanlightMotionClip(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightMotionClip
+  _value:
+    _motionAsset: {fileID: 11400000, guid: ab97a0ba0fb7c40408625aeadfac577f, type: 2}
+    _beatsPerCycle: 2
+    _phaseOffsetBeats: 0
+    _blockDelayXBeats: 0
+    _blockDelayYBeats: 0
+--- !u!114 &6631557510287011103
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 3
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 1
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 45
+      _wavelength: 25
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0
+--- !u!114 &6694634222744933085
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 2
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 0.5
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 315
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0
+--- !u!114 &6731755062301908831
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)(Clone)(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 4
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 0.264
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 45
+      _wavelength: 25
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 4
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0
+--- !u!114 &8707341861807427419
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 5
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0.719
+      _releaseRatio: 0
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 45
+      _wavelength: 25
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 4
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0
+--- !u!114 &8800231124074153096
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea04c73997d4edc9ea64311f00aa769, type: 3}
+  m_Name: FanlightIntensityClip(Clone)(Clone)(Clone)
+  m_EditorClassIdentifier: PrismFanlight.Runtime::PrismFanlight.Timeline.FanlightIntensityClip
+  _value:
+    _baseIntensity: 20
+    _randomIntensity: 0
+    _mask:
+      _mode: 2
+      _beatsPerCycle: 2
+      _phaseOffsetBeats: 0
+      _minimumIntensityRatio: 0
+      _attackRatio: 0
+      _holdRatio: 0
+      _releaseRatio: 0.5
+      _origin: {x: 0, y: 0}
+      _localYawDegrees: 45
+      _wavelength: 10
+      _radialWaveDirection: 0
+      _angularWaveDirection: 0
+      _angularArmCount: 1
+      _blockPulseEntries:
+      - _stableBlockId: 8f973263c2b84c16ad550e7740a983ec
+        _group: 0
+      - _stableBlockId: 6c1450c5d57c4686beed17f84152d04f
+        _group: 1
+      - _stableBlockId: 1ba6fb311fff47f48f90f8ce44b34c3a
+        _group: 0
+      - _stableBlockId: 9846b234b02346b2bb47fa21741fd15d
+        _group: 1
+      - _stableBlockId: e743d1958fb04a1282f94affd23f8372
+        _group: 0
+      - _stableBlockId: c7763bab2d1a439692f9bed3443b180a
+        _group: 1
+      - _stableBlockId: 1a40cf85152247838430316070db8260
+        _group: 0
+      - _stableBlockId: f90e7518ce884533a0092d0d7b17b0ab
+        _group: 1
+      - _stableBlockId: 42ffb5a8a5434bc5b5cea08e2c097f4a
+        _group: 0
+      - _stableBlockId: 5450d4f0b47b4d3d86463ff876d1cf2b
+        _group: 1
+      - _stableBlockId: a31a6ac516894051837b284df026759d
+        _group: 0
+      - _stableBlockId: b0d97938f3254f6b91a9852e37a225d8
+        _group: 1
+      - _stableBlockId: b2a46da032ff4317805de54f334317e3
+        _group: 0
+      - _stableBlockId: 02b62ae5ce864c538d1fa1305a9d72e8
+        _group: 1
+      - _stableBlockId: 862630abcad044abbc4586295e9e9844
+        _group: 0
+      - _stableBlockId: f1ebb2a978b8491eb5dbe6375abb8c14
+        _group: 1
+      - _stableBlockId: 2a76a4a71a674c1399588f9e42a1936b
+        _group: 0
+      - _stableBlockId: 2a1b4784026c48fe83ba9f3af9327e34
+        _group: 1
+      - _stableBlockId: 94a2d28509104a71a4bc80a54d9ae5b9
+        _group: 0
+      - _stableBlockId: fe9cf61d6aab4236af851f28d74cb872
+        _group: 1
+      - _stableBlockId: 88b57dffd14643fea74b59f8b1aae4bb
+        _group: 0
+      - _stableBlockId: bbcb2506bccd40808c439c5bd1e254db
+        _group: 1
+      - _stableBlockId: 4d22e0bd99404f53919f19847f1e4f61
+        _group: 0
+      - _stableBlockId: 2abdbec4410c4476970efc9a6dcda01e
+        _group: 1
+      - _stableBlockId: b4f4bca3603243a3bbb9a8cf628c6885
+        _group: 0
+      - _stableBlockId: 4c6b45c277174afdb42cfc233e49dd05
+        _group: 1
+      - _stableBlockId: ec286709d222498ab128651014bd3b7b
+        _group: 0
+      - _stableBlockId: 510debc9b228496cbafdd2b99186a7a1
+        _group: 1
+      - _stableBlockId: 73bf6278f8914ea98b6827a1267a21b7
+        _group: 0
+      - _stableBlockId: 2d5a19f9ce8e488996ce9d4ab13d696b
+        _group: 1
+      - _stableBlockId: 866061342e1f4835a35b892741a6d397
+        _group: 0
+      - _stableBlockId: 35636bfb8f7e4181940f5535510a4589
+        _group: 1
+      - _stableBlockId: 313c217be9304e4f80547157ff4f9875
+        _group: 0
+      - _stableBlockId: 455b71971aae4dccbdd950a06a4dc989
+        _group: 1
+      - _stableBlockId: ca5dcc15f7084a46b5dfa07336284214
+        _group: 0
+      - _stableBlockId: a031db1a4594446f90fc55c71a4128ab
+        _group: 1
+      - _stableBlockId: 4fc31ced01004685bf36d8d6d8c19e75
+        _group: 0

@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "name": "FanlightMinis",
+    "maps": [
+        {
+            "name": "Fanlight",
+            "id": "a3db10a8-e402-4ca7-b369-9d86f6715248",
+            "actions": [
+                { "name": "Look 0", "type": "Button", "id": "80c78046-689e-41e7-af5d-c219667b4773", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Look 1", "type": "Button", "id": "bca6fb86-b100-4c00-965d-2da4483e69fa", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Look 2", "type": "Button", "id": "7981b653-28e1-4702-aaf1-bda6942c6901", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Look 3", "type": "Button", "id": "93a6ec1f-5987-441e-8921-78e73e2d55e4", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Toggle Blackout", "type": "Button", "id": "f88c657a-8ee9-424c-9c14-beab1824f07a", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Master Intensity", "type": "PassThrough", "id": "1db06592-fd44-4d76-be56-d1204307a46c", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Energy", "type": "PassThrough", "id": "14e124f5-544e-434a-a5aa-3f75f2c77942", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "", "id": "1f468522-a754-4cc9-b5b3-024cc5e416d8", "path": "<MidiDevice>/note036", "interactions": "", "processors": "", "groups": "", "action": "Look 0", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "ff88e75e-538f-4b68-86ee-683336d633f5", "path": "<MidiDevice>/note037", "interactions": "", "processors": "", "groups": "", "action": "Look 1", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "0620ff50-ed86-4d26-bf99-ac07abd3822b", "path": "<MidiDevice>/note038", "interactions": "", "processors": "", "groups": "", "action": "Look 2", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "79e5e1ee-8f66-4d8a-96cb-f37bb7de0633", "path": "<MidiDevice>/note039", "interactions": "", "processors": "", "groups": "", "action": "Look 3", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "5b0f3c2e-7a41-4d8e-9c6b-2e8a1f4d7c90", "path": "<MidiDevice>/note040", "interactions": "", "processors": "", "groups": "", "action": "Toggle Blackout", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "c2d9e4a1-3f6b-4e07-8a52-9d1c7b6e0f34", "path": "<MidiDevice>/control007", "interactions": "", "processors": "", "groups": "", "action": "Master Intensity", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "e8a7b6c5-1d2f-4a39-b0e4-6f5c3d2a1b98", "path": "<MidiDevice>/control001", "interactions": "", "processors": "", "groups": "", "action": "Energy", "isComposite": false, "isPartOfComposite": false }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

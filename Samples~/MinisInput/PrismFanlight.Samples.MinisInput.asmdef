@@ -1,0 +1,25 @@
+{
+    "name": "PrismFanlight.Samples.MinisInput",
+    "rootNamespace": "",
+    "references": [
+        "PrismFanlight.Runtime",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "PRISM_FANLIGHT_INPUT_SYSTEM"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "PRISM_FANLIGHT_INPUT_SYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}
