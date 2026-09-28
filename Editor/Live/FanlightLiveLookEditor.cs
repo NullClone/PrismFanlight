@@ -80,6 +80,7 @@ namespace PrismFanlight.Editor
         {
             var fields = serializedObject.FindProperty(valuePath + "Fields");
             var value = serializedObject.FindProperty(valuePath);
+            var dimmed = !fields.hasMultipleDifferentValues && fields.intValue == 0;
 
             section.DrawSection(() =>
             {
@@ -87,7 +88,7 @@ namespace PrismFanlight.Editor
                 EditorGUILayout.Space();
 
                 draw(value, fields.hasMultipleDifferentValues ? allFields : fields.intValue);
-            }, menu => AddClipboardItems(menu, kind, valuePath, allFields));
+            }, menu => AddClipboardItems(menu, kind, valuePath, allFields), dimmed);
         }
 
         private void AddClipboardItems(GenericMenu menu, FanlightTimelinePatchKind kind, string valuePath, int allFields)

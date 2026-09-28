@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEditor.Timeline;
@@ -9,9 +9,9 @@ namespace PrismFanlight.Editor
 {
     internal static class PrismFanlightSectionExtensions
     {
-        internal static void DrawSection(this PrismFanlightSection section, Action draw, Action<GenericMenu> addMenuItems = null)
+        internal static void DrawSection(this PrismFanlightSection section, Action draw, Action<GenericMenu> addMenuItems = null, bool dimmed = false)
         {
-            if (section.DrawHeader(addMenuItems))
+            if (section.DrawHeader(addMenuItems, dimmed))
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
@@ -58,15 +58,41 @@ namespace PrismFanlight.Editor
             this.title = title;
         }
 
-        internal bool DrawHeader(Action<GenericMenu> addMenuItems = null)
+        internal bool DrawHeader(Action<GenericMenu> addMenuItems = null, bool dimmed = false)
         {
             CoreEditorUtils.DrawSplitter();
 
-            expand = CoreEditorUtils.DrawHeaderFoldout(
-                title: title,
-                state: expand,
-                documentationURL: PrismFanlight.HelpUrl,
-                customMenuContextAction: addMenuItems);
+            if (dimmed)
+            {
+                expand = CoreEditorUtils.DrawHeaderFoldout(
+                    title: GUIContent.none,
+                    state: expand,
+                    documentationURL: PrismFanlight.HelpUrl,
+                    customMenuContextAction: addMenuItems);
+
+                var backgroundRect = GUILayoutUtility.GetLastRect();
+                if (backgroundRect.xMin != 0)
+                {
+                    backgroundRect.xMin = 1 + 15f * (EditorGUI.indentLevel + 1);
+                }
+
+                var labelRect = backgroundRect;
+                labelRect.xMin += 16f;
+                labelRect.xMax -= 20f;
+
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
+                }
+            }
+            else
+            {
+                expand = CoreEditorUtils.DrawHeaderFoldout(
+                    title: title,
+                    state: expand,
+                    documentationURL: PrismFanlight.HelpUrl,
+                    customMenuContextAction: addMenuItems);
+            }
 
             return expand;
         }
