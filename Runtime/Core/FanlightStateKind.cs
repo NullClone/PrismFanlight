@@ -1,6 +1,6 @@
-namespace PrismFanlight.Timeline
+namespace PrismFanlight.Core
 {
-    internal enum FanlightTimelinePatchKind
+    internal enum FanlightStateKind
     {
         Intent = 0,
         Motion = 1,

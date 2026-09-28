@@ -33,7 +33,7 @@ namespace PrismFanlight.Editor
                 ? mask.Intensity
                 : FanlightIntensityFields.All;
 
-            FanlightColorIntensityEditorUtility.DrawIntensityState(_value, ResolveLayout(), includedFields: includedFields);
+            FanlightIntensityGUI.DrawIntensityState(_value, ResolveLayout(), includedFields: includedFields);
 
             serializedObject.ApplyModifiedProperties();
         }

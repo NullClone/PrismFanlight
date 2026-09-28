@@ -13,7 +13,7 @@ namespace PrismFanlight.Timeline
         private FanlightIntentFields _fields = FanlightIntentFields.All;
 
 
-        internal override FanlightTimelinePatchKind PatchKind => FanlightTimelinePatchKind.Intent;
+        internal override FanlightStateKind StateKind => FanlightStateKind.Intent;
 
         internal override FanlightTimelineFieldMask FieldMask => FanlightTimelineFieldMask.From(_fields);
     }

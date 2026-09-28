@@ -1326,14 +1326,14 @@ namespace PrismFanlight.Editor
                 var entries = source?.FindPropertyRelative("_blockPaletteEntries");
                 if (entries == null) continue;
 
-                FanlightColorIntensityEditorUtility.SynchronizeBlockPaletteEntries(entries, _layout);
+                FanlightColorGUI.SynchronizeBlockPaletteEntries(entries, _layout);
 
                 var intensity = serializedFanlight.FindProperty("_intensity");
-                if (FanlightColorIntensityEditorUtility.IsBlockAlternatingPulse(intensity))
+                if (FanlightIntensityGUI.IsBlockAlternatingPulse(intensity))
                 {
                     var pulseEntries = intensity.FindPropertyRelative("_mask")
                         .FindPropertyRelative("_blockPulseEntries");
-                    FanlightColorIntensityEditorUtility.SynchronizeBlockPulseEntries(pulseEntries, _layout);
+                    FanlightIntensityGUI.SynchronizeBlockPulseEntries(pulseEntries, _layout);
                 }
 
                 serializedFanlight.ApplyModifiedPropertiesWithoutUndo();

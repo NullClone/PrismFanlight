@@ -30,7 +30,7 @@ namespace PrismFanlight.Editor
                 ? mask.Motion
                 : FanlightMotionFields.All;
 
-            FanlightStateEditorUtility.DrawMotion(_value, includedFields);
+            FanlightStateGUI.DrawMotion(_value, includedFields);
 
             serializedObject.ApplyModifiedProperties();
         }

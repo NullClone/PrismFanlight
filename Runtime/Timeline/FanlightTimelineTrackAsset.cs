@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -15,7 +16,7 @@ namespace PrismFanlight.Timeline
 
         // Properties
 
-        internal abstract FanlightTimelinePatchKind PatchKind { get; }
+        internal abstract FanlightStateKind StateKind { get; }
 
         internal abstract FanlightTimelineFieldMask FieldMask { get; }
 
@@ -56,7 +57,7 @@ namespace PrismFanlight.Timeline
             }
 
             mixer.GetBehaviour().Configure(
-                PatchKind,
+                StateKind,
                 FieldMask,
                 _trackPriority,
                 GetTrackOrder(),

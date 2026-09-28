@@ -1,7 +1,6 @@
 using System;
 using PrismFanlight.Core;
 using PrismFanlight.Live;
-using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEngine;
 
@@ -40,32 +39,32 @@ namespace PrismFanlight.Editor
             EditorGUILayout.PropertyField(_quantize);
             EditorGUILayout.Space();
 
-            DrawSection(_motionSection, FanlightTimelinePatchKind.Motion, "_motion", (int)FanlightMotionFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawMotion(val, (FanlightMotionFields)fields));
+            DrawSection(_motionSection, FanlightStateKind.Motion, "_motion", (int)FanlightMotionFields.All,
+                (val, fields) => FanlightStateGUI.DrawMotion(val, (FanlightMotionFields)fields));
 
-            DrawSection(_intentSection, FanlightTimelinePatchKind.Intent, "_intent", (int)FanlightIntentFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawIntent(val, (FanlightIntentFields)fields));
+            DrawSection(_intentSection, FanlightStateKind.Intent, "_intent", (int)FanlightIntentFields.All,
+                (val, fields) => FanlightStateGUI.DrawIntent(val, (FanlightIntentFields)fields));
 
-            DrawSection(_colorSection, FanlightTimelinePatchKind.Color, "_color", (int)FanlightColorFields.All,
+            DrawSection(_colorSection, FanlightStateKind.Color, "_color", (int)FanlightColorFields.All,
                 (val, fields) => DrawColor(val, (FanlightColorFields)fields));
 
-            DrawSection(_intensitySection, FanlightTimelinePatchKind.Intensity, "_intensity", (int)FanlightIntensityFields.All,
-                (val, fields) => FanlightColorIntensityEditorUtility.DrawIntensityState(val, includedFields: (FanlightIntensityFields)fields));
+            DrawSection(_intensitySection, FanlightStateKind.Intensity, "_intensity", (int)FanlightIntensityFields.All,
+                (val, fields) => FanlightIntensityGUI.DrawIntensityState(val, includedFields: (FanlightIntensityFields)fields));
 
-            DrawSection(_audienceSection, FanlightTimelinePatchKind.AudienceBody, "_audienceBody", (int)FanlightAudienceBodyFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawAudienceBody(val, (FanlightAudienceBodyFields)fields));
+            DrawSection(_audienceSection, FanlightStateKind.AudienceBody, "_audienceBody", (int)FanlightAudienceBodyFields.All,
+                (val, fields) => FanlightStateGUI.DrawAudienceBody(val, (FanlightAudienceBodyFields)fields));
 
-            DrawSection(_directionSection, FanlightTimelinePatchKind.Direction, "_direction", (int)FanlightDirectionFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawDirection(val, (FanlightDirectionFields)fields));
+            DrawSection(_directionSection, FanlightStateKind.Direction, "_direction", (int)FanlightDirectionFields.All,
+                (val, fields) => FanlightStateGUI.DrawDirection(val, (FanlightDirectionFields)fields));
 
-            DrawSection(_variationSection, FanlightTimelinePatchKind.Variation, "_variation", (int)FanlightVariationFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawVariation(val, (FanlightVariationFields)fields));
+            DrawSection(_variationSection, FanlightStateKind.Variation, "_variation", (int)FanlightVariationFields.All,
+                (val, fields) => FanlightStateGUI.DrawVariation(val, (FanlightVariationFields)fields));
 
-            DrawSection(_noiseSection, FanlightTimelinePatchKind.Noise, "_noise", (int)FanlightNoiseFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawNoise(val, (FanlightNoiseFields)fields));
+            DrawSection(_noiseSection, FanlightStateKind.Noise, "_noise", (int)FanlightNoiseFields.All,
+                (val, fields) => FanlightStateGUI.DrawNoise(val, (FanlightNoiseFields)fields));
 
-            DrawSection(_restSection, FanlightTimelinePatchKind.Rest, "_rest", (int)FanlightRestFields.All,
-                (val, fields) => FanlightStateEditorUtility.DrawRest(val, (FanlightRestFields)fields));
+            DrawSection(_restSection, FanlightStateKind.Rest, "_rest", (int)FanlightRestFields.All,
+                (val, fields) => FanlightStateGUI.DrawRest(val, (FanlightRestFields)fields));
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -73,7 +72,7 @@ namespace PrismFanlight.Editor
 
         private void DrawSection(
             PrismFanlightSection section,
-            FanlightTimelinePatchKind kind,
+            FanlightStateKind kind,
             string valuePath,
             int allFields,
             Action<SerializedProperty, int> draw)
@@ -91,7 +90,7 @@ namespace PrismFanlight.Editor
             }, menu => AddClipboardItems(menu, kind, valuePath, allFields), dimmed);
         }
 
-        private void AddClipboardItems(GenericMenu menu, FanlightTimelinePatchKind kind, string valuePath, int allFields)
+        private void AddClipboardItems(GenericMenu menu, FanlightStateKind kind, string valuePath, int allFields)
         {
             var copy = new GUIContent("Copy");
             var paste = new GUIContent("Paste");
@@ -126,7 +125,7 @@ namespace PrismFanlight.Editor
         {
             using (new EditorGUI.DisabledScope((fields & FanlightColorFields.Source) == 0))
             {
-                FanlightColorIntensityEditorUtility.DrawColorState(value);
+                FanlightColorGUI.DrawColorState(value);
             }
         }
     }

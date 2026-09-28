@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
 using Object = UnityEngine.Object;
@@ -10,10 +11,10 @@ namespace PrismFanlight.Editor
         internal static bool TryResolve(
             Object[] targets,
             out FanlightTimelineFieldMask mask,
-            out FanlightTimelinePatchKind patchKind)
+            out FanlightStateKind stateKind)
         {
             mask = default;
-            patchKind = default;
+            stateKind = default;
 
             if (targets.Length != 1 || TimelineEditor.inspectedAsset == null) return false;
 
@@ -28,7 +29,7 @@ namespace PrismFanlight.Editor
                     if (clip.asset != target) continue;
 
                     mask = fanlightTrack.FieldMask;
-                    patchKind = fanlightTrack.PatchKind;
+                    stateKind = fanlightTrack.StateKind;
                     return true;
                 }
             }
@@ -36,21 +37,21 @@ namespace PrismFanlight.Editor
             return false;
         }
 
-        internal static bool IsFieldIncluded(FanlightTimelineFieldMask mask, FanlightTimelinePatchKind patchKind, string propertyName)
+        internal static bool IsFieldIncluded(FanlightTimelineFieldMask mask, FanlightStateKind stateKind, string propertyName)
         {
             var fieldName = ToFieldName(propertyName);
 
-            return patchKind switch
+            return stateKind switch
             {
-                FanlightTimelinePatchKind.Intent => HasFlag(mask.Intent, fieldName),
-                FanlightTimelinePatchKind.Motion => HasFlag(mask.Motion, fieldName),
-                FanlightTimelinePatchKind.Variation => HasFlag(mask.Variation, fieldName),
-                FanlightTimelinePatchKind.Noise => HasFlag(mask.Noise, fieldName),
-                FanlightTimelinePatchKind.Rest => HasFlag(mask.Rest, fieldName),
-                FanlightTimelinePatchKind.AudienceBody => HasFlag(mask.AudienceBody, fieldName),
-                FanlightTimelinePatchKind.Direction => HasFlag(mask.Direction, fieldName),
-                FanlightTimelinePatchKind.Color => HasFlag(mask.Color, fieldName),
-                FanlightTimelinePatchKind.Intensity => HasFlag(mask.Intensity, fieldName),
+                FanlightStateKind.Intent => HasFlag(mask.Intent, fieldName),
+                FanlightStateKind.Motion => HasFlag(mask.Motion, fieldName),
+                FanlightStateKind.Variation => HasFlag(mask.Variation, fieldName),
+                FanlightStateKind.Noise => HasFlag(mask.Noise, fieldName),
+                FanlightStateKind.Rest => HasFlag(mask.Rest, fieldName),
+                FanlightStateKind.AudienceBody => HasFlag(mask.AudienceBody, fieldName),
+                FanlightStateKind.Direction => HasFlag(mask.Direction, fieldName),
+                FanlightStateKind.Color => HasFlag(mask.Color, fieldName),
+                FanlightStateKind.Intensity => HasFlag(mask.Intensity, fieldName),
                 _ => true
             };
         }

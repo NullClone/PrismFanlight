@@ -11,7 +11,7 @@ namespace PrismFanlight.Timeline
         // Fields
 
         private PrismFanlight _lastTarget;
-        private FanlightTimelinePatchKind _patchKind;
+        private FanlightStateKind _stateKind;
         private FanlightTimelineFieldMask _fieldMask;
         private int _trackPriority;
         private int _trackOrder;
@@ -77,7 +77,7 @@ namespace PrismFanlight.Timeline
         }
 
         internal void Configure(
-            FanlightTimelinePatchKind patchKind,
+            FanlightStateKind stateKind,
             FanlightTimelineFieldMask fieldMask,
             int trackPriority,
             int trackOrder,
@@ -85,7 +85,7 @@ namespace PrismFanlight.Timeline
             PlayableDirector director,
             TrackAsset track)
         {
-            _patchKind = patchKind;
+            _stateKind = stateKind;
             _fieldMask = fieldMask;
             _trackPriority = trackPriority;
             _trackOrder = trackOrder;
@@ -99,7 +99,7 @@ namespace PrismFanlight.Timeline
             target.CancelTimelineRelease(this);
             AcquireContext(playable);
 
-            if (!FanlightTimelinePatchMixer.HasFields(_patchKind, _fieldMask))
+            if (!FanlightTimelinePatchMixer.HasFields(_stateKind, _fieldMask))
             {
                 target.ClearScheduledContribution(this);
                 return;
@@ -161,7 +161,7 @@ namespace PrismFanlight.Timeline
                 }
 
                 if (!FanlightTimelinePatchMixer.TryBlend(
-                        _patchKind,
+                        _stateKind,
                         _fieldMask,
                         _samples.AsSpan(0, sampleCount),
                         out var patch))

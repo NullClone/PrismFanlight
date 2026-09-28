@@ -100,11 +100,11 @@ namespace PrismFanlight.Editor
 
             var colorState = _serializedFanlight.FindProperty("_color");
 
-            if (FanlightColorIntensityEditorUtility.IsBlockPalette(colorState))
+            if (FanlightColorGUI.IsBlockPalette(colorState))
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Block Palette", EditorStyles.boldLabel);
-                FanlightColorIntensityEditorUtility.DrawSelectedBlockColor(
+                FanlightColorGUI.DrawSelectedBlockColor(
                     colorState,
                     layoutAsset,
                     _selectedBlocks,
@@ -113,11 +113,11 @@ namespace PrismFanlight.Editor
 
             var intensityState = _serializedFanlight.FindProperty("_intensity");
 
-            if (FanlightColorIntensityEditorUtility.IsBlockAlternatingPulse(intensityState))
+            if (FanlightIntensityGUI.IsBlockAlternatingPulse(intensityState))
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Block Alternating Pulse", EditorStyles.boldLabel);
-                FanlightColorIntensityEditorUtility.DrawSelectedBlockPulseGroup(
+                FanlightIntensityGUI.DrawSelectedBlockPulseGroup(
                     intensityState,
                     layoutAsset,
                     blockIndex);

@@ -30,7 +30,7 @@ namespace PrismFanlight.Editor
                 ? mask.Direction
                 : FanlightDirectionFields.All;
 
-            FanlightStateEditorUtility.DrawDirection(_value, includedFields);
+            FanlightStateGUI.DrawDirection(_value, includedFields);
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -13,7 +13,7 @@ namespace PrismFanlight.Timeline
         private FanlightNoiseFields _fields = FanlightNoiseFields.All;
 
 
-        internal override FanlightTimelinePatchKind PatchKind => FanlightTimelinePatchKind.Noise;
+        internal override FanlightStateKind StateKind => FanlightStateKind.Noise;
 
         internal override FanlightTimelineFieldMask FieldMask => FanlightTimelineFieldMask.From(_fields);
     }

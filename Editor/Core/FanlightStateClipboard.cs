@@ -1,3 +1,4 @@
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 using UnityEngine;
@@ -8,15 +9,15 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        private static FanlightTimelinePatchKind? _kind;
+        private static FanlightStateKind? _kind;
         private static object _value;
 
 
         // Methods
 
-        internal static bool CanPaste(FanlightTimelinePatchKind kind) => _kind == kind && _value != null;
+        internal static bool CanPaste(FanlightStateKind kind) => _kind == kind && _value != null;
 
-        internal static bool Copy(Object[] targets, FanlightTimelinePatchKind kind, string propertyPath)
+        internal static bool Copy(Object[] targets, FanlightStateKind kind, string propertyPath)
         {
             if (targets.Length != 1 || targets[0] == null) return false;
 
@@ -25,7 +26,7 @@ namespace PrismFanlight.Editor
             var property = source.FindProperty(propertyPath);
             if (property == null) return false;
 
-            _value = kind == FanlightTimelinePatchKind.Noise
+            _value = kind == FanlightStateKind.Noise
                 ? new NoiseValues(
                     property.FindPropertyRelative("_phaseAmount").floatValue,
                     property.FindPropertyRelative("_positionAmount").floatValue,
@@ -35,7 +36,7 @@ namespace PrismFanlight.Editor
             return true;
         }
 
-        internal static bool Paste(Object[] targets, FanlightTimelinePatchKind kind, string propertyPath)
+        internal static bool Paste(Object[] targets, FanlightStateKind kind, string propertyPath)
         {
             if (!CanPaste(kind) || targets.Length == 0) return false;
 
@@ -49,7 +50,7 @@ namespace PrismFanlight.Editor
             var property = destination.FindProperty(propertyPath);
             if (property == null) return false;
 
-            if (kind == FanlightTimelinePatchKind.Noise)
+            if (kind == FanlightStateKind.Noise)
             {
                 var values = (NoiseValues)_value;
                 property.FindPropertyRelative("_phaseAmount").floatValue = values.PhaseAmount;
@@ -64,7 +65,7 @@ namespace PrismFanlight.Editor
             return destination.ApplyModifiedProperties();
         }
 
-        internal static bool TryGetClipKind(Object[] targets, out FanlightTimelinePatchKind kind)
+        internal static bool TryGetClipKind(Object[] targets, out FanlightStateKind kind)
         {
             kind = default;
             if (targets == null || targets.Length == 0 || targets[0] == null) return false;
@@ -75,15 +76,15 @@ namespace PrismFanlight.Editor
                 if (targets[i] == null || targets[i].GetType() != type) return false;
             }
 
-            if (type == typeof(FanlightIntentClip)) kind = FanlightTimelinePatchKind.Intent;
-            else if (type == typeof(FanlightMotionClip)) kind = FanlightTimelinePatchKind.Motion;
-            else if (type == typeof(FanlightVariationClip)) kind = FanlightTimelinePatchKind.Variation;
-            else if (type == typeof(FanlightNoiseClip)) kind = FanlightTimelinePatchKind.Noise;
-            else if (type == typeof(FanlightRestClip)) kind = FanlightTimelinePatchKind.Rest;
-            else if (type == typeof(FanlightAudienceBodyClip)) kind = FanlightTimelinePatchKind.AudienceBody;
-            else if (type == typeof(FanlightDirectionClip)) kind = FanlightTimelinePatchKind.Direction;
-            else if (type == typeof(FanlightColorClip)) kind = FanlightTimelinePatchKind.Color;
-            else if (type == typeof(FanlightIntensityClip)) kind = FanlightTimelinePatchKind.Intensity;
+            if (type == typeof(FanlightIntentClip)) kind = FanlightStateKind.Intent;
+            else if (type == typeof(FanlightMotionClip)) kind = FanlightStateKind.Motion;
+            else if (type == typeof(FanlightVariationClip)) kind = FanlightStateKind.Variation;
+            else if (type == typeof(FanlightNoiseClip)) kind = FanlightStateKind.Noise;
+            else if (type == typeof(FanlightRestClip)) kind = FanlightStateKind.Rest;
+            else if (type == typeof(FanlightAudienceBodyClip)) kind = FanlightStateKind.AudienceBody;
+            else if (type == typeof(FanlightDirectionClip)) kind = FanlightStateKind.Direction;
+            else if (type == typeof(FanlightColorClip)) kind = FanlightStateKind.Color;
+            else if (type == typeof(FanlightIntensityClip)) kind = FanlightStateKind.Intensity;
             else return false;
             return true;
         }

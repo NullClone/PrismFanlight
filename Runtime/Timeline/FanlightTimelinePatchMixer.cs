@@ -6,40 +6,40 @@ namespace PrismFanlight.Timeline
 {
     internal static class FanlightTimelinePatchMixer
     {
-        internal static bool HasFields(FanlightTimelinePatchKind kind, FanlightTimelineFieldMask fields)
+        internal static bool HasFields(FanlightStateKind kind, FanlightTimelineFieldMask fields)
         {
             return kind switch
             {
-                FanlightTimelinePatchKind.Intent => fields.Intent != FanlightIntentFields.None,
-                FanlightTimelinePatchKind.Motion => fields.Motion != FanlightMotionFields.None,
-                FanlightTimelinePatchKind.Variation => fields.Variation != FanlightVariationFields.None,
-                FanlightTimelinePatchKind.Noise => fields.Noise != FanlightNoiseFields.None,
-                FanlightTimelinePatchKind.Rest => fields.Rest != FanlightRestFields.None,
-                FanlightTimelinePatchKind.AudienceBody => fields.AudienceBody != FanlightAudienceBodyFields.None,
-                FanlightTimelinePatchKind.Direction => fields.Direction != FanlightDirectionFields.None,
-                FanlightTimelinePatchKind.Color => fields.Color != FanlightColorFields.None,
-                FanlightTimelinePatchKind.Intensity => fields.Intensity != FanlightIntensityFields.None,
+                FanlightStateKind.Intent => fields.Intent != FanlightIntentFields.None,
+                FanlightStateKind.Motion => fields.Motion != FanlightMotionFields.None,
+                FanlightStateKind.Variation => fields.Variation != FanlightVariationFields.None,
+                FanlightStateKind.Noise => fields.Noise != FanlightNoiseFields.None,
+                FanlightStateKind.Rest => fields.Rest != FanlightRestFields.None,
+                FanlightStateKind.AudienceBody => fields.AudienceBody != FanlightAudienceBodyFields.None,
+                FanlightStateKind.Direction => fields.Direction != FanlightDirectionFields.None,
+                FanlightStateKind.Color => fields.Color != FanlightColorFields.None,
+                FanlightStateKind.Intensity => fields.Intensity != FanlightIntensityFields.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
         }
 
         internal static bool TryBlend(
-            FanlightTimelinePatchKind kind,
+            FanlightStateKind kind,
             FanlightTimelineFieldMask fieldMask,
             ReadOnlySpan<FanlightTimelineClipSample> samples,
             out FanlightShowPatch patch)
         {
             return kind switch
             {
-                FanlightTimelinePatchKind.Intent => TryBlendIntent(fieldMask.Intent, samples, out patch),
-                FanlightTimelinePatchKind.Motion => TryBlendMotion(fieldMask.Motion, samples, out patch),
-                FanlightTimelinePatchKind.Variation => TryBlendVariation(fieldMask.Variation, samples, out patch),
-                FanlightTimelinePatchKind.Noise => TryBlendNoise(fieldMask.Noise, samples, out patch),
-                FanlightTimelinePatchKind.Rest => TryBlendRest(fieldMask.Rest, samples, out patch),
-                FanlightTimelinePatchKind.AudienceBody => TryBlendAudienceBody(fieldMask.AudienceBody, samples, out patch),
-                FanlightTimelinePatchKind.Direction => TryBlendDirection(fieldMask.Direction, samples, out patch),
-                FanlightTimelinePatchKind.Color => TryBlendColor(fieldMask.Color, samples, out patch),
-                FanlightTimelinePatchKind.Intensity => TryBlendIntensity(fieldMask.Intensity, samples, out patch),
+                FanlightStateKind.Intent => TryBlendIntent(fieldMask.Intent, samples, out patch),
+                FanlightStateKind.Motion => TryBlendMotion(fieldMask.Motion, samples, out patch),
+                FanlightStateKind.Variation => TryBlendVariation(fieldMask.Variation, samples, out patch),
+                FanlightStateKind.Noise => TryBlendNoise(fieldMask.Noise, samples, out patch),
+                FanlightStateKind.Rest => TryBlendRest(fieldMask.Rest, samples, out patch),
+                FanlightStateKind.AudienceBody => TryBlendAudienceBody(fieldMask.AudienceBody, samples, out patch),
+                FanlightStateKind.Direction => TryBlendDirection(fieldMask.Direction, samples, out patch),
+                FanlightStateKind.Color => TryBlendColor(fieldMask.Color, samples, out patch),
+                FanlightStateKind.Intensity => TryBlendIntensity(fieldMask.Intensity, samples, out patch),
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
         }

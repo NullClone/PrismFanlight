@@ -1,3 +1,4 @@
+using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor;
 
@@ -21,7 +22,7 @@ namespace PrismFanlight.Editor
 
             serializedObject.Update();
 
-            var hasMask = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out var patchKind);
+            var hasMask = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out var stateKind);
 
             var property = serializedObject.GetIterator();
             var enterChildren = true;
@@ -34,7 +35,7 @@ namespace PrismFanlight.Editor
 
                 if (property.propertyPath == ValuePropertyName)
                 {
-                    DrawChildren(property, hasMask, mask, patchKind);
+                    DrawChildren(property, hasMask, mask, stateKind);
                     continue;
                 }
 
@@ -48,7 +49,7 @@ namespace PrismFanlight.Editor
             SerializedProperty property,
             bool hasMask,
             FanlightTimelineFieldMask mask,
-            FanlightTimelinePatchKind patchKind)
+            FanlightStateKind stateKind)
         {
             var child = property.Copy();
             var end = child.GetEndProperty();
@@ -58,7 +59,7 @@ namespace PrismFanlight.Editor
             {
                 enterChildren = false;
 
-                var included = !hasMask || FanlightTimelineFieldMaskResolver.IsFieldIncluded(mask, patchKind, child.name);
+                var included = !hasMask || FanlightTimelineFieldMaskResolver.IsFieldIncluded(mask, stateKind, child.name);
 
                 using (new EditorGUI.DisabledScope(!included))
                 {

@@ -30,7 +30,7 @@ namespace PrismFanlight.Editor
                 ? mask.Noise
                 : FanlightNoiseFields.All;
 
-            FanlightStateEditorUtility.DrawNoise(_value, includedFields);
+            FanlightStateGUI.DrawNoise(_value, includedFields);
 
             serializedObject.ApplyModifiedProperties();
         }

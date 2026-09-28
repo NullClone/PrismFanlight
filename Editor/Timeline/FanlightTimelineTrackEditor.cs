@@ -100,7 +100,7 @@ namespace PrismFanlight.Editor
 
         private static void CollectStructuralErrors(FanlightTimelineTrackAsset track, List<string> errors)
         {
-            if (!FanlightTimelinePatchMixer.HasFields(track.PatchKind, track.FieldMask))
+            if (!FanlightTimelinePatchMixer.HasFields(track.StateKind, track.FieldMask))
             {
                 errors.Add("Field Mask is None. Select at least one field on this track.");
             }
@@ -425,7 +425,7 @@ namespace PrismFanlight.Editor
                     if (clips[j].asset is not FanlightTimelineClipAsset rightAsset) continue;
 
                     if (!TryGetDiscreteConflict(
-                            track.PatchKind,
+                            track.StateKind,
                             track.FieldMask,
                             leftAsset.Value,
                             rightAsset.Value,
@@ -442,7 +442,7 @@ namespace PrismFanlight.Editor
         }
 
         private static bool TryGetDiscreteConflict(
-            FanlightTimelinePatchKind kind,
+            FanlightStateKind kind,
             FanlightTimelineFieldMask fieldMask,
             FanlightTimelineClipValue left,
             FanlightTimelineClipValue right,
@@ -450,7 +450,7 @@ namespace PrismFanlight.Editor
         {
             fieldName = string.Empty;
 
-            if (kind == FanlightTimelinePatchKind.Direction
+            if (kind == FanlightStateKind.Direction
                 && (fieldMask.Direction & FanlightDirectionFields.Mode) != 0
                 && left.Direction.Mode != right.Direction.Mode)
             {

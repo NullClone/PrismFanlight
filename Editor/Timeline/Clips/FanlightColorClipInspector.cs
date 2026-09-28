@@ -30,7 +30,7 @@ namespace PrismFanlight.Editor
 
             using (new EditorGUI.DisabledScope(!included))
             {
-                FanlightColorIntensityEditorUtility.DrawColorState(_value);
+                FanlightColorGUI.DrawColorState(_value);
             }
 
             serializedObject.ApplyModifiedProperties();

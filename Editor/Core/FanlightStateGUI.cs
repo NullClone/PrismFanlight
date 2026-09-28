@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
-    internal static class FanlightStateEditorUtility
+    internal static class FanlightStateGUI
     {
         internal static void DrawIntent(
             SerializedProperty state,
@@ -40,7 +40,10 @@ namespace PrismFanlight.Editor
 
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(motionAsset);
-                    if (EditorGUI.EndChangeCheck() && previousAsset == null && motionAsset.objectReferenceValue is FanlightMotionAsset asset)
+                    if (EditorGUI.EndChangeCheck()
+                        && !motionAsset.serializedObject.isEditingMultipleObjects
+                        && previousAsset == null
+                        && motionAsset.objectReferenceValue is FanlightMotionAsset asset)
                     {
                         beatsPerCycle.floatValue = FanlightMotionCycleDefaults.Suggest(asset);
                     }
@@ -138,6 +141,26 @@ namespace PrismFanlight.Editor
                     EditorGUILayout.PropertyField(swingTarget, new GUIContent("Target"));
                 }
             }
+        }
+
+
+        internal static void DrawLocalYaw(SerializedProperty property)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(property, new GUIContent("Angle"));
+            var changed = EditorGUI.EndChangeCheck();
+            if (!float.IsFinite(property.floatValue)
+                || (!changed && property.hasMultipleDifferentValues))
+            {
+                return;
+            }
+
+            property.floatValue = Mathf.Repeat(property.floatValue, 360f);
+        }
+
+        internal static bool IsFinite(Vector2 value)
+        {
+            return float.IsFinite(value.x) && float.IsFinite(value.y);
         }
 
 

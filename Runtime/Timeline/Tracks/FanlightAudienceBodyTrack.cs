@@ -13,7 +13,7 @@ namespace PrismFanlight.Timeline
         private FanlightAudienceBodyFields _fields = FanlightAudienceBodyFields.All;
 
 
-        internal override FanlightTimelinePatchKind PatchKind => FanlightTimelinePatchKind.AudienceBody;
+        internal override FanlightStateKind StateKind => FanlightStateKind.AudienceBody;
 
         internal override FanlightTimelineFieldMask FieldMask => FanlightTimelineFieldMask.From(_fields);
     }

@@ -19,7 +19,7 @@ namespace PrismFanlight.Timeline
 
         // Properties
 
-        internal override FanlightTimelinePatchKind PatchKind => FanlightTimelinePatchKind.Motion;
+        internal override FanlightStateKind StateKind => FanlightStateKind.Motion;
 
         internal override FanlightTimelineFieldMask FieldMask => FanlightTimelineFieldMask.From(_fields);
 

@@ -44,6 +44,8 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
+        private const float DimmedAlpha = 0.5f;
+
         protected readonly GUIContent title;
 
         protected bool expand;
@@ -62,36 +64,24 @@ namespace PrismFanlight.Editor
         {
             CoreEditorUtils.DrawSplitter();
 
+            var color = GUI.color;
+
             if (dimmed)
             {
-                expand = CoreEditorUtils.DrawHeaderFoldout(
-                    title: GUIContent.none,
-                    state: expand,
-                    documentationURL: PrismFanlight.HelpUrl,
-                    customMenuContextAction: addMenuItems);
-
-                var backgroundRect = GUILayoutUtility.GetLastRect();
-                if (backgroundRect.xMin != 0)
-                {
-                    backgroundRect.xMin = 1 + 15f * (EditorGUI.indentLevel + 1);
-                }
-
-                var labelRect = backgroundRect;
-                labelRect.xMin += 16f;
-                labelRect.xMax -= 20f;
-
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUI.LabelField(labelRect, title, EditorStyles.boldLabel);
-                }
+                GUI.color = new Color(color.r, color.g, color.b, color.a * DimmedAlpha);
             }
-            else
+
+            try
             {
                 expand = CoreEditorUtils.DrawHeaderFoldout(
                     title: title,
                     state: expand,
                     documentationURL: PrismFanlight.HelpUrl,
                     customMenuContextAction: addMenuItems);
+            }
+            finally
+            {
+                GUI.color = color;
             }
 
             return expand;

@@ -19,7 +19,7 @@ namespace PrismFanlight.Timeline
 
         // Properties
 
-        internal override FanlightTimelinePatchKind PatchKind => FanlightTimelinePatchKind.Color;
+        internal override FanlightStateKind StateKind => FanlightStateKind.Color;
 
         internal override FanlightTimelineFieldMask FieldMask => FanlightTimelineFieldMask.From(_fields);
 
