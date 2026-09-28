@@ -334,6 +334,11 @@ namespace PrismFanlight.Editor
             {
                 EditorGUILayout.HelpBox($"Sequence Field Conflict: {_instance.SequenceFault}", MessageType.Error);
             }
+
+            if (_instance.IsHoldingLastValidSample)
+            {
+                EditorGUILayout.HelpBox("Holding the last valid state because of a fault.", MessageType.Warning);
+            }
         }
 
         private void DrawNoiseSection()

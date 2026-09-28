@@ -40,6 +40,8 @@ namespace PrismFanlight.Live
 
         internal float OutputIntensityScale => Blackout ? 0f : MasterIntensity;
 
+        public FanlightLiveStatus Status { get; private set; }
+
 
         // Methods
 
@@ -55,6 +57,7 @@ namespace PrismFanlight.Live
         {
             _queue?.Clear();
             _pendingParameters = 0;
+            Status = default;
 
             if (_fanlight != null) _fanlight.UnregisterLiveControl(this);
 
@@ -235,6 +238,11 @@ namespace PrismFanlight.Live
         internal void ReportFault(string source, string fault)
         {
             Fault = $"{source}: {fault}";
+        }
+
+        internal void ReportStatus(in FanlightLiveStatus status)
+        {
+            Status = status;
         }
 
 

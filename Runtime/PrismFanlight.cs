@@ -114,6 +114,10 @@ namespace PrismFanlight
         private string _baseStateFault = string.Empty;
         private FanlightRuntimeLayout _assetRuntimeLayout;
         private FanlightLiveControl _liveControl;
+        private FanlightShowSample _lastValidSample;
+        private bool _hasLastValidSample;
+        private bool _isHoldingLastValidSample;
+        private FanlightStatusMonitor _statusMonitor;
 
 
 #if UNITY_EDITOR
@@ -130,6 +134,8 @@ namespace PrismFanlight
 
         private FanlightGpuUpdateTiming AnimationUpdate => _updateMode.Validated();
 
+        private FanlightEvaluationOptions EvaluationOptions => new(AnimationUpdate.Mode == FanlightGpuUpdateMode.FixedRate ? AnimationUpdate.TargetFrameRate : 0d, 1e-6d);
+
         internal bool IsReady => _renderer is { IsReady: true };
 
         internal FanlightRendererFault RendererFault => _renderer?.Fault ?? FanlightRendererFault.MissingResource;
@@ -137,6 +143,8 @@ namespace PrismFanlight
         internal FanlightShowTimeFault TimeFault => _timeFault;
 
         internal string SequenceFault { get; private set; } = string.Empty;
+
+        internal bool IsHoldingLastValidSample => _isHoldingLastValidSample;
 
         internal FanlightShowState BaseState => new(
             _intent,
@@ -179,12 +187,18 @@ namespace PrismFanlight
 
         private void LateUpdate()
         {
+            UpdateFrame();
+            PublishStatus();
+        }
+
+        private void UpdateFrame()
+        {
+            _isHoldingLastValidSample = false;
+
             if (!enabled || !SystemInfo.supportsComputeShaders || _timeManager == null)
             {
-                ClearScheduledTempoCandidates();
-                ClearScheduledContributions();
-                ReleaseScheduledTimelineResources();
-                ClearHeldTimelineState();
+                DiscardScheduledTimeline();
+                ClearLastValidSample();
                 Dispose();
 
                 return;
@@ -192,19 +206,10 @@ namespace PrismFanlight
 
             EnsureRuntimeState();
 
-            if (!_baseStateValid)
-            {
-                StopForSequenceFault(_baseStateFault);
-                return;
-            }
-
             if (!_timeManager.TrySampleClock(UnityEngine.Time.frameCount, out var clock, out _timeFault))
             {
-                ClearScheduledTempoCandidates();
-                ClearScheduledContributions();
-                ReleaseScheduledTimelineResources();
-                ClearHeldTimelineState();
-                Dispose();
+                DiscardScheduledTimeline();
+                HoldLastValidSample();
                 return;
             }
 
@@ -215,7 +220,13 @@ namespace PrismFanlight
 
             if (TryConsumeReportedTimelineFault(out var timelineFault))
             {
-                StopForSequenceFault(timelineFault);
+                HoldForSequenceFault(timelineFault, clock, tempoCandidateCount);
+                return;
+            }
+
+            if (!_baseStateValid)
+            {
+                HoldForSequenceFault(_baseStateFault, clock, tempoCandidateCount);
                 return;
             }
 
@@ -235,10 +246,8 @@ namespace PrismFanlight
                     out var time,
                     out _timeFault))
             {
-                ClearScheduledContributions();
-                ReleaseScheduledTimelineResources();
-                ClearHeldTimelineState();
-                Dispose();
+                DiscardScheduledTimeline();
+                HoldLastValidSample();
                 return;
             }
 
@@ -253,8 +262,7 @@ namespace PrismFanlight
 
             _scheduledContributions.Clear();
 
-            var options = new FanlightEvaluationOptions(AnimationUpdate.Mode == FanlightGpuUpdateMode.FixedRate ? AnimationUpdate.TargetFrameRate : 0d, 1e-6d);
-            var request = new FanlightShowEvaluationRequest(time, BaseState, _contributionBuffer.AsMemory(), options);
+            var request = new FanlightShowEvaluationRequest(time, BaseState, _contributionBuffer.AsMemory(), EvaluationOptions);
             FanlightShowSample sample;
 
             try
@@ -264,14 +272,17 @@ namespace PrismFanlight
             }
             catch (InvalidOperationException exception)
             {
-                StopForSequenceFault(exception.Message);
+                HoldForSequenceFault(exception.Message, time);
                 return;
             }
             catch (ArgumentException exception)
             {
-                StopForSequenceFault(exception.Message);
+                HoldForSequenceFault(exception.Message, time);
                 return;
             }
+
+            _lastValidSample = sample;
+            _hasLastValidSample = true;
 
             if (timelineEvaluated)
             {
@@ -291,19 +302,18 @@ namespace PrismFanlight
 
         private void OnDisable()
         {
-            ClearScheduledTempoCandidates();
-            ClearScheduledContributions();
-            ReleaseScheduledTimelineResources();
-            ClearHeldTimelineState();
+            DiscardScheduledTimeline();
+            ClearLastValidSample();
             Dispose();
+
+            _statusMonitor = null;
+            if (_liveControl != null) _liveControl.ReportStatus(default);
         }
 
         private void OnDestroy()
         {
-            ClearScheduledTempoCandidates();
-            ClearScheduledContributions();
-            ReleaseScheduledTimelineResources();
-            ClearHeldTimelineState();
+            DiscardScheduledTimeline();
+            ClearLastValidSample();
             Dispose();
         }
 
@@ -699,15 +709,114 @@ namespace PrismFanlight
             return reported;
         }
 
-        private void StopForSequenceFault(string fault)
+        private void HoldForSequenceFault(string fault, in FanlightClockSample clock, int tempoCandidateCount)
+        {
+            SetSequenceFault(fault);
+
+            var hasTime = _tempoScopeResolver.TryResolve(
+                clock,
+                _tempoCandidateSnapshot.AsSpan(0, tempoCandidateCount),
+                out var time,
+                out _timeFault);
+
+            DiscardScheduledTimeline();
+
+            if (hasTime)
+            {
+                HoldLastValidSample(time);
+            }
+            else
+            {
+                HoldLastValidSample();
+            }
+        }
+
+        private void HoldForSequenceFault(string fault, in FanlightShowTimeSample time)
+        {
+            SetSequenceFault(fault);
+            DiscardScheduledTimeline();
+            HoldLastValidSample(time);
+        }
+
+        private void SetSequenceFault(string fault)
         {
             SequenceFault = string.IsNullOrEmpty(fault) ? "Timeline evaluation contains an invalid value." : fault;
+        }
 
+        private void HoldLastValidSample(in FanlightShowTimeSample time)
+        {
+            if (!CanHoldLastValidSample())
+            {
+                Dispose();
+                return;
+            }
+
+            _contributionBuffer.Clear();
+
+            var request = new FanlightShowEvaluationRequest(time, _lastValidSample.State, _contributionBuffer.AsMemory(), EvaluationOptions);
+            FanlightShowSample sample;
+
+            try
+            {
+                sample = _showEvaluator.Evaluate(request);
+            }
+            catch (InvalidOperationException)
+            {
+                sample = _lastValidSample;
+            }
+            catch (ArgumentException)
+            {
+                sample = _lastValidSample;
+            }
+
+            _isHoldingLastValidSample = true;
+            RenderFrame(sample);
+        }
+
+        private void HoldLastValidSample()
+        {
+            if (!CanHoldLastValidSample())
+            {
+                Dispose();
+                return;
+            }
+
+            _isHoldingLastValidSample = true;
+            RenderFrame(_lastValidSample);
+        }
+
+        private bool CanHoldLastValidSample() => Application.isPlaying && _hasLastValidSample;
+
+        private void ClearLastValidSample()
+        {
+            _hasLastValidSample = false;
+            _lastValidSample = default;
+            _isHoldingLastValidSample = false;
+        }
+
+        private void DiscardScheduledTimeline()
+        {
             ClearScheduledTempoCandidates();
             ClearScheduledContributions();
             ReleaseScheduledTimelineResources();
             ClearHeldTimelineState();
-            Dispose();
+        }
+
+        private void PublishStatus()
+        {
+            _statusMonitor ??= new FanlightStatusMonitor();
+
+            var status = _statusMonitor.Update(
+                IsReady,
+                _isHoldingLastValidSample,
+                _timeManager != null && _timeManager.IsFallbackActive,
+                _timeFault,
+                SequenceFault,
+                _renderer?.Fault ?? FanlightRendererFault.None,
+                _liveControl != null ? _liveControl.Fault : string.Empty,
+                this);
+
+            if (_liveControl != null) _liveControl.ReportStatus(status);
         }
 
         private void ReleaseScheduledTimelineResources()

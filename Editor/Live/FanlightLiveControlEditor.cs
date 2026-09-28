@@ -115,10 +115,30 @@ namespace PrismFanlight.Editor
             var lastApplied = _instance.LastAppliedLook;
             EditorGUILayout.LabelField("Last Applied", lastApplied != null ? lastApplied.name : "None");
 
-            if (!string.IsNullOrEmpty(_instance.Fault))
+            var status = _instance.Status;
+            EditorGUILayout.LabelField("Rendering", status.IsRendering ? "Yes" : "No");
+
+            if (status.IsHolding)
             {
-                EditorGUILayout.HelpBox($"Live Fault: {_instance.Fault}", MessageType.Error);
+                EditorGUILayout.HelpBox("Holding the last valid state because of a fault.", MessageType.Warning);
             }
+
+            if (status.IsTimeFallbackActive)
+            {
+                EditorGUILayout.HelpBox("Time Fallback is active.", MessageType.Warning);
+            }
+
+            DrawFault("Time Fault", status.TimeFault);
+            DrawFault("Sequence Fault", status.SequenceFault);
+            DrawFault("Renderer Fault", status.RendererFault);
+            DrawFault("Live Fault", _instance.Fault);
+        }
+
+        private static void DrawFault(string label, string fault)
+        {
+            if (string.IsNullOrEmpty(fault)) return;
+
+            EditorGUILayout.HelpBox($"{label}: {fault}", MessageType.Error);
         }
 
         private void CreateLook()
