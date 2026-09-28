@@ -8,7 +8,7 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightColorFields.Source)]
         private FanlightColorSource _source;
 
         [NonSerialized]

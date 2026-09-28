@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "PrismFanlight.Runtime",
+        "PrismFanlight.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

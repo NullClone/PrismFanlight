@@ -8,6 +8,8 @@ namespace PrismFanlight.Timeline
         [SerializeField]
         private FanlightVariationState _value = FanlightTimelineDefaults.VariationState();
 
+        internal override FanlightStateKind StateKind => FanlightStateKind.Variation;
+
         internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value);
     }
 }

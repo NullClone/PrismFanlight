@@ -8,14 +8,68 @@ namespace PrismFanlight.Editor
 {
     internal static class FanlightStateGUI
     {
-        internal static void DrawIntent(
+        internal static void Draw(
             SerializedProperty state,
-            FanlightIntentFields included = FanlightIntentFields.All)
+            FanlightStateKind kind,
+            int? includedFields = null,
+            FanlightLayoutAsset layout = null)
         {
-            DrawChild(state, "_energy", (included & FanlightIntentFields.Energy) != 0);
-            DrawChild(state, "_participation", (included & FanlightIntentFields.Participation) != 0);
-            DrawChild(state, "_synchronization", (included & FanlightIntentFields.Synchronization) != 0);
-            DrawChild(state, "_transitionScatter", (included & FanlightIntentFields.TransitionScatter) != 0);
+            var included = includedFields ?? FanlightStateSchema.GetAllFields(kind);
+
+            switch (kind)
+            {
+                case FanlightStateKind.Motion:
+                    DrawMotion(state, (FanlightMotionFields)included);
+                    break;
+                case FanlightStateKind.Direction:
+                    DrawDirection(state, (FanlightDirectionFields)included);
+                    break;
+                case FanlightStateKind.Color:
+                    using (new EditorGUI.DisabledScope((included & (int)FanlightColorFields.Source) == 0))
+                    {
+                        FanlightColorGUI.DrawColorState(state, layout);
+                    }
+
+                    break;
+                case FanlightStateKind.Intensity:
+                    FanlightIntensityGUI.DrawIntensityState(state, layout, includedFields: (FanlightIntensityFields)included);
+                    break;
+                default:
+                    DrawFields(state, kind, included);
+                    break;
+            }
+        }
+
+        internal static void DrawFields(
+            SerializedProperty state,
+            FanlightStateKind kind,
+            int? includedFields = null,
+            bool includeBaselineFields = false)
+        {
+            var included = includedFields ?? FanlightStateSchema.GetAllFields(kind);
+            var child = state.Copy();
+            var end = state.GetEndProperty();
+            var enterChildren = true;
+
+            while (child.NextVisible(enterChildren) && !SerializedProperty.EqualContents(child, end))
+            {
+                enterChildren = false;
+
+                var field = FanlightStateSchema.GetField(kind, child.name);
+                if (!field.IsPatchable && !includeBaselineFields) continue;
+
+                using (new EditorGUI.DisabledScope(field.IsPatchable && !field.IsIncluded(included)))
+                {
+                    if (field.Label != null)
+                    {
+                        EditorGUILayout.PropertyField(child, field.Label, true);
+                    }
+                    else
+                    {
+                        EditorGUILayout.PropertyField(child, true);
+                    }
+                }
+            }
         }
 
         internal static void DrawMotion(
@@ -55,70 +109,6 @@ namespace PrismFanlight.Editor
 
             DrawChild(state, "_blockDelayXBeats", (included & FanlightMotionFields.BlockDelayXBeats) != 0);
             DrawChild(state, "_blockDelayYBeats", (included & FanlightMotionFields.BlockDelayYBeats) != 0);
-        }
-
-        internal static void DrawVariation(
-            SerializedProperty state,
-            FanlightVariationFields included = FanlightVariationFields.All)
-        {
-            DrawChild(state, "_standingPositionSpread", (included & FanlightVariationFields.StandingPositionSpread) != 0);
-            DrawChild(state, "_heightVariation", (included & FanlightVariationFields.HeightVariation) != 0);
-            DrawChild(state, "_armExtensionVariation", (included & FanlightVariationFields.ArmExtensionVariation) != 0);
-            DrawChild(state, "_penlightDirectionSpread", (included & FanlightVariationFields.PenlightDirectionSpread) != 0);
-            DrawChild(state, "_reactionDelaySeconds", (included & FanlightVariationFields.ReactionDelaySeconds) != 0);
-            DrawChild(state, "_beatJitterBeats", (included & FanlightVariationFields.BeatJitterBeats) != 0);
-            DrawChild(state, "_energyResponse", (included & FanlightVariationFields.EnergyResponse) != 0);
-            DrawChild(state, "_handPositionSpread", (included & FanlightVariationFields.HandPositionSpread) != 0);
-        }
-
-        internal static void DrawNoise(
-            SerializedProperty state,
-            FanlightNoiseFields included = FanlightNoiseFields.All,
-            bool includeBaselineFields = false)
-        {
-            DrawChild(state, "_phaseAmount", (included & FanlightNoiseFields.PhaseAmount) != 0);
-
-            if (includeBaselineFields)
-            {
-                DrawChild(state, "_phaseRate", true);
-            }
-
-            DrawChild(state, "_positionAmount", (included & FanlightNoiseFields.PositionAmount) != 0);
-            DrawChild(state, "_directionAmount", (included & FanlightNoiseFields.DirectionAmount) != 0);
-
-            if (includeBaselineFields)
-            {
-                DrawChild(state, "_spatialRate", true);
-                DrawChild(state, "_octaves", true);
-                DrawChild(state, "_persistence", true);
-            }
-        }
-
-        internal static void DrawRest(
-            SerializedProperty state,
-            FanlightRestFields included = FanlightRestFields.All)
-        {
-            DrawChild(state, "_probability", (included & FanlightRestFields.Probability) != 0);
-            DrawChild(state, "_motionLevel", (included & FanlightRestFields.MotionLevel) != 0);
-            DrawChild(state, "_cycleSeconds", (included & FanlightRestFields.CycleSeconds) != 0);
-            DrawChild(state, "_durationSeconds", (included & FanlightRestFields.DurationSeconds) != 0);
-            DrawChild(state, "_fadeSeconds", (included & FanlightRestFields.FadeSeconds) != 0);
-            DrawChild(state, "_phaseRandomness", (included & FanlightRestFields.PhaseRandomness) != 0);
-        }
-
-        internal static void DrawAudienceBody(
-            SerializedProperty state,
-            FanlightAudienceBodyFields included = FanlightAudienceBodyFields.All)
-        {
-            DrawChild(state, "_height", (included & FanlightAudienceBodyFields.Height) != 0);
-            DrawChild(state, "_width", (included & FanlightAudienceBodyFields.Width) != 0);
-            DrawChild(state, "_headSize", (included & FanlightAudienceBodyFields.HeadSize) != 0);
-            DrawChild(state, "_armWidth", (included & FanlightAudienceBodyFields.ArmWidth) != 0);
-            DrawChild(state, "_armLengthLimit", (included & FanlightAudienceBodyFields.ArmLengthLimit) != 0);
-            DrawChild(state, "_shoulderHeightRatio", (included & FanlightAudienceBodyFields.ShoulderHeightRatio) != 0);
-            DrawChild(state, "_shoulderSideOffset", (included & FanlightAudienceBodyFields.ShoulderSideOffset) != 0);
-            DrawChild(state, "_bounce", (included & FanlightAudienceBodyFields.Bounce) != 0);
-            DrawChild(state, "_sway", (included & FanlightAudienceBodyFields.Sway) != 0);
         }
 
         internal static void DrawDirection(

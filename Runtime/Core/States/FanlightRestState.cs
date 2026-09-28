@@ -8,22 +8,22 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightRestFields.Probability), Range(0f, 1f)]
         private float _probability;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightRestFields.MotionLevel), Range(0f, 1f)]
         private float _motionLevel;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightRestFields.CycleSeconds)]
         private float _cycleSeconds;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightRestFields.DurationSeconds)]
         private float _durationSeconds;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightRestFields.FadeSeconds)]
         private float _fadeSeconds;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightRestFields.PhaseRandomness), Range(0f, 1f)]
         private float _phaseRandomness;
 
 

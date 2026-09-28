@@ -143,7 +143,7 @@ namespace PrismFanlight.Editor
             _motionSection.DrawSection(DrawMotionSection, _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Motion, "_motion"));
 
-            _intentSection.DrawSection(() => FanlightStateGUI.DrawIntent(_intent), _instance,
+            _intentSection.DrawSection(() => FanlightStateGUI.DrawFields(_intent, FanlightStateKind.Intent), _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Intent, "_intent"));
 
             _colorSection.DrawSection(() => FanlightColorGUI.DrawColorState(_color, _instance.LayoutAsset, true), _instance,
@@ -152,7 +152,7 @@ namespace PrismFanlight.Editor
             _intensitySection.DrawSection(() => FanlightIntensityGUI.DrawIntensityState(_intensity, _instance.LayoutAsset, true), _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Intensity, "_intensity"));
 
-            _audienceSection.DrawSection(() => FanlightStateGUI.DrawAudienceBody(_audienceBody), _instance,
+            _audienceSection.DrawSection(() => FanlightStateGUI.DrawFields(_audienceBody, FanlightStateKind.AudienceBody), _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.AudienceBody, "_audienceBody"));
 
             _directionSection.DrawSection(() => FanlightStateGUI.DrawDirection(_direction, swingTarget: _swingTarget), _instance,
@@ -160,13 +160,13 @@ namespace PrismFanlight.Editor
 
             _timeSection.DrawSection(DrawTimeSection, _instance);
 
-            _variationSection.DrawSection(() => FanlightStateGUI.DrawVariation(_variation), _instance,
+            _variationSection.DrawSection(() => FanlightStateGUI.DrawFields(_variation, FanlightStateKind.Variation), _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Variation, "_variation"));
 
             _noiseSection.DrawSection(DrawNoiseSection, _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Noise, "_noise"));
 
-            _restSection.DrawSection(() => FanlightStateGUI.DrawRest(_rest), _instance,
+            _restSection.DrawSection(() => FanlightStateGUI.DrawFields(_rest, FanlightStateKind.Rest), _instance,
                 menu => AddStateClipboardItems(menu, FanlightStateKind.Rest, "_rest"));
 
             if (serializedObject.ApplyModifiedProperties())
@@ -279,8 +279,8 @@ namespace PrismFanlight.Editor
                 }
             }
 
-            DrawChild(_visibility, "_penlightsEnabled");
-            DrawChild(_visibility, "_audienceBodiesEnabled");
+            EditorGUILayout.PropertyField(_visibility.FindPropertyRelative("_penlightsEnabled"), new GUIContent("Enable Penlight"));
+            EditorGUILayout.PropertyField(_visibility.FindPropertyRelative("_audienceBodiesEnabled"), new GUIContent("Enable Audience"));
         }
 
         private void DrawMotionSection()
@@ -345,7 +345,7 @@ namespace PrismFanlight.Editor
         {
             EditorGUILayout.PropertyField(_globalSeed, new GUIContent("Seed"));
 
-            FanlightStateGUI.DrawNoise(_noise, includeBaselineFields: true);
+            FanlightStateGUI.DrawFields(_noise, FanlightStateKind.Noise, includeBaselineFields: true);
         }
 
         private void RefreshTimelinePreview()
@@ -375,31 +375,7 @@ namespace PrismFanlight.Editor
 
         private void AddStateClipboardItems(GenericMenu menu, FanlightStateKind kind, string propertyPath)
         {
-            menu.AddSeparator("");
-
-            if (targets.Length == 1)
-            {
-                menu.AddItem(new GUIContent("Copy"), false, () => FanlightStateClipboard.Copy(targets, kind, propertyPath));
-            }
-            else
-            {
-                menu.AddDisabledItem(new GUIContent("Copy"));
-            }
-
-            if (FanlightStateClipboard.CanPaste(kind))
-            {
-                menu.AddItem(new GUIContent("Paste"), false, () =>
-                {
-                    if (FanlightStateClipboard.Paste(targets, kind, propertyPath))
-                    {
-                        RefreshTimelinePreview();
-                    }
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(new GUIContent("Paste"));
-            }
+            FanlightStateClipboard.AddMenuItems(menu, targets, kind, propertyPath, RefreshTimelinePreview);
         }
 
 
@@ -529,11 +505,6 @@ namespace PrismFanlight.Editor
             {
                 EditorGUILayout.PropertyField(timing.FindPropertyRelative("_targetFrameRate"), new GUIContent("Target Frame Rate"));
             }
-        }
-
-        private static void DrawChild(SerializedProperty parent, string propertyName)
-        {
-            EditorGUILayout.PropertyField(parent.FindPropertyRelative(propertyName));
         }
     }
 }

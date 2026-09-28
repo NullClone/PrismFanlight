@@ -1,4 +1,5 @@
 using System;
+using PrismFanlight.Core;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -10,6 +11,8 @@ namespace PrismFanlight.Timeline
         // Properties
 
         public ClipCaps clipCaps => ClipCaps.Blending | ClipCaps.ClipIn | ClipCaps.Extrapolation;
+
+        internal abstract FanlightStateKind StateKind { get; }
 
         internal abstract FanlightTimelineClipValue Value { get; }
 

@@ -8,10 +8,10 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightDirectionFields.Mode)]
         private FanlightDirectionMode _mode;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightDirectionFields.Direction)]
         private float _direction;
 
 

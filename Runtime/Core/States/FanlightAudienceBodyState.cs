@@ -8,32 +8,32 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Label("Body Height")]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.Height, "Body Height")]
         private float _height;
 
-        [SerializeField, Label("Body Width")]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.Width, "Body Width")]
         private float _width;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.HeadSize)]
         private float _headSize;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.ArmWidth)]
         private float _armWidth;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.ArmLengthLimit)]
         private float _armLengthLimit;
 
-        [SerializeField, Label("Shoulder Height"), Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.ShoulderHeightRatio, "Shoulder Height"), Range(0f, 1f)]
         private float _shoulderHeightRatio;
 
-        [SerializeField, Label("Shoulder Offset"), Range(-1f, 1f)]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.ShoulderSideOffset, "Shoulder Offset"), Range(-1f, 1f)]
         private float _shoulderSideOffset;
 
         [Space]
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.Bounce), Range(0f, 1f)]
         private float _bounce;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightAudienceBodyFields.Sway), Range(0f, 1f)]
         private float _sway;
 
 

@@ -1,6 +1,8 @@
-using PrismFanlight.Core;
+using PrismFanlight.Authoring;
 using PrismFanlight.Timeline;
 using UnityEditor;
+using UnityEditor.Timeline;
+using UnityEngine;
 
 namespace PrismFanlight.Editor
 {
@@ -10,62 +12,60 @@ namespace PrismFanlight.Editor
     {
         // Fields
 
-        private const string ScriptPropertyName = "m_Script";
-        private const string ValuePropertyName = "_value";
+        private SerializedProperty _value;
 
 
         // Methods
+
+        private void OnEnable()
+        {
+            _value = serializedObject.FindProperty(nameof(_value));
+        }
 
         public override void OnInspectorGUI()
         {
             FanlightPresetEditor.Draw(targets);
 
+            if (_value == null || target is not FanlightTimelineClipAsset clip) return;
+
             serializedObject.Update();
 
-            var hasMask = FanlightTimelineFieldMaskResolver.TryResolve(targets, out var mask, out var stateKind);
+            int? includedFields = FanlightTimelineFieldMaskResolver.TryResolve(targets, out _, out var fields)
+                ? fields
+                : null;
 
-            var property = serializedObject.GetIterator();
-            var enterChildren = true;
-
-            while (property.NextVisible(enterChildren))
-            {
-                enterChildren = false;
-
-                if (property.propertyPath == ScriptPropertyName) continue;
-
-                if (property.propertyPath == ValuePropertyName)
-                {
-                    DrawChildren(property, hasMask, mask, stateKind);
-                    continue;
-                }
-
-                EditorGUILayout.PropertyField(property, true);
-            }
+            FanlightStateGUI.Draw(_value, clip.StateKind, includedFields, ResolveLayout());
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        private static void DrawChildren(
-            SerializedProperty property,
-            bool hasMask,
-            FanlightTimelineFieldMask mask,
-            FanlightStateKind stateKind)
+        private FanlightLayoutAsset ResolveLayout()
         {
-            var child = property.Copy();
-            var end = child.GetEndProperty();
-            var enterChildren = true;
-
-            while (child.NextVisible(enterChildren) && !SerializedProperty.EqualContents(child, end))
+            if (targets.Length != 1
+                || TimelineEditor.inspectedAsset == null
+                || TimelineEditor.inspectedDirector == null)
             {
-                enterChildren = false;
+                return null;
+            }
 
-                var included = !hasMask || FanlightTimelineFieldMaskResolver.IsFieldIncluded(mask, stateKind, child.name);
-
-                using (new EditorGUI.DisabledScope(!included))
+            foreach (var track in TimelineEditor.inspectedAsset.GetOutputTracks())
+            {
+                foreach (var clip in track.GetClips())
                 {
-                    EditorGUILayout.PropertyField(child, true);
+                    if (clip.asset != target) continue;
+
+                    var binding = TimelineEditor.inspectedDirector.GetGenericBinding(track);
+                    var fanlight = binding as PrismFanlight;
+                    if (fanlight == null && binding is GameObject gameObject)
+                    {
+                        fanlight = gameObject.GetComponent<PrismFanlight>();
+                    }
+
+                    return fanlight != null ? fanlight.LayoutAsset : null;
                 }
             }
+
+            return null;
         }
     }
 }

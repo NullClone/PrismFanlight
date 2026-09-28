@@ -14,6 +14,8 @@ namespace PrismFanlight.Timeline
 
         // Properties
 
+        internal override FanlightStateKind StateKind => FanlightStateKind.Motion;
+
         internal override FanlightTimelineClipValue Value
         {
             get

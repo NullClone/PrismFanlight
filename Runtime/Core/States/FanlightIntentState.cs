@@ -8,16 +8,16 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightIntentFields.Energy), Range(0f, 1f)]
         private float _energy;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightIntentFields.Participation), Range(0f, 1f)]
         private float _participation;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightIntentFields.Synchronization), Range(0f, 1f)]
         private float _synchronization;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightIntentFields.TransitionScatter), Range(0f, 1f)]
         private float _transitionScatter;
 
 

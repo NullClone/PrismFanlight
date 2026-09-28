@@ -9,27 +9,27 @@ namespace PrismFanlight.Core
         // Fields
 
         [Header("Phase")]
-        [SerializeField, Range(0f, 4f)]
+        [SerializeField, FanlightField(FanlightNoiseFields.PhaseAmount), Range(0f, 4f)]
         private float _phaseAmount;
 
-        [SerializeField, Range(0f, 16f)]
+        [SerializeField, FanlightField, Range(0f, 16f)]
         private float _phaseRate;
 
         [Header("Spatial")]
-        [SerializeField, Range(0f, 0.2f)]
+        [SerializeField, FanlightField(FanlightNoiseFields.PositionAmount), Range(0f, 0.2f)]
         private float _positionAmount;
 
-        [SerializeField, Range(0f, 0.4f)]
+        [SerializeField, FanlightField(FanlightNoiseFields.DirectionAmount), Range(0f, 0.4f)]
         private float _directionAmount;
 
-        [SerializeField, Range(0f, 16f)]
+        [SerializeField, FanlightField, Range(0f, 16f)]
         private float _spatialRate;
 
         [Header("Detail")]
-        [SerializeField]
+        [SerializeField, FanlightField]
         private int _octaves;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField, Range(0f, 1f)]
         private float _persistence;
 
 

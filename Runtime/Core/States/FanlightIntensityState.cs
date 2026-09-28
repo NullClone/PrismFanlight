@@ -8,13 +8,13 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightIntensityFields.BaseIntensity)]
         private float _baseIntensity;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightIntensityFields.RandomIntensity), Range(0f, 1f)]
         private float _randomIntensity;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightIntensityFields.Mask)]
         private FanlightIntensityMask _mask;
 
         [NonSerialized]

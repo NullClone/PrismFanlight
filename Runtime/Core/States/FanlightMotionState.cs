@@ -9,20 +9,20 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightMotionFields.Source)]
         private FanlightMotionAsset _motionAsset;
 
         [Space]
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightMotionFields.Source)]
         private float _beatsPerCycle;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightMotionFields.Source)]
         private float _phaseOffsetBeats;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightMotionFields.BlockDelayXBeats)]
         private float _blockDelayXBeats;
 
-        [SerializeField]
+        [SerializeField, FanlightField(FanlightMotionFields.BlockDelayYBeats)]
         private float _blockDelayYBeats;
 
 

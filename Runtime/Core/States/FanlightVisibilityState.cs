@@ -8,10 +8,10 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Label("Enable Penlight")]
+        [SerializeField]
         private bool _penlightsEnabled;
 
-        [SerializeField, Label("Enable Audience")]
+        [SerializeField]
         private bool _audienceBodiesEnabled;
 
 

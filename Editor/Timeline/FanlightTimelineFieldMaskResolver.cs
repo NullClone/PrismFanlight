@@ -1,4 +1,3 @@
-using System;
 using PrismFanlight.Core;
 using PrismFanlight.Timeline;
 using UnityEditor.Timeline;
@@ -8,13 +7,10 @@ namespace PrismFanlight.Editor
 {
     internal static class FanlightTimelineFieldMaskResolver
     {
-        internal static bool TryResolve(
-            Object[] targets,
-            out FanlightTimelineFieldMask mask,
-            out FanlightStateKind stateKind)
+        internal static bool TryResolve(Object[] targets, out FanlightStateKind stateKind, out int fields)
         {
-            mask = default;
             stateKind = default;
+            fields = 0;
 
             if (targets.Length != 1 || TimelineEditor.inspectedAsset == null) return false;
 
@@ -28,8 +24,8 @@ namespace PrismFanlight.Editor
                 {
                     if (clip.asset != target) continue;
 
-                    mask = fanlightTrack.FieldMask;
                     stateKind = fanlightTrack.StateKind;
+                    fields = GetFields(fanlightTrack.FieldMask, stateKind);
                     return true;
                 }
             }
@@ -37,35 +33,22 @@ namespace PrismFanlight.Editor
             return false;
         }
 
-        internal static bool IsFieldIncluded(FanlightTimelineFieldMask mask, FanlightStateKind stateKind, string propertyName)
-        {
-            var fieldName = ToFieldName(propertyName);
 
+        private static int GetFields(FanlightTimelineFieldMask mask, FanlightStateKind stateKind)
+        {
             return stateKind switch
             {
-                FanlightStateKind.Intent => HasFlag(mask.Intent, fieldName),
-                FanlightStateKind.Motion => HasFlag(mask.Motion, fieldName),
-                FanlightStateKind.Variation => HasFlag(mask.Variation, fieldName),
-                FanlightStateKind.Noise => HasFlag(mask.Noise, fieldName),
-                FanlightStateKind.Rest => HasFlag(mask.Rest, fieldName),
-                FanlightStateKind.AudienceBody => HasFlag(mask.AudienceBody, fieldName),
-                FanlightStateKind.Direction => HasFlag(mask.Direction, fieldName),
-                FanlightStateKind.Color => HasFlag(mask.Color, fieldName),
-                FanlightStateKind.Intensity => HasFlag(mask.Intensity, fieldName),
-                _ => true
+                FanlightStateKind.Intent => (int)mask.Intent,
+                FanlightStateKind.Motion => (int)mask.Motion,
+                FanlightStateKind.Variation => (int)mask.Variation,
+                FanlightStateKind.Noise => (int)mask.Noise,
+                FanlightStateKind.Rest => (int)mask.Rest,
+                FanlightStateKind.AudienceBody => (int)mask.AudienceBody,
+                FanlightStateKind.Direction => (int)mask.Direction,
+                FanlightStateKind.Color => (int)mask.Color,
+                FanlightStateKind.Intensity => (int)mask.Intensity,
+                _ => 0
             };
-        }
-
-
-        private static string ToFieldName(string propertyName)
-        {
-            var trimmed = propertyName.TrimStart('_');
-            return trimmed.Length == 0 ? trimmed : char.ToUpperInvariant(trimmed[0]) + trimmed.Substring(1);
-        }
-
-        private static bool HasFlag<TFields>(TFields fields, string fieldName) where TFields : struct, Enum
-        {
-            return Enum.TryParse<TFields>(fieldName, out var flag) && fields.HasFlag(flag);
         }
     }
 }

@@ -8,6 +8,8 @@ namespace PrismFanlight.Timeline
         [SerializeField]
         private FanlightIntensityState _value = FanlightTimelineDefaults.IntensityState();
 
+        internal override FanlightStateKind StateKind => FanlightStateKind.Intensity;
+
         internal override FanlightTimelineClipValue Value => FanlightTimelineClipValue.From(_value.Validated());
     }
 }

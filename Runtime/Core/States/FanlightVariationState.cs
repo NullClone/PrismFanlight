@@ -8,28 +8,28 @@ namespace PrismFanlight.Core
     {
         // Fields
 
-        [SerializeField, Label("Position Spread"), Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightVariationFields.StandingPositionSpread, "Position Spread"), Range(0f, 1f)]
         private float _standingPositionSpread;
 
-        [SerializeField, Label("Audience Height"), Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightVariationFields.HeightVariation, "Audience Height"), Range(0f, 1f)]
         private float _heightVariation;
 
-        [SerializeField, Label("Arm Extension"), Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightVariationFields.ArmExtensionVariation, "Arm Extension"), Range(0f, 1f)]
         private float _armExtensionVariation;
 
-        [SerializeField, Label("Direction Spread"), Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightVariationFields.PenlightDirectionSpread, "Direction Spread"), Range(0f, 1f)]
         private float _penlightDirectionSpread;
 
-        [SerializeField, Label("Reaction Delay")]
+        [SerializeField, FanlightField(FanlightVariationFields.ReactionDelaySeconds, "Reaction Delay")]
         private float _reactionDelaySeconds;
 
-        [SerializeField, Label("Beat Jitter")]
+        [SerializeField, FanlightField(FanlightVariationFields.BeatJitterBeats, "Beat Jitter")]
         private float _beatJitterBeats;
 
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, FanlightField(FanlightVariationFields.EnergyResponse), Range(0f, 1f)]
         private float _energyResponse;
 
-        [SerializeField, Range(0f, 0.5f)]
+        [SerializeField, FanlightField(FanlightVariationFields.HandPositionSpread), Range(0f, 0.5f)]
         private float _handPositionSpread;
 
 
